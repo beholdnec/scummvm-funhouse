@@ -126,11 +126,18 @@ public:
 	SharedPtr &operator=(const SharedPtr &r) {
 		if (r._refCount)
 			++(*r._refCount);
+
+		// Temporary copies are required to prevent crash in rare situations
+		// where decRef may indirectly delete r.
+		RefValue *newRefCount = r._refCount;
+		SharedPtrDeletionInternal *newDeletion = r._deletion;
+		PointerType newPointer = r._pointer;
+
 		decRef();
 
-		_refCount = r._refCount;
-		_deletion = r._deletion;
-		_pointer = r._pointer;
+		_refCount = newRefCount;
+		_deletion = newDeletion;
+		_pointer = newPointer;
 
 		return *this;
 	}
@@ -139,11 +146,18 @@ public:
 	SharedPtr &operator=(const SharedPtr<T2> &r) {
 		if (r._refCount)
 			++(*r._refCount);
+
+		// Temporary copies are required to prevent crash in rare situations
+		// where decRef may indirectly delete r.
+		RefValue *newRefCount = r._refCount;
+		SharedPtrDeletionInternal *newDeletion = r._deletion;
+		PointerType newPointer = r._pointer;
+
 		decRef();
 
-		_refCount = r._refCount;
-		_deletion = r._deletion;
-		_pointer = r._pointer;
+		_refCount = newRefCount;
+		_deletion = newDeletion;
+		_pointer = newPointer;
 
 		return *this;
 	}
