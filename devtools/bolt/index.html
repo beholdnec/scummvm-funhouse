@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="stylesheet" href="assets/css/bltviewer.css">
+
+  <title>BLT Viewer</title>
+</head>
+
+<body>
+  <main class="startup-content is-not-loaded">
+    <header>BLT Viewer</header>
+    <section>
+      <button id="open-file">Open BOLTLIB.BLT File&hellip;</button>
+    </section>
+  </main>
+
+  <nav class="nav is-loaded">
+    <table id="directories">
+      <thead><tr>
+        <th>ID</th>
+        <th>Type</th>
+      </tr></thead>
+    </table>
+  </nav>
+
+  <main class="content is-loaded">
+    <header id="blt-resource-label"></header>
+
+    <!-- Type 7: Sound -->
+    <section id="blt-sound-content" class="content-section">
+      <header>Sound</header>
+      <button id="blt-sound-play-btn">Play</button>
+    </section>
+
+    <!-- Type 8: Image -->
+    <section id="blt-image-content" class="content-section">
+      <header>Image</header>
+      <table class="fields-table"></table>
+      <canvas id="blt-image-canvas">The image could not be displayed.</canvas>
+      <p><i>Tip: If colors look wrong, load a palette.</i></p>
+    </section>
+
+    <!-- Type 10: Palette -->
+    <section id="blt-palette-content" class="content-section">
+      <header>Palette</header>
+      <table class="fields-table"></table>
+      <table class="palette-table"></table>
+      <p><i>Palette loaded.</i></p>
+    </section>
+
+    <section id="blt-generic-content" class="content-section">
+      <header></header>
+      <table class="fields-table"></table>
+    </section>
+
+    <section id="blt-hex-content" class="content-section">
+      <header>Hex</header>
+      <p class="is-data-too-large">Data is too large to display.</p>
+      <p id="blt-hex-data" class="hex-data"></p>
+    </section>
+  </main>
+</body>
+
+<script type="text/javascript">
+  require('./bltviewer.js')
+</script>
+
+</html>
