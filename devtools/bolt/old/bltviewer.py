@@ -52,15 +52,15 @@ _IMAGE_COMPRESSION_NAMES = {
     1: "RL7",
     }
 
-_ImageHeaderStruct = Struct("_ImageHeaderStruct",
-    UBInt8("compression"),
-    UBInt8("unk_1"),
-    UBInt16("unk_2"),
-    UBInt16("unk_4"),
-    SBInt16("offset_x"),
-    SBInt16("offset_y"),
-    UBInt16("width"),
-    UBInt16("height"),
+_ImageHeaderStruct = "_ImageHeaderStruct" / Struct(
+    "compression" / Int8ub,
+    "unk_1" / Int8ub,
+    "unk_2" / Int16ub,
+    "unk_4" / Int16ub,
+    "offset_x" / Int16sb,
+    "offset_y" / Int16sb,
+    "width" / Int16ub,
+    "height" / Int16ub,
     )
 
 class BltImageWidget(QtGui.QLabel):
@@ -203,10 +203,10 @@ class _ImageHandler:
         newWidget.setLayout(newLayout)
         container.addWidget(newWidget)
 
-_ColorStruct = Struct("_ColorStruct",
-    UBInt8("r"),
-    UBInt8("g"),
-    UBInt8("b"),
+_ColorStruct = "_ColorStruct" / Struct(
+    "r" / Int8ub,
+    "g" / Int8ub,
+    "b" / Int8ub,
     )
 
 class _PaletteWidget(QtGui.QWidget):
@@ -256,9 +256,9 @@ class _PaletteHandler:
         new_widget.setLayout(new_layout)
         container.addWidget(new_widget)
 
-_ColorCyclesStruct = Struct("_ColorCyclesStruct",
-    Array(4, UBInt16("num_slots")),
-    Array(4, UBInt32("slot_ids")),
+_ColorCyclesStruct = "_ColorCyclesStruct" / Struct(
+    Array(4, "num_slots" / Int16ub),
+    Array(4, "slot_ids" / Int32ub),
     )
 
 @_pc_res_handler(11)
@@ -278,10 +278,10 @@ class _ColorCyclesHandler:
 
         container.addWidget(new_widget)
 
-_ColorCycleSlotStruct = Struct("_ColorCycleSlotStruct",
-    UBInt16("start"),
-    UBInt16("end"),
-    UBInt16("unk_4"),
+_ColorCycleSlotStruct = "_ColorCycleSlotStruct" / Struct(
+    "start" / Int16ub,
+    "end" / Int16ub,
+    "unk_4" / Int16ub,
     )
 
 @_pc_res_handler(12)
@@ -303,11 +303,11 @@ class _ColorCycleSlotHandler:
 class _CdiSoundHandler:
     name = "Sound"
 
-_PlaneStruct = Struct("_PlaneStruct",
-    UBInt32("image_id"),
-    UBInt32("palette_id"),
-    UBInt32("hotspots_id"),
-    UBInt32("unk_c"),
+_PlaneStruct = "_PlaneStruct" / Struct(
+    "image_id" / Int32ub,
+    "palette_id" / Int32ub,
+    "hotspots_id" / Int32ub,
+    "unk_c" / Int32ub,
     )
 
 @_pc_res_handler(26)
@@ -326,10 +326,10 @@ class _PlaneHandler:
 
         container.addWidget(newWidget)
 
-_SpriteStruct = Struct("_SpriteStruct",
-    SBInt16("x"),
-    SBInt16("y"),
-    UBInt32("image_id"),
+_SpriteStruct = "_SpriteStruct" / Struct(
+    "x" / Int16sb,
+    "y" / Int16sb,
+    "image_id" / Int32ub,
     )
 
 # Ex: 370E
@@ -359,10 +359,10 @@ class _ColorsHandler:
         colors = GreedyRange(_ColorStruct).parse(res.data)
         container.addWidget(_PaletteWidget(colors))
 
-_PaletteModStruct = Struct("_ButtonPaletteModStruct",
-    UBInt8("index"),
-    UBInt8("count"),
-    UBInt32("colors_id"),
+_PaletteModStruct = "_ButtonPaletteModStruct" / Struct(
+    "index" / Int8ub,
+    "count" / Int8ub,
+    "colors_id" / Int32ub,
     )
 
 @_pc_res_handler(29)
@@ -387,11 +387,11 @@ _BUTTON_GRAPHICS_TYPE_NAMES = {
     2: "Sprites",
     }
 
-_ButtonGraphicsStruct = Struct("_ButtonGraphicsStruct",
-    UBInt16("type"),
-    UBInt32("unk_2"),
-    UBInt32("hovered_id"),
-    UBInt32("idle_id"),
+_ButtonGraphicsStruct = "_ButtonGraphicsStruct" / Struct(
+    "type" / Int16ub,
+    "unk_2" / Int32ub,
+    "hovered_id" / Int32ub,
+    "idle_id" / Int32ub,
     )
 
 # Ex: 69B5
@@ -419,16 +419,16 @@ _BUTTON_TYPE_NAMES = {
     3: "Hotspot Query",
     }
 
-_ButtonStruct = Struct("_ButtonStruct",
-    UBInt16("type"),
-    UBInt16("left"),
-    UBInt16("right"),
-    UBInt16("top"),
-    UBInt16("bottom"),
-    UBInt16("plane"),
-    UBInt16("num_graphics"),
-    UBInt16("unk_e"),
-    UBInt32("graphics_id"),
+_ButtonStruct = "_ButtonStruct" / Struct(
+    "type" / Int16ub,
+    "left" / Int16ub,
+    "right" / Int16ub,
+    "top" / Int16ub,
+    "bottom" / Int16ub,
+    "plane" / Int16ub,
+    "num_graphics" / Int16ub,
+    "unk_e" / Int16ub,
+    "graphics_id" / Int32ub,
     )
 
 # Ex: 312D
@@ -454,19 +454,19 @@ class _ButtonsHandler:
 
         container.addWidget(newWidget)
 
-_PcSceneStruct = Struct("_PcSceneStruct",
-    UBInt32("fore_plane_id"), # 0
-    UBInt32("back_plane_id"), # 4
-    UBInt8("num_sprites"), # 8
-    UBInt8("unk_9"), # 8
-    UBInt32("sprites_id"), # A
-    UBInt32("unk_e"), # E
-    UBInt32("unk_12"), # 12
-    UBInt32("color_cycles_id"), # 16
-    UBInt16("num_buttons"), # 1A
-    UBInt32("buttons_id"), # 1C
-    SBInt16("origin_x"), # 20
-    SBInt16("origin_y"), # 22
+_PcSceneStruct = "_PcSceneStruct" / Struct(
+    "fore_plane_id" / Int32ub,
+    "back_plane_id" / Int32ub,
+    "num_sprites" / Int8ub,
+    "unk_9" / Int8ub,
+    "sprites_id" / Int32ub,
+    "unk_e" / Int32ub,
+    "unk_12" / Int32ub,
+    "color_cycles_id" / Int32ub,
+    "num_buttons" / Int16ub,
+    "buttons_id" / Int32ub,
+    "origin_x" / Int16sb,
+    "origin_y" / Int16sb,
     )
 
 # Ex: 3A0B
@@ -491,23 +491,23 @@ class _SceneHandler:
         newWidget.add_row("Origin", "({}, {})".format(parsed.origin_x, parsed.origin_y))
 
         container.addWidget(newWidget)
-        
-_CdiSceneStruct = Struct("_CdiSceneStruct",
-    UBInt32("fore_plane_id"), # 0
-    UBInt32("back_plane_id"), # 4
-    UBInt8("num_sprites"), # 8
-    UBInt8("unk_9"), # 8
-    UBInt32("sprites_id"), # A
-    UBInt32("unk_e"), # E
-    UBInt32("unk_12"), # 12
-    UBInt32("color_cycles_id"), # 16
-    UBInt16("num_buttons"), # 1A
-    UBInt32("buttons_id"), # 1C
+
+_CdiSceneStruct = "_CdiSceneStruct" / Struct(
+    "fore_plane_id" / Int32ub,
+    "back_plane_id" / Int32ub,
+    "num_sprites" / Int8ub,
+    "unk_9" / Int8ub,
+    "sprites_id" / Int32ub,
+    "unk_e" / Int32ub,
+    "unk_12" / Int32ub,
+    "color_cycles_id" / Int32ub,
+    "num_buttons" / Int16ub,
+    "buttons_id" / Int32ub,
     )
 @_cdi_res_handler(33)
 class _CdiSceneHandler:
     name = "Scene"
-    
+
     def open(res, container, app):
         newWidget = MyTableWidget("Value")
 
@@ -525,10 +525,10 @@ class _CdiSceneHandler:
 
         container.addWidget(newWidget)
 
-_MainMenuStruct = Struct("_MainMenuStruct",
-    UBInt32("scene_id"),
-    UBInt32("colorbars_id"),
-    UBInt32("colorbars_palette_id"),
+_MainMenuStruct = "_MainMenuStruct" / Struct(
+    "scene_id" / Int32ub,
+    "colorbars_id" / Int32ub,
+    "colorbars_palette_id" / Int32ub,
     )
 
 # Ex: 0118
@@ -546,29 +546,29 @@ class _MainMenuHandler:
 
         container.addWidget(newWidget)
 
-_FileMenuStruct = Struct("_FileMenuStruct",
-    UBInt32("scene_id"), # 0
-    UBInt32("select_game_piece_id"), # 4
-    UBInt32("set_new_id"), # 8
-    UBInt32("new_id"), # C
-    UBInt32("solved_id"), # 10
-    UBInt32("one_more_id"), # 14
-    UBInt32("x_more_id"), # 18
-    UBInt32("xx_more_id"), # 1C
-    UBInt32("unk_20"), # 20
-    UBInt32("unk_24"), # 24
-    Array(10, UBInt32("tens_digit_id")), # 28
-    Array(10, UBInt32("ones_digit_id")), # 50
-    Array(10, UBInt32("unk_digit_id")), # 78
-    UBInt32("unk_a0"), # A0
-    UBInt16("sound_id"), # A4
+_FileMenuStruct = "_FileMenuStruct" / Struct(
+    "scene_id" / Int32ub,
+    "select_game_piece_id" / Int32ub,
+    "set_new_id" / Int32ub,
+    "new_id" / Int32ub,
+    "solved_id" / Int32ub,
+    "one_more_id" / Int32ub,
+    "x_more_id" / Int32ub,
+    "xx_more_id" / Int32ub,
+    "unk_20" / Int32ub,
+    "unk_24" / Int32ub,
+    Array(10, "tens_digit_id" / Int32ub), # 28
+    Array(10, "ones_digit_id" / Int32ub), # 50
+    Array(10, "unk_digit_id" / Int32ub), # 78
+    "unk_a0" / Int32ub,
+    "sound_id" / Int16ub,
     )
 
 # Ex: 02A0
 @_pc_res_handler(34)
 class _FileMenuHandler:
     name = "File Menu"
-    
+
     def open(res, container, app):
         newWidget = MyTableWidget("Value")
 
@@ -594,10 +594,10 @@ class _FileMenuHandler:
 
         container.addWidget(newWidget)
 
-_DifficultyMenuStruct = Struct("_DifficultyMenuStruct",
-    UBInt32("scene_id"),
-    UBInt32("choose_difficulty_id"),
-    UBInt32("change_difficulty_id"),
+_DifficultyMenuStruct = "_DifficultyMenuStruct" / Struct(
+    "scene_id" / Int32ub,
+    "choose_difficulty_id" / Int32ub,
+    "change_difficulty_id" / Int32ub,
     )
 
 # Ex: 006E
@@ -615,24 +615,24 @@ class _DifficultyMenuHandler:
 
         container.addWidget(newWidget)
 
-_PotionPuzzleStruct = Struct("_PotionPuzzleStruct",
-    UBInt32("unk_0"), # 0
-    UBInt32("bg_image_id"), # 4
-    UBInt32("palette_id"), # 8
-    UBInt32("unk_c"), # C
-    UBInt32("unk_10"), # 10
-    UBInt32("unk_14"), # 14
-    UBInt32("unk_18"), # 18
-    UBInt32("unk_1c"), # 1C
-    UBInt32("unk_20"), # 20
-    UBInt32("unk_24"), # 24
-    UBInt32("unk_28"), # 28
-    UBInt32("unk_2c"), # 2C
-    UBInt16("unk_30"), # 30
-    UBInt16("delay"), # 32
-    Array(7, UBInt16("sound_id")), # 34
-    SBInt16("origin_x"), # 42
-    SBInt16("origin_y"), # 44
+_PotionPuzzleStruct = "_PotionPuzzleStruct" / Struct(
+    "unk_0" / Int32ub,
+    "bg_image_id" / Int32ub,
+    "palette_id" / Int32ub,
+    "unk_c" / Int32ub,
+    "unk_10" / Int32ub,
+    "unk_14" / Int32ub,
+    "unk_18" / Int32ub,
+    "unk_1c" / Int32ub,
+    "unk_20" / Int32ub,
+    "unk_24" / Int32ub,
+    "unk_28" / Int32ub,
+    "unk_2c" / Int32ub,
+    "unk_30" / Int32ub,
+    "delay" / Int16ub,
+    Array(7, "sound_id" / Int16ub),
+    "origin_x" / Int16sb,
+    "origin_y" / Int16sb,
     )
 
 # Ex: 9C0E
@@ -690,12 +690,12 @@ _POTION_MOVIE_NAMES = (
     'SQID', 'CLOD', 'SWIR', 'VOLC', 'WORM',
     )
 
-_PotionComboStruct = Struct("_PotionComboStruct",
-    UBInt8("a"),
-    UBInt8("b"),
-    UBInt8("c"),
-    UBInt8("d"),
-    UBInt16("movie"),
+_PotionComboStruct = "_PotionComboStruct" / Struct(
+    "a" / Int8ub,
+    "b" / Int8ub,
+    "c" / Int8ub,
+    "d" / Int8ub,
+    "movie" / Int16ub,
     )
 
 # Ex: 9B17
@@ -705,7 +705,7 @@ class _PotionCombosHandler:
 
     def open(res, container, app):
         newWidget = MyTableWidget("A", "B", "C", "D", "Movie")
-        
+
         parsed = GreedyRange(_PotionComboStruct).parse(res.data)
         for i in range(0, len(parsed)):
             try:

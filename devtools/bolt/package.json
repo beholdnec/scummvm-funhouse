@@ -1,0 +1,14 @@
+{
+  "name": "blt-viewer",
+  "version": "0.0.1",
+  "description": "A resource viewer and extractor for BOLTLIB.BLT files",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "N.E.C.",
+  "license": "GPL-2.0",
+  "devDependencies": {
+    "electron": "1.7.8"
+  }
+}

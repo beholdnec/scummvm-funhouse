@@ -1,0 +1,99 @@
+html {
+  height: 100%;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+}
+
+th, td {
+  text-align: left;
+}
+
+canvas {
+  image-rendering: pixelated;
+}
+
+.is-not-loaded:not(.is-shown) {
+  display: none;
+}
+.is-loaded:not(.is-shown) {
+  display: none;
+}
+
+.startup-content {
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+}
+.startup-content header {
+  font-size: xx-large;
+  text-align: center;
+}
+.startup-content section {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.content header {
+  font-size: xx-large;
+}
+
+.nav {
+  width: 200px;
+  overflow-y: auto;
+  border-right: 1px solid;
+}
+.nav table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.nav-dropdown tr td:first-child {
+  padding-left: 1em;
+}
+
+.is-highlighted {
+  background-color: #777777;
+}
+
+.nav-dropdown:not(.is-shown) {
+  display: none;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 14px;
+}
+
+.content-section {
+  margin-top: 14px;
+}
+.content-section:not(.is-shown) {
+  display: none;
+}
+
+.fields-table {
+  /* TODO */
+}
+
+.is-data-too-large:not(.is-shown) {
+  display: none;
+}
+
+.hex-data {
+  font-family: monospace;
+}
+.hex-data:not(.is-shown) {
+  display: none;
+}
+
+.palette-table td {
+  width: 16px;
+  height: 16px;
+}
