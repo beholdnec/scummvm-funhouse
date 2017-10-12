@@ -4,11 +4,14 @@
   "description": "A resource viewer and extractor for BOLTLIB.BLT files",
   "main": "main.js",
   "scripts": {
+    "build": "tsc",
+    "prestart": "npm run build",
     "start": "electron ."
   },
   "author": "N.E.C.",
   "license": "GPL-2.0",
   "devDependencies": {
-    "electron": "^1.7.9"
+    "electron": "^1.7.9",
+    "typescript": "^2.5.3"
   }
 }
