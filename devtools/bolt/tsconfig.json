@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2015",
+    "lib": ["dom", "dom.iterable", "es2015", "es2017.object"]
+  },
+  "files": [
+    "declarations.d.ts",
+    "bltviewer.ts",
+    "main.ts"
+  ]
+}
