@@ -9,6 +9,6 @@
   "author": "N.E.C.",
   "license": "GPL-2.0",
   "devDependencies": {
-    "electron": "1.7.8"
+    "electron": "^1.7.9"
   }
 }
