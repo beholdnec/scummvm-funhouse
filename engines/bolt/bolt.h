@@ -148,6 +148,7 @@ class IBoltEventLoop {
 public:
 	virtual ~IBoltEventLoop() { }
 	virtual uint32 getEventTime() const = 0;
+  virtual void setMsg(const BoltMsg &msg) = 0;
 	virtual void requestSmoothAnimation() = 0;
 	virtual void setMovieTimer(uint32 intervalMs) = 0;
 };
@@ -168,6 +169,7 @@ public:
 
 	// From IBoltEventLoop (for internal game use)
 	virtual uint32 getEventTime() const;
+  virtual void setMsg(const BoltMsg &msg);
 	virtual void requestSmoothAnimation();
 	virtual void setMovieTimer(uint32 intervalMs);
 
@@ -179,6 +181,7 @@ private:
 	void topLevelHandleMsg(const BoltMsg &msg);
 	
 	Graphics _graphics;
+  BoltMsg _curMsg;
 	uint32 _eventTime;
 	Common::ScopedPtr<BoltGame> _game;
 

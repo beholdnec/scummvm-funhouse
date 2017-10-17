@@ -90,26 +90,26 @@ Common::Error BoltEngine::run() {
 				// FIXME: rewrite to be more robust. events with later times should never appear before events with earlier times.
 				// Perhaps the "time" of timer events should be the time of handling, not the time of triggering.
 				_eventTime = _movieTimerStart + _movieTimerInterval;
-				BoltMsg boltEvent;
-				boltEvent.type = BoltMsg::kMovieTimer;
-				boltEvent.msgTime = _eventTime;
-				topLevelHandleMsg(boltEvent);
+				BoltMsg msg;
+        msg.type = BoltMsg::kMovieTimer;
+        msg.msgTime = _eventTime;
+				topLevelHandleMsg(msg);
 			} else if (_smoothAnimationRequested) {
 				// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
 				// Change this so smooth animation events are handled at a reasonable rate.
 				_smoothAnimationRequested = false;
-        BoltMsg boltEvent;
-				boltEvent.type = BoltMsg::kSmoothAnimation;
-				boltEvent.msgTime = _eventTime;
-        topLevelHandleMsg(boltEvent);
+        BoltMsg msg;
+        msg.type = BoltMsg::kSmoothAnimation;
+        msg.msgTime = _eventTime;
+        topLevelHandleMsg(msg);
 			} else {
 				// Emit Drive event
 				// TODO: Eliminate Drive events in favor of Timers, SmoothAnimation and AudioEnded.
 				// Generally, events signify things that are reacted to instead of polled.
-        BoltMsg boltEvent;
-				boltEvent.type = BoltMsg::kDrive;
-				boltEvent.msgTime = _eventTime;
-        topLevelHandleMsg(boltEvent);
+        BoltMsg msg;
+        msg.type = BoltMsg::kDrive;
+        msg.msgTime = _eventTime;
+        topLevelHandleMsg(msg);
 			}
 		}
 	}
@@ -119,6 +119,10 @@ Common::Error BoltEngine::run() {
 
 uint32 BoltEngine::getEventTime() const {
 	return _eventTime;
+}
+
+void BoltEngine::setMsg(const BoltMsg &msg) {
+  _curMsg = msg;
 }
 
 void BoltEngine::requestSmoothAnimation() {
@@ -132,6 +136,10 @@ void BoltEngine::setMovieTimer(const uint32 intervalMs) {
 }
 
 void BoltEngine::topLevelHandleMsg(const BoltMsg &msg) {
+  _curMsg = msg;
+
+  _graphics.handleMsg(msg);
+
   bool yield = false;
   while (!yield) {
     BoltCmd cmd = _game->handleMsg(msg);
@@ -148,8 +156,6 @@ void BoltEngine::topLevelHandleMsg(const BoltMsg &msg) {
     }
   }
 
-	_graphics.handleMsg(msg);
-	// TODO: Present after all pending events have been handled.
 	_graphics.presentIfDirty();
 }
 

@@ -60,14 +60,12 @@ private:
 		int currentState;
 	};
 
-	DriveResult drive();
-	DriveResult driveWaitForPlayer();
-	DriveResult driveTransition();
-	DriveResult handleButtonClick(int num);
+	CardCmd driveWaitForPlayer(const BoltMsg &msg);
+	CardCmd driveTransition(const BoltMsg &msg);
+	CardCmd handleButtonClick(int num);
 
 	void enterWaitForPlayerMode();
 	void enterTransitionMode();
-	void eatCurrentEvent();
 	void selectPiece(int piece);
 	void setPieceState(int piece, int state);
 	void morphPiece(int piece, int state);
@@ -77,8 +75,6 @@ private:
 	Scene _scene;
 
 	Mode _mode;
-	BoltMsg _curMsg;
-	CardCmd _cardCmd;
 
 	Piece _pieces[kNumPieces];
 
