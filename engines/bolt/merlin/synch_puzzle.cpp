@@ -34,22 +34,22 @@ void SynchPuzzle::enter() {
 	_scene.enter();
 }
 
-Card::Signal SynchPuzzle::handleEvent(const BoltEvent &event) {
-	if (event.type == BoltEvent::kHover) {
-		_scene.handleHover(event.point);
+CardCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
+	if (msg.type == BoltMsg::kHover) {
+		_scene.handleHover(msg.point);
 	}
-	else if (event.type == BoltEvent::kClick) {
-		int buttonNum = _scene.getButtonAtPoint(event.point);
+	else if (msg.type == BoltMsg::kClick) {
+		int buttonNum = _scene.getButtonAtPoint(msg.point);
 		return handleButtonClick(buttonNum);
 	}
 
-	return kNull;
+	return CardCmd(CardCmd::kDone);
 }
 
-Card::Signal SynchPuzzle::handleButtonClick(int num) {
+CardCmd SynchPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 	// TODO: implement puzzle
-	return kWin;
+	return CardCmd(CardCmd::kWin);
 }
 
 } // End of namespace Bolt

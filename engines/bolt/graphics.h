@@ -56,7 +56,7 @@ enum { // plane numbers
 	kBack = 1
 };
 
-struct BoltEvent;
+struct BoltMsg;
 class IBoltEventLoop;
 
 // CD-I-like graphics system. There is a foreground and a background plane.
@@ -73,7 +73,7 @@ public:
 	void clearPlane(int plane);
 	void drawRect(int plane, const Rect &rc, byte color);
 
-	void handleEvent(const BoltEvent &event);
+	void handleMsg(const BoltMsg &msg);
 	void resetColorCycles();
 	void setColorCycle(int slot, uint16 start, uint16 end, int delay);
 	void setFade(Common::Rational fade);

@@ -77,9 +77,20 @@ struct Rect {
 	int16 bottom;
 };
 
-struct BoltEvent {
+// The BOLT engine has an event-loop based architecture. Unlike other engines in ScummVM, where the
+// game ticks at a constant rate and input is polled at each tick, BOLT is designed to handle
+// messages at the rate they are received. This allows BOLT to have a high frame rate and short
+// response times.
+//
+// FIXME:
+// Unfortunately, ScummVM was not designed with this kind of event loop in mind, so the game
+// typically pegs the CPU and wastes power. In the future, ScummVM should have the ability to save
+// power when no messages are being received.
+
+// Messages that the engine sends to the game.
+struct BoltMsg {
 	enum Type {
-		kNone,
+		kNone = 0,
 		kHover,
 		kClick,
 		kRightClick,
@@ -90,33 +101,48 @@ struct BoltEvent {
 		kAudioEnded // TODO: implement
 	};
 
-	BoltEvent() : type(kNone), eventTime(0) { }
+	BoltMsg() : type(kNone), msgTime(0) { }
 
 	Type type;
-	uint32 eventTime; // NOTE: We can't name this member "time" due to symbol conflicts.
+	uint32 msgTime;
 	Common::Point point;
+};
+
+// Commands that the game returns to the engine after handling a message.
+struct BoltCmd {
+  enum Type {
+    kDone, // Indicates that the message has been handled.
+    kResend // Indicates that the engine should resend the message.
+  };
+
+  Type type;
+
+  BoltCmd(Type type_ = kDone) : type(type_) { }
+};
+
+// Commands that the current card returns to the game after handling a message.
+struct CardCmd {
+  enum Type {
+    kDone,
+    kResend,
+    kEnd,
+    kWin,
+    kEnterPuzzle
+  };
+
+  Type type;
+  int num;
+
+  CardCmd(Type type_ = kDone) : type(type_), num(0) { }
 };
 
 class Card {
 public:
-	// Signal codes returned by cards after handling an event
-	enum Signal {
-		kInvalid = -1,
-		kNull = 0,
-		kEnd,
-		kWin,
-		kPlayHelp,
-		kPlayTour,
-		kPlayCredits,
-		kEnterPuzzleX = 100 // 100-1xx: enter puzzle xx
-	};
 
 	virtual ~Card() { }
 	virtual void enter() = 0;
-	virtual Signal handleEvent(const BoltEvent &event) = 0;
+	virtual CardCmd handleMsg(const BoltMsg &msg) = 0;
 };
-
-typedef Common::ScopedPtr<Card> CardPtr;
 
 class IBoltEventLoop {
 public:
@@ -130,7 +156,7 @@ class BoltGame {
 public:
 	virtual ~BoltGame() { }
 	virtual void init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop) = 0;
-	virtual void handleEvent(const BoltEvent &event) = 0;
+	virtual BoltCmd handleMsg(const BoltMsg &msg) = 0;
 };
 
 class BoltEngine : public Engine, public IBoltEventLoop {
@@ -150,7 +176,7 @@ protected:
 	virtual Common::Error run();
 
 private:
-	void topLevelHandleEvent(const BoltEvent &event);
+	void topLevelHandleMsg(const BoltMsg &msg);
 	
 	Graphics _graphics;
 	uint32 _eventTime;

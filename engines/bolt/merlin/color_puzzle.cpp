@@ -69,9 +69,9 @@ void ColorPuzzle::enter() {
 	}
 }
 
-Card::Signal ColorPuzzle::handleEvent(const BoltEvent &event) {
-	_curEvent = event;
-	_signal = kNull;
+CardCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
+	_curMsg = msg;
+	_cardCmd = CardCmd(CardCmd::kDone);
 
 	bool yield = false;
 	while (!yield) {
@@ -84,14 +84,15 @@ Card::Signal ColorPuzzle::handleEvent(const BoltEvent &event) {
 			break;
 		default:
 			assert(false && "Invalid drive result");
-			return kInvalid;
+      break;
 		}
 	}
 
-	return _signal;
+	return _cardCmd;
 }
 
 ColorPuzzle::DriveResult ColorPuzzle::drive() {
+  // TODO: rethink
 	switch (_mode) {
 	case kWaitForPlayer: return driveWaitForPlayer();
 	case kTransition: return driveTransition();
@@ -102,15 +103,14 @@ ColorPuzzle::DriveResult ColorPuzzle::drive() {
 }
 
 ColorPuzzle::DriveResult ColorPuzzle::driveWaitForPlayer() {
-
-	if (_curEvent.type == BoltEvent::kHover) {
-		_scene.handleHover(_curEvent.point);
+	if (_curMsg.type == BoltMsg::kHover) {
+		_scene.handleHover(_curMsg.point);
 		eatCurrentEvent();
 		return kYield;
 	}
 
-	if (_curEvent.type == BoltEvent::kClick) {
-		const int buttonNum = _scene.getButtonAtPoint(_curEvent.point);
+	if (_curMsg.type == BoltMsg::kClick) {
+		const int buttonNum = _scene.getButtonAtPoint(_curMsg.point);
 		return handleButtonClick(buttonNum);
 	}
 
@@ -122,11 +122,11 @@ ColorPuzzle::DriveResult ColorPuzzle::driveTransition() {
 
 	// TODO: eliminate kDrive events. Transition should be driven primarily by SmoothAnimation and
 	// AudioEnded events, once those event types are implemented.
-	if (_curEvent.type != BoltEvent::kDrive) {
+	if (_curMsg.type != BoltMsg::kDrive) {
 		return kYield;
 	}
 
-	const uint32 progress = _curEvent.eventTime - _morphStartTime;
+	const uint32 progress = _curMsg.msgTime - _morphStartTime;
 	if (progress >= kMorphDuration) {
 		applyPaletteMod(_graphics, kFore, *_morphPaletteMods, _morphEndState);
 		_graphics->markDirty();
@@ -154,7 +154,7 @@ ColorPuzzle::DriveResult ColorPuzzle::handleButtonClick(int num) {
 
 	// TODO: clicking outside of pieces should show the solution
 	// TODO: check win condition: all pieces must be in state 0.
-	_signal = kWin;
+	_cardCmd = CardCmd(CardCmd::kWin);
 	return kYield;
 }
 
@@ -169,7 +169,8 @@ void ColorPuzzle::enterTransitionMode() {
 }
 
 void ColorPuzzle::eatCurrentEvent() {
-	_curEvent.type = BoltEvent::kDrive;
+  // TODO: remove
+	_curMsg.type = BoltMsg::kDrive;
 }
 
 void ColorPuzzle::selectPiece(int piece) {

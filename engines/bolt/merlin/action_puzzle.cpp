@@ -165,18 +165,18 @@ void ActionPuzzle::enter() {
 	_graphics->markDirty();
 }
 
-Card::Signal ActionPuzzle::handleEvent(const BoltEvent &event) {
-	if (event.type == BoltEvent::kClick) {
-		return handleClick(event.point);
+CardCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
+	if (msg.type == BoltMsg::kClick) {
+		return handleClick(msg.point);
 	}
-	else if (event.type == BoltEvent::kRightClick) {
+	else if (msg.type == BoltMsg::kRightClick) {
 		// Right click to win instantly
 		// TODO: remove
 		return win();
 	}
-	else if (event.type == BoltEvent::kDrive) {
+	else if (msg.type == BoltMsg::kDrive) {
 		// TODO: eliminate Drive events in favor of Timers
-		uint32 diff = event.eventTime - _curTime;
+		uint32 diff = msg.msgTime - _curTime;
 		if (diff >= kTickPeriod) {
 			_curTime += kTickPeriod;
 			tick();
@@ -187,7 +187,7 @@ Card::Signal ActionPuzzle::handleEvent(const BoltEvent &event) {
 		}
 	}
 
-	return kNull;
+	return CardCmd(CardCmd::kDone);
 }
 
 const BltImage& ActionPuzzle::getParticleImage(const Particle &particle) {
@@ -204,7 +204,7 @@ Common::Point ActionPuzzle::getParticlePos(const Particle &particle) {
 	return _paths[particle.pathNum][particle.progress];
 }
 
-Card::Signal ActionPuzzle::handleClick(const Common::Point &pt) {
+CardCmd ActionPuzzle::handleClick(const Common::Point &pt) {
 	for (ParticleList::iterator it = _particles.begin(); it != _particles.end(); ++it) {
 		if (isParticleAtPoint(*it, pt)) {
 			// Kill particle
@@ -212,7 +212,7 @@ Card::Signal ActionPuzzle::handleClick(const Common::Point &pt) {
 		}
 	}
 
-	return kNull;
+	return CardCmd::kDone;
 }
 
 bool ActionPuzzle::isParticleAtPoint(const Particle &particle, const Common::Point &pt) {
@@ -305,11 +305,11 @@ void ActionPuzzle::tick() {
 	_graphics->markDirty();
 }
 
-Card::Signal ActionPuzzle::win() {
+CardCmd ActionPuzzle::win() {
 	// Redraw background before starting win movie
 	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
 	_graphics->clearPlane(kFore);
-	return kWin;
+	return CardCmd::kWin;
 }
 
 } // End of namespace Bolt

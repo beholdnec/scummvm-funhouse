@@ -61,7 +61,7 @@ void HubCard::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltl
 	BltHub hubInfo;
 	loadBltResource(hubInfo, boltlib, resId);
 
-	MenuCard::init(_graphics, eventLoop, boltlib, hubInfo.sceneId);
+  _scene.load(_graphics, boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
 	BltResourceList hubItemsList;
@@ -75,7 +75,7 @@ void HubCard::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltl
 }
 
 void HubCard::enter() {
-	MenuCard::enter();
+	_scene.enter();
 
 	// Draw item images to back plane
 	// FIXME: Only draw items that are unlocked.
@@ -84,13 +84,26 @@ void HubCard::enter() {
 	}
 }
 
-Card::Signal HubCard::handleButtonClick(int num) {
+CardCmd HubCard::handleMsg(const BoltMsg &msg) {
+  if (msg.type == BoltMsg::kHover) {
+    _scene.handleHover(msg.point);
+  }
+  else if (msg.type == BoltMsg::kClick) {
+    int num = _scene.getButtonAtPoint(msg.point);
+    return handleButtonClick(num);
+  }
+  return CardCmd(CardCmd::kDone);
+}
+
+CardCmd HubCard::handleButtonClick(int num) {
 	if (num == -1) {
 		// If no button was clicked, complete stage and transition to next hub.
-		return kEnd;
+		return CardCmd(CardCmd::kEnd);
 	}
 	else {
-		return (Signal)(kEnterPuzzleX + num);
+    CardCmd cmd(CardCmd::kEnterPuzzle);
+    cmd.num = num;
+    return cmd;
 	}
 }
 

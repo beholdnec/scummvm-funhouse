@@ -53,7 +53,7 @@ public:
 	// From Card
 	virtual void init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	virtual void enter();
-	virtual Signal handleEvent(const BoltEvent &event);
+	virtual CardCmd handleMsg(const BoltMsg &msg);
 
 private:
 	static const int kNoIngredient = -1; // NOTE: original game uses 0xFE for this value...
@@ -106,8 +106,8 @@ private:
 	BltPotionPuzzleComboTable _reactionTable;
 	
 	Mode _mode;
-	BoltEvent _curEvent;
-	Card::Signal _signal;
+	BoltMsg _curMsg;
+	CardCmd _cardCmd;
 
 	ScopedArray<bool> _shelfSlotOccupied; // False: Empty; True: Filled
 	static const int kNumBowlSlots = 3;

@@ -32,7 +32,7 @@ class ColorPuzzle : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	void enter();
-	Signal handleEvent(const BoltEvent &event);
+	CardCmd handleMsg(const BoltMsg &msg);
 
 private:
 	// TODO: this value probably comes from Boltlib.blt somewhere.
@@ -77,8 +77,8 @@ private:
 	Scene _scene;
 
 	Mode _mode;
-	BoltEvent _curEvent;
-	Card::Signal _signal;
+	BoltMsg _curMsg;
+	CardCmd _cardCmd;
 
 	Piece _pieces[kNumPieces];
 
