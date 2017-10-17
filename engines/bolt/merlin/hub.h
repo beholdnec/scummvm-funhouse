@@ -23,22 +23,26 @@
 #ifndef BOLT_MERLIN_HUB_H
 #define BOLT_MERLIN_HUB_H
 
-#include "bolt/menu_card.h"
+#include "bolt/bolt.h"
+#include "bolt/scene.h"
 
 namespace Bolt {
 
+struct CardCmd;
 class MerlinEngine;
 struct HubEntry;
 	
-class HubCard : public MenuCard {
+class HubCard : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	void enter();
+  CardCmd handleMsg(const BoltMsg &msg);
 protected:
-	Signal handleButtonClick(int num);
+	CardCmd handleButtonClick(int num);
 
 private:
 	Graphics *_graphics;
+  Scene _scene;
 	ScopedArray<BltImage> _itemImages;
 };
 

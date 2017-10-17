@@ -43,22 +43,39 @@ struct BltMainMenu {
 void MainMenu::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	BltMainMenu mainMenu;
 	loadBltResource(mainMenu, boltlib, resId);
-	MenuCard::init(graphics, eventLoop, boltlib, mainMenu.sceneId);
+  _scene.load(graphics, boltlib, mainMenu.sceneId);
 }
 
-Card::Signal MainMenu::handleButtonClick(int num) {
+void MainMenu::enter() {
+  _scene.enter();
+}
+
+CardCmd MainMenu::handleMsg(const BoltMsg &msg) {
+  if (msg.type == BoltMsg::kHover) {
+    _scene.handleHover(msg.point);
+  }
+  else if (msg.type == BoltMsg::kClick) {
+    int num = _scene.getButtonAtPoint(msg.point);
+    return handleButtonClick(num);
+  }
+  return CardCmd(CardCmd::kDone);
+}
+
+CardCmd MainMenu::handleButtonClick(int num) {
 	switch (num) {
 	case -1: // No button
-		return kNull;
+		return CardCmd::kDone;
 	case 0: // Play
-		return kEnd;
+		return CardCmd::kEnd;
 	case 1: // Credits
-		return kPlayCredits;
+    // TODO: Play 'CRDT' movie
+		return CardCmd::kDone;
 	case 4: // Tour
-		return kPlayTour;
+    // TODO: Play 'TOUR' movie
+		return CardCmd::kDone;
 	default:
 		warning("unknown main menu button %d", num);
-		return kNull;
+		return CardCmd::kDone;
 	}
 }
 

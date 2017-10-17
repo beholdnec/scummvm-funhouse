@@ -23,15 +23,20 @@
 #ifndef BOLT_MERLIN_MAIN_MENU_H
 #define BOLT_MERLIN_MAIN_MENU_H
 
-#include "bolt/menu_card.h"
+#include "bolt/bolt.h"
+#include "bolt/scene.h"
 
 namespace Bolt {
 
-class MainMenu : public MenuCard {
+class MainMenu : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+  void enter();
+  CardCmd handleMsg(const BoltMsg &msg);
 protected:
-	Signal handleButtonClick(int num);
+	CardCmd handleButtonClick(int num);
+private:
+  Scene _scene;
 };
 
 } // End of namespace Bolt

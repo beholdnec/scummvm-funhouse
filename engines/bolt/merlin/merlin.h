@@ -47,7 +47,7 @@ class MerlinGame : public BoltGame {
 public:
 	// From BoltGame
 	virtual void init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop);
-	virtual void handleEvent(const BoltEvent &event);
+	virtual BoltCmd handleMsg(const BoltMsg &msg);
 
 	Graphics* getGraphics();
 	bool isInMovie() const;
@@ -66,8 +66,8 @@ private:
 
 	static void movieTrigger(void *param, uint16 triggerType);
 
-	void handleEventInMovie(const BoltEvent &event);
-	void handleEventInCard(const BoltEvent &event);
+	BoltCmd handleMsgInMovie(const BoltMsg &msg);
+	BoltCmd handleMsgInCard(const BoltMsg &msg);
 	void win();
 	void puzzle(const PuzzleEntry *entry);
 
@@ -84,7 +84,7 @@ private:
 
 	BltImage _cursorImage;
 
-	CardPtr _currentCard;
+	Common::ScopedPtr<Card> _currentCard;
 	Movie _movie;
 
 	void setCurrentCard(Card *card);

@@ -4,7 +4,6 @@ MODULE_OBJS := \
 	bolt.o \
 	detection.o \
 	graphics.o \
-	menu_card.o \
 	movie.o \
 	pf_file.o \
 	scene.o \

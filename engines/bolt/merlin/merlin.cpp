@@ -27,7 +27,6 @@
 #include "gui/message.h"
 
 #include "bolt/bolt.h"
-#include "bolt/menu_card.h"
 #include "bolt/merlin/action_puzzle.h"
 #include "bolt/merlin/color_puzzle.h"
 #include "bolt/merlin/memory_puzzle.h"
@@ -63,17 +62,17 @@ void MerlinGame::init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, 
 	resetSequence();
 }
 
-void MerlinGame::handleEvent(const BoltEvent &event) {
+BoltCmd MerlinGame::handleMsg(const BoltMsg &msg) {
 	// Play movie over anything else
 	if (_movie.isRunning()) {
-		handleEventInMovie(event);
+		return handleMsgInMovie(msg);
 	}
 	else if (_currentCard) {
-		handleEventInCard(event);
+		return handleMsgInCard(msg);
 	}
-	else {
-		assert(false); // Unreachable; there must be an active movie or card
-	}
+
+	assert(false); // Unreachable; there must be an active movie or card
+  return BoltCmd::kDone;
 }
 
 
@@ -150,6 +149,26 @@ void MerlinGame::startMainMenu(BltId id) {
 	setCurrentCard(card);
 }
 
+class GenericMenuCard : public Card {
+public:
+  void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId id) {
+    _scene.load(graphics, boltlib, id);
+  }
+  void enter() {
+    _scene.enter();
+  }
+  CardCmd handleMsg(const BoltMsg &msg) {
+    if (msg.type == BoltMsg::kHover) {
+      _scene.handleHover(msg.point);
+    } else if (msg.type == BoltMsg::kClick) {
+      return CardCmd(CardCmd::kEnd);
+    }
+    return CardCmd(CardCmd::kDone);
+  }
+private:
+  Scene _scene;
+};
+
 void MerlinGame::startMenu(BltId id) {
 	_currentCard.reset();
 	GenericMenuCard* menuCard = new GenericMenuCard;
@@ -176,13 +195,13 @@ void MerlinGame::movieTrigger(void *param, uint16 triggerType) {
 	}
 }
 
-void MerlinGame::handleEventInMovie(const BoltEvent &event) {
-	// Click to stop movie
-	if (event.type == BoltEvent::kClick) {
-		_movie.stop();
-	} else {
-		_movie.handleEvent(event);
-	}
+BoltCmd MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
+  BoltCmd cmd = BoltCmd::kDone;
+  if (msg.type == BoltMsg::kClick) {
+    _movie.stop();
+  } else {
+    cmd = _movie.handleMsg(msg);
+  }
 
 	if (!_movie.isRunning()) {
 		// If movie has stopped...
@@ -193,43 +212,42 @@ void MerlinGame::handleEventInMovie(const BoltEvent &event) {
 			advanceSequence();
 		}
 	}
+
+  return cmd;
 }
 
-void MerlinGame::handleEventInCard(const BoltEvent &event) {
+BoltCmd MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	assert(_currentCard);
 
-	Card::Signal signal = _currentCard->handleEvent(event);
-	switch (signal) {
-	case Card::kNull:
-		break;
-	case Card::kEnd:
+	CardCmd cardCmd = _currentCard->handleMsg(msg);
+	switch (cardCmd.type) {
+	case CardCmd::kDone:
+    return BoltCmd(BoltCmd::kDone);
+
+  case CardCmd::kResend:
+    return BoltCmd(BoltCmd::kResend);
+
+	case CardCmd::kEnd:
 		advanceSequence();
-		break;
-	case Card::kWin:
+		return BoltCmd(BoltCmd::kDone);
+
+	case CardCmd::kWin:
 		win();
-		break;
-	case Card::kPlayHelp:
-		// TODO: help
-		break;
-	case Card::kPlayTour:
-		startMovie(_maPf, MKTAG('T', 'O', 'U', 'R'));
-		break;
-	case Card::kPlayCredits:
-		startMovie(_maPf, MKTAG('C', 'R', 'D', 'T'));
-		break;
-	default:
-		if (_currentHub &&
-			signal >= Card::kEnterPuzzleX &&
-			signal < Card::kEnterPuzzleX + _currentHub->numPuzzles)
-		{
-			int puzzleNum = signal - Card::kEnterPuzzleX;
-			puzzle(&_currentHub->puzzles[puzzleNum]);
-		}
-		else {
-			assert(false); // Unreachable; signal must be valid
-		}
-		break;
+		return BoltCmd(BoltCmd::kDone);
+
+  case CardCmd::kEnterPuzzle:
+    if (cardCmd.num < 0 && cardCmd.num >= _currentHub->numPuzzles) {
+      assert(false && "Tried to enter invalid puzzle number");
+    }
+    puzzle(&_currentHub->puzzles[cardCmd.num]);
+    return BoltCmd(BoltCmd::kDone);
+
+  default:
+    assert(false && "Invalid CardCmd");
+    break;
 	}
+
+  return BoltCmd(BoltCmd::kDone);
 }
 
 void MerlinGame::win() {
@@ -259,11 +277,11 @@ void MerlinGame::enterCurrentCard(bool cursorActive) {
 	_graphics->resetColorCycles();
 	_currentCard->enter();
 	if (cursorActive) {
-		BoltEvent hoverEvent;
-		hoverEvent.type = BoltEvent::kHover;
-		hoverEvent.eventTime = _eventLoop->getEventTime();
-		hoverEvent.point = _system->getEventManager()->getMousePos();
-		handleEventInCard(hoverEvent);
+		BoltMsg hoverMsg;
+    hoverMsg.type = BoltMsg::kHover;
+    hoverMsg.msgTime = _eventLoop->getEventTime();
+    hoverMsg.point = _system->getEventManager()->getMousePos();
+		handleMsgInCard(hoverMsg);
 	}
 }
 

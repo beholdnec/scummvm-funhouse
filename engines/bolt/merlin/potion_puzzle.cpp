@@ -137,7 +137,7 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	}
 	
 	_mode = kWaitForPlayer;
-	_signal = kNull;
+	_cardCmd = CardCmd(CardCmd::kDone);
 	_timeoutActive = false;
 	
 	_shelfSlotOccupied.alloc(puzzle.numShelfPoints);
@@ -156,9 +156,9 @@ void PotionPuzzle::enter() {
 	draw();
 }
 
-Card::Signal PotionPuzzle::handleEvent(const BoltEvent &event) {
-	_curEvent = event;
-	_signal = kNull;
+CardCmd PotionPuzzle::handleMsg(const BoltMsg &msg) {
+	_curMsg = msg;
+	_cardCmd = CardCmd(CardCmd::kDone);
 
 	bool yield = false;
 	while (!yield) {
@@ -171,11 +171,11 @@ Card::Signal PotionPuzzle::handleEvent(const BoltEvent &event) {
 			break;
 		default:
 			assert(false && "Invalid potion puzzle drive result");
-			return kInvalid;
+      break;
 		}
 	}
 
-	return _signal;
+	return _cardCmd;
 }
 
 void PotionPuzzle::enterWaitForPlayerMode() {
@@ -189,7 +189,8 @@ void PotionPuzzle::enterTransitionMode() {
 }
 
 void PotionPuzzle::eatCurrentEvent() {
-	_curEvent.type = BoltEvent::kDrive; // TODO: eliminate Drive events
+  // TODO: remove
+	_curMsg.type = BoltMsg::kDrive; // TODO: eliminate Drive events
 }
 
 PotionPuzzle::DriveResult PotionPuzzle::drive() {
@@ -203,15 +204,15 @@ PotionPuzzle::DriveResult PotionPuzzle::drive() {
 }
 
 PotionPuzzle::DriveResult PotionPuzzle::driveWaitForPlayer() {
-	if (_curEvent.type == BoltEvent::kClick) {
-		return handleClick(_curEvent.point);
+	if (_curMsg.type == BoltMsg::kClick) {
+		return handleClick(_curMsg.point);
 	}
 
-	if (_curEvent.type == BoltEvent::kRightClick) {
+	if (_curMsg.type == BoltMsg::kRightClick) {
 		// Right-click to win instantly.
 		// TODO: remove.
 		eatCurrentEvent();
-		_signal = kEnd;
+		_cardCmd = CardCmd(CardCmd::kEnd);
 		return kYield;
 	}
 
@@ -222,7 +223,7 @@ PotionPuzzle::DriveResult PotionPuzzle::driveWaitForPlayer() {
 PotionPuzzle::DriveResult PotionPuzzle::driveTransition() {
 	// TODO: Eliminate Drive events. Transitions should be driven primarily by Timer and AudioEnded,
 	// once those event types are implemented.
-	if (_curEvent.type != BoltEvent::kDrive) {
+	if (_curMsg.type != BoltMsg::kDrive) {
 		return kYield;
 	}
 
@@ -264,7 +265,7 @@ PotionPuzzle::DriveResult PotionPuzzle::driveTransition() {
 }
 
 PotionPuzzle::DriveResult PotionPuzzle::driveTimeout() {
-	const uint32 delta = _curEvent.eventTime - _timeoutStart;
+	const uint32 delta = _curMsg.msgTime - _timeoutStart;
 	if (delta >= _timeoutLength) {
 		_timeoutActive = false;
 		return kContinue;

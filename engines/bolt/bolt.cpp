@@ -63,25 +63,25 @@ Common::Error BoltEngine::run() {
 		}
 
 		if (event.type == Common::EVENT_MOUSEMOVE) {
-			BoltEvent boltEvent;
-			boltEvent.type = BoltEvent::kHover;
-			boltEvent.eventTime = _eventTime;
-			boltEvent.point = event.mouse;
-			topLevelHandleEvent(boltEvent);
+			BoltMsg msg;
+			msg.type = BoltMsg::kHover;
+			msg.msgTime = _eventTime;
+			msg.point = event.mouse;
+			topLevelHandleMsg(msg);
 		}
 		else if (event.type == Common::EVENT_LBUTTONDOWN) {
-			BoltEvent boltEvent;
-			boltEvent.type = BoltEvent::kClick;
-			boltEvent.eventTime = _eventTime;
-			boltEvent.point = event.mouse;
-			topLevelHandleEvent(boltEvent);
+			BoltMsg msg;
+      msg.type = BoltMsg::kClick;
+      msg.msgTime = _eventTime;
+      msg.point = event.mouse;
+			topLevelHandleMsg(msg);
 		}
 		else if (event.type == Common::EVENT_RBUTTONDOWN) {
-			BoltEvent boltEvent;
-			boltEvent.type = BoltEvent::kRightClick;
-			boltEvent.eventTime = _eventTime;
-			boltEvent.point = event.mouse;
-			topLevelHandleEvent(boltEvent);
+      BoltMsg msg;
+      msg.type = BoltMsg::kRightClick;
+      msg.msgTime = _eventTime;
+      msg.point = event.mouse;
+			topLevelHandleMsg(msg);
 		}
 		else {
 			const uint32 movieTimerDelta = _eventTime - _movieTimerStart;
@@ -90,26 +90,26 @@ Common::Error BoltEngine::run() {
 				// FIXME: rewrite to be more robust. events with later times should never appear before events with earlier times.
 				// Perhaps the "time" of timer events should be the time of handling, not the time of triggering.
 				_eventTime = _movieTimerStart + _movieTimerInterval;
-				BoltEvent boltEvent;
-				boltEvent.type = BoltEvent::kMovieTimer;
-				boltEvent.eventTime = _eventTime;
-				topLevelHandleEvent(boltEvent);
+				BoltMsg boltEvent;
+				boltEvent.type = BoltMsg::kMovieTimer;
+				boltEvent.msgTime = _eventTime;
+				topLevelHandleMsg(boltEvent);
 			} else if (_smoothAnimationRequested) {
 				// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
 				// Change this so smooth animation events are handled at a reasonable rate.
 				_smoothAnimationRequested = false;
-				BoltEvent boltEvent;
-				boltEvent.type = BoltEvent::kSmoothAnimation;
-				boltEvent.eventTime = _eventTime;
-				topLevelHandleEvent(boltEvent);
+        BoltMsg boltEvent;
+				boltEvent.type = BoltMsg::kSmoothAnimation;
+				boltEvent.msgTime = _eventTime;
+        topLevelHandleMsg(boltEvent);
 			} else {
 				// Emit Drive event
 				// TODO: Eliminate Drive events in favor of Timers, SmoothAnimation and AudioEnded.
 				// Generally, events signify things that are reacted to instead of polled.
-				BoltEvent boltEvent;
-				boltEvent.type = BoltEvent::kDrive;
-				boltEvent.eventTime = _eventTime;
-				topLevelHandleEvent(boltEvent);
+        BoltMsg boltEvent;
+				boltEvent.type = BoltMsg::kDrive;
+				boltEvent.msgTime = _eventTime;
+        topLevelHandleMsg(boltEvent);
 			}
 		}
 	}
@@ -131,9 +131,24 @@ void BoltEngine::setMovieTimer(const uint32 intervalMs) {
 	_movieTimerInterval = intervalMs;
 }
 
-void BoltEngine::topLevelHandleEvent(const BoltEvent &event) {
-	_game->handleEvent(event);
-	_graphics.handleEvent(event);
+void BoltEngine::topLevelHandleMsg(const BoltMsg &msg) {
+  bool yield = false;
+  while (!yield) {
+    BoltCmd cmd = _game->handleMsg(msg);
+    switch (cmd.type) {
+    case BoltCmd::kDone:
+      yield = true;
+      break;
+    case BoltCmd::kResend:
+      break;
+    default:
+      assert(false && "Invalid BoltCmd"); // Unreachable
+      yield = true;
+      break;
+    }
+  }
+
+	_graphics.handleMsg(msg);
 	// TODO: Present after all pending events have been handled.
 	_graphics.presentIfDirty();
 }

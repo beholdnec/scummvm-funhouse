@@ -39,7 +39,8 @@ class File;
 
 namespace Bolt {
 
-struct BoltEvent;
+struct BoltCmd;
+struct BoltMsg;
 class IBoltEventLoop;
 class BoltEngine;
 class Graphics;
@@ -55,7 +56,7 @@ public:
 	void stop();
 
 	bool isRunning() const;
-	void handleEvent(const BoltEvent &event);
+	BoltCmd handleMsg(const BoltMsg &msg);
 
 	typedef void (*TriggerCallback)(void *param, uint16 triggerType);
 	void setTriggerCallback(TriggerCallback callback, void *param);

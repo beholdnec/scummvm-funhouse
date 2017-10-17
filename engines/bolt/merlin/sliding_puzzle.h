@@ -31,13 +31,11 @@ namespace Bolt {
 class SlidingPuzzle : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
-
-	// From Card
 	void enter();
-	Signal handleEvent(const BoltEvent &event);
+	CardCmd handleMsg(const BoltMsg &msg);
 
 protected:
-	Signal handleButtonClick(int num);
+	CardCmd handleButtonClick(int num);
 
 private:
 	Scene _scene;
