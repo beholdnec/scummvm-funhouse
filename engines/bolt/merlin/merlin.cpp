@@ -84,6 +84,10 @@ bool MerlinGame::isInMovie() const {
 	return _movie.isRunning();
 }
 
+void MerlinGame::startMAMovie(uint32 name) {
+	startMovie(_maPf, name);
+}
+
 void MerlinGame::startPotionMovie(int num) {
 	if (num < 0 || num >= kNumPotionMovies) {
 		warning("Tried to play invalid potion movie %d", num);
@@ -145,28 +149,31 @@ void MerlinGame::enterSequenceEntry() {
 void MerlinGame::startMainMenu(BltId id) {
 	_currentCard.reset();
 	MainMenu* card = new MainMenu;
-	card->init(_graphics, _eventLoop, _boltlib, id);
+	card->init(this, _graphics, _eventLoop, _boltlib, id);
 	setCurrentCard(card);
 }
 
 class GenericMenuCard : public Card {
 public:
-  void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId id) {
-    _scene.load(graphics, boltlib, id);
-  }
-  void enter() {
-    _scene.enter();
-  }
-  CardCmd handleMsg(const BoltMsg &msg) {
-    if (msg.type == BoltMsg::kHover) {
-      _scene.handleHover(msg.point);
-    } else if (msg.type == BoltMsg::kClick) {
-      return CardCmd(CardCmd::kEnd);
-    }
-    return CardCmd(CardCmd::kDone);
-  }
+	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId id) {
+		_scene.load(graphics, boltlib, id);
+	}
+
+	void enter() {
+		_scene.enter();
+	}
+
+	BoltCmd handleMsg(const BoltMsg &msg) {
+		if (msg.type == BoltMsg::kHover) {
+			_scene.handleHover(msg.point);
+		} else if (msg.type == BoltMsg::kClick) {
+			return Card::kEnd;
+		}
+		return BoltCmd::kDone;
+	}
+
 private:
-  Scene _scene;
+	Scene _scene;
 };
 
 void MerlinGame::startMenu(BltId id) {
@@ -196,12 +203,12 @@ void MerlinGame::movieTrigger(void *param, uint16 triggerType) {
 }
 
 BoltCmd MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
-  BoltCmd cmd = BoltCmd::kDone;
-  if (msg.type == BoltMsg::kClick) {
-    _movie.stop();
-  } else {
-    cmd = _movie.handleMsg(msg);
-  }
+	BoltCmd cmd = BoltCmd::kDone;
+	if (msg.type == BoltMsg::kClick) {
+		_movie.stop();
+	} else {
+		cmd = _movie.handleMsg(msg);
+	}
 
 	if (!_movie.isRunning()) {
 		// If movie has stopped...
@@ -213,41 +220,31 @@ BoltCmd MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
 		}
 	}
 
-  return cmd;
+	return cmd;
 }
 
 BoltCmd MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	assert(_currentCard);
 
-	CardCmd cardCmd = _currentCard->handleMsg(msg);
-	switch (cardCmd.type) {
-	case CardCmd::kDone:
-    return BoltCmd(BoltCmd::kDone);
-
-  case CardCmd::kResend:
-    return BoltCmd(BoltCmd::kResend);
-
-	case CardCmd::kEnd:
+	BoltCmd cmd = _currentCard->handleMsg(msg);
+	switch (cmd.type) {
+	case Card::kEnd:
 		advanceSequence();
-		return BoltCmd(BoltCmd::kDone);
+		return BoltCmd::kDone;
 
-	case CardCmd::kWin:
+	case Card::kWin:
 		win();
-		return BoltCmd(BoltCmd::kDone);
+		return BoltCmd::kDone;
 
-  case CardCmd::kEnterPuzzle:
-    if (cardCmd.num < 0 && cardCmd.num >= _currentHub->numPuzzles) {
-      assert(false && "Tried to enter invalid puzzle number");
-    }
-    puzzle(&_currentHub->puzzles[cardCmd.num]);
-    return BoltCmd(BoltCmd::kDone);
-
-  default:
-    assert(false && "Invalid CardCmd");
-    break;
+	case Card::kEnterPuzzle:
+		if (cmd.num < 0 || cmd.num >= _currentHub->numPuzzles) {
+			assert(false && "Tried to enter invalid puzzle number");
+		}
+		puzzle(&_currentHub->puzzles[cmd.num]);
+		return BoltCmd::kDone;
 	}
 
-  return BoltCmd(BoltCmd::kDone);
+	return cmd;
 }
 
 void MerlinGame::win() {

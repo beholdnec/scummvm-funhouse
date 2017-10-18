@@ -165,7 +165,7 @@ void ActionPuzzle::enter() {
 	_graphics->markDirty();
 }
 
-CardCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
+BoltCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kClick) {
 		return handleClick(msg.point);
 	}
@@ -187,7 +187,7 @@ CardCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
 		}
 	}
 
-	return CardCmd(CardCmd::kDone);
+	return BoltCmd::kDone;
 }
 
 const BltImage& ActionPuzzle::getParticleImage(const Particle &particle) {
@@ -204,7 +204,7 @@ Common::Point ActionPuzzle::getParticlePos(const Particle &particle) {
 	return _paths[particle.pathNum][particle.progress];
 }
 
-CardCmd ActionPuzzle::handleClick(const Common::Point &pt) {
+BoltCmd ActionPuzzle::handleClick(const Common::Point &pt) {
 	for (ParticleList::iterator it = _particles.begin(); it != _particles.end(); ++it) {
 		if (isParticleAtPoint(*it, pt)) {
 			// Kill particle
@@ -212,7 +212,7 @@ CardCmd ActionPuzzle::handleClick(const Common::Point &pt) {
 		}
 	}
 
-	return CardCmd::kDone;
+	return BoltCmd::kDone;
 }
 
 bool ActionPuzzle::isParticleAtPoint(const Particle &particle, const Common::Point &pt) {
@@ -305,11 +305,11 @@ void ActionPuzzle::tick() {
 	_graphics->markDirty();
 }
 
-CardCmd ActionPuzzle::win() {
+BoltCmd ActionPuzzle::win() {
 	// Redraw background before starting win movie
 	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
 	_graphics->clearPlane(kFore);
-	return CardCmd::kWin;
+	return Card::kWin;
 }
 
 } // End of namespace Bolt

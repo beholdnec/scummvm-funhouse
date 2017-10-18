@@ -69,21 +69,22 @@ void ColorPuzzle::enter() {
 	}
 }
 
-CardCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
-  // TODO: rethink
-  switch (_mode) {
-  case kWaitForPlayer: return driveWaitForPlayer(msg);
-  case kTransition: return driveTransition(msg);
-  default:
-    assert(false && "Invalid color puzzle mode");
-    return CardCmd::kDone;
-  }
+BoltCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
+	switch (_mode) {
+	case kWaitForPlayer:
+		return driveWaitForPlayer(msg);
+	case kTransition:
+		return driveTransition(msg);
+	default:
+		assert(false && "Invalid color puzzle mode");
+		return BoltCmd::kDone;
+	}
 }
 
-CardCmd ColorPuzzle::driveWaitForPlayer(const BoltMsg &msg) {
+BoltCmd ColorPuzzle::driveWaitForPlayer(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kHover) {
 		_scene.handleHover(msg.point);
-    return CardCmd::kDone;
+		return BoltCmd::kDone;
 	}
 
 	if (msg.type == BoltMsg::kClick) {
@@ -92,14 +93,14 @@ CardCmd ColorPuzzle::driveWaitForPlayer(const BoltMsg &msg) {
 	}
 
 	// Event was not handled.
-	return CardCmd::kDone;
+	return BoltCmd::kDone;
 }
 
-CardCmd ColorPuzzle::driveTransition(const BoltMsg &msg) {
+BoltCmd ColorPuzzle::driveTransition(const BoltMsg &msg) {
 	// TODO: eliminate kDrive events. Transition should be driven primarily by SmoothAnimation and
 	// AudioEnded events, once those event types are implemented.
 	if (msg.type != BoltMsg::kDrive) {
-		return CardCmd::kDone;
+		return BoltCmd::kDone;
 	}
 
 	const uint32 progress = msg.msgTime - _morphStartTime;
@@ -108,27 +109,27 @@ CardCmd ColorPuzzle::driveTransition(const BoltMsg &msg) {
 		_graphics->markDirty();
 		_morphPaletteMods = nullptr;
 		enterWaitForPlayerMode();
-		return CardCmd::kResend;
+		return BoltCmd::kResend;
 	}
 
 	applyPaletteModBlended(_graphics, kFore, *_morphPaletteMods,
 		_morphStartState, _morphEndState,
 		Common::Rational(progress, kMorphDuration));
 	_graphics->markDirty();
-	return CardCmd::kDone;
+	return BoltCmd::kDone;
 }
 
-CardCmd ColorPuzzle::handleButtonClick(int num) {
+BoltCmd ColorPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 
 	if (num >= 0 && num < kNumPieces) {
 		selectPiece(num);
 
-    BoltMsg newMsg;
-    newMsg.type = BoltMsg::kDrive;
-    newMsg.msgTime = _eventLoop->getEventTime();
-    _eventLoop->setMsg(newMsg);
-		return CardCmd::kResend;
+		BoltMsg newMsg;
+		newMsg.type = BoltMsg::kDrive;
+		newMsg.msgTime = _eventLoop->getEventTime();
+		_eventLoop->setMsg(newMsg);
+		return BoltCmd::kResend;
 	}
 
 	// TODO: clicking outside of pieces should show the solution

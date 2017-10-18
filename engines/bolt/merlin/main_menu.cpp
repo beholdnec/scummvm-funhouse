@@ -40,42 +40,43 @@ struct BltMainMenu {
 	BltId colorbarsPaletteId;
 };
 
-void MainMenu::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+void MainMenu::init(MerlinGame *game, Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+	_game = game;
+
 	BltMainMenu mainMenu;
 	loadBltResource(mainMenu, boltlib, resId);
-  _scene.load(graphics, boltlib, mainMenu.sceneId);
+	_scene.load(graphics, boltlib, mainMenu.sceneId);
 }
 
 void MainMenu::enter() {
   _scene.enter();
 }
 
-CardCmd MainMenu::handleMsg(const BoltMsg &msg) {
-  if (msg.type == BoltMsg::kHover) {
-    _scene.handleHover(msg.point);
-  }
-  else if (msg.type == BoltMsg::kClick) {
-    int num = _scene.getButtonAtPoint(msg.point);
-    return handleButtonClick(num);
-  }
-  return CardCmd(CardCmd::kDone);
+BoltCmd MainMenu::handleMsg(const BoltMsg &msg) {
+	if (msg.type == BoltMsg::kHover) {
+		_scene.handleHover(msg.point);
+	} else if (msg.type == BoltMsg::kClick) {
+		int num = _scene.getButtonAtPoint(msg.point);
+		return handleButtonClick(num);
+	}
+	return BoltCmd::kDone;
 }
 
-CardCmd MainMenu::handleButtonClick(int num) {
+BoltCmd MainMenu::handleButtonClick(int num) {
 	switch (num) {
 	case -1: // No button
-		return CardCmd::kDone;
+		return BoltCmd::kDone;
 	case 0: // Play
-		return CardCmd::kEnd;
+		return Card::kEnd;
 	case 1: // Credits
-    // TODO: Play 'CRDT' movie
-		return CardCmd::kDone;
+		_game->startMAMovie(MKTAG('C', 'R', 'D', 'T'));
+		return BoltCmd::kDone;
 	case 4: // Tour
-    // TODO: Play 'TOUR' movie
-		return CardCmd::kDone;
+		_game->startMAMovie(MKTAG('T', 'O', 'U', 'R'));
+		return BoltCmd::kDone;
 	default:
 		warning("unknown main menu button %d", num);
-		return CardCmd::kDone;
+		return BoltCmd::kDone;
 	}
 }
 

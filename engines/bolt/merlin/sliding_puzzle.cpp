@@ -60,7 +60,7 @@ void SlidingPuzzle::enter() {
 	_scene.enter();
 }
 
-CardCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
+BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kHover) {
 		_scene.handleHover(msg.point);
 	} else if (msg.type == BoltMsg::kClick) {
@@ -68,17 +68,17 @@ CardCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 		return handleButtonClick(buttonNum);
 	}
 
-	return CardCmd(CardCmd::kDone);
+	return BoltCmd::kDone;
 }
 
-CardCmd SlidingPuzzle::handleButtonClick(int num) {
+BoltCmd SlidingPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 	// TODO: implement puzzle
 	if (num != -1) {
-		return CardCmd(CardCmd::kWin);
+		return Card::kWin;
 	}
 
-	return CardCmd(CardCmd::kDone);
+	return BoltCmd::kDone;
 }
 
 } // End of namespace Bolt

@@ -137,7 +137,7 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	}
 	
 	_mode = kWaitForPlayer;
-	_cardCmd = CardCmd(CardCmd::kDone);
+	_cardCmd = BoltCmd::kDone;
 	_timeoutActive = false;
 	
 	_shelfSlotOccupied.alloc(puzzle.numShelfPoints);
@@ -156,9 +156,9 @@ void PotionPuzzle::enter() {
 	draw();
 }
 
-CardCmd PotionPuzzle::handleMsg(const BoltMsg &msg) {
+BoltCmd PotionPuzzle::handleMsg(const BoltMsg &msg) {
 	_curMsg = msg;
-	_cardCmd = CardCmd(CardCmd::kDone);
+	_cardCmd = BoltCmd::kDone;
 
 	bool yield = false;
 	while (!yield) {
