@@ -62,30 +62,21 @@ private:
 	static const uint32 kPlacing2Time = 500;
 
 	enum Mode {
-		kInvalidMode,
 		kWaitForPlayer,
 		kTransition
-	};
-	
-	enum DriveResult {
-		kInvalidDriveResult,
-		kContinue,
-		kYield
 	};
 
 	void enterWaitForPlayerMode();
 	void enterTransitionMode();
-	void eatCurrentEvent();
 
-	DriveResult drive();
-	DriveResult driveWaitForPlayer();
-	DriveResult driveTransition();
-	DriveResult driveTimeout();
+	BoltCmd driveWaitForPlayer(const BoltMsg &msg);
+	BoltCmd driveTransition(const BoltMsg &msg);
+	BoltCmd driveTimeout(const BoltMsg &msg);
 
-	DriveResult handleClick(Common::Point point);
-	DriveResult requestIngredient(int ingredient);
-	DriveResult requestUndo();
-	DriveResult performReaction();
+	BoltCmd handleClick(Common::Point point);
+	BoltCmd requestIngredient(int ingredient);
+	BoltCmd requestUndo();
+	BoltCmd performReaction();
 
 	bool isValidIngredient(int ingredient) const;
 	void setTimeout(uint32 length);
@@ -105,8 +96,6 @@ private:
 	BltPotionPuzzleComboTable _reactionTable;
 	
 	Mode _mode;
-	BoltMsg _curMsg;
-	BoltCmd _cardCmd;
 
 	ScopedArray<bool> _shelfSlotOccupied; // False: Empty; True: Filled
 	static const int kNumBowlSlots = 3;
