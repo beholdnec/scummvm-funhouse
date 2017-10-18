@@ -137,7 +137,6 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	}
 	
 	_mode = kWaitForPlayer;
-	_cardCmd = BoltCmd::kDone;
 	_timeoutActive = false;
 	
 	_shelfSlotOccupied.alloc(puzzle.numShelfPoints);
@@ -157,25 +156,15 @@ void PotionPuzzle::enter() {
 }
 
 BoltCmd PotionPuzzle::handleMsg(const BoltMsg &msg) {
-	_curMsg = msg;
-	_cardCmd = BoltCmd::kDone;
-
-	bool yield = false;
-	while (!yield) {
-		DriveResult result = drive();
-		switch (result) {
-		case kContinue:
-			break;
-		case kYield:
-			yield = true;
-			break;
-		default:
-			assert(false && "Invalid potion puzzle drive result");
-      break;
-		}
+	switch (_mode) {
+	case kWaitForPlayer:
+		return driveWaitForPlayer(msg);
+	case kTransition:
+		return driveTransition(msg);
+	default:
+		assert(false && "Invalid potion puzzle mode");
+		return BoltCmd::kDone;
 	}
-
-	return _cardCmd;
 }
 
 void PotionPuzzle::enterWaitForPlayerMode() {
@@ -188,47 +177,30 @@ void PotionPuzzle::enterTransitionMode() {
 	_mode = kTransition;
 }
 
-void PotionPuzzle::eatCurrentEvent() {
-  // TODO: remove
-	_curMsg.type = BoltMsg::kDrive; // TODO: eliminate Drive events
-}
-
-PotionPuzzle::DriveResult PotionPuzzle::drive() {
-	switch (_mode) {
-	case kWaitForPlayer: return driveWaitForPlayer();
-	case kTransition: return driveTransition();
-	default:
-		assert(false && "Invalid potion puzzle mode");
-		return kYield;
-	}
-}
-
-PotionPuzzle::DriveResult PotionPuzzle::driveWaitForPlayer() {
-	if (_curMsg.type == BoltMsg::kClick) {
-		return handleClick(_curMsg.point);
+BoltCmd PotionPuzzle::driveWaitForPlayer(const BoltMsg &msg) {
+	if (msg.type == BoltMsg::kClick) {
+		return handleClick(msg.point);
 	}
 
-	if (_curMsg.type == BoltMsg::kRightClick) {
+	if (msg.type == BoltMsg::kRightClick) {
 		// Right-click to win instantly.
 		// TODO: remove.
-		eatCurrentEvent();
-		_cardCmd = CardCmd(CardCmd::kEnd);
-		return kYield;
+		return Card::kEnd;
 	}
 
 	// Event was not handled.
-	return kYield;
+	return BoltCmd::kDone;
 }
 
-PotionPuzzle::DriveResult PotionPuzzle::driveTransition() {
+BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 	// TODO: Eliminate Drive events. Transitions should be driven primarily by Timer and AudioEnded,
 	// once those event types are implemented.
-	if (_curMsg.type != BoltMsg::kDrive) {
-		return kYield;
+	if (msg.type != BoltMsg::kDrive) {
+		return BoltCmd::kDone;
 	}
 
 	if (_timeoutActive) {
-		return driveTimeout();
+		return driveTimeout(msg);
 	}
 
 	// Examine state to decide what action to take
@@ -256,26 +228,30 @@ PotionPuzzle::DriveResult PotionPuzzle::driveTransition() {
 
 		// TODO: Play "plunk" sound
 		setTimeout(kPlacing2Time);
-		return kContinue;
+		return BoltCmd::kResend;
 	}
 
 	// No action taken; change to WaitForPlayer mode
 	enterWaitForPlayerMode();
-	return kContinue;
+	return BoltCmd::kResend;
 }
 
-PotionPuzzle::DriveResult PotionPuzzle::driveTimeout() {
-	const uint32 delta = _curMsg.msgTime - _timeoutStart;
+BoltCmd PotionPuzzle::driveTimeout(const BoltMsg &msg) {
+	const uint32 delta = msg.msgTime - _timeoutStart;
 	if (delta >= _timeoutLength) {
 		_timeoutActive = false;
-		return kContinue;
+		return BoltCmd::kResend;
 	}
 
-	return kYield;
+	return BoltCmd::kDone;
 }
 
-PotionPuzzle::DriveResult PotionPuzzle::handleClick(Common::Point point) {
-	eatCurrentEvent();
+BoltCmd PotionPuzzle::handleClick(Common::Point point) {
+	// "Eat" the click event
+	BoltMsg newMsg;
+	newMsg.type = BoltMsg::kDrive;
+	newMsg.msgTime = _eventLoop->getEventTime();
+	_eventLoop->setMsg(newMsg);
 
 	// Check if middle bowl piece was clicked. If it was clicked, undo the last action.
 	if (isValidIngredient(_bowlSlots[1])) {
@@ -309,24 +285,24 @@ PotionPuzzle::DriveResult PotionPuzzle::handleClick(Common::Point point) {
 		}
 	}
 
-	return kYield;
+	return BoltCmd::kDone;
 }
 
-PotionPuzzle::DriveResult PotionPuzzle::requestIngredient(int ingredient) {
+BoltCmd PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
 	setTimeout(kPlacing1Time);
 	enterTransitionMode();
-	return kContinue;
+	return BoltCmd::kResend;
 }
 
-PotionPuzzle::DriveResult PotionPuzzle::requestUndo() {
+BoltCmd PotionPuzzle::requestUndo() {
 	// TODO
 	warning("Undo not implemented");
-	return kYield;
+	return BoltCmd::kDone;
 }
 
-PotionPuzzle::DriveResult PotionPuzzle::performReaction() {
+BoltCmd PotionPuzzle::performReaction() {
 	const int ingredientA = _bowlSlots[0];
 	const int ingredientB = _bowlSlots[2];
 
@@ -359,7 +335,7 @@ PotionPuzzle::DriveResult PotionPuzzle::performReaction() {
 		_bowlSlots[1] = kNoIngredient;
 		_bowlSlots[2] = kNoIngredient;
 		draw();
-		return kYield;
+		return BoltCmd::kDone;
 	}
 
 	// Perform reaction
@@ -371,7 +347,7 @@ PotionPuzzle::DriveResult PotionPuzzle::performReaction() {
 	//       sends a special trigger command.
 	_game->startPotionMovie(reactionInfo->movie);
 
-	return kYield;
+	return BoltCmd::kDone;
 }
 
 void PotionPuzzle::draw() {
