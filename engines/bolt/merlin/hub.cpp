@@ -60,8 +60,7 @@ void HubCard::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltl
 
 	BltHub hubInfo;
 	loadBltResource(hubInfo, boltlib, resId);
-
-  _scene.load(_graphics, boltlib, hubInfo.sceneId);
+	_scene.load(_graphics, boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
 	BltResourceList hubItemsList;
@@ -84,26 +83,24 @@ void HubCard::enter() {
 	}
 }
 
-CardCmd HubCard::handleMsg(const BoltMsg &msg) {
-  if (msg.type == BoltMsg::kHover) {
-    _scene.handleHover(msg.point);
-  }
-  else if (msg.type == BoltMsg::kClick) {
-    int num = _scene.getButtonAtPoint(msg.point);
-    return handleButtonClick(num);
-  }
-  return CardCmd(CardCmd::kDone);
+BoltCmd HubCard::handleMsg(const BoltMsg &msg) {
+	if (msg.type == BoltMsg::kHover) {
+		_scene.handleHover(msg.point);
+	} else if (msg.type == BoltMsg::kClick) {
+		int num = _scene.getButtonAtPoint(msg.point);
+		return handleButtonClick(num);
+	}
+	return BoltCmd::kDone;
 }
 
-CardCmd HubCard::handleButtonClick(int num) {
+BoltCmd HubCard::handleButtonClick(int num) {
 	if (num == -1) {
 		// If no button was clicked, complete stage and transition to next hub.
-		return CardCmd(CardCmd::kEnd);
-	}
-	else {
-    CardCmd cmd(CardCmd::kEnterPuzzle);
-    cmd.num = num;
-    return cmd;
+		return Card::kEnd;
+	} else {
+		BoltCmd cmd(Card::kEnterPuzzle);
+		cmd.num = num;
+		return cmd;
 	}
 }
 

@@ -32,7 +32,7 @@ class ColorPuzzle : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	void enter();
-	CardCmd handleMsg(const BoltMsg &msg);
+	BoltCmd handleMsg(const BoltMsg &msg);
 
 private:
 	// TODO: this value probably comes from Boltlib.blt somewhere.
@@ -60,9 +60,9 @@ private:
 		int currentState;
 	};
 
-	CardCmd driveWaitForPlayer(const BoltMsg &msg);
-	CardCmd driveTransition(const BoltMsg &msg);
-	CardCmd handleButtonClick(int num);
+	BoltCmd driveWaitForPlayer(const BoltMsg &msg);
+	BoltCmd driveTransition(const BoltMsg &msg);
+	BoltCmd handleButtonClick(int num);
 
 	void enterWaitForPlayerMode();
 	void enterTransitionMode();

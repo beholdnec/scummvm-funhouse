@@ -39,26 +39,25 @@ void WordPuzzle::enter() {
 	_scene.enter();
 }
 
-CardCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
+BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kHover) {
 		_scene.handleHover(msg.point);
-	}
-	else if (msg.type == BoltMsg::kClick) {
+	} else if (msg.type == BoltMsg::kClick) {
 		int buttonNum = _scene.getButtonAtPoint(msg.point);
 		return handleButtonClick(buttonNum);
 	}
 
-	return CardCmd(CardCmd::kDone);
+	return BoltCmd::kDone;
 }
 
-CardCmd WordPuzzle::handleButtonClick(int num) {
+BoltCmd WordPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 	// TODO: implement puzzle
 	if (num != -1) {
-		return CardCmd(CardCmd::kWin);
+		return Card::kWin;
 	}
 
-	return CardCmd(CardCmd::kDone);
+	return BoltCmd::kDone;
 }
 
 } // End of namespace Bolt

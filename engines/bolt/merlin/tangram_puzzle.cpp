@@ -46,13 +46,13 @@ void TangramPuzzle::enter() {
 	_graphics->markDirty();
 }
 
-CardCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
+BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kClick) {
 		// TODO: implement puzzle
-		return CardCmd(CardCmd::kWin);
+		return Card::kWin;
 	}
 
-	return CardCmd(CardCmd::kWin);
+	return BoltCmd::kDone;
 }
 
 } // End of namespace Bolt

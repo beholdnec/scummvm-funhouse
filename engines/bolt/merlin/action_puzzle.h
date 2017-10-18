@@ -36,7 +36,8 @@ public:
 	ActionPuzzle();
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	void enter();
-	CardCmd handleMsg(const BoltMsg &msg);
+	BoltCmd handleMsg(const BoltMsg &msg);
+
 protected:
 	Graphics *_graphics;
 	IBoltEventLoop *_eventLoop;
@@ -70,13 +71,13 @@ protected:
 
 	const BltImage& getParticleImage(const Particle &particle);
 	Common::Point getParticlePos(const Particle &particle);
-	CardCmd handleClick(const Common::Point &pt);
+	BoltCmd handleClick(const Common::Point &pt);
 	bool isParticleAtPoint(const Particle &particle, const Common::Point &pt);
 	void spawnParticle(int imageNum, int pathNum);
 	void drawBack();
 	void drawFore();
 	void tick();
-	CardCmd win();
+	BoltCmd win();
 
 	static const int kTickPeriod = 50;
 	Common::RandomSource _random;

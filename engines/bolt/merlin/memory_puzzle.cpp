@@ -37,7 +37,7 @@ void MemoryPuzzle::enter() {
 	_scene.enter();
 }
 
-CardCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
+BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kHover) {
 		_scene.handleHover(msg.point);
 	}
@@ -46,17 +46,17 @@ CardCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
 		return handleButtonClick(buttonNum);
 	}
 
-	return CardCmd(CardCmd::kDone);
+	return BoltCmd::kDone;
 }
 
-CardCmd MemoryPuzzle::handleButtonClick(int num) {
+BoltCmd MemoryPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 	// TODO: implement puzzle
 	if (num != -1) {
-		return CardCmd(CardCmd::kWin);
+		return Card::kWin;
 	}
 
-	return CardCmd(CardCmd::kDone);
+	return BoltCmd::kDone;
 }
 
 } // End of namespace Bolt

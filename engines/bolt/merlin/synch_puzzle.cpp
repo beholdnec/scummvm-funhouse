@@ -34,19 +34,18 @@ void SynchPuzzle::enter() {
 	_scene.enter();
 }
 
-CardCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
+BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kHover) {
 		_scene.handleHover(msg.point);
-	}
-	else if (msg.type == BoltMsg::kClick) {
+	} else if (msg.type == BoltMsg::kClick) {
 		int buttonNum = _scene.getButtonAtPoint(msg.point);
 		return handleButtonClick(buttonNum);
 	}
 
-	return CardCmd(CardCmd::kDone);
+	return BoltCmd::kDone;
 }
 
-CardCmd SynchPuzzle::handleButtonClick(int num) {
+BoltCmd SynchPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 	// TODO: implement puzzle
 	return CardCmd(CardCmd::kWin);

@@ -51,9 +51,9 @@ typedef ScopedArray<BltPotionPuzzleComboTableElement> BltPotionPuzzleComboTable;
 class PotionPuzzle : public Card {
 public:
 	// From Card
-	virtual void init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
-	virtual void enter();
-	virtual CardCmd handleMsg(const BoltMsg &msg);
+	void init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void enter();
+	BoltCmd handleMsg(const BoltMsg &msg);
 
 private:
 	static const int kNoIngredient = -1; // NOTE: original game uses 0xFE for this value...
@@ -81,7 +81,6 @@ private:
 	DriveResult driveWaitForPlayer();
 	DriveResult driveTransition();
 	DriveResult driveTimeout();
-	DriveResult driveReaction();
 
 	DriveResult handleClick(Common::Point point);
 	DriveResult requestIngredient(int ingredient);
@@ -107,7 +106,7 @@ private:
 	
 	Mode _mode;
 	BoltMsg _curMsg;
-	CardCmd _cardCmd;
+	BoltCmd _cardCmd;
 
 	ScopedArray<bool> _shelfSlotOccupied; // False: Empty; True: Filled
 	static const int kNumBowlSlots = 3;

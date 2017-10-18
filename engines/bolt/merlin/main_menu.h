@@ -28,15 +28,18 @@
 
 namespace Bolt {
 
+class MerlinGame;
+
 class MainMenu : public Card {
 public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
-  void enter();
-  CardCmd handleMsg(const BoltMsg &msg);
+	void init(MerlinGame *game, Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void enter();
+	BoltCmd handleMsg(const BoltMsg &msg);
 protected:
-	CardCmd handleButtonClick(int num);
+	BoltCmd handleButtonClick(int num);
 private:
-  Scene _scene;
+	MerlinGame *_game;
+	Scene _scene;
 };
 
 } // End of namespace Bolt

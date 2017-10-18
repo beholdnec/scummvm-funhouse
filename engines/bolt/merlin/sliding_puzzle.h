@@ -32,10 +32,10 @@ class SlidingPuzzle : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	void enter();
-	CardCmd handleMsg(const BoltMsg &msg);
+	BoltCmd handleMsg(const BoltMsg &msg);
 
 protected:
-	CardCmd handleButtonClick(int num);
+	BoltCmd handleButtonClick(int num);
 
 private:
 	Scene _scene;

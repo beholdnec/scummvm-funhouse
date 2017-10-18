@@ -51,6 +51,7 @@ public:
 
 	Graphics* getGraphics();
 	bool isInMovie() const;
+	void startMAMovie(uint32 name);
 	void startPotionMovie(int num);
 
 	static const int kNumPotionMovies;

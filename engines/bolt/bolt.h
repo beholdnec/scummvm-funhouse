@@ -90,6 +90,7 @@ struct Rect {
 // Messages that the engine sends to the game.
 struct BoltMsg {
 	enum Type {
+		// System messages (>= 0)
 		kNone = 0,
 		kHover,
 		kClick,
@@ -103,52 +104,45 @@ struct BoltMsg {
 
 	BoltMsg() : type(kNone), msgTime(0) { }
 
-	Type type;
+	int type;
 	uint32 msgTime;
 	Common::Point point;
 };
 
 // Commands that the game returns to the engine after handling a message.
 struct BoltCmd {
-  enum Type {
-    kDone, // Indicates that the message has been handled.
-    kResend // Indicates that the engine should resend the message.
-  };
+	enum Type {
+		// System commands (>= 0)
+		kDone = 0, // Message has been handled.
+		kResend    // Message should be resent. The game can use setMsg to change the message.
+	};
 
-  Type type;
+	int type;
+	int num;
 
-  BoltCmd(Type type_ = kDone) : type(type_) { }
-};
-
-// Commands that the current card returns to the game after handling a message.
-struct CardCmd {
-  enum Type {
-    kDone,
-    kResend,
-    kEnd,
-    kWin,
-    kEnterPuzzle
-  };
-
-  Type type;
-  int num;
-
-  CardCmd(Type type_ = kDone) : type(type_), num(0) { }
+	BoltCmd(int type_ = kDone) : type(type_), num(0) { }
 };
 
 class Card {
 public:
+	// Card-specific commands for use in BoltCmd
+	enum CardCmd {
+		// Card commands (< 0)
+		kEnd = -1,
+		kWin = -2,
+		kEnterPuzzle = -3
+	};
 
 	virtual ~Card() { }
 	virtual void enter() = 0;
-	virtual CardCmd handleMsg(const BoltMsg &msg) = 0;
+	virtual BoltCmd handleMsg(const BoltMsg &msg) = 0;
 };
 
 class IBoltEventLoop {
 public:
 	virtual ~IBoltEventLoop() { }
 	virtual uint32 getEventTime() const = 0;
-  virtual void setMsg(const BoltMsg &msg) = 0;
+	virtual void setMsg(const BoltMsg &msg) = 0;
 	virtual void requestSmoothAnimation() = 0;
 	virtual void setMovieTimer(uint32 intervalMs) = 0;
 };
@@ -169,7 +163,7 @@ public:
 
 	// From IBoltEventLoop (for internal game use)
 	virtual uint32 getEventTime() const;
-  virtual void setMsg(const BoltMsg &msg);
+	virtual void setMsg(const BoltMsg &msg);
 	virtual void requestSmoothAnimation();
 	virtual void setMovieTimer(uint32 intervalMs);
 
@@ -178,10 +172,11 @@ protected:
 	virtual Common::Error run();
 
 private:
+	void handleEvent(const Common::Event &event);
 	void topLevelHandleMsg(const BoltMsg &msg);
 	
 	Graphics _graphics;
-  BoltMsg _curMsg;
+	BoltMsg _curMsg;
 	uint32 _eventTime;
 	Common::ScopedPtr<BoltGame> _game;
 
