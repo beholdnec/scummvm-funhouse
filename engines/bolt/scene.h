@@ -36,16 +36,19 @@ class BoltEngine;
 
 class Scene {
 public:
-	void load(Graphics *graphics, Boltlib &boltlib, BltId sceneId);
+	enum SceneMsg {
+		kClickButton = BoltMsg::kMaxBoltMsg
+	};
+
+	void load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId sceneId);
 	void enter();
-	void handleHover(const Common::Point &pt);
-	// Return number of button at a point, or -1 if there is no button.
-	int getButtonAtPoint(const Common::Point &pt);
+	BoltCmd handleMsg(const BoltMsg &msg);
 
 	void setBackPlane(Boltlib &boltlib, BltId id);
 
 
 private:
+	IBoltEventLoop *_eventLoop;
 	Graphics *_graphics;
 
 	struct BltPlane { // type 26
@@ -156,6 +159,8 @@ private:
 
 	Common::Point _origin;
 
+	// Return number of button at a point, or -1 if there is no button.
+	int getButtonAtPoint(const Common::Point &pt);
 	void drawButton(const BltButtonElement &button, bool hovered);
 };
 

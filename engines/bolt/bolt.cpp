@@ -88,7 +88,6 @@ void BoltEngine::setMovieTimer(const uint32 intervalMs) {
 
 void BoltEngine::handleEvent(const Common::Event &event) {
 	BoltMsg msg;
-	msg.msgTime = _eventTime;
 
 	if (event.type == Common::EVENT_MOUSEMOVE) {
 		msg.type = BoltMsg::kHover;
@@ -107,7 +106,6 @@ void BoltEngine::handleEvent(const Common::Event &event) {
 									   // Perhaps the "time" of timer events should be the time of handling, not the time of triggering.
 			_eventTime = _movieTimerStart + _movieTimerInterval;
 			msg.type = BoltMsg::kMovieTimer;
-			msg.msgTime = _eventTime;
 		} else if (_smoothAnimationRequested) {
 			// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
 			// Change this so smooth animation events are handled at a reasonable rate.
@@ -127,11 +125,13 @@ void BoltEngine::handleEvent(const Common::Event &event) {
 void BoltEngine::topLevelHandleMsg(const BoltMsg &msg) {
 	_curMsg = msg;
 
-	_graphics.handleMsg(msg);
+	_graphics.handleMsg(_curMsg);
 
 	bool yield = false;
 	while (!yield) {
-		BoltCmd cmd = _game->handleMsg(msg);
+		// Make a copy of the current message to prevent interference if the handler calls setMsg.
+		BoltMsg msgCopy = _curMsg;
+		BoltCmd cmd = _game->handleMsg(msgCopy);
 		switch (cmd.type) {
 		case BoltCmd::kDone:
 			yield = true;

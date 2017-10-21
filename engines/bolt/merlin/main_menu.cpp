@@ -45,7 +45,7 @@ void MainMenu::init(MerlinGame *game, Graphics *graphics, IBoltEventLoop *eventL
 
 	BltMainMenu mainMenu;
 	loadBltResource(mainMenu, boltlib, resId);
-	_scene.load(graphics, boltlib, mainMenu.sceneId);
+	_scene.load(eventLoop, graphics, boltlib, mainMenu.sceneId);
 }
 
 void MainMenu::enter() {
@@ -53,13 +53,11 @@ void MainMenu::enter() {
 }
 
 BoltCmd MainMenu::handleMsg(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kHover) {
-		_scene.handleHover(msg.point);
-	} else if (msg.type == BoltMsg::kClick) {
-		int num = _scene.getButtonAtPoint(msg.point);
-		return handleButtonClick(num);
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
 	}
-	return BoltCmd::kDone;
+
+	return _scene.handleMsg(msg);
 }
 
 BoltCmd MainMenu::handleButtonClick(int num) {

@@ -32,7 +32,7 @@ void WordPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &bo
 	// There are three difficulties, choose one here
 	BltResourceList difficulty;
 	loadBltResourceArray(difficulty, boltlib, BltShortId(difficulties[0].value)); // Difficulty 0
-	_scene.load(graphics, boltlib, difficulty[19].value);
+	_scene.load(eventLoop, graphics, boltlib, difficulty[19].value);
 }
 
 void WordPuzzle::enter() {
@@ -40,14 +40,10 @@ void WordPuzzle::enter() {
 }
 
 BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kHover) {
-		_scene.handleHover(msg.point);
-	} else if (msg.type == BoltMsg::kClick) {
-		int buttonNum = _scene.getButtonAtPoint(msg.point);
-		return handleButtonClick(buttonNum);
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
 	}
-
-	return BoltCmd::kDone;
+	return _scene.handleMsg(msg);
 }
 
 BoltCmd WordPuzzle::handleButtonClick(int num) {

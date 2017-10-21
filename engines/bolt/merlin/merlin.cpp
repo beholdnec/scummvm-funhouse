@@ -156,7 +156,7 @@ void MerlinGame::startMainMenu(BltId id) {
 class GenericMenuCard : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId id) {
-		_scene.load(graphics, boltlib, id);
+		_scene.load(eventLoop, graphics, boltlib, id);
 	}
 
 	void enter() {
@@ -164,12 +164,12 @@ public:
 	}
 
 	BoltCmd handleMsg(const BoltMsg &msg) {
-		if (msg.type == BoltMsg::kHover) {
-			_scene.handleHover(msg.point);
-		} else if (msg.type == BoltMsg::kClick) {
+		if (msg.type == Scene::kClickButton) {
+			warning("Unhandled button %d", msg.num);
 			return Card::kEnd;
 		}
-		return BoltCmd::kDone;
+
+		return _scene.handleMsg(msg);
 	}
 
 private:
@@ -274,10 +274,8 @@ void MerlinGame::enterCurrentCard(bool cursorActive) {
 	_graphics->resetColorCycles();
 	_currentCard->enter();
 	if (cursorActive) {
-		BoltMsg hoverMsg;
-    hoverMsg.type = BoltMsg::kHover;
-    hoverMsg.msgTime = _eventLoop->getEventTime();
-    hoverMsg.point = _system->getEventManager()->getMousePos();
+		BoltMsg hoverMsg(BoltMsg::kHover);
+		hoverMsg.point = _system->getEventManager()->getMousePos();
 		handleMsgInCard(hoverMsg);
 	}
 }

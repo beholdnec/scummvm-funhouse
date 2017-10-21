@@ -60,7 +60,7 @@ void HubCard::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltl
 
 	BltHub hubInfo;
 	loadBltResource(hubInfo, boltlib, resId);
-	_scene.load(_graphics, boltlib, hubInfo.sceneId);
+	_scene.load(eventLoop, _graphics, boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
 	BltResourceList hubItemsList;
@@ -84,13 +84,11 @@ void HubCard::enter() {
 }
 
 BoltCmd HubCard::handleMsg(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kHover) {
-		_scene.handleHover(msg.point);
-	} else if (msg.type == BoltMsg::kClick) {
-		int num = _scene.getButtonAtPoint(msg.point);
-		return handleButtonClick(num);
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
 	}
-	return BoltCmd::kDone;
+
+	return _scene.handleMsg(msg);
 }
 
 BoltCmd HubCard::handleButtonClick(int num) {
