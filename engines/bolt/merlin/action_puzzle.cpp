@@ -166,17 +166,18 @@ void ActionPuzzle::enter() {
 }
 
 BoltCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kClick) {
+	switch (msg.type){
+	case BoltMsg::kClick:
 		return handleClick(msg.point);
-	}
-	else if (msg.type == BoltMsg::kRightClick) {
-		// Right click to win instantly
+
+	case BoltMsg::kRightClick:
+		// Right-click to win instantly
 		// TODO: remove
 		return win();
-	}
-	else if (msg.type == BoltMsg::kDrive) {
+
+	case BoltMsg::kDrive: {
 		// TODO: eliminate Drive events in favor of Timers
-		uint32 diff = msg.msgTime - _curTime;
+		uint32 diff = _eventLoop->getEventTime() - _curTime;
 		if (diff >= kTickPeriod) {
 			_curTime += kTickPeriod;
 			tick();
@@ -185,6 +186,8 @@ BoltCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
 		if (_goalNum >= _goals.size()) {
 			return win();
 		}
+		break;
+	}
 	}
 
 	return BoltCmd::kDone;

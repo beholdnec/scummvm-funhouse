@@ -35,7 +35,7 @@ void ColorPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
 	BltId difficultiesId = resourceList[0].value;
 	BltId sceneId = resourceList[3].value;
 
-	_scene.load(graphics, boltlib, sceneId);
+	_scene.load(eventLoop, graphics, boltlib, sceneId);
 
 	BltU16Values difficultyIds;
 	loadBltResourceArray(difficultyIds, boltlib, difficultiesId);
@@ -82,18 +82,11 @@ BoltCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
 }
 
 BoltCmd ColorPuzzle::driveWaitForPlayer(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kHover) {
-		_scene.handleHover(msg.point);
-		return BoltCmd::kDone;
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
 	}
 
-	if (msg.type == BoltMsg::kClick) {
-		const int buttonNum = _scene.getButtonAtPoint(msg.point);
-		return handleButtonClick(buttonNum);
-	}
-
-	// Event was not handled.
-	return BoltCmd::kDone;
+	return _scene.handleMsg(msg);
 }
 
 BoltCmd ColorPuzzle::driveTransition(const BoltMsg &msg) {
@@ -103,7 +96,7 @@ BoltCmd ColorPuzzle::driveTransition(const BoltMsg &msg) {
 		return BoltCmd::kDone;
 	}
 
-	const uint32 progress = msg.msgTime - _morphStartTime;
+	const uint32 progress = _eventLoop->getEventTime() - _morphStartTime;
 	if (progress >= kMorphDuration) {
 		applyPaletteMod(_graphics, kFore, *_morphPaletteMods, _morphEndState);
 		_graphics->markDirty();
@@ -125,10 +118,7 @@ BoltCmd ColorPuzzle::handleButtonClick(int num) {
 	if (num >= 0 && num < kNumPieces) {
 		selectPiece(num);
 
-		BoltMsg newMsg;
-		newMsg.type = BoltMsg::kDrive;
-		newMsg.msgTime = _eventLoop->getEventTime();
-		_eventLoop->setMsg(newMsg);
+		_eventLoop->setMsg(BoltMsg::kDrive);
 		return BoltCmd::kResend;
 	}
 

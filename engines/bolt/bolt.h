@@ -99,22 +99,24 @@ struct BoltMsg {
 		kMovieTimer, // TODO: implement generic Timers and eliminate MovieTimer
 		kDrive, // Drive events are fired constantly. TODO: eliminate Drive
 		kTimer, // TODO: implement
-		kAudioEnded // TODO: implement
+		kAudioEnded, // TODO: implement
+		kMaxBoltMsg = 100
 	};
 
-	BoltMsg() : type(kNone), msgTime(0) { }
+	BoltMsg(int type_ = kNone) : type(type_), num(0) { }
 
 	int type;
-	uint32 msgTime;
+	int num;
 	Common::Point point;
 };
 
 // Commands that the game returns to the engine after handling a message.
 struct BoltCmd {
 	enum Type {
-		// System commands (>= 0)
+		// System commands
 		kDone = 0, // Message has been handled.
-		kResend    // Message should be resent. The game can use setMsg to change the message.
+		kResend,   // Message should be resent. The game can use setMsg to change the message.
+		kMaxBoltCmd = 100
 	};
 
 	int type;
@@ -127,10 +129,11 @@ class Card {
 public:
 	// Card-specific commands for use in BoltCmd
 	enum CardCmd {
-		// Card commands (< 0)
-		kEnd = -1,
-		kWin = -2,
-		kEnterPuzzle = -3
+		// Card commands
+		kEnd = BoltCmd::kMaxBoltCmd,
+		kWin,
+		kEnterPuzzle,
+		kMaxCardCmd = BoltCmd::kMaxBoltCmd + 100
 	};
 
 	virtual ~Card() { }

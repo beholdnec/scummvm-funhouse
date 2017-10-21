@@ -30,7 +30,7 @@ void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
 	BltId sceneId = resourceList[1].value;
-	_scene.load(graphics, boltlib, sceneId);
+	_scene.load(eventLoop, graphics, boltlib, sceneId);
 }
 
 void MemoryPuzzle::enter() {
@@ -38,15 +38,11 @@ void MemoryPuzzle::enter() {
 }
 
 BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kHover) {
-		_scene.handleHover(msg.point);
-	}
-	else if (msg.type == BoltMsg::kClick) {
-		int buttonNum = _scene.getButtonAtPoint(msg.point);
-		return handleButtonClick(buttonNum);
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
 	}
 
-	return BoltCmd::kDone;
+	return _scene.handleMsg(msg);
 }
 
 BoltCmd MemoryPuzzle::handleButtonClick(int num) {

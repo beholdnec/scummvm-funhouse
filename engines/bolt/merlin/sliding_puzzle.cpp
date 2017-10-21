@@ -53,7 +53,7 @@ void SlidingPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib 
 	BltResourceList difficultyInfo;
 	loadBltResourceArray(difficultyInfo, boltlib, slidingPuzzleInfo.difficulty1); // Ex: 3A34, 3B34, 3C34
 
-	_scene.load(graphics, boltlib, difficultyInfo[1].value);
+	_scene.load(eventLoop, graphics, boltlib, difficultyInfo[1].value);
 }
 
 void SlidingPuzzle::enter() {
@@ -61,14 +61,11 @@ void SlidingPuzzle::enter() {
 }
 
 BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kHover) {
-		_scene.handleHover(msg.point);
-	} else if (msg.type == BoltMsg::kClick) {
-		int buttonNum = _scene.getButtonAtPoint(msg.point);
-		return handleButtonClick(buttonNum);
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
 	}
 
-	return BoltCmd::kDone;
+	return _scene.handleMsg(msg);
 }
 
 BoltCmd SlidingPuzzle::handleButtonClick(int num) {

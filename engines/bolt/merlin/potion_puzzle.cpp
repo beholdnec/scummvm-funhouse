@@ -237,7 +237,7 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 }
 
 BoltCmd PotionPuzzle::driveTimeout(const BoltMsg &msg) {
-	const uint32 delta = msg.msgTime - _timeoutStart;
+	const uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
 	if (delta >= _timeoutLength) {
 		_timeoutActive = false;
 		return BoltCmd::kResend;
@@ -247,11 +247,8 @@ BoltCmd PotionPuzzle::driveTimeout(const BoltMsg &msg) {
 }
 
 BoltCmd PotionPuzzle::handleClick(Common::Point point) {
-	// "Eat" the click event
-	BoltMsg newMsg;
-	newMsg.type = BoltMsg::kDrive;
-	newMsg.msgTime = _eventLoop->getEventTime();
-	_eventLoop->setMsg(newMsg);
+	// Eat the click event
+	_eventLoop->setMsg(BoltMsg::kDrive);
 
 	// Check if middle bowl piece was clicked. If it was clicked, undo the last action.
 	if (isValidIngredient(_bowlSlots[1])) {

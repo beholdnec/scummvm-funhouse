@@ -27,7 +27,7 @@ namespace Bolt {
 void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-	_scene.load(graphics, boltlib, resourceList[4].value);
+	_scene.load(eventLoop, graphics, boltlib, resourceList[4].value);
 }
 
 void SynchPuzzle::enter() {
@@ -35,14 +35,11 @@ void SynchPuzzle::enter() {
 }
 
 BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kHover) {
-		_scene.handleHover(msg.point);
-	} else if (msg.type == BoltMsg::kClick) {
-		int buttonNum = _scene.getButtonAtPoint(msg.point);
-		return handleButtonClick(buttonNum);
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
 	}
 
-	return BoltCmd::kDone;
+	return _scene.handleMsg(msg);
 }
 
 BoltCmd SynchPuzzle::handleButtonClick(int num) {

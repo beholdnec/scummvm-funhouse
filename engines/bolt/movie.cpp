@@ -132,37 +132,33 @@ bool Movie::isRunning() const {
 
 BoltCmd Movie::handleMsg(const BoltMsg &msg) {
 	bool handled = false;
-  switch (msg.type)
-  {
-  case BoltMsg::kSmoothAnimation: {
-    // Fades have smooth animation; they have a higher frame rate than movie cels.
-    driveFade(msg.msgTime);
-    handled = true;
-    break;
-  }
-
-  case BoltMsg::kMovieTimer: {
-    driveAudio();
-    driveFade(msg.msgTime);
-    driveTimeline(msg.msgTime);
-    if (isRunning()) {
-      // Set up movie timer to send a message for the next frame
-      _eventLoop->setMovieTimer(_framePeriod);
-    }
-    handled = true;
-    break;
-  }
-
-  default:
-    break;
-  }
-
-	if (handled && _fadeDirection != 0) {
-			// Request smooth animation when fading
-			_eventLoop->requestSmoothAnimation();
+	switch (msg.type) {
+	case BoltMsg::kSmoothAnimation: {
+		// Fades have smooth animation; they have a higher frame rate than movie cels.
+		driveFade(_eventLoop->getEventTime());
+		handled = true;
+		break;
 	}
 
-  return BoltCmd(BoltCmd::kDone);
+	case BoltMsg::kMovieTimer: {
+		driveAudio();
+		driveFade(_eventLoop->getEventTime());
+		driveTimeline(_eventLoop->getEventTime());
+		if (isRunning()) {
+			// Set up movie timer to send a message for the next frame
+			_eventLoop->setMovieTimer(_framePeriod);
+		}
+		handled = true;
+		break;
+	}
+	}
+
+	if (handled && _fadeDirection != 0) {
+		// Request smooth animation when fading
+		_eventLoop->requestSmoothAnimation();
+	}
+
+	return BoltCmd::kDone;
 }
 
 void Movie::setTriggerCallback(TriggerCallback callback, void *param) {

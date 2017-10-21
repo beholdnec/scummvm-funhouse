@@ -53,8 +53,9 @@ struct BltScene { // type 32
 	Common::Point origin;
 };
 
-void Scene::load(Graphics *graphics, Boltlib &boltlib, BltId sceneId)
+void Scene::load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId sceneId)
 {
+	_eventLoop = eventLoop;
 	_graphics = graphics;
 
 	BltScene sceneInfo;
@@ -102,14 +103,26 @@ void Scene::enter() {
 	_graphics->markDirty();
 }
 
-void Scene::handleHover(const Common::Point &pt) {
-	// Draw buttons
-	int hoveredButton = getButtonAtPoint(pt);
-	for (uint i = 0; i < _buttons.size(); ++i) {
-		drawButton(_buttons[i], (int)i == hoveredButton);
+BoltCmd Scene::handleMsg(const BoltMsg &msg) {
+	switch (msg.type) {
+	case BoltMsg::kHover: {
+		int hoveredButton = getButtonAtPoint(msg.point);
+		for (uint i = 0; i < _buttons.size(); ++i) {
+			drawButton(_buttons[i], (int)i == hoveredButton);
+		}
+		_graphics->markDirty();
+		break;
 	}
 
-	_graphics->markDirty();
+	case BoltMsg::kClick: {
+		BoltMsg newMsg(kClickButton);
+		newMsg.num = getButtonAtPoint(msg.point);
+		_eventLoop->setMsg(newMsg);
+		return BoltCmd::kResend;
+	}
+	}
+
+	return BoltCmd::kDone;
 }
 
 void Scene::setBackPlane(Boltlib &boltlib, BltId id) {
