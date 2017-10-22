@@ -75,7 +75,7 @@ void Movie::start(Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *event
 	startTimeline(fetchBuffer(_timelineQueue), _eventLoop->getEventTime());
 
 	// Kick-off the movie timer
-	_eventLoop->setMovieTimer(_framePeriod);
+	_eventLoop->setTimer(_framePeriod, kMovieTimer);
 }
 
 void Movie::stop() {
@@ -133,24 +133,24 @@ bool Movie::isRunning() const {
 BoltCmd Movie::handleMsg(const BoltMsg &msg) {
 	bool handled = false;
 	switch (msg.type) {
-	case BoltMsg::kSmoothAnimation: {
+	case BoltMsg::kSmoothAnimation:
 		// Fades have smooth animation; they have a higher frame rate than movie cels.
 		driveFade(_eventLoop->getEventTime());
 		handled = true;
 		break;
-	}
 
-	case BoltMsg::kMovieTimer: {
-		driveAudio();
-		driveFade(_eventLoop->getEventTime());
-		driveTimeline(_eventLoop->getEventTime());
-		if (isRunning()) {
-			// Set up movie timer to send a message for the next frame
-			_eventLoop->setMovieTimer(_framePeriod);
+	case BoltMsg::kTimer:
+		if (msg.num == kMovieTimer) {
+			driveAudio();
+			driveFade(_eventLoop->getEventTime());
+			driveTimeline(_eventLoop->getEventTime());
+			if (isRunning()) {
+				// Set up movie timer to send a message for the next frame
+				_eventLoop->setTimer(_framePeriod, kMovieTimer);
+			}
+			handled = true;
 		}
-		handled = true;
 		break;
-	}
 	}
 
 	if (handled && _fadeDirection != 0) {

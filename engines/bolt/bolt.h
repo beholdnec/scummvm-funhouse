@@ -95,11 +95,10 @@ struct BoltMsg {
 		kHover,
 		kClick,
 		kRightClick,
-		kSmoothAnimation,
-		kMovieTimer, // TODO: implement generic Timers and eliminate MovieTimer
-		kDrive, // Drive events are fired constantly. TODO: eliminate Drive
-		kTimer, // TODO: implement
+		kTimer,
 		kAudioEnded, // TODO: implement
+		kSmoothAnimation,
+		kDrive, // Drive events are fired constantly. TODO: eliminate Drive
 		kMaxBoltMsg = 100
 	};
 
@@ -141,13 +140,18 @@ public:
 	virtual BoltCmd handleMsg(const BoltMsg &msg) = 0;
 };
 
+enum TimerId {
+	kMovieTimer,
+	kCardTimer
+};
+
 class IBoltEventLoop {
 public:
 	virtual ~IBoltEventLoop() { }
 	virtual uint32 getEventTime() const = 0;
 	virtual void setMsg(const BoltMsg &msg) = 0;
 	virtual void requestSmoothAnimation() = 0;
-	virtual void setMovieTimer(uint32 intervalMs) = 0;
+	virtual void setTimer(uint32 delay, int id) = 0;
 };
 
 class BoltGame {
@@ -168,14 +172,13 @@ public:
 	virtual uint32 getEventTime() const;
 	virtual void setMsg(const BoltMsg &msg);
 	virtual void requestSmoothAnimation();
-	virtual void setMovieTimer(uint32 intervalMs);
+	virtual void setTimer(uint32 delay, int id);
 
 protected:
 	// From Engine
 	virtual Common::Error run();
 
 private:
-	void handleEvent(const Common::Event &event);
 	void topLevelHandleMsg(const BoltMsg &msg);
 	
 	Graphics _graphics;
@@ -183,9 +186,13 @@ private:
 	uint32 _eventTime;
 	Common::ScopedPtr<BoltGame> _game;
 
-	bool _movieTimerActive;
-	uint32 _movieTimerStart;
-	uint32 _movieTimerInterval;
+	struct Timer {
+		uint32 start;
+		uint32 delay;
+		int id;
+	};
+	Common::List<Timer> _timers;
+
 	bool _smoothAnimationRequested;
 };
 

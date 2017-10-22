@@ -57,12 +57,56 @@ Common::Error BoltEngine::run() {
 	while (!shouldQuit()) {
 		_eventTime = getTotalPlayTime();
 
-		Common::Event event;
-		if (!_eventMan->pollEvent(event)) {
-			event.type = Common::EVENT_INVALID;
+		// Find next timer to handle
+		Common::List<Timer>::iterator nextTimer = _timers.end();
+		uint32 nextTimerDelta = 0xFFFFFFFF;
+		for (Common::List<Timer>::iterator it = _timers.begin(); it != _timers.end(); ++it) {
+			uint32 delta = _eventTime - it->start;
+			if (delta >= it->delay && delta < nextTimerDelta) {
+				nextTimer = it;
+				nextTimerDelta = delta;
+			}
 		}
 
-		handleEvent(event);
+		if (nextTimer != _timers.end()) {
+			_eventTime = nextTimer->start + nextTimer->delay;
+			int id = nextTimer->id;
+			_timers.erase(nextTimer);
+
+			BoltMsg msg(BoltMsg::kTimer);
+			msg.num = id;
+			topLevelHandleMsg(msg);
+		} else {
+			Common::Event event;
+			if (!_eventMan->pollEvent(event)) {
+				event.type = Common::EVENT_INVALID;
+			}
+
+			if (event.type == Common::EVENT_MOUSEMOVE) {
+				BoltMsg msg(BoltMsg::kHover);
+				msg.point = event.mouse;
+				topLevelHandleMsg(msg);
+			} else if (event.type == Common::EVENT_LBUTTONDOWN) {
+				BoltMsg msg(BoltMsg::kClick);
+				msg.point = event.mouse;
+				topLevelHandleMsg(msg);
+			} else if (event.type == Common::EVENT_RBUTTONDOWN) {
+				BoltMsg msg(BoltMsg::kRightClick);
+				msg.point = event.mouse;
+				topLevelHandleMsg(msg);
+			} else if (_smoothAnimationRequested) {
+				// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
+				// Change this so smooth animation events are handled at a reasonable rate.
+				// FIXME: Prevent smooth animation from starving out other events such as kDrive!
+				_smoothAnimationRequested = false;
+				topLevelHandleMsg(BoltMsg::kSmoothAnimation);
+			} else {
+				// Emit Drive event
+				// TODO: Eliminate Drive events in favor of Timers, SmoothAnimation and AudioEnded.
+				// Generally, events signify things that are reacted to instead of polled.
+				topLevelHandleMsg(BoltMsg::kDrive);
+			}
+		}
 	}
 
 	return Common::kNoError;
@@ -80,46 +124,12 @@ void BoltEngine::requestSmoothAnimation() {
 	_smoothAnimationRequested = true;
 }
 
-void BoltEngine::setMovieTimer(const uint32 intervalMs) {
-	_movieTimerActive = true;
-	_movieTimerStart = _eventTime;
-	_movieTimerInterval = intervalMs;
-}
-
-void BoltEngine::handleEvent(const Common::Event &event) {
-	BoltMsg msg;
-
-	if (event.type == Common::EVENT_MOUSEMOVE) {
-		msg.type = BoltMsg::kHover;
-		msg.point = event.mouse;
-	} else if (event.type == Common::EVENT_LBUTTONDOWN) {
-		msg.type = BoltMsg::kClick;
-		msg.point = event.mouse;
-	} else if (event.type == Common::EVENT_RBUTTONDOWN) {
-		msg.type = BoltMsg::kRightClick;
-		msg.point = event.mouse;
-	} else {
-		const uint32 movieTimerDelta = _eventTime - _movieTimerStart;
-		if (_movieTimerActive && movieTimerDelta >= _movieTimerInterval) {
-			_movieTimerActive = false; // Event handler must set movie timer again if it wants more movie timer events.
-									   // FIXME: rewrite to be more robust. events with later times should never appear before events with earlier times.
-									   // Perhaps the "time" of timer events should be the time of handling, not the time of triggering.
-			_eventTime = _movieTimerStart + _movieTimerInterval;
-			msg.type = BoltMsg::kMovieTimer;
-		} else if (_smoothAnimationRequested) {
-			// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
-			// Change this so smooth animation events are handled at a reasonable rate.
-			_smoothAnimationRequested = false;
-			msg.type = BoltMsg::kSmoothAnimation;
-		} else {
-			// Emit Drive event
-			// TODO: Eliminate Drive events in favor of Timers, SmoothAnimation and AudioEnded.
-			// Generally, events signify things that are reacted to instead of polled.
-			msg.type = BoltMsg::kDrive;
-		}
-	}
-
-	topLevelHandleMsg(msg);
+void BoltEngine::setTimer(uint32 delay, int id) {
+	Timer newTimer;
+	newTimer.start = _eventTime;
+	newTimer.delay = delay;
+	newTimer.id = id;
+	_timers.push_back(newTimer);
 }
 
 void BoltEngine::topLevelHandleMsg(const BoltMsg &msg) {
