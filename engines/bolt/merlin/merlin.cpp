@@ -66,13 +66,12 @@ BoltCmd MerlinGame::handleMsg(const BoltMsg &msg) {
 	// Play movie over anything else
 	if (_movie.isRunning()) {
 		return handleMsgInMovie(msg);
-	}
-	else if (_currentCard) {
+	} else if (_currentCard) {
 		return handleMsgInCard(msg);
 	}
 
 	assert(false); // Unreachable; there must be an active movie or card
-  return BoltCmd::kDone;
+	return BoltCmd::kDone;
 }
 
 
