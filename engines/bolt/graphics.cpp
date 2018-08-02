@@ -350,7 +350,8 @@ void Graphics::init(OSystem *system, IBoltEventLoop *eventLoop) {
 	_fade = Common::Rational(1);
 	_dirty = true;
 
-	initGraphics(kVgaScreenWidth, kVgaScreenHeight, false);
+    ::Graphics::PixelFormat pixelFormat = ::Graphics::PixelFormat::createFormatCLUT8();
+	initGraphics(kVgaScreenWidth, kVgaScreenHeight, &pixelFormat);
 
 	initPlane(_backPlane, kVgaScreenWidth, kVgaScreenHeight, kBackVgaFirst);
 	initPlane(_forePlane, kVgaScreenWidth, kVgaScreenHeight, kForeVgaFirst);
