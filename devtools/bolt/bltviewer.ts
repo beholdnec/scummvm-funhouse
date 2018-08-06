@@ -228,7 +228,7 @@ function escapeHtml(str: string): string {
   return div.innerHTML
 }
 
-function getField(dataView: DataView, field) {
+function getField(dataView: DataView, field, index: number = 0) {
   let val = undefined
   switch (field.type) {
     case 'u8':
@@ -283,6 +283,9 @@ function getField(dataView: DataView, field) {
     case 'custom':
       val = field.custom
       break
+    case 'custom-array-item':
+      val = field.custom(index)
+      break
     default:
       throw new Error(`Invalid field type '${field.type}'`)
   }
@@ -322,7 +325,7 @@ function emitDataFieldsArray(dataView: DataView, bytesPerItem: number, tableEl: 
     trEl.innerHTML = `<th>${i}</th>`
     for (const field of fields) {
       const fieldDataView = new DataView(dataView.buffer.slice(i * bytesPerItem, (i + 1) * bytesPerItem))
-      trEl.innerHTML += `<td>${escapeHtml(getField(fieldDataView, field))}`
+      trEl.innerHTML += `<td>${escapeHtml(getField(fieldDataView, field, i))}`
     }
   }
 }
@@ -755,8 +758,7 @@ function openBltPotionComboList(data: Uint8Array) {
   contentEl.querySelector('header').innerText = 'Potion Combo List'
 
   const dataView = new DataView(data.buffer)
-  // Potion movies extracted from MERLIN.EXE
-  // TODO: Utilize
+  // Movie list extracted from MERLIN.EXE
   const POTION_MOVIES = [
     'ELEC', 'EXPL', 'FLAM', 'FLSH', 'MIST', 'OOZE', 'SHMR',
     'SWRL', 'WIND', 'BOIL', 'BUBL', 'BSPK', 'FBRS', 'FCLD',
@@ -767,11 +769,15 @@ function openBltPotionComboList(data: Uint8Array) {
     'SQID', 'CLOD', 'SWIR', 'VOLC', 'WORM',
   ]
   emitDataFieldsArray(dataView, 6, contentEl.querySelector('.fields-table'), [
-    { name: 'A', type: 'i8', offset: 0 },
-    { name: 'B', type: 'i8', offset: 1 },
-    { name: 'C', type: 'i8', offset: 2 },
-    { name: 'D', type: 'i8', offset: 3 },
-    { name: 'Movie', type: 'u16', offset: 4 },
+    { name: 'Input A', type: 'i8', offset: 0 },
+    { name: 'Input B', type: 'i8', offset: 1 },
+    { name: 'Output A', type: 'i8', offset: 2 },
+    { name: 'Output B', type: 'i8', offset: 3 },
+    { name: 'Movie', type: 'custom-array-item',
+      custom: (i) => {
+        const movie = dataView.getUint16(6 * i + 4)
+        return `${POTION_MOVIES[movie]} (${movie})`
+      } },
   ])
 }
 
