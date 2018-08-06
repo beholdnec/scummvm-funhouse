@@ -240,11 +240,11 @@ function getField(dataView, field) {
             // TODO: emit clickable link
             val = `${u32hex(dataView.getUint32(field.offset))}`;
             break;
-        case 'short-reslist-id':// Quantity and short resource ID
+        case 'short-reslist-id': // Quantity and short resource ID
             // TODO: emit clickable link
             val = `${u16hex(dataView.getUint16(field.offset + 2))} x ${dataView.getUint16(field.offset)}`;
             break;
-        case 'long-reslist-id':// Quantity and long resource ID
+        case 'long-reslist-id': // Quantity and long resource ID
             // TODO: emit clickable link
             val = `${u32hex(dataView.getUint32(field.offset + 2))} x ${dataView.getUint16(field.offset)}`;
             break;

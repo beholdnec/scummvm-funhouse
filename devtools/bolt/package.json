@@ -10,8 +10,9 @@
   },
   "author": "N.E.C.",
   "license": "GPL-2.0",
+  "private": true,
   "devDependencies": {
-    "electron": "^1.7.9",
-    "typescript": "^2.5.3"
+    "electron": "^2.0.6",
+    "typescript": "^3.0.1"
   }
 }
