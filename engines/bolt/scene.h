@@ -70,98 +70,61 @@ private:
 
 	BltPlane _forePlane;
 	BltPlane _backPlane;
+	Common::ScopedPtr<BltColorCycles> _colorCycles;
 
-	struct BltSpriteElement { // type 27
-		static const uint32 kType = kBltSpriteList;
-		static const uint kSize = 0x8;
-		void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-			pos.x = src.readInt16BE(0);
-			pos.y = src.readInt16BE(2);
-			BltId imageId(src.readUint32BE(4));
-			image.load(bltFile, imageId);
-		}
+	enum HotspotType {
+		kRect = 1,
+		// 2 is unused, but indicates a query of the visible display.
+		kHotspotQuery = 3 // Query the hotspot image
+	};
 
+	enum GraphicsType {
+		kPaletteMods = 1,
+		kSprites = 2
+	};
+
+	struct Sprite {
 		Common::Point pos;
 		BltImage image;
 	};
 
-	typedef ScopedArray<BltSpriteElement> BltSpriteList;
+	typedef ScopedArray<Sprite> SpriteArray;
 
-	BltSpriteList _sprites;
+	SpriteArray _sprites;
 
-	Common::ScopedPtr<BltColorCycles> _colorCycles;
+	struct ButtonGraphics {
+		GraphicsType graphicsType;
 
-	struct BltButtonGraphicElement { // type 30
-		static const uint32 kType = kBltButtonGraphicsList;
-		static const uint kSize = 0xE;
-		enum GraphicsType {
-			PaletteMods = 1,
-			Sprites = 2
-		};
+		// If graphicsType == kPaletteMods
+		BltPaletteMods hoveredPaletteMods;
+		BltPaletteMods idlePaletteMods;
 
-		void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-			type = src.readUint16BE(0);
-			// FIXME: unknown field at 2. It points to an image in sliding puzzle button definitions.
-			BltId hoveredId(src.readUint32BE(6));
-			BltId idleId(src.readUint32BE(0xA));
-			if (type == PaletteMods) {
-				loadBltResourceArray(hoveredPaletteMod, boltlib, hoveredId);
-				loadBltResourceArray(idlePaletteMod, boltlib, idleId);
-			}
-			else if (type == Sprites) {
-				loadBltResourceArray(hoveredSprites, boltlib, hoveredId);
-				loadBltResourceArray(idleSprites, boltlib, idleId);
-			}
-		}
-
-		uint16 type;
-
-		// For palette mod type graphics
-		BltPaletteMods hoveredPaletteMod;
-		BltPaletteMods idlePaletteMod;
-
-		// For image type graphics
-		BltSpriteList hoveredSprites;
-		BltSpriteList idleSprites;
+		// If graphicsType == kSprites
+		SpriteArray hoveredSprites;
+		SpriteArray idleSprites;
 	};
 
-	typedef ScopedArray<BltButtonGraphicElement> BltButtonGraphicsList;
+	typedef ScopedArray<ButtonGraphics> ButtonGraphicsArray;
 
-	struct BltButtonElement { // type 31
-		static const uint32 kType = kBltButtonList;
-		static const uint kSize = 0x14;
-		void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-			type = src.readUint16BE(0);
-			rect = Rect(src.slice(2));
-			plane = src.readUint16BE(0xA);
-			numGraphics = src.readUint16BE(0xC);
-			BltId graphicsId = BltId(src.readUint32BE(0x10));
-			// FIXME: unknown field at 0xE. Always 0 in game data.
-			loadBltResourceArray(graphics, boltlib, graphicsId);
-		}
-
-		enum HotspotType {
-			Rectangle = 1,
-			// 2 is regular display query (unused)
-			HotspotQuery = 3
-		};
-
-		uint16 type;
-		Rect rect;
+	struct Button {
+		HotspotType hotspotType;
 		uint16 plane;
-		uint16 numGraphics;
-		BltButtonGraphicsList graphics;
+		// If hotspotType == kHotspotQuery, this value holds the range of color
+		// indices in the hotspot image that correspond to this button.
+		Rect hotspot;
+
+		ButtonGraphicsArray graphics;
 	};
 
-	typedef ScopedArray<BltButtonElement> BltButtonList;
-
-	BltButtonList _buttons;
+	typedef ScopedArray<Button> ButtonArray;
 
 	Common::Point _origin;
+	ButtonArray _buttons;
 
 	// Return number of button at a point, or -1 if there is no button.
+	void loadSpriteArray(SpriteArray& spriteArray, Boltlib &boltlib, BltId id);
 	int getButtonAtPoint(const Common::Point &pt);
-	void drawButton(const BltButtonElement &button, bool hovered);
+	void drawButton(const Button &button, bool hovered);
 };
 
 } // End of namespace Bolt
