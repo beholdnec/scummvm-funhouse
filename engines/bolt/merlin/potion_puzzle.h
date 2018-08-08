@@ -79,6 +79,8 @@ private:
 	BoltCmd performReaction();
 
 	bool isValidIngredient(int ingredient) const;
+	// Get the ingredient number used internally by the combo table.
+	int getIngredientNum(int ingredient) const;
 	void setTimeout(uint32 length);
 
 	void draw();
@@ -90,6 +92,7 @@ private:
 	BltPalette _bgPalette;
 	Common::Point _origin;
 	int _numIngredients;
+	BltU8Values _ingredientNums;
 	ScopedArray<BltImage> _ingredientImages;
 	ScopedArray<Common::Point> _shelfPoints;
 	Common::Point _bowlPoints[3];

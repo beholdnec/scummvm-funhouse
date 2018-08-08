@@ -33,6 +33,7 @@ struct BltPotionPuzzleDef {
 		bgPaletteId = BltId(src.readUint32BE(8));
 		numShelfPoints = src.readUint16BE(0x16);
 		shelfPointsId = BltId(src.readUint32BE(0x18));
+		ingredientNumsId = BltId(src.readUint32BE(0x1C));
 		basinPointsId = BltId(src.readUint32BE(0x20));
 		origin.x = src.readInt16BE(0x42);
 		origin.y = src.readInt16BE(0x44);
@@ -43,6 +44,7 @@ struct BltPotionPuzzleDef {
 	BltId bgPaletteId;
 	uint16 numShelfPoints;
 	BltId shelfPointsId;
+	BltId ingredientNumsId; // Maps shelf ingredient numbers to puzzle object numbers
 	BltId basinPointsId;
 	Common::Point origin;
 };
@@ -114,6 +116,7 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 
 	loadBltResourceArray(ingredientImagesList, boltlib, difficulty.ingredientImagesId);
 	loadBltResourceArray(shelfPoints, boltlib, puzzle.shelfPointsId);
+	loadBltResourceArray(_ingredientNums, boltlib, puzzle.ingredientNumsId);
 	loadBltResourceArray(bowlPoints, boltlib, puzzle.basinPointsId);
 	loadBltResourceArray(comboTableList, boltlib, difficulty.comboTableListId); // TODO: which combo table should we choose?
 	loadBltResourceArray(_reactionTable, boltlib, comboTableList[0].comboTableId);
@@ -285,6 +288,13 @@ BoltCmd PotionPuzzle::handleClick(Common::Point point) {
 	return BoltCmd::kDone;
 }
 
+int PotionPuzzle::getIngredientNum(int ingredient) const {
+	if (ingredient >= 0 && ingredient < _ingredientNums.size()) {
+		return _ingredientNums[ingredient].value;
+	}
+	return ingredient;
+}
+
 BoltCmd PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
@@ -300,8 +310,8 @@ BoltCmd PotionPuzzle::requestUndo() {
 }
 
 BoltCmd PotionPuzzle::performReaction() {
-	const int ingredientA = _bowlSlots[0];
-	const int ingredientB = _bowlSlots[2];
+	const int ingredientA = getIngredientNum(_bowlSlots[0]);
+	const int ingredientB = getIngredientNum(_bowlSlots[2]);
 
 	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) &&
 		"Bowl slot 0 and 2 must be occupied");
@@ -340,8 +350,8 @@ BoltCmd PotionPuzzle::performReaction() {
 	_bowlSlots[0] = kNoIngredient;
 	_bowlSlots[1] = reactionInfo->d;
 	_bowlSlots[2] = kNoIngredient;
-	// NOTE: The game doesn't draw the new puzzle state until midway through the movie. The movie
-	//       sends a special trigger command.
+	// NOTE: The game doesn't redraw puzzle until midway through the movie. The movie
+	//       sends a special redraw command.
 	_game->startPotionMovie(reactionInfo->movie);
 
 	return BoltCmd::kDone;
