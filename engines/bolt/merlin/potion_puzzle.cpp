@@ -78,7 +78,7 @@ struct BltPotionPuzzleDifficultyDef {
 
 struct BltPotionPuzzleComboTableListElement {
 	static const uint32 kType = kBltPotionPuzzleComboTableList;
-	static const uint kSize = 0x1E;
+	static const uint kSize = 6;
 	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
 		numCombos = src.readUint16BE(0);
 		comboTableId = BltId(src.readUint32BE(2));
@@ -119,6 +119,10 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	loadBltResourceArray(_ingredientNums, boltlib, puzzle.ingredientNumsId);
 	loadBltResourceArray(bowlPoints, boltlib, puzzle.basinPointsId);
 	loadBltResourceArray(comboTableList, boltlib, difficulty.comboTableListId); // TODO: which combo table should we choose?
+
+	// XXX: Although there are multiple reaction tables, it is unclear how to select which one is
+	//      used. In the original program, it has something to do with the value at 0x14 in the
+	//      puzzle descriptor, combined with a value from the save data.
 	loadBltResourceArray(_reactionTable, boltlib, comboTableList[0].comboTableId);
 
 	_ingredientImages.alloc(difficulty.numIngredients);
@@ -289,9 +293,11 @@ BoltCmd PotionPuzzle::handleClick(Common::Point point) {
 }
 
 int PotionPuzzle::getIngredientNum(int ingredient) const {
-	if (ingredient >= 0 && ingredient < _ingredientNums.size()) {
-		return _ingredientNums[ingredient].value;
-	}
+	// XXX: The _ingredientNums table seems to be ignored in the original.
+	//      More investigation is needed.
+	//if (ingredient >= 0 && ingredient < _ingredientNums.size()) {
+	//	return _ingredientNums[ingredient].value;
+	//}
 	return ingredient;
 }
 
@@ -322,15 +328,34 @@ BoltCmd PotionPuzzle::performReaction() {
 	// FIXME: how do reactions actually work? I don't know how to interpret the puzzle data.
 
 	// Find reaction
+	// NOTE: Sometimes, a different movie will play depending on which ingredients are on the left and
+	//       right. The final object is the same, though.
+	//       Example: In the stump puzzle (easy difficulty), when combining the rock and acorn, the SHMR
+	//       movie plays if the acorn is on the left. Otherwise, the OOZE movie plays. Both reactions result
+	//       in gravel.
 	for (reactionNum = 0; reactionNum < _reactionTable.size(); ++reactionNum) {
 		reactionInfo = &_reactionTable[reactionNum]; // TODO: rename comboTable to reactionTable
 		debug(3, "checking reaction %d, %d, %d, %d, %d",
 			(int)reactionInfo->a, (int)reactionInfo->b, (int)reactionInfo->c, (int)reactionInfo->d,
 			(int)reactionInfo->movie);
-		// -1 is "default" - if -1 is found in the reaction table, it matches any ingredient (?)
-		// (FIXME: The above might be true for the a field, but is it true for b?)
+		// -1 is "wildcard". If -1 is found in the reaction table, it matches any ingredient (?)
 		// TODO: I believe c=-1, d=-1 signifies the Win condition. Maybe.
-		if ((ingredientA == reactionInfo->a || reactionInfo->a == -1) && ingredientB == reactionInfo->b) {
+		if (ingredientA == reactionInfo->a && ingredientB == reactionInfo->b) {
+			break;
+		}
+		if (ingredientA == reactionInfo->b && ingredientB == reactionInfo->a) {
+			break;
+		}
+		if (ingredientA == reactionInfo->a && reactionInfo->b == -1) {
+			break;
+		}
+		if (ingredientB == reactionInfo->a && reactionInfo->b == -1) {
+			break;
+		}
+		if (ingredientA == reactionInfo->b && reactionInfo->a == -1) {
+			break;
+		}
+		if (ingredientB == reactionInfo->b && reactionInfo->a == -1) {
 			break;
 		}
 	}
