@@ -77,10 +77,10 @@ private:
 	BoltCmd requestIngredient(int ingredient);
 	BoltCmd requestUndo();
 	BoltCmd performReaction();
+	void reset();
 
 	bool isValidIngredient(int ingredient) const;
-	// Get the ingredient number used internally by the combo table.
-	int getIngredientNum(int ingredient) const;
+	int getNumRemainingIngredients() const;
 	void setTimeout(uint32 length);
 
 	void draw();

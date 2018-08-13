@@ -147,15 +147,8 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	_timeoutActive = false;
 	
 	_shelfSlotOccupied.alloc(puzzle.numShelfPoints);
-	for (int i = 0; i < puzzle.numShelfPoints; ++i) {
-		_shelfSlotOccupied[i] = true;
-	}
 
-	for (int i = 0; i < kNumBowlSlots; ++i) {
-		_bowlSlots[i] = kNoIngredient;
-	}
-
-	_requestedIngredient = kNoIngredient;
+	reset();
 }
 
 void PotionPuzzle::enter() {
@@ -200,7 +193,7 @@ BoltCmd PotionPuzzle::driveWaitForPlayer(const BoltMsg &msg) {
 }
 
 BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
-	// TODO: Eliminate Drive events. Transitions should be driven primarily by Timer and AudioEnded,
+	// TODO: Transitions should be driven primarily by Timer and AudioEnded,
 	// once those event types are implemented.
 	if (msg.type != BoltMsg::kDrive) {
 		return BoltCmd::kDone;
@@ -233,6 +226,23 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 		return BoltCmd::kResend;
 	}
 
+	bool allIngredientsUsed = true;
+	for (uint i = 0; i < _shelfSlotOccupied.size(); ++i) {
+		if (_shelfSlotOccupied[i]) {
+			allIngredientsUsed = false;
+			break;
+		}
+	}
+
+	int numRemainingIngredients = getNumRemainingIngredients();
+	bool bowlIsEmpty = _bowlSlots[0] == kNoIngredient && _bowlSlots[1] == kNoIngredient;
+	if (numRemainingIngredients == 0 || (bowlIsEmpty && numRemainingIngredients == 1)) {
+		// No more reactions are possible. Reset.
+		reset();
+		draw();
+		// TODO: Play "reset" sound
+		return BoltCmd::kResend;
+	}
 	// No action taken; change to WaitForPlayer mode
 	enterWaitForPlayerMode();
 	return BoltCmd::kResend;
@@ -285,15 +295,6 @@ BoltCmd PotionPuzzle::handleClick(Common::Point point) {
 	return BoltCmd::kDone;
 }
 
-int PotionPuzzle::getIngredientNum(int ingredient) const {
-	// XXX: The _ingredientNums table seems to be ignored in the original.
-	//      More investigation is needed.
-	//if (ingredient >= 0 && ingredient < _ingredientNums.size()) {
-	//	return _ingredientNums[ingredient].value;
-	//}
-	return ingredient;
-}
-
 BoltCmd PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
@@ -309,8 +310,8 @@ BoltCmd PotionPuzzle::requestUndo() {
 }
 
 BoltCmd PotionPuzzle::performReaction() {
-	const int ingredientA = getIngredientNum(_bowlSlots[0]);
-	const int ingredientB = getIngredientNum(_bowlSlots[1]);
+	const int ingredientA = _bowlSlots[0];
+	const int ingredientB = _bowlSlots[1];
 
 	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) &&
 		"Both bowl slots must be occupied");
@@ -333,6 +334,7 @@ BoltCmd PotionPuzzle::performReaction() {
 			(int)reactionInfo->a, (int)reactionInfo->b, (int)reactionInfo->c, (int)reactionInfo->d,
 			(int)reactionInfo->movie);
 
+		// FIXME: Some reactions are still broken??!
 		if (ingredientA == reactionInfo->a && ingredientB == reactionInfo->b) {
 			if (reactionInfo->c == -1 && reactionInfo->d == -1) {
 				// Check if all ingredients have been used
@@ -385,6 +387,18 @@ BoltCmd PotionPuzzle::performReaction() {
 	_game->startPotionMovie(reactionInfo->movie);
 
 	return BoltCmd::kDone;
+}
+
+void PotionPuzzle::reset() {
+	for (uint i = 0; i < _shelfSlotOccupied.size(); ++i) {
+		_shelfSlotOccupied[i] = true;
+	}
+
+	for (int i = 0; i < kNumBowlSlots; ++i) {
+		_bowlSlots[i] = kNoIngredient;
+	}
+
+	_requestedIngredient = kNoIngredient;
 }
 
 void PotionPuzzle::draw() {
@@ -445,6 +459,16 @@ void PotionPuzzle::draw() {
 
 bool PotionPuzzle::isValidIngredient(int ingredient) const {
 	return ingredient >= 0 && ingredient < _numIngredients;
+}
+
+int PotionPuzzle::getNumRemainingIngredients() const {
+	int num = 0;
+	for (uint i = 0; i < _shelfSlotOccupied.size(); ++i) {
+		if (_shelfSlotOccupied[i]) {
+			++num;
+		}
+	}
+	return num;
 }
 
 void PotionPuzzle::setTimeout(uint32 length) {
