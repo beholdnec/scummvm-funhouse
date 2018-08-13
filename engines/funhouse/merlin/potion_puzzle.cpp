@@ -269,7 +269,6 @@ BoltCmd PotionPuzzle::handleClick(Common::Point point) {
 	// Determine which shelf piece was clicked.
 	for (uint i = 0; i < _shelfPoints.size(); ++i) {
 		if (_shelfSlotOccupied[i]) {
-			// TODO: look up image in ingredient id -> ingredient image table?
 			const BltImage &image = _ingredientImages[i];
 			Common::Point imagePos = _shelfPoints[i] -
 				Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
@@ -314,7 +313,7 @@ BoltCmd PotionPuzzle::performReaction() {
 	const int ingredientB = getIngredientNum(_bowlSlots[1]);
 
 	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) &&
-		"Bowl slot 0 and 2 must be occupied");
+		"Both bowl slots must be occupied");
 
 	uint reactionNum = 0;
 	const BltPotionPuzzleComboTableElement *reactionInfo = nullptr;
@@ -322,6 +321,7 @@ BoltCmd PotionPuzzle::performReaction() {
 	// FIXME: how do reactions actually work? I don't know how to interpret the puzzle data.
 
 	// Find reaction
+
 	// NOTE: Sometimes, a different movie will play depending on which ingredients are on the left and
 	//       right. The final object is the same, though.
 	//       Example: In the stump puzzle (easy difficulty), when combining the rock and acorn, the SHMR
@@ -332,17 +332,38 @@ BoltCmd PotionPuzzle::performReaction() {
 		debug(3, "checking reaction %d, %d, %d, %d, %d",
 			(int)reactionInfo->a, (int)reactionInfo->b, (int)reactionInfo->c, (int)reactionInfo->d,
 			(int)reactionInfo->movie);
-		// -1 is "wildcard". If -1 is found in the reaction table, it matches any ingredient (?)
-		// TODO: I believe c=-1, d=-1 signifies the Win condition. Maybe.
+
 		if (ingredientA == reactionInfo->a && ingredientB == reactionInfo->b) {
+			if (reactionInfo->c == -1 && reactionInfo->d == -1) {
+				// Check if all ingredients have been used
+				// FIXME: I don't think the original program actually checks this.
+				bool allIngredientsUsed = true;
+				for (uint i = 0; i < _shelfSlotOccupied.size(); ++i) {
+					if (_shelfSlotOccupied[i]) {
+						allIngredientsUsed = false;
+						break;
+					}
+				}
+
+				if (allIngredientsUsed) {
+					// Win condition!
+					return Card::kEnd;
+				}
+				else {
+					// Not all ingredients are used -- reject this entry.
+					continue;
+				}
+			}
+
+			// Match found -- accept this entry.
 			break;
 		}
+
+		// Wildcard
 		if (reactionInfo->a == -1 && ingredientB == reactionInfo->b) {
+			// Match found -- accept this entry.
 			break;
 		}
-		//if (ingredientA == reactionInfo->b && ingredientB == reactionInfo->a) {
-		//	break;
-		//}
 	}
 
 	if (reactionNum >= _reactionTable.size()) {
@@ -355,7 +376,8 @@ BoltCmd PotionPuzzle::performReaction() {
 	}
 
 	// Perform reaction
-	// FIXME: what should we do here? What does reactionInfo->c mean, if anything?
+
+	// FIXME: Does reactionInfo->c have any special meaning?
 	_bowlSlots[0] = reactionInfo->d;
 	_bowlSlots[1] = kNoIngredient;
 	// NOTE: The game doesn't redraw puzzle until midway through the movie. The movie
@@ -394,7 +416,7 @@ void PotionPuzzle::draw() {
 			const BltImage &image = _ingredientImages[_bowlSlots[0]];
 			Common::Point pos = _bowlPoints[0] -
 				Common::Point(image.getWidth(), image.getHeight()) - _origin;
-			_ingredientImages[_bowlSlots[0]].drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+			image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
 		}
 		{
 
