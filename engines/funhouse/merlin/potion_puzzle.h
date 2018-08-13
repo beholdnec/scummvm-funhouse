@@ -85,6 +85,8 @@ private:
 
 	void draw();
 
+	static const int kNumBowlPoints = 3;
+
 	MerlinGame *_game;
 	IBoltEventLoop *_eventLoop;
 	Graphics *_graphics;
@@ -101,8 +103,8 @@ private:
 	Mode _mode;
 
 	ScopedArray<bool> _shelfSlotOccupied; // False: Empty; True: Filled
-	static const int kNumBowlSlots = 3;
-	int _bowlSlots[kNumBowlSlots]; // Ingredients in bowl
+	static const int kNumBowlSlots = 2;
+	int _bowlSlots[2]; // Ingredients in bowl
 	int _requestedIngredient;
 	
 	bool _timeoutActive;

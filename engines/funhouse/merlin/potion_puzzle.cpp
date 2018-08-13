@@ -136,10 +136,10 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	}
 
 	// TODO: clean up seemingly redundant / unnecessarily complex code
-	if (bowlPoints.size() != kNumBowlSlots) {
+	if (bowlPoints.size() != kNumBowlPoints) {
 		error("Invalid number of bowl points %d", bowlPoints.size());
 	}
-	for (int i = 0; i < kNumBowlSlots; ++i) {
+	for (int i = 0; i < kNumBowlPoints; ++i) {
 		_bowlPoints[i] = bowlPoints[i].pos;
 	}
 	
@@ -212,7 +212,7 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 
 	// Examine state to decide what action to take
 
-	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[2])) {
+	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[1])) {
 		// Left and right bowl slots occupied; perform reaction
 		return performReaction();
 	}
@@ -220,15 +220,10 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 	if (isValidIngredient(_requestedIngredient)) {
 		// Piece selected; move piece to bowl
 		_shelfSlotOccupied[_requestedIngredient] = false;
-		if (isValidIngredient(_bowlSlots[1])) {
-			_bowlSlots[0] = _bowlSlots[1];
-			_bowlSlots[1] = kNoIngredient;
-			_bowlSlots[2] = _requestedIngredient;
-		} else {
-			_bowlSlots[0] = kNoIngredient;
-			_bowlSlots[1] = _requestedIngredient;
-			_bowlSlots[2] = kNoIngredient;
-		}
+
+		_bowlSlots[1] = _bowlSlots[0];
+		_bowlSlots[0] = _requestedIngredient;
+
 		_requestedIngredient = kNoIngredient;
 
 		draw();
@@ -259,7 +254,6 @@ BoltCmd PotionPuzzle::handleClick(Common::Point point) {
 
 	// Check if middle bowl piece was clicked. If it was clicked, undo the last action.
 	if (isValidIngredient(_bowlSlots[1])) {
-		// TODO: look up image in ingredient id -> ingredient image table?
 		const BltImage &image = _ingredientImages[_bowlSlots[1]];
 		Common::Point imagePos = _bowlPoints[1] -
 			Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
@@ -317,7 +311,7 @@ BoltCmd PotionPuzzle::requestUndo() {
 
 BoltCmd PotionPuzzle::performReaction() {
 	const int ingredientA = getIngredientNum(_bowlSlots[0]);
-	const int ingredientB = getIngredientNum(_bowlSlots[2]);
+	const int ingredientB = getIngredientNum(_bowlSlots[1]);
 
 	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) &&
 		"Bowl slot 0 and 2 must be occupied");
@@ -343,21 +337,12 @@ BoltCmd PotionPuzzle::performReaction() {
 		if (ingredientA == reactionInfo->a && ingredientB == reactionInfo->b) {
 			break;
 		}
-		if (ingredientA == reactionInfo->b && ingredientB == reactionInfo->a) {
+		if (reactionInfo->a == -1 && ingredientB == reactionInfo->b) {
 			break;
 		}
-		if (ingredientA == reactionInfo->a && reactionInfo->b == -1) {
-			break;
-		}
-		if (ingredientB == reactionInfo->a && reactionInfo->b == -1) {
-			break;
-		}
-		if (ingredientA == reactionInfo->b && reactionInfo->a == -1) {
-			break;
-		}
-		if (ingredientB == reactionInfo->b && reactionInfo->a == -1) {
-			break;
-		}
+		//if (ingredientA == reactionInfo->b && ingredientB == reactionInfo->a) {
+		//	break;
+		//}
 	}
 
 	if (reactionNum >= _reactionTable.size()) {
@@ -365,16 +350,14 @@ BoltCmd PotionPuzzle::performReaction() {
 		// Empty the bowl. This should never happen.
 		_bowlSlots[0] = kNoIngredient;
 		_bowlSlots[1] = kNoIngredient;
-		_bowlSlots[2] = kNoIngredient;
 		draw();
 		return BoltCmd::kDone;
 	}
 
 	// Perform reaction
 	// FIXME: what should we do here? What does reactionInfo->c mean, if anything?
-	_bowlSlots[0] = kNoIngredient;
-	_bowlSlots[1] = reactionInfo->d;
-	_bowlSlots[2] = kNoIngredient;
+	_bowlSlots[0] = reactionInfo->d;
+	_bowlSlots[1] = kNoIngredient;
 	// NOTE: The game doesn't redraw puzzle until midway through the movie. The movie
 	//       sends a special redraw command.
 	_game->startPotionMovie(reactionInfo->movie);
@@ -404,30 +387,35 @@ void PotionPuzzle::draw() {
 		}
 	}
 
-	// TODO: use ingredient number -> ingredient image lookup table, as original game seems to do.
+	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[1])) {
+		// Draw ingredients at bowl points 0 and 2
+		{
+			// Anchor left ingredient at southeast corner
+			const BltImage &image = _ingredientImages[_bowlSlots[0]];
+			Common::Point pos = _bowlPoints[0] -
+				Common::Point(image.getWidth(), image.getHeight()) - _origin;
+			_ingredientImages[_bowlSlots[0]].drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+		}
+		{
 
-	if (isValidIngredient(_bowlSlots[0])) {
-		// Draw ingredient at bowl slot 0, anchored at southeast point of image
-		const BltImage &image = _ingredientImages[_bowlSlots[0]];
-		Common::Point pos = _bowlPoints[0] -
-			Common::Point(image.getWidth(), image.getHeight()) - _origin;
-		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+			// Anchor right ingredient at southwest corner
+			const BltImage &image = _ingredientImages[_bowlSlots[1]];
+			Common::Point pos = _bowlPoints[2] -
+				Common::Point(0, image.getHeight()) - _origin;
+			image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+		}
 	}
-
-	if (isValidIngredient(_bowlSlots[1])) {
-		// Draw ingredient at bowl slot 1, anchored at south point of image
-		const BltImage &image = _ingredientImages[_bowlSlots[1]];
+	else if (isValidIngredient(_bowlSlots[0])) {
+		// Draw ingredient at bowl point 1, anchored at south point of image
+		const BltImage &image = _ingredientImages[_bowlSlots[0]];
 		Common::Point pos = _bowlPoints[1] -
 			Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
 		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
 	}
-
-	if (isValidIngredient(_bowlSlots[2])) {
-		// Draw ingredient at bowl slot 2, anchored at southwest point of image
-		const BltImage &image = _ingredientImages[_bowlSlots[2]];
-		Common::Point pos = _bowlPoints[2] -
-			Common::Point(0, image.getHeight()) - _origin;
-		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+	else {
+		// Check for sanity
+		assert(!isValidIngredient(_bowlSlots[0]) && !isValidIngredient(_bowlSlots[1]) &&
+			"Invalid bowl state");
 	}
 
 	_graphics->markDirty();
