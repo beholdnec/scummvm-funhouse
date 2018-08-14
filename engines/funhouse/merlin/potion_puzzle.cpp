@@ -319,11 +319,6 @@ BoltCmd PotionPuzzle::performReaction() {
 	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) && !isValidIngredient(_bowlSlots[1])
 		&& "Invalid bowl state in performReaction");
 
-	uint reactionNum = 0;
-	const BltPotionPuzzleComboTableElement *reactionInfo = nullptr;
-
-	// FIXME: how do reactions actually work? I don't know how to interpret the puzzle data.
-
 	// Find reaction
 
 	// NOTE: Sometimes, a different movie will play depending on which ingredients are on the left and
@@ -331,8 +326,10 @@ BoltCmd PotionPuzzle::performReaction() {
 	//       Example: In the stump puzzle (easy difficulty), when combining the rock and acorn, the SHMR
 	//       movie plays if the acorn is on the left. Otherwise, the OOZE movie plays. Both reactions result
 	//       in gravel.
-	for (reactionNum = 0; reactionNum < _reactionTable.size(); ++reactionNum) {
-		reactionInfo = &_reactionTable[reactionNum]; // TODO: rename comboTable to reactionTable
+	int bestMatch = -1;
+	const BltPotionPuzzleComboTableElement *reactionInfo = nullptr;
+	for (uint i = 0; i < _reactionTable.size(); ++i) {
+		reactionInfo = &_reactionTable[i];
 		debug(3, "checking reaction %d, %d, %d, %d, %d",
 			(int)reactionInfo->a, (int)reactionInfo->b, (int)reactionInfo->c, (int)reactionInfo->d,
 			(int)reactionInfo->movie);
@@ -350,18 +347,25 @@ BoltCmd PotionPuzzle::performReaction() {
 				}
 			}
 
-			// Match found -- accept this entry.
-			break;
+			bestMatch = i;
+			break; // Perfect match found; break early
+		}
+
+		if (ingredientA == reactionInfo->b && ingredientB == reactionInfo->a) {
+			if (bestMatch < 0) {
+				bestMatch = i; // Imperfect match found; keep searching
+			}
 		}
 
 		// Wildcard
 		if (reactionInfo->a == -1 && ingredientB == reactionInfo->b) {
-			// Match found -- accept this entry.
-			break;
+			if (bestMatch < 0) {
+				bestMatch = i;
+			}
 		}
 	}
 
-	if (reactionNum >= _reactionTable.size()) {
+	if (bestMatch < 0) {
 		warning("No reaction found for ingredients %d, %d", ingredientA, ingredientB);
 		// Empty the bowl. This should never happen.
 		_bowlSlots[0] = kNoIngredient;
@@ -372,6 +376,7 @@ BoltCmd PotionPuzzle::performReaction() {
 	}
 
 	// Perform reaction
+	reactionInfo = &_reactionTable[bestMatch];
 
 	// FIXME: Does reactionInfo->c have any special meaning?
 	_bowlSlots[0] = kNoIngredient;
