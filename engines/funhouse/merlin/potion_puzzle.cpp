@@ -205,7 +205,7 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 
 	// Examine state to decide what action to take
 
-	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[1])) {
+	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[2])) {
 		// Left and right bowl slots occupied; perform reaction
 		return performReaction();
 	}
@@ -214,8 +214,18 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 		// Piece selected; move piece to bowl
 		_shelfSlotOccupied[_requestedIngredient] = false;
 
-		_bowlSlots[1] = _bowlSlots[0];
-		_bowlSlots[0] = _requestedIngredient;
+		if (isValidIngredient(_bowlSlots[1])) {
+			// FIXME: The requested ingredient should appear on the right. This breaks the reaction, though.
+			_bowlSlots[2] = _bowlSlots[1];
+			_bowlSlots[1] = kNoIngredient;
+			_bowlSlots[0] = _requestedIngredient;
+		}
+		else if (isValidIngredient(_bowlSlots[0])) {
+			_bowlSlots[2] = _requestedIngredient;
+		}
+		else {
+			_bowlSlots[0] = _requestedIngredient;
+		}
 
 		_requestedIngredient = kNoIngredient;
 
@@ -226,16 +236,9 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 		return BoltCmd::kResend;
 	}
 
-	bool allIngredientsUsed = true;
-	for (uint i = 0; i < _shelfSlotOccupied.size(); ++i) {
-		if (_shelfSlotOccupied[i]) {
-			allIngredientsUsed = false;
-			break;
-		}
-	}
-
 	int numRemainingIngredients = getNumRemainingIngredients();
-	bool bowlIsEmpty = _bowlSlots[0] == kNoIngredient && _bowlSlots[1] == kNoIngredient;
+	bool bowlIsEmpty = !isValidIngredient(_bowlSlots[0]) && !isValidIngredient(_bowlSlots[1])
+		&& !isValidIngredient(_bowlSlots[2]);
 	if (numRemainingIngredients == 0 || (bowlIsEmpty && numRemainingIngredients == 1)) {
 		// No more reactions are possible. Reset.
 		reset();
@@ -311,10 +314,10 @@ BoltCmd PotionPuzzle::requestUndo() {
 
 BoltCmd PotionPuzzle::performReaction() {
 	const int ingredientA = _bowlSlots[0];
-	const int ingredientB = _bowlSlots[1];
+	const int ingredientB = _bowlSlots[2];
 
-	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) &&
-		"Both bowl slots must be occupied");
+	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) && !isValidIngredient(_bowlSlots[1])
+		&& "Invalid bowl state in performReaction");
 
 	uint reactionNum = 0;
 	const BltPotionPuzzleComboTableElement *reactionInfo = nullptr;
@@ -334,20 +337,10 @@ BoltCmd PotionPuzzle::performReaction() {
 			(int)reactionInfo->a, (int)reactionInfo->b, (int)reactionInfo->c, (int)reactionInfo->d,
 			(int)reactionInfo->movie);
 
-		// FIXME: Some reactions are still broken??!
 		if (ingredientA == reactionInfo->a && ingredientB == reactionInfo->b) {
 			if (reactionInfo->c == -1 && reactionInfo->d == -1) {
-				// Check if all ingredients have been used
-				// FIXME: I don't think the original program actually checks this.
-				bool allIngredientsUsed = true;
-				for (uint i = 0; i < _shelfSlotOccupied.size(); ++i) {
-					if (_shelfSlotOccupied[i]) {
-						allIngredientsUsed = false;
-						break;
-					}
-				}
-
-				if (allIngredientsUsed) {
+				// FIXME: I'm not sure the original program checks if all ingredients are used.
+				if (getNumRemainingIngredients() == 0) {
 					// Win condition!
 					return Card::kEnd;
 				}
@@ -373,6 +366,7 @@ BoltCmd PotionPuzzle::performReaction() {
 		// Empty the bowl. This should never happen.
 		_bowlSlots[0] = kNoIngredient;
 		_bowlSlots[1] = kNoIngredient;
+		_bowlSlots[2] = kNoIngredient;
 		draw();
 		return BoltCmd::kDone;
 	}
@@ -380,8 +374,9 @@ BoltCmd PotionPuzzle::performReaction() {
 	// Perform reaction
 
 	// FIXME: Does reactionInfo->c have any special meaning?
-	_bowlSlots[0] = reactionInfo->d;
-	_bowlSlots[1] = kNoIngredient;
+	_bowlSlots[0] = kNoIngredient;
+	_bowlSlots[1] = reactionInfo->d;
+	_bowlSlots[2] = kNoIngredient;
 	// NOTE: The game doesn't redraw puzzle until midway through the movie. The movie
 	//       sends a special redraw command.
 	_game->startPotionMovie(reactionInfo->movie);
@@ -423,35 +418,28 @@ void PotionPuzzle::draw() {
 		}
 	}
 
-	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[1])) {
-		// Draw ingredients at bowl points 0 and 2
-		{
-			// Anchor left ingredient at southeast corner
-			const BltImage &image = _ingredientImages[_bowlSlots[0]];
-			Common::Point pos = _bowlPoints[0] -
-				Common::Point(image.getWidth(), image.getHeight()) - _origin;
-			image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
-		}
-		{
-
-			// Anchor right ingredient at southwest corner
-			const BltImage &image = _ingredientImages[_bowlSlots[1]];
-			Common::Point pos = _bowlPoints[2] -
-				Common::Point(0, image.getHeight()) - _origin;
-			image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
-		}
-	}
-	else if (isValidIngredient(_bowlSlots[0])) {
-		// Draw ingredient at bowl point 1, anchored at south point of image
+	if (isValidIngredient(_bowlSlots[0])) {
+		// Anchor left ingredient at southeast corner
 		const BltImage &image = _ingredientImages[_bowlSlots[0]];
+		Common::Point pos = _bowlPoints[0] -
+			Common::Point(image.getWidth(), image.getHeight()) - _origin;
+		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+	}
+
+	if (isValidIngredient(_bowlSlots[1])) {
+		// Anchor middle ingredient at south point
+		const BltImage &image = _ingredientImages[_bowlSlots[1]];
 		Common::Point pos = _bowlPoints[1] -
 			Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
 		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
 	}
-	else {
-		// Check for sanity
-		assert(!isValidIngredient(_bowlSlots[0]) && !isValidIngredient(_bowlSlots[1]) &&
-			"Invalid bowl state");
+
+	if (isValidIngredient(_bowlSlots[2])) {
+		// Anchor right ingredient at southwest corner
+		const BltImage &image = _ingredientImages[_bowlSlots[2]];
+		Common::Point pos = _bowlPoints[2] -
+			Common::Point(0, image.getHeight()) - _origin;
+		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
 	}
 
 	_graphics->markDirty();
