@@ -94,7 +94,6 @@ private:
 	BltPalette _bgPalette;
 	Common::Point _origin;
 	int _numIngredients;
-	BltU8Values _ingredientNums;
 	ScopedArray<BltImage> _ingredientImages;
 	ScopedArray<Common::Point> _shelfPoints;
 	Common::Point _bowlPoints[3];

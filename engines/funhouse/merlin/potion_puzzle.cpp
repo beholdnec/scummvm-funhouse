@@ -33,7 +33,7 @@ struct BltPotionPuzzleDef {
 		bgPaletteId = BltId(src.readUint32BE(8));
 		numShelfPoints = src.readUint16BE(0x16);
 		shelfPointsId = BltId(src.readUint32BE(0x18));
-		ingredientNumsId = BltId(src.readUint32BE(0x1C));
+		// FIXME: U8Values resource specified at 0x1C has an unknown purpose.
 		basinPointsId = BltId(src.readUint32BE(0x20));
 		origin.x = src.readInt16BE(0x42);
 		origin.y = src.readInt16BE(0x44);
@@ -44,7 +44,6 @@ struct BltPotionPuzzleDef {
 	BltId bgPaletteId;
 	uint16 numShelfPoints;
 	BltId shelfPointsId;
-	BltId ingredientNumsId; // Maps shelf ingredient numbers to puzzle object numbers
 	BltId basinPointsId;
 	Common::Point origin;
 };
@@ -116,7 +115,6 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 
 	loadBltResourceArray(ingredientImagesList, boltlib, difficulty.ingredientImagesId);
 	loadBltResourceArray(shelfPoints, boltlib, puzzle.shelfPointsId);
-	loadBltResourceArray(_ingredientNums, boltlib, puzzle.ingredientNumsId);
 	loadBltResourceArray(bowlPoints, boltlib, puzzle.basinPointsId);
 	loadBltResourceArray(comboTableList, boltlib, difficulty.comboTableListId); // TODO: which combo table should we choose?
 
@@ -215,10 +213,9 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 		_shelfSlotOccupied[_requestedIngredient] = false;
 
 		if (isValidIngredient(_bowlSlots[1])) {
-			// FIXME: The requested ingredient should appear on the right. This breaks the reaction, though.
-			_bowlSlots[2] = _bowlSlots[1];
+			_bowlSlots[0] = _bowlSlots[1];
 			_bowlSlots[1] = kNoIngredient;
-			_bowlSlots[0] = _requestedIngredient;
+			_bowlSlots[2] = _requestedIngredient;
 		}
 		else if (isValidIngredient(_bowlSlots[0])) {
 			_bowlSlots[2] = _requestedIngredient;
@@ -246,6 +243,7 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 		// TODO: Play "reset" sound
 		return BoltCmd::kResend;
 	}
+
 	// No action taken; change to WaitForPlayer mode
 	enterWaitForPlayerMode();
 	return BoltCmd::kResend;
@@ -313,17 +311,17 @@ BoltCmd PotionPuzzle::requestUndo() {
 }
 
 BoltCmd PotionPuzzle::performReaction() {
-	const int ingredientA = _bowlSlots[0];
-	const int ingredientB = _bowlSlots[2];
+	const int ingredientA = _bowlSlots[2];
+	const int ingredientB = _bowlSlots[0];
 
 	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) && !isValidIngredient(_bowlSlots[1])
 		&& "Invalid bowl state in performReaction");
 
 	// Find reaction
 
-	// NOTE: Sometimes, a different movie will play depending on which ingredients are on the left and
-	//       right. The final object is the same, though.
-	//       Example: In the stump puzzle (easy difficulty), when combining the rock and acorn, the SHMR
+	// NOTE: Different movies can play depending on which ingredients are on the left and right.
+	//       The final object is always the same, though.
+	//       Example: On the stump puzzle (easy difficulty), when combining the rock and acorn, the SHMR
 	//       movie plays if the acorn is on the left. Otherwise, the OOZE movie plays. Both reactions result
 	//       in gravel.
 	int bestMatch = -1;
@@ -424,7 +422,7 @@ void PotionPuzzle::draw() {
 	}
 
 	if (isValidIngredient(_bowlSlots[0])) {
-		// Anchor left ingredient at southeast corner
+		// Anchor left ingredient at lower right corner
 		const BltImage &image = _ingredientImages[_bowlSlots[0]];
 		Common::Point pos = _bowlPoints[0] -
 			Common::Point(image.getWidth(), image.getHeight()) - _origin;
@@ -432,7 +430,7 @@ void PotionPuzzle::draw() {
 	}
 
 	if (isValidIngredient(_bowlSlots[1])) {
-		// Anchor middle ingredient at south point
+		// Anchor middle ingredient at lower middle point
 		const BltImage &image = _ingredientImages[_bowlSlots[1]];
 		Common::Point pos = _bowlPoints[1] -
 			Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
@@ -440,7 +438,7 @@ void PotionPuzzle::draw() {
 	}
 
 	if (isValidIngredient(_bowlSlots[2])) {
-		// Anchor right ingredient at southwest corner
+		// Anchor right ingredient at lower left corner
 		const BltImage &image = _ingredientImages[_bowlSlots[2]];
 		Common::Point pos = _bowlPoints[2] -
 			Common::Point(0, image.getHeight()) - _origin;
