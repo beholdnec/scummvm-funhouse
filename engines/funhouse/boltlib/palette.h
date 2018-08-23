@@ -76,6 +76,7 @@ struct BltColorCycles {
 void applyColorCycles(Graphics *graphics, const BltColorCycles *cycles);
 
 struct BltPalette { // type 10
+	static const uint32 kHeaderSize = 6;
 	void load(Boltlib &boltlib, BltId id);
 	BltResource data;
 };

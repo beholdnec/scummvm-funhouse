@@ -38,7 +38,24 @@ protected:
 	BoltCmd handleButtonClick(int num);
 
 private:
+	struct ItemFrame {
+		Common::Point pos;
+		BltImage image;
+	};
+
+	typedef ScopedArray<ItemFrame> ItemFrameList;
+
+	struct Item {
+		ItemFrameList frames;
+		BltPalette palette;
+		Common::ScopedPtr<BltColorCycles> colorCycles;
+	};
+
+	typedef ScopedArray<Item> ItemList;
+
+	Graphics *_graphics;
 	Scene _scene;
+	ItemList _itemList;
 };
 
 } // End of namespace Funhouse

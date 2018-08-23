@@ -43,7 +43,7 @@ public:
 	BoltCmd handleMsg(const BoltMsg &msg);
 
 	void setBackPlane(Boltlib &boltlib, BltId id);
-
+	const Common::Point& getOrigin() const { return _origin; }
 
 private:
 	IBoltEventLoop *_eventLoop;
