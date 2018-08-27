@@ -20,35 +20,42 @@
  *
  */
 
-#ifndef FUNHOUSE_MERLIN_SYNCH_PUZZLE_H
-#define FUNHOUSE_MERLIN_SYNCH_PUZZLE_H
-
-#include "funhouse/merlin/merlin.h"
-#include "funhouse/scene.h"
+#include "funhouse/boltlib/sprites.h"
 
 namespace Funhouse {
+    
+struct BltSpriteElement { // type 27
+	static const uint32 kType = kBltSpriteList;
+	static const uint kSize = 0x8;
+	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
+		pos.x = src.readInt16BE(0);
+		pos.y = src.readInt16BE(2);
+		imageId = BltId(src.readUint32BE(4));
+	}
 
-class SynchPuzzle : public Card {
-public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
-	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
-
-protected:
-	BoltCmd handleButtonClick(int num);
-
-private:
-    struct Item {
-        BltSprites sprites;
-    };
-
-    typedef ScopedArray<Item> ItemArray;
-
-    Graphics *_graphics;
-	Scene _scene;
-    ItemArray _items;
+	Common::Point pos;
+	BltId imageId;
 };
 
-} // End of namespace Funhouse
+typedef ScopedArray<BltSpriteElement> BltSpriteList;
 
-#endif
+void BltSprites::load(Boltlib &boltlib, BltId id) {
+    BltSpriteList spriteList;
+    loadBltResourceArray(spriteList, boltlib, id);
+
+    _sprites.alloc(spriteList.size());
+    for (uint i = 0; i < _sprites.size(); ++i) {
+        _sprites[i].pos = spriteList[i].pos;
+        _sprites[i].image.load(boltlib, spriteList[i].imageId);
+    }
+}
+
+const Sprite& BltSprites::getSprite(uint i) const {
+    return _sprites[i];
+}
+
+uint BltSprites::getNumSprites() const {
+    return _sprites.size();
+}
+
+} // End of namespace Funhouse

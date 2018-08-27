@@ -20,35 +20,30 @@
  *
  */
 
-#ifndef FUNHOUSE_MERLIN_SYNCH_PUZZLE_H
-#define FUNHOUSE_MERLIN_SYNCH_PUZZLE_H
+#ifndef FUNHOUSE_BOLTLIB_SPRITES_H
+#define FUNHOUSE_BOLTLIB_SPRITES_H
 
-#include "funhouse/merlin/merlin.h"
-#include "funhouse/scene.h"
+#include "funhouse/graphics.h"
 
 namespace Funhouse {
 
-class SynchPuzzle : public Card {
-public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
-	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
-
-protected:
-	BoltCmd handleButtonClick(int num);
-
-private:
-    struct Item {
-        BltSprites sprites;
-    };
-
-    typedef ScopedArray<Item> ItemArray;
-
-    Graphics *_graphics;
-	Scene _scene;
-    ItemArray _items;
+struct Sprite {
+    Common::Point pos;
+    BltImage image;
 };
 
+class BltSprites {
+public:
+    void load(Boltlib &boltlib, BltId id);
+    const Sprite& getSprite(uint i) const;
+    uint getNumSprites() const;
+
+private:
+    typedef ScopedArray<Sprite> SpriteArray;
+
+    SpriteArray _sprites;
+};
+    
 } // End of namespace Funhouse
 
 #endif

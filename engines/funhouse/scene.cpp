@@ -53,21 +53,6 @@ struct BltScene { // type 32
 	Common::Point origin;
 };
 
-struct BltSpriteElement { // type 27
-	static const uint32 kType = kBltSpriteList;
-	static const uint kSize = 0x8;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-		pos.x = src.readInt16BE(0);
-		pos.y = src.readInt16BE(2);
-		imageId = BltId(src.readUint32BE(4));
-	}
-
-	Common::Point pos;
-	BltId imageId;
-};
-
-typedef ScopedArray<BltSpriteElement> BltSpriteList;
-
 struct BltButtonGraphicElement { // type 30
 	static const uint32 kType = kBltButtonGraphicsList;
 	static const uint kSize = 0xE;
@@ -129,7 +114,7 @@ void Scene::load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib
 	loadBltResource(_forePlane, boltlib, sceneInfo.forePlaneId);
 	loadBltResource(_backPlane, boltlib, sceneInfo.backPlaneId);
 
-	loadSpriteArray(_sprites, boltlib, sceneInfo.spritesId);
+    _sprites.load(boltlib, sceneInfo.spritesId);
 
 	BltButtonList buttons;
 	loadBltResourceArray(buttons, boltlib, sceneInfo.buttonsId);
@@ -149,8 +134,8 @@ void Scene::load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib
 				loadBltResourceArray(_buttons[i].graphics[j].idlePaletteMods, boltlib, buttonGraphics[j].idleId);
 			}
 			else if (buttonGraphics[j].type == kSprites) {
-				loadSpriteArray(_buttons[i].graphics[j].hoveredSprites, boltlib, buttonGraphics[j].hoveredId);
-				loadSpriteArray(_buttons[i].graphics[j].idleSprites, boltlib, buttonGraphics[j].idleId);
+                _buttons[i].graphics[j].hoveredSprites.load(boltlib, buttonGraphics[j].hoveredId);
+                _buttons[i].graphics[j].idleSprites.load(boltlib, buttonGraphics[j].idleId);
 			}
 		}
 	}
@@ -182,10 +167,10 @@ void Scene::enter() {
 	applyColorCycles(_graphics, _colorCycles.get());
 
 	// Draw sprites
-	for (size_t i = 0; i < _sprites.size(); ++i) {
-		Common::Point pos = _sprites[i].pos - _origin;
+	for (size_t i = 0; i < _sprites.getNumSprites(); ++i) {
+		Common::Point pos = _sprites.getSprite(i).pos - _origin;
 		// FIXME: Are sprites drawn to back or fore plane? Is it somehow selectable?
-		_sprites[i].image.drawAt(_graphics->getPlaneSurface(kFore), pos.x, pos.y, true);
+		_sprites.getSprite(i).image.drawAt(_graphics->getPlaneSurface(kFore), pos.x, pos.y, true);
 	}
 
 	_graphics->markDirty();
@@ -215,16 +200,6 @@ BoltCmd Scene::handleMsg(const BoltMsg &msg) {
 
 void Scene::setBackPlane(Boltlib &boltlib, BltId id) {
 	loadBltResource(_backPlane, boltlib, id);
-}
-
-void Scene::loadSpriteArray(SpriteArray &spriteArray, Boltlib &boltlib, BltId id) {
-	BltSpriteList sprites;
-	loadBltResourceArray(sprites, boltlib, id);
-	spriteArray.alloc(sprites.size());
-	for (uint i = 0; i < sprites.size(); ++i) {
-		spriteArray[i].pos = sprites[i].pos;
-		spriteArray[i].image.load(boltlib, sprites[i].imageId);
-	}
 }
 
 int Scene::getButtonAtPoint(const Common::Point &pt) {
@@ -264,9 +239,9 @@ void Scene::drawButton(const Button &button, bool hovered) {
 			applyPaletteMod(_graphics, button.plane, paletteMod, 0);
 		}
 		else if (button.graphics[0].graphicsType == kSprites) {
-			const SpriteArray &spriteList = hovered ? button.graphics[0].hoveredSprites : button.graphics[0].idleSprites;
-			if (spriteList) {
-				const Sprite &sprite = spriteList[0];
+			const BltSprites &spriteList = hovered ? button.graphics[0].hoveredSprites : button.graphics[0].idleSprites;
+			if (spriteList.getNumSprites() > 0) {
+				const Sprite &sprite = spriteList.getSprite(0);
 				Common::Point pos = sprite.pos - _origin;
 				if (sprite.image) {
 					sprite.image.drawAt(_graphics->getPlaneSurface(button.plane), pos.x, pos.y, true);

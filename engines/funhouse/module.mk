@@ -9,6 +9,7 @@ MODULE_OBJS := \
 	scene.o \
 	boltlib/boltlib.o \
 	boltlib/palette.o \
+	boltlib/sprites.o \
 	labyrinth/labyrinth.o \
 	merlin/action_puzzle.o \
 	merlin/color_puzzle.o \

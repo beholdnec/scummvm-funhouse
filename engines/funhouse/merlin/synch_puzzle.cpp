@@ -25,13 +25,46 @@
 namespace Funhouse {
 
 void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+    _graphics = graphics;
+
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-	_scene.load(eventLoop, graphics, boltlib, resourceList[4].value);
+
+    BltId difficultiesId = resourceList[0].value;
+    BltId sceneId = resourceList[4].value;
+
+    BltU16Values difficultiesList;
+    loadBltResourceArray(difficultiesList, boltlib, difficultiesId);
+
+    // TODO: Select the difficulty that the player chose
+    BltId difficultyId = BltShortId(difficultiesList[0].value);
+    BltResourceList difficulty;
+    loadBltResourceArray(difficulty, boltlib, difficultyId);
+
+    BltId itemListId = difficulty[1].value;
+    BltResourceList itemList;
+    loadBltResourceArray(itemList, boltlib, itemListId);
+
+    _items.alloc(itemList.size());
+    for (uint i = 0; i < _items.size(); ++i) {
+        _items[i].sprites.load(boltlib, itemList[i].value);
+    }
+
+	_scene.load(eventLoop, graphics, boltlib, sceneId);
 }
 
 void SynchPuzzle::enter() {
 	_scene.enter();
+
+    // XXX: Draw all items in all states for testing
+    for (uint i = 0; i < _items.size(); ++i) {
+        const Item &item = _items[i];
+        for (uint j = 0; j < item.sprites.getNumSprites(); ++j) {
+            const Sprite &sprite = item.sprites.getSprite(j);
+            const Common::Point &origin = _scene.getOrigin();
+            sprite.image.drawAt(_graphics->getPlaneSurface(kFore), sprite.pos.x - origin.x, sprite.pos.y - origin.y, true);
+        }
+    }
 }
 
 BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {

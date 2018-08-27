@@ -29,6 +29,7 @@
 #include "funhouse/bolt.h"
 #include "funhouse/boltlib/boltlib.h"
 #include "funhouse/boltlib/palette.h"
+#include "funhouse/boltlib/sprites.h"
 
 namespace Funhouse {
 
@@ -81,14 +82,7 @@ private:
 		kSprites = 2
 	};
 
-	struct Sprite {
-		Common::Point pos;
-		BltImage image;
-	};
-
-	typedef ScopedArray<Sprite> SpriteArray;
-
-	SpriteArray _sprites;
+    BltSprites _sprites;
 
 	struct ButtonGraphics {
 		GraphicsType graphicsType;
@@ -98,8 +92,8 @@ private:
 		BltPaletteMods idlePaletteMods;
 
 		// If graphicsType == kSprites
-		SpriteArray hoveredSprites;
-		SpriteArray idleSprites;
+		BltSprites hoveredSprites;
+		BltSprites idleSprites;
 	};
 
 	typedef ScopedArray<ButtonGraphics> ButtonGraphicsArray;
@@ -120,7 +114,6 @@ private:
 	ButtonArray _buttons;
 
 	// Return number of button at a point, or -1 if there is no button.
-	void loadSpriteArray(SpriteArray& spriteArray, Boltlib &boltlib, BltId id);
 	int getButtonAtPoint(const Common::Point &pt);
 	void drawButton(const Button &button, bool hovered);
 };
