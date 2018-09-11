@@ -39,6 +39,7 @@ protected:
 
 private:
     struct Item {
+        int state;
         BltSprites sprites;
     };
 

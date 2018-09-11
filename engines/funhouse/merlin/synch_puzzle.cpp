@@ -42,11 +42,13 @@ void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
     loadBltResourceArray(difficulty, boltlib, difficultyId);
 
     BltId itemListId = difficulty[1].value;
+
     BltResourceList itemList;
     loadBltResourceArray(itemList, boltlib, itemListId);
 
     _items.alloc(itemList.size());
     for (uint i = 0; i < _items.size(); ++i) {
+        _items[i].state = 0;
         _items[i].sprites.load(boltlib, itemList[i].value);
     }
 
@@ -57,13 +59,20 @@ void SynchPuzzle::enter() {
 	_scene.enter();
 
     // XXX: Draw all items in all states for testing
+    //for (uint i = 0; i < _items.size(); ++i) {
+    //    const Item &item = _items[i];
+    //    for (uint j = 0; j < item.sprites.getNumSprites(); ++j) {
+    //        const Sprite &sprite = item.sprites.getSprite(j);
+    //        const Common::Point &origin = _scene.getOrigin();
+    //        sprite.image.drawAt(_graphics->getPlaneSurface(kFore), sprite.pos.x - origin.x, sprite.pos.y - origin.y, true);
+    //    }
+    //}
+
     for (uint i = 0; i < _items.size(); ++i) {
         const Item &item = _items[i];
-        for (uint j = 0; j < item.sprites.getNumSprites(); ++j) {
-            const Sprite &sprite = item.sprites.getSprite(j);
-            const Common::Point &origin = _scene.getOrigin();
-            sprite.image.drawAt(_graphics->getPlaneSurface(kFore), sprite.pos.x - origin.x, sprite.pos.y - origin.y, true);
-        }
+        const Sprite &sprite = item.sprites.getSprite(item.state);
+        const Common::Point &origin = _scene.getOrigin();
+        sprite.image.drawAt(_graphics->getPlaneSurface(kFore), sprite.pos.x - origin.x, sprite.pos.y - origin.y, true);
     }
 }
 
