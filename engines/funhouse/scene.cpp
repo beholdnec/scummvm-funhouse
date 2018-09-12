@@ -166,14 +166,28 @@ void Scene::enter() {
 
 	applyColorCycles(_graphics, _colorCycles.get());
 
-	// Draw sprites
-	for (size_t i = 0; i < _sprites.getNumSprites(); ++i) {
-		Common::Point pos = _sprites.getSprite(i).pos - _origin;
-		// FIXME: Are sprites drawn to back or fore plane? Is it somehow selectable?
-		_sprites.getSprite(i).image.drawAt(_graphics->getPlaneSurface(kFore), pos.x, pos.y, true);
-	}
+    redrawSprites();
 
 	_graphics->markDirty();
+}
+
+void Scene::redrawSprites() {
+    // TODO: don't redraw fore plane when executing the enter method.
+    if (_forePlane.image) {
+        _forePlane.image.drawAt(_graphics->getPlaneSurface(kFore), 0, 0, false);
+    }
+    else {
+        _graphics->clearPlane(kFore);
+    }
+
+    // Draw sprites
+    for (size_t i = 0; i < _sprites.getNumSprites(); ++i) {
+        Common::Point pos = _sprites.getSprite(i).pos - _origin;
+        // FIXME: Are sprites drawn to back or fore plane? Is it somehow selectable?
+        _sprites.getSprite(i).image->drawAt(_graphics->getPlaneSurface(kFore), pos.x, pos.y, true);
+    }
+
+    _graphics->markDirty();
 }
 
 BoltCmd Scene::handleMsg(const BoltMsg &msg) {
@@ -244,7 +258,7 @@ void Scene::drawButton(const Button &button, bool hovered) {
 				const Sprite &sprite = spriteList.getSprite(0);
 				Common::Point pos = sprite.pos - _origin;
 				if (sprite.image) {
-					sprite.image.drawAt(_graphics->getPlaneSurface(button.plane), pos.x, pos.y, true);
+					sprite.image->drawAt(_graphics->getPlaneSurface(button.plane), pos.x, pos.y, true);
 				}
 			}
 		}

@@ -181,13 +181,26 @@ public:
 		return result;
 	}
 
+    Movable clone() const {
+        Movable result;
+        result.data = new T[_internal.size];
+        result.size = _internal.size;
+
+        for (uint i = 0; i < _internal.size; ++i) {
+            result.data[i] = _internal.data[i];
+        }
+
+        return result;
+    }
+
 	ConstDataView slice(const uint offset = 0) const {
 		assert(offset <= _internal.size);
 		return ConstDataView(&_internal.data[offset], _internal.size - offset);
 	}
 
 private:
-	// Prevent accidentally copying a ScopedArray
+	// Prevent accidentally copying a ScopedArray. To clone a ScopedArray, use
+    // the clone method.
 	// XXX: Class is made noncopyable here (instead of inheriting from
 	// Common::NonCopyable) because VS2015 emits very unhelpful error messages.
 	ScopedArray(const ScopedArray&);

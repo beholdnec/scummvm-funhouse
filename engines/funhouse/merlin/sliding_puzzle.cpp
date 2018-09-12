@@ -28,36 +28,52 @@ struct BltSlidingPuzzle { // type 44
 	static const uint32 kType = kBltSlidingPuzzle;
 	static const uint kSize = 0xC;
 	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		unk1 = src.readUint16BE(0);
+		numPieces1 = src.readUint16BE(0);
 		difficulty1 = BltShortId(src.readUint16BE(2));
-		unk2 = src.readUint16BE(4);
+		numPieces2 = src.readUint16BE(4);
 		difficulty2 = BltShortId(src.readUint16BE(6));
-		unk3 = src.readUint16BE(8);
+		numPieces3 = src.readUint16BE(8);
 		difficulty3 = BltShortId(src.readUint16BE(0xA));
 	}
 
-	uint16 unk1;
+	uint16 numPieces1;
 	BltShortId difficulty1;
-	uint16 unk2;
+	uint16 numPieces2;
 	BltShortId difficulty2;
-	uint16 unk3;
+	uint16 numPieces3;
 	BltShortId difficulty3;
 };
 
 void SlidingPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+    _graphics = graphics;
+
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
 	BltSlidingPuzzle slidingPuzzleInfo;
 	loadBltResource(slidingPuzzleInfo, boltlib, resourceList[1].value);
+
 	// TODO: select proper difficulty based on player setting
 	BltResourceList difficultyInfo;
 	loadBltResourceArray(difficultyInfo, boltlib, slidingPuzzleInfo.difficulty1); // Ex: 3A34, 3B34, 3C34
 
+    _pieces.alloc(slidingPuzzleInfo.numPieces1);
+    for (int i = 0; i < slidingPuzzleInfo.numPieces1; ++i) {
+        _pieces[i] = i;
+    }
+
 	_scene.load(eventLoop, graphics, boltlib, difficultyInfo[1].value);
+
+    BltResourceList moveTablesRes;
+    loadBltResourceArray(moveTablesRes, boltlib, difficultyInfo[6].value);
+    // FIXME: difficultyInfo[7-9] refers to additional move tables. What are they for?
+    for (int i = 0; i < kNumButtons * 2; ++i) {
+        loadBltResourceArray(_moveTables[i], boltlib, moveTablesRes[i].value);
+    }
 }
 
 void SlidingPuzzle::enter() {
 	_scene.enter();
+    setSprites();
 }
 
 BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
@@ -65,15 +81,35 @@ BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 		return handleButtonClick(msg.num);
 	}
 
+    if (msg.type == BoltMsg::kRightClick) {
+        // XXX: win instantly. TODO: remove.
+        return Card::kWin;
+    }
+
 	return _scene.handleMsg(msg);
 }
 
+void SlidingPuzzle::setSprites() {
+    for (int i = 0; i < _pieces.size(); ++i) {
+        warning("Piece %d = %d", i, _pieces[i]);
+        _scene.getSprites().setSpriteImage(i, _scene.getSprites().getImageFromSet(_pieces[i]));
+    }
+
+    _scene.redrawSprites();
+    _graphics->markDirty();
+}
+
 BoltCmd SlidingPuzzle::handleButtonClick(int num) {
-	debug(3, "Clicked button %d", num);
-	// TODO: implement puzzle
-	if (num != -1) {
-		return Card::kWin;
-	}
+    if (num >= 0 && num < kNumButtons * 2) {
+        ScopedArray<int> oldPieces(_pieces.clone());
+        for (uint i = 0; i < _pieces.size(); ++i) {
+            _pieces[i] = oldPieces[_moveTables[num][i].value];
+        }
+
+        setSprites();
+    } else if (num != -1) {
+        warning("Unhandled button %d", num);
+    }
 
 	return BoltCmd::kDone;
 }

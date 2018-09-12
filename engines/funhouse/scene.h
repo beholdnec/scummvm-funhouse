@@ -41,10 +41,12 @@ public:
 
 	void load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId sceneId);
 	void enter();
+    void redrawSprites();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
 	void setBackPlane(Boltlib &boltlib, BltId id);
 	const Common::Point& getOrigin() const { return _origin; }
+    BltSprites& getSprites() { return _sprites; }
 
 private:
 	IBoltEventLoop *_eventLoop;

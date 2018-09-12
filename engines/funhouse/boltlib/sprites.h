@@ -29,7 +29,7 @@ namespace Funhouse {
 
 struct Sprite {
     Common::Point pos;
-    BltImage image;
+    BltImage *image;
 };
 
 class BltSprites {
@@ -37,9 +37,13 @@ public:
     void load(Boltlib &boltlib, BltId id);
     const Sprite& getSprite(uint i) const;
     uint getNumSprites() const;
+    BltImage* getImageFromSet(uint i) { return &_imageSet[i]; }
+    void setSpriteImage(uint i, BltImage *image);
 
 private:
     typedef ScopedArray<Sprite> SpriteArray;
+
+    ScopedArray<BltImage> _imageSet;
 
     SpriteArray _sprites;
 };

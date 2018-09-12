@@ -33,12 +33,19 @@ public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
+    void setSprites();
 
 protected:
 	BoltCmd handleButtonClick(int num);
 
 private:
+    Graphics *_graphics;
 	Scene _scene;
+
+    static const int kNumButtons = 4;
+
+    BltU8Values _moveTables[kNumButtons * 2]; // 0-3: backward; 4-7: forward
+    ScopedArray<int> _pieces;
 };
 
 } // End of namespace Funhouse
