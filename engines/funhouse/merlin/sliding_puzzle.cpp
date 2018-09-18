@@ -56,9 +56,13 @@ void SlidingPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib 
 	BltResourceList difficultyInfo;
 	loadBltResourceArray(difficultyInfo, boltlib, slidingPuzzleInfo.difficulty1); // Ex: 3A34, 3B34, 3C34
 
+    // FIXME: difficultyInfo[3-5] probably refers to additional initial state tables.
+    BltU8Values initialState;
+    loadBltResourceArray(initialState, boltlib, difficultyInfo[2].value);
+
     _pieces.alloc(slidingPuzzleInfo.numPieces1);
     for (int i = 0; i < slidingPuzzleInfo.numPieces1; ++i) {
-        _pieces[i] = i;
+        _pieces[i] = initialState[i].value;
     }
 
 	_scene.load(eventLoop, graphics, boltlib, difficultyInfo[1].value);
@@ -91,7 +95,6 @@ BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 
 void SlidingPuzzle::setSprites() {
     for (int i = 0; i < _pieces.size(); ++i) {
-        warning("Piece %d = %d", i, _pieces[i]);
         _scene.getSprites().setSpriteImage(i, _scene.getSprites().getImageFromSet(_pieces[i]));
     }
 
@@ -107,6 +110,18 @@ BoltCmd SlidingPuzzle::handleButtonClick(int num) {
         }
 
         setSprites();
+
+        bool win = true;
+        for (uint i = 0; i < _pieces.size(); ++i) {
+            if (_pieces[i] != i) {
+                win = false;
+                break;
+            }
+        }
+
+        if (win) {
+            return kWin;
+        }
     } else if (num != -1) {
         warning("Unhandled button %d", num);
     }
