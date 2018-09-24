@@ -53,6 +53,20 @@ struct BltScene { // type 32
 	Common::Point origin;
 };
 
+struct BltPlane { // type 26
+    static const uint32 kType = kBltPlane;
+    static const uint kSize = 0x10;
+    void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
+        imageId = BltId(src.readUint32BE(0));
+        paletteId = BltId(src.readUint32BE(4));
+        hotspotsId = BltId(src.readUint32BE(8));
+    }
+
+    BltId imageId;
+    BltId paletteId;
+    BltId hotspotsId;
+};
+
 struct BltButtonGraphicElement { // type 30
 	static const uint32 kType = kBltButtonGraphicsList;
 	static const uint kSize = 0xE;
@@ -111,8 +125,14 @@ void Scene::load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib
 	loadBltResource(sceneInfo, boltlib, sceneId);
 
 	_origin = sceneInfo.origin;
-	loadBltResource(_forePlane, boltlib, sceneInfo.forePlaneId);
-	loadBltResource(_backPlane, boltlib, sceneInfo.backPlaneId);
+
+    BltPlane bltForePlane;
+	loadBltResource(bltForePlane, boltlib, sceneInfo.forePlaneId);
+    _forePlane.image.load(boltlib, bltForePlane.imageId);
+    _forePlane.palette.load(boltlib, bltForePlane.paletteId);
+    _forePlane.hotspots.load(boltlib, bltForePlane.hotspotsId);
+
+    setBackPlane(boltlib, sceneInfo.backPlaneId);
 
     _sprites.load(boltlib, sceneInfo.spritesId);
 
@@ -126,6 +146,7 @@ void Scene::load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib
 
 		BltButtonGraphicsList buttonGraphics;
 		loadBltResourceArray(buttonGraphics, boltlib, buttons[i].graphicsId);
+
 		_buttons[i].graphics.alloc(buttonGraphics.size());
 		for (uint j = 0; j < buttonGraphics.size(); ++j) {
 			_buttons[i].graphics[j].graphicsType = static_cast<GraphicsType>(buttonGraphics[j].type);
@@ -213,7 +234,11 @@ BoltCmd Scene::handleMsg(const BoltMsg &msg) {
 }
 
 void Scene::setBackPlane(Boltlib &boltlib, BltId id) {
-	loadBltResource(_backPlane, boltlib, id);
+    BltPlane bltBackPlane;
+    loadBltResource(bltBackPlane, boltlib, id);
+    _backPlane.image.load(boltlib, bltBackPlane.imageId);
+    _backPlane.palette.load(boltlib, bltBackPlane.paletteId);
+    _backPlane.hotspots.load(boltlib, bltBackPlane.hotspotsId);
 }
 
 int Scene::getButtonAtPoint(const Common::Point &pt) {

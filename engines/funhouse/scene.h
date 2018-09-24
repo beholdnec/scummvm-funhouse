@@ -52,30 +52,15 @@ private:
 	IBoltEventLoop *_eventLoop;
 	Graphics *_graphics;
 
-	struct BltPlane { // type 26
-		static const uint32 kType = kBltPlane;
-		static const uint kSize = 0x10;
-		void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-			BltId imageId(src.readUint32BE(0));
-			image.load(bltFile, imageId);
-			BltId paletteId(src.readUint32BE(4));
-			palette.load(bltFile, paletteId);
-			BltId hotspotsId(src.readUint32BE(8));
-			hotspots.load(bltFile, hotspotsId);
-		}
-
-		BltImage image;
-		BltPalette palette;
-		BltImage hotspots;
-	};
-
-	BltPlane _forePlane;
-	BltPlane _backPlane;
-	Common::ScopedPtr<BltColorCycles> _colorCycles;
+    struct Plane {
+        BltImage image;
+        BltPalette palette;
+        BltImage hotspots;
+    };
 
 	enum HotspotType {
 		kRect = 1,
-		// 2 is unused, but indicates a query of the visible display.
+		kDisplayQuery = 2, // Query the visible image (FIXME: which plane?)
 		kHotspotQuery = 3 // Query the hotspot image
 	};
 
@@ -83,8 +68,6 @@ private:
 		kPaletteMods = 1,
 		kSprites = 2
 	};
-
-    BltSprites _sprites;
 
 	struct ButtonGraphics {
 		GraphicsType graphicsType;
@@ -103,8 +86,9 @@ private:
 	struct Button {
 		HotspotType hotspotType;
 		uint16 plane;
-		// If hotspotType == kHotspotQuery, this value holds the range of color
-		// indices in the hotspot image that correspond to this button.
+        // If hotspotType == kRect: this field holds the rectangular area of the button.
+        // If hotspotType == kDisplayQuery: this field holds the min and max color indices of the button in the visible plane.
+        // If hotspotType == kHotspotQuery: this field holds the min and max color indices of the button in the hotspot image.
 		Rect hotspot;
 
 		ButtonGraphicsArray graphics;
@@ -112,12 +96,16 @@ private:
 
 	typedef ScopedArray<Button> ButtonArray;
 
+    // Return the number of button at a given point, or return -1 if there is no button.
+    int getButtonAtPoint(const Common::Point &pt);
+    void drawButton(const Button &button, bool hovered);
+
+    Plane _forePlane;
+    Plane _backPlane;
+    Common::ScopedPtr<BltColorCycles> _colorCycles;
+    BltSprites _sprites;
 	Common::Point _origin;
 	ButtonArray _buttons;
-
-	// Return number of button at a point, or -1 if there is no button.
-	int getButtonAtPoint(const Common::Point &pt);
-	void drawButton(const Button &button, bool hovered);
 };
 
 } // End of namespace Funhouse
