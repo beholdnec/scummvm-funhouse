@@ -28,6 +28,20 @@
 
 namespace Funhouse {
 
+struct BltColorPuzzleTransition { // type 58
+    static const uint32 kType = kBltColorPuzzleTransition;
+    static const uint kSize = 8;
+    void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
+        for (int i = 0; i < 4; ++i) {
+            piece[i] = src.readInt8(i * 2);
+            count[i] = src.readUint8(i * 2 + 1);
+        }
+    }
+
+    int8 piece[4];
+    uint8 count[4];
+};
+
 class ColorPuzzle : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
@@ -35,7 +49,6 @@ public:
 	BoltCmd handleMsg(const BoltMsg &msg);
 
 private:
-	// TODO: this value probably comes from Boltlib.blt somewhere.
 	// All color puzzles in Merlin's Apprentice have 4 pieces.
 	static const int kNumPieces = 4;
 	// FIXME: morph duration is probably set in game data
@@ -58,6 +71,7 @@ private:
 		int numStates;
 		BltPaletteMods palettes;
 		int currentState;
+        BltColorPuzzleTransition transition;
 	};
 
 	BoltCmd driveWaitForPlayer(const BoltMsg &msg);
@@ -69,6 +83,7 @@ private:
 	void selectPiece(int piece);
 	void setPieceState(int piece, int state);
 	void morphPiece(int piece, int state);
+    void startMorph(BltPaletteMods *paletteMods, int startState, int endState);
 
 	Graphics *_graphics;
 	IBoltEventLoop *_eventLoop;
@@ -78,13 +93,19 @@ private:
 
 	Piece _pieces[kNumPieces];
 
+    // TRANSITIONING
+
+    bool _transitioning;
+    int _selectedPiece;
+    int _transitionStage;
+
 	// MORPHING
 
+    bool _morphing;
 	uint32 _morphStartTime;
 	BltPaletteMods *_morphPaletteMods;
 	int _morphStartState;
 	int _morphEndState;
-	void startMorph(BltPaletteMods *paletteMods, int startState, int endState);
 };
 
 } // End of namespace Funhouse

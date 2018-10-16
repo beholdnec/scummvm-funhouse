@@ -54,6 +54,7 @@ enum BltType {
 	kBltParticles = 46, // action puzzles
 	kBltMemoryPuzzleItemFrameList = 55,
 	kBltMemoryPuzzleItemList = 56,
+    kBltColorPuzzleTransition = 58,
 	kBltPotionPuzzle = 59,
 	kBltPotionPuzzleSpritePoints = 60, // potion puzzles
 	kBltPotionPuzzleDifficulty = 61, // potion puzzles

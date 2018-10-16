@@ -28,7 +28,10 @@ void ColorPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
 	_graphics = graphics;
 	_eventLoop = eventLoop;
 
+    _morphing = false;
 	_morphPaletteMods = nullptr;
+
+    _transitioning = false;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -44,18 +47,29 @@ void ColorPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
 	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultyIds[0].value));
 	BltId numStatesId = difficulty[0].value;
 	BltId statePaletteModsId = difficulty[1].value;
+    BltId moveSetId = difficulty[11].value; // Ex: 8D2E; FIXME: there are four moveset id's?
 
 	BltU8Values numStates;
 	loadBltResourceArray(numStates, boltlib, numStatesId);
 	BltResourceList statePaletteMods;
 	loadBltResourceArray(statePaletteMods, boltlib, statePaletteModsId);
 
+    BltResourceList moveSet;
+    loadBltResourceArray(moveSet, boltlib, moveSetId);
+
 	for (int i = 0; i < kNumPieces; ++i) {
 		Piece &p = _pieces[i];
+
 		p.numStates = numStates[i].value;
 		loadBltResourceArray(p.palettes, boltlib, statePaletteMods[i].value);
 		// FIXME: What is initial state? Is it random or chosen from a predefined set?
 		p.currentState = 1;
+
+        BltResourceList moveArray;
+        loadBltResourceArray(moveArray, boltlib, moveSet[i].value);
+        // For some reason, all entries in moveArray point to the same resource ID. Why this is the case is unknown.
+        BltId transitionId = moveArray[0].value;
+        loadBltResource(p.transition, boltlib, transitionId);
 	}
 }
 
@@ -96,20 +110,46 @@ BoltCmd ColorPuzzle::driveTransition(const BoltMsg &msg) {
 		return BoltCmd::kDone;
 	}
 
-	const uint32 progress = _eventLoop->getEventTime() - _morphStartTime;
-	if (progress >= kMorphDuration) {
-		applyPaletteMod(_graphics, kFore, *_morphPaletteMods, _morphEndState);
-		_graphics->markDirty();
-		_morphPaletteMods = nullptr;
-		enterWaitForPlayerMode();
-		return BoltCmd::kResend;
+    if (_morphing) {
+        const uint32 progress = _eventLoop->getEventTime() - _morphStartTime;
+
+	    if (progress >= kMorphDuration) {
+		    applyPaletteMod(_graphics, kFore, *_morphPaletteMods, _morphEndState);
+		    _graphics->markDirty();
+            _morphing = false;
+		    _morphPaletteMods = nullptr;
+		    return BoltCmd::kResend;
+        }
+
+        applyPaletteModBlended(_graphics, kFore, *_morphPaletteMods,
+            _morphStartState, _morphEndState,
+            Common::Rational(progress, kMorphDuration));
+
+        _graphics->markDirty();
+        return BoltCmd::kDone;
 	}
 
-	applyPaletteModBlended(_graphics, kFore, *_morphPaletteMods,
-		_morphStartState, _morphEndState,
-		Common::Rational(progress, kMorphDuration));
-	_graphics->markDirty();
-	return BoltCmd::kDone;
+    if (_transitioning) {
+        if (_transitionStage >= 4) {
+            _transitioning = false;
+            return BoltCmd::kResend;
+        }
+
+        int pieceNum = _pieces[_selectedPiece].transition.piece[_transitionStage];
+        int count = _pieces[_selectedPiece].transition.count[_transitionStage];
+        ++_transitionStage;
+
+        if (pieceNum >= 0) {
+            morphPiece(pieceNum, (_pieces[pieceNum].currentState + count) % _pieces[pieceNum].numStates);
+            return BoltCmd::kResend;
+        }
+
+        return BoltCmd::kDone;
+    }
+
+    // Nothing to do -- return to Wait For Player mode.
+    enterWaitForPlayerMode();
+    return BoltCmd::kDone;
 }
 
 BoltCmd ColorPuzzle::handleButtonClick(int num) {
@@ -133,14 +173,15 @@ void ColorPuzzle::enterWaitForPlayerMode() {
 }
 
 void ColorPuzzle::enterTransitionMode() {
-	_mode = kTransition;
+	_mode = kTransition; // TODO: refactor; use _transitioning member instead of mode.
 	// TODO: hide cursor
 }
 
 void ColorPuzzle::selectPiece(int piece) {
-	// TODO: change states according to puzzle definition
-	morphPiece(piece, (_pieces[piece].currentState + 1) % _pieces[piece].numStates);
-	enterTransitionMode();
+    enterTransitionMode();
+    _transitioning = true;
+    _selectedPiece = piece;
+    _transitionStage = 0;
 }
 
 void ColorPuzzle::setPieceState(int piece, int state) {
@@ -161,6 +202,7 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 	_morphPaletteMods = paletteMods;
 	_morphStartState = startState;
 	_morphEndState = endState;
+    _morphing = true;
 }
 
 } // End of namespace Funhouse
