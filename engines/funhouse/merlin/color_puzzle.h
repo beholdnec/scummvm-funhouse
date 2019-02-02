@@ -51,21 +51,10 @@ public:
 private:
 	// All color puzzles in Merlin's Apprentice have 4 pieces.
 	static const int kNumPieces = 4;
+    static const int kNumTransitionSteps = 4;
 	// FIXME: morph duration is probably set in game data
 	// or it may last as long as the sound
 	static const uint kMorphDuration = 500;
-
-	enum DriveResult {
-		kInvalidDriveResult,
-		kContinue,
-		kYield
-	};
-
-	enum Mode {
-		kInvalidMode,
-		kWaitForPlayer,
-		kTransition
-	};
 
 	struct Piece {
 		int numStates;
@@ -74,8 +63,6 @@ private:
         BltColorPuzzleTransition transition;
 	};
 
-	BoltCmd driveWaitForPlayer(const BoltMsg &msg);
-	BoltCmd driveTransition(const BoltMsg &msg);
 	BoltCmd handleButtonClick(int num);
 
 	void enterWaitForPlayerMode();
@@ -89,15 +76,13 @@ private:
 	IBoltEventLoop *_eventLoop;
 	Scene _scene;
 
-	Mode _mode;
-
 	Piece _pieces[kNumPieces];
 
     // TRANSITIONING
 
     bool _transitioning;
     int _selectedPiece;
-    int _transitionStage;
+    int _transitionStep;
 
 	// MORPHING
 
