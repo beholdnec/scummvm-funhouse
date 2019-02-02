@@ -149,7 +149,7 @@ void ActionPuzzle::enter() {
 	_goalNum = 0;
 
 	applyPalette(_graphics, kBack, _backPalette);
-	applyColorCycles(_graphics, &_backColorCycles);
+	applyColorCycles(_graphics, kBack, &_backColorCycles);
 	applyPalette(_graphics, kFore, _forePalette);
 	// TODO: fore color cycles
 

@@ -73,7 +73,7 @@ struct BltColorCycles {
 	Common::ScopedPtr<BltColorCycleSlot> slots[4];
 };
 
-void applyColorCycles(Graphics *graphics, const BltColorCycles *cycles);
+void applyColorCycles(Graphics *graphics, int plane, const BltColorCycles *cycles);
 
 struct BltPalette { // type 10
 	static const uint32 kHeaderSize = 6;

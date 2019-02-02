@@ -364,11 +364,11 @@ void Movie::runTimelineCommand() {
 		}
 		if (delay < 0) {
 			// Cycle backwards
-			_graphics->setColorCycle(_numColorCycles, startC + num - 1, startC, -delay);
+			_graphics->setColorCycle(_numColorCycles, kBack, startC + num - 1, startC, -delay);
 		}
 		else {
 			// Cycle forwards
-			_graphics->setColorCycle(_numColorCycles, startC, startC + num - 1, delay);
+			_graphics->setColorCycle(_numColorCycles, kBack, startC, startC + num - 1, delay);
 		}
 		++_numColorCycles;
 		break;

@@ -440,14 +440,14 @@ void Graphics::handleMsg(const BoltMsg &msg) {
 					byte colors[128 * 3];
 					// FIXME: Both planes may have color cycles. Front plane color
 					// cycles are used in the "bubbles" action puzzle.
-					grabPlanePalette(kBack, colors, firstColor, numColors);
+					grabPlanePalette(_colorCycles[i].plane, colors, firstColor, numColors);
 					if (backwards) {
 						rotateColorsBackward(colors, numColors);
 					}
 					else {
 						rotateColorsForward(colors, numColors);
 					}
-					setPlanePalette(kBack, colors, firstColor, numColors);
+					setPlanePalette(_colorCycles[i].plane, colors, firstColor, numColors);
 
 					markDirty();
 
@@ -464,12 +464,13 @@ void Graphics::resetColorCycles() {
 	}
 }
 
-void Graphics::setColorCycle(int slot, uint16 start, uint16 end, int delay) {
+void Graphics::setColorCycle(int slot, int plane, uint16 start, uint16 end, int delay) {
 	assert(slot >= 0 && slot < kNumColorCycles);
 	assert(delay >= 0);
 	if (start < 128 && end < 128) {
 		_colorCycles[slot].start = start;
 		_colorCycles[slot].end = end;
+        _colorCycles[slot].plane = plane;
 		_colorCycles[slot].delay = delay;
 		// Start cycling now
 		_colorCycles[slot].curTime = _eventLoop->getEventTime();

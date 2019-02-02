@@ -26,7 +26,7 @@
 
 namespace Funhouse {
 
-void applyColorCycles(Graphics *graphics, const BltColorCycles *cycles) {
+void applyColorCycles(Graphics *graphics, int plane, const BltColorCycles *cycles) {
 	graphics->resetColorCycles();
 	if (cycles) {
 		for (int i = 0; i < 4; ++i) {
@@ -39,7 +39,7 @@ void applyColorCycles(Graphics *graphics, const BltColorCycles *cycles) {
 					if (slot->plane != 0) {
 						warning("Color cycle plane was not 0");
 					}
-					graphics->setColorCycle(i, slot->start, slot->end,
+					graphics->setColorCycle(i, plane, slot->start, slot->end,
 						slot->frames * 1000 / 60);
 				}
 			}

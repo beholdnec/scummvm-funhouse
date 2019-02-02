@@ -185,7 +185,7 @@ void Scene::enter() {
 		_graphics->clearPlane(kFore);
 	}
 
-	applyColorCycles(_graphics, _colorCycles.get());
+	applyColorCycles(_graphics, kBack, _colorCycles.get());
 
     redrawSprites();
 

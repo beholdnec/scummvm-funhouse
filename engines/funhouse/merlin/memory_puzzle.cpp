@@ -64,14 +64,16 @@ typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 
 void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	_graphics = graphics;
+    _eventLoop = eventLoop;
+    _selecting = false;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-
 	BltId sceneId = resourceList[1].value;
-	_scene.load(eventLoop, graphics, boltlib, sceneId);
 
+	_scene.load(eventLoop, graphics, boltlib, sceneId);
 	BltId itemsId = resourceList[3].value;
+
 	BltMemoryPuzzleItemList itemList;
 	loadBltResourceArray(itemList, boltlib, itemsId);
 
@@ -99,6 +101,41 @@ void MemoryPuzzle::enter() {
 }
 
 BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
+    if (_selecting) {
+
+        uint32 progress = _eventLoop->getEventTime() - _selectionTime;
+        if (progress < kSelectionDelay) {
+
+            uint32 animProgress = _eventLoop->getEventTime() - _animFrameTime;
+            if (animProgress < kAnimPeriod) {
+
+                return BoltCmd::kDone;
+
+            } else { // Next frame
+
+                ++_animFrameNum;
+                if (_animFrameNum >= _itemList[_selectedItem].frames.size()) {
+                    _animFrameNum = 0;
+                }
+
+                drawItemFrame(_selectedItem, _animFrameNum);
+
+                _animFrameTime += kAnimPeriod;
+                return BoltCmd::kResend;
+
+            }
+
+        } else { // Done selecting
+
+            _selecting = false;
+            // Redraw
+            enter();
+            return BoltCmd::kResend;
+
+        }
+
+    }
+
 	// XXX: right-click to win instantly. TODO: remove.
 	if (msg.type == BoltMsg::kRightClick) {
 		return kWin;
@@ -116,29 +153,40 @@ BoltCmd MemoryPuzzle::handleButtonClick(int num) {
 	// TODO: implement puzzle
 
 	if (num >= 0 && num < _itemList.size()) {
-		// Draw frame corresponding to item
-		// TODO: implement animation
-		const Item &item = _itemList[num];
-		//applyPalette(_graphics, kFore, item.palette);
-		// XXX: applyPalette doesn't work correctly. Manually apply palette.
-		_graphics->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
-			0, 128);
+        _selecting = true;
+        _selectionTime = _eventLoop->getEventTime();
+        _animFrameTime = _selectionTime;
+        _selectedItem = num;
+        _animFrameNum = 0;
 
-		const ItemFrame &frame = item.frames[0];
-		const Common::Point &origin = _scene.getOrigin();
-		_graphics->clearPlane(kFore);
-		if (item.colorCycles) {
-			// FIXME: color cycles are broken.
-			//applyColorCycles(_graphics, item.colorCycles.get());
-		}
-		else {
-			_graphics->resetColorCycles();
-		}
-		frame.image.drawAt(_graphics->getPlaneSurface(kFore), frame.pos.x - origin.x, frame.pos.y - origin.y, true);
-		_graphics->markDirty();
+        const Item &item = _itemList[_selectedItem];
+        //applyPalette(_graphics, kFore, item.palette);
+        // XXX: applyPalette doesn't work correctly. Manually apply palette.
+        _graphics->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
+            0, 128);
+        if (item.colorCycles) {
+            // FIXME: color cycles are broken.
+            applyColorCycles(_graphics, kFore, item.colorCycles.get());
+        }
+        else {
+            _graphics->resetColorCycles();
+        }
+
+        drawItemFrame(_selectedItem, _animFrameNum);
 	}
 
 	return BoltCmd::kDone;
+}
+
+void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {
+    // Draw frame corresponding to item
+    // TODO: implement animation
+    const Item &item = _itemList[itemNum];
+    const ItemFrame &frame = item.frames[frameNum];
+    const Common::Point &origin = _scene.getOrigin();
+    _graphics->clearPlane(kFore);
+    frame.image.drawAt(_graphics->getPlaneSurface(kFore), frame.pos.x - origin.x, frame.pos.y - origin.y, true);
+    _graphics->markDirty();
 }
 
 } // End of namespace Funhouse

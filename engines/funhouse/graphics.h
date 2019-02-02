@@ -75,7 +75,7 @@ public:
 
 	void handleMsg(const BoltMsg &msg);
 	void resetColorCycles();
-	void setColorCycle(int slot, uint16 start, uint16 end, int delay);
+	void setColorCycle(int slot, int plane, uint16 start, uint16 end, int delay);
 	void setFade(Common::Rational fade);
 	void markDirty();
 	void presentIfDirty();
@@ -110,6 +110,7 @@ private:
 		ColorCycle() : start(0), end(0), delay(0) { }
 		uint16 start;
 		uint16 end;
+        int plane;
 		int delay; // 0 means this cycle is inactive
 		uint32 curTime; // Time of last color rotation
 	};
