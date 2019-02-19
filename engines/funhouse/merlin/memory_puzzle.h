@@ -42,6 +42,11 @@ private:
     const uint32 kAnimPeriod = 50;
     const uint32 kSelectionDelay = 800;
 
+    enum State {
+        kIdle,
+        kSelecting,
+    };
+
 	struct ItemFrame {
 		Common::Point pos;
 		BltImage image;
@@ -59,12 +64,13 @@ private:
 
     void drawItemFrame(int itemNum, int frameNum);
 
+    State _state;
+
 	Graphics *_graphics;
     IBoltEventLoop *_eventLoop;
 	Scene _scene;
 	ItemList _itemList;
 
-    bool _selecting;
     uint32 _selectionTime;
     uint32 _animFrameTime;
     int _animFrameNum;

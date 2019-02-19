@@ -65,7 +65,7 @@ typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	_graphics = graphics;
     _eventLoop = eventLoop;
-    _selecting = false;
+    _state = kIdle;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -101,51 +101,48 @@ void MemoryPuzzle::enter() {
 }
 
 BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-    if (_selecting) {
-
+    switch (_state) {
+    case kSelecting: {
         uint32 progress = _eventLoop->getEventTime() - _selectionTime;
         if (progress < kSelectionDelay) {
-
             uint32 animProgress = _eventLoop->getEventTime() - _animFrameTime;
             if (animProgress < kAnimPeriod) {
-
                 return BoltCmd::kDone;
-
             } else { // Next frame
-
                 ++_animFrameNum;
                 if (_animFrameNum >= _itemList[_selectedItem].frames.size()) {
                     _animFrameNum = 0;
                 }
-
                 drawItemFrame(_selectedItem, _animFrameNum);
-
                 _animFrameTime += kAnimPeriod;
                 return BoltCmd::kResend;
-
             }
-
         } else { // Done selecting
-
-            _selecting = false;
+            _state = kIdle;
             // Redraw
             enter();
             return BoltCmd::kResend;
-
         }
-
+        break;
     }
 
-	// XXX: right-click to win instantly. TODO: remove.
-	if (msg.type == BoltMsg::kRightClick) {
-		return kWin;
-	}
+    case kIdle: {
+        // XXX: right-click to win instantly. TODO: remove.
+        if (msg.type == BoltMsg::kRightClick) {
+            return kWin;
+        }
 
-	if (msg.type == Scene::kClickButton) {
-		return handleButtonClick(msg.num);
-	}
+        if (msg.type == Scene::kClickButton) {
+            return handleButtonClick(msg.num);
+        }
 
-	return _scene.handleMsg(msg);
+        return _scene.handleMsg(msg);
+    }
+
+    default:
+        assert(false && "Invalid state"); // Unreachable
+        return BoltCmd::kDone;
+    }
 }
 
 BoltCmd MemoryPuzzle::handleButtonClick(int num) {
@@ -153,7 +150,7 @@ BoltCmd MemoryPuzzle::handleButtonClick(int num) {
 	// TODO: implement puzzle
 
 	if (num >= 0 && num < _itemList.size()) {
-        _selecting = true;
+        _state = kSelecting;
         _selectionTime = _eventLoop->getEventTime();
         _animFrameTime = _selectionTime;
         _selectedItem = num;
