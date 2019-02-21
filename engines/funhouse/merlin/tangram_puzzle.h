@@ -35,10 +35,27 @@ public:
 	BoltCmd handleMsg(const BoltMsg &msg);
 
 private:
+    struct Piece {
+        BltImage image;
+        Common::Point pos;
+    };
+
+    typedef ScopedArray<Piece> PieceArray;
+
+    void drawPieces();
+
 	Graphics *_graphics;
+
+    // Main resources
 	BltImage _bgImage;
 	BltPalette _palette;
 	BltColorCycles _colorCycles;
+
+    // Per-difficulty resources
+    BltPalette _forePalette;
+
+    // Puzzle state
+    PieceArray _pieces;
 };
 
 } // End of namespace Funhouse
