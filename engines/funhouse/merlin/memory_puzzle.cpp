@@ -31,10 +31,10 @@ struct BltMemoryPuzzleItem {
 	static const uint kSize = 0x10;
 	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
 		numFrames = src.readUint16BE(0);
-		framesId = BltId(src.readUint32BE(2));
-		paletteId = BltId(src.readUint32BE(6));
+		framesId = BltId(src.readUint32BE(2)); // Ex: 8642
+		paletteId = BltId(src.readUint32BE(6)); // Ex: 861D
 		colorCyclesId = BltId(src.readUint32BE(0xA));
-		soundId = BltShortId(src.readUint16BE(0xE));
+		soundId = BltShortId(src.readUint16BE(0xE)); // Ex: 860C
 	}
 
 	uint16 numFrames;
@@ -53,11 +53,13 @@ struct BltMemoryPuzzleItemFrame {
 		// FIXME: position at 0?
 		pos.x = src.readInt16BE(0);
 		pos.y = src.readInt16BE(2);
-		imageId = BltId(src.readUint32BE(4));
+		imageId = BltId(src.readUint32BE(4)); // 8640
+        type = src.readInt16BE(8);
 	}
 
 	Common::Point pos;
 	BltId imageId;
+    int16 type;
 };
 
 typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
@@ -69,10 +71,10 @@ void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-	BltId sceneId = resourceList[1].value;
+	BltId sceneId = resourceList[1].value; // Ex: 8606
+    BltId itemsId = resourceList[3].value; // Ex: 865D
 
 	_scene.load(eventLoop, graphics, boltlib, sceneId);
-	BltId itemsId = resourceList[3].value;
 
 	BltMemoryPuzzleItemList itemList;
 	loadBltResourceArray(itemList, boltlib, itemsId);
@@ -84,8 +86,10 @@ void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &
 
 		_itemList[i].frames.alloc(frames.size());
 		for (uint j = 0; j < frames.size(); ++j) {
-			_itemList[i].frames[j].pos = frames[j].pos;
-			_itemList[i].frames[j].image.load(boltlib, frames[j].imageId);
+            ItemFrame& frame = _itemList[i].frames[j];
+            frame.pos = frames[j].pos;
+			frame.image.load(boltlib, frames[j].imageId);
+            frame.type = (FrameType)frames[j].type;
 		}
 
 		_itemList[i].palette.load(boltlib, itemList[i].paletteId);
@@ -106,15 +110,37 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
         uint32 progress = _eventLoop->getEventTime() - _selectionTime;
         if (progress < kSelectionDelay) {
             uint32 animProgress = _eventLoop->getEventTime() - _animFrameTime;
-            if (animProgress < kAnimPeriod) {
+            if (animProgress < _animDelay) {
                 return BoltCmd::kDone;
             } else { // Next frame
-                ++_animFrameNum;
-                if (_animFrameNum >= _itemList[_selectedItem].frames.size()) {
-                    _animFrameNum = 0;
+                if (!_animEnding) {
+                    ++_animFrameNum;
+                    if (_animFrameNum >= _itemList[_selectedItem].frames.size()) {
+                        _animFrameNum = 0;
+                    }
+                    drawItemFrame(_selectedItem, _animFrameNum);
+                } else {
+                    if (_animFrameNum < _itemList[_selectedItem].frames.size() - 1) {
+                        ++_animFrameNum;
+                        drawItemFrame(_selectedItem, _animFrameNum);
+                    }
                 }
-                drawItemFrame(_selectedItem, _animFrameNum);
-                _animFrameTime += kAnimPeriod;
+                _animFrameTime += _animDelay;
+
+                FrameType frameType = _itemList[_selectedItem].frames[_animFrameNum].type;
+                switch (frameType) {
+                case kProceed:
+                    _animDelay = kAnimPeriod;
+                    break;
+                case kWaitForEnd:
+                    _animEnding = true; // TODO: insert delay
+                    _animDelay = kAnimEndingDelay;
+                    break;
+                default:
+                    warning("Unknown frame type %d\n", (int)frameType);
+                    break;
+                }
+
                 return BoltCmd::kResend;
             }
         } else { // Done selecting
@@ -153,8 +179,10 @@ BoltCmd MemoryPuzzle::handleButtonClick(int num) {
         _state = kSelecting;
         _selectionTime = _eventLoop->getEventTime();
         _animFrameTime = _selectionTime;
+        _animDelay = kAnimPeriod;
         _selectedItem = num;
         _animFrameNum = 0;
+        _animEnding = false;
 
         const Item &item = _itemList[_selectedItem];
         //applyPalette(_graphics, kFore, item.palette);

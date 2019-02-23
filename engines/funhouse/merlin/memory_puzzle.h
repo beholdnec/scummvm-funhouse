@@ -41,15 +41,22 @@ private:
     // TODO: this value probably comes from boltlib.blt somewhere
     const uint32 kAnimPeriod = 50;
     const uint32 kSelectionDelay = 800;
+    const uint32 kAnimEndingDelay = 200;
 
     enum State {
         kIdle,
         kSelecting,
     };
 
+    enum FrameType {
+        kProceed = 1,
+        kWaitForEnd = -1,
+    };
+
 	struct ItemFrame {
 		Common::Point pos;
 		BltImage image;
+        FrameType type;
 	};
 
 	typedef ScopedArray<ItemFrame> ItemFrameList;
@@ -73,7 +80,9 @@ private:
 
     uint32 _selectionTime;
     uint32 _animFrameTime;
+    uint32 _animDelay;
     int _animFrameNum;
+    bool _animEnding; // Set when animation is ending
     int _selectedItem;
 };
 
