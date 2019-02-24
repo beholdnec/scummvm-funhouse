@@ -26,6 +26,7 @@ namespace Funhouse {
 
 void TangramPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	_graphics = graphics;
+    _pieceInHand = -1;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -76,19 +77,78 @@ void TangramPuzzle::enter() {
 BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kClick) {
 		// TODO: implement puzzle.
+        if (_pieceInHand != -1) {
+            // Place piece
+            _pieces[_pieceInHand].pos.x = _initialPiecePos.x + msg.point.x - _initialHandPos.x;
+            _pieces[_pieceInHand].pos.y = _initialPiecePos.y + msg.point.y - _initialHandPos.y;
+            _pieceInHand = -1;
+            drawPieces();
+        } else {
+            _pieceInHand = getPieceAtPosition(msg.point);
+            if (_pieceInHand != -1) {
+                // Pick up piece
+                _initialHandPos = msg.point;
+                _initialPiecePos = _pieces[_pieceInHand].pos;
+                debug(3, "Picked up piece %d", _pieceInHand);
+            }
+        }
+
+		return BoltCmd::kDone;
+	}
+
+    if (msg.type == BoltMsg::kHover) {
+        // Move piece. TODO: Pieces should snap to a coarse grid.
+        if (_pieceInHand != -1) {
+            _pieces[_pieceInHand].pos.x = _initialPiecePos.x + msg.point.x - _initialHandPos.x;
+            _pieces[_pieceInHand].pos.y = _initialPiecePos.y + msg.point.y - _initialHandPos.y;
+            drawPieces();
+            return BoltCmd::kDone;
+        }
+    }
+
+    if (msg.type == BoltMsg::kRightClick) {
+        // Win instantly. TODO: remove.
         // The win condition is when all pieces have been placed such that their sprites are
         // anchored at position 0, 0.
-		return Card::kWin;
-	}
+        return Card::kWin;
+    }
 
 	return BoltCmd::kDone;
 }
 
-void TangramPuzzle::drawPieces() {
+int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {
+    int result = -1;
+
+    // Loop through all pieces. Do not break early, since later pieces may
+    // overlap earlier pieces.
     for (int i = 0; i < _pieces.size(); ++i) {
         const Piece& piece = _pieces[i];
-        piece.image.drawAt(_graphics->getPlaneSurface(kFore), piece.pos.x, piece.pos.y, true);
+        if (piece.image.query(
+            pos.x - piece.pos.x - piece.image.getOffset().x,
+            pos.y - piece.pos.y - piece.image.getOffset().y) != 0) {
+            result = i;
+        }
     }
+
+    return result;
+}
+
+void TangramPuzzle::drawPieces() {
+    _graphics->clearPlane(kFore);
+
+    for (int i = 0; i < _pieces.size(); ++i) {
+        if (i != _pieceInHand) {
+            const Piece& piece = _pieces[i];
+            piece.image.drawAt(_graphics->getPlaneSurface(kFore), piece.pos.x, piece.pos.y, true);
+        }
+    }
+
+    if (_pieceInHand != -1) {
+        const Piece& pieceInHand = _pieces[_pieceInHand];
+        pieceInHand.image.drawAt(_graphics->getPlaneSurface(kFore), pieceInHand.pos.x, pieceInHand.pos.y, true);
+    }
+
+    _graphics->markDirty();
 }
 
 } // End of namespace Funhouse

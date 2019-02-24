@@ -42,6 +42,7 @@ private:
 
     typedef ScopedArray<Piece> PieceArray;
 
+    int getPieceAtPosition(const Common::Point& pos);
     void drawPieces();
 
 	Graphics *_graphics;
@@ -56,6 +57,9 @@ private:
 
     // Puzzle state
     PieceArray _pieces;
+    int _pieceInHand; // -1 if no piece is in hand
+    Common::Point _initialHandPos;
+    Common::Point _initialPiecePos;
 };
 
 } // End of namespace Funhouse

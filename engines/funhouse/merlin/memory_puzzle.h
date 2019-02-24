@@ -41,12 +41,7 @@ private:
     // TODO: this value probably comes from boltlib.blt somewhere
     const uint32 kAnimPeriod = 50;
     const uint32 kSelectionDelay = 800;
-    const uint32 kAnimEndingDelay = 200;
-
-    enum State {
-        kIdle,
-        kSelecting,
-    };
+    const uint32 kAnimEndingDelay = 400;
 
     enum FrameType {
         kProceed = 1,
@@ -71,19 +66,18 @@ private:
 
     void drawItemFrame(int itemNum, int frameNum);
 
-    State _state;
-
 	Graphics *_graphics;
     IBoltEventLoop *_eventLoop;
 	Scene _scene;
 	ItemList _itemList;
 
-    uint32 _selectionTime;
-    uint32 _animFrameTime;
-    uint32 _animDelay;
-    int _animFrameNum;
-    bool _animEnding; // Set when animation is ending
-    int _selectedItem;
+    bool _animating;
+    bool _animIsOrderedToEnd;
+    int _itemToAnimate;
+    uint32 _animStartTime;
+    uint32 _frameTime;
+    uint32 _frameDelay;
+    int _frameNum;
 };
 
 } // End of namespace Funhouse
