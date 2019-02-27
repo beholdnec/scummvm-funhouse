@@ -24,7 +24,7 @@
 
 namespace Funhouse {
 
-struct BltPotionPuzzleDef {
+struct BltPotionPuzzleInfo {
 	static const uint32 kType = kBltPotionPuzzle;
 	static const uint kSize = 0x46;
 	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
@@ -94,7 +94,7 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	_eventLoop = eventLoop;
 	_graphics = _game->getGraphics();
 
-	BltPotionPuzzleDef puzzle;
+	BltPotionPuzzleInfo puzzle;
 	BltU16Values difficultyIds;
 	BltPotionPuzzleDifficultyDef difficulty;
 	BltResourceList ingredientImagesList;
@@ -141,8 +141,7 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 		_bowlPoints[i] = bowlPoints[i].pos;
 	}
 	
-	_mode = kWaitForPlayer;
-	_timeoutActive = false;
+	_state = kIdle;
 	
 	_shelfSlotOccupied.alloc(puzzle.numShelfPoints);
 
@@ -154,55 +153,37 @@ void PotionPuzzle::enter() {
 }
 
 BoltCmd PotionPuzzle::handleMsg(const BoltMsg &msg) {
-	switch (_mode) {
-	case kWaitForPlayer:
-		return driveWaitForPlayer(msg);
-	case kTransition:
-		return driveTransition(msg);
-	default:
-		assert(false && "Invalid potion puzzle mode");
-		return BoltCmd::kDone;
-	}
+    switch (_state) {
+    case kIdle:
+        if (msg.type == BoltMsg::kClick) {
+            return handleClick(msg.point);
+        } else if (msg.type == BoltMsg::kRightClick) {
+            // Win instantly. TODO: Remove.
+            return Card::kEnd;
+        }
+        return BoltCmd::kDone;
+
+    case kTransitioning:
+        return handleTransition(msg);
+
+    case kTimeout: {
+        const uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
+        if (delta >= _timeoutLength) {
+            _state = kTransitioning;
+            return BoltCmd::kResend;
+        }
+
+        return BoltCmd::kDone;
+    }
+
+    default:
+        assert(false && "Invalid state");
+        return BoltCmd::kDone;
+    }
 }
 
-void PotionPuzzle::enterWaitForPlayerMode() {
-	// TODO: show cursor
-	_mode = kWaitForPlayer;
-}
-
-void PotionPuzzle::enterTransitionMode() {
-	// TODO: hide cursor
-	_mode = kTransition;
-}
-
-BoltCmd PotionPuzzle::driveWaitForPlayer(const BoltMsg &msg) {
-	if (msg.type == BoltMsg::kClick) {
-		return handleClick(msg.point);
-	}
-
-	if (msg.type == BoltMsg::kRightClick) {
-		// Right-click to win instantly.
-		// TODO: remove.
-		return Card::kEnd;
-	}
-
-	// Event was not handled.
-	return BoltCmd::kDone;
-}
-
-BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
-	// TODO: Transitions should be driven primarily by Timer and AudioEnded,
-	// once those event types are implemented.
-	if (msg.type != BoltMsg::kDrive) {
-		return BoltCmd::kDone;
-	}
-
-	if (_timeoutActive) {
-		return driveTimeout(msg);
-	}
-
-	// Examine state to decide what action to take
-
+BoltCmd PotionPuzzle::handleTransition(const BoltMsg &msg) {
+	// Examine bowl to decide what action to take
 	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[2])) {
 		// Left and right bowl slots occupied; perform reaction
 		return performReaction();
@@ -244,19 +225,9 @@ BoltCmd PotionPuzzle::driveTransition(const BoltMsg &msg) {
 		return BoltCmd::kResend;
 	}
 
-	// No action taken; change to WaitForPlayer mode
-	enterWaitForPlayerMode();
+	// No action taken; change to idle mode
+    _state = kIdle;
 	return BoltCmd::kResend;
-}
-
-BoltCmd PotionPuzzle::driveTimeout(const BoltMsg &msg) {
-	const uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
-	if (delta >= _timeoutLength) {
-		_timeoutActive = false;
-		return BoltCmd::kResend;
-	}
-
-	return BoltCmd::kDone;
 }
 
 BoltCmd PotionPuzzle::handleClick(Common::Point point) {
@@ -271,7 +242,7 @@ BoltCmd PotionPuzzle::handleClick(Common::Point point) {
 		// FIXME: should anchor point specified by image be ignored here?
 		Common::Rect rect = image.getRect(imagePos);
 		if (rect.contains(point)) {
-			if (image.query(point.x - rect.left, point.y - rect.top)) {
+			if (image.query(point.x - rect.left, point.y - rect.top) != 0) {
 				return requestUndo();
 			}
 		}
@@ -286,7 +257,7 @@ BoltCmd PotionPuzzle::handleClick(Common::Point point) {
 			// FIXME: should anchor point specified by image be ignored here?
 			Common::Rect rect = image.getRect(imagePos);
 			if (rect.contains(point)) {
-				if (image.query(point.x - rect.left, point.y - rect.top)) {
+				if (image.query(point.x - rect.left, point.y - rect.top) != 0) {
 					return requestIngredient(i);
 				}
 			}
@@ -300,7 +271,6 @@ BoltCmd PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
 	setTimeout(kPlacing1Time);
-	enterTransitionMode();
 	return BoltCmd::kResend;
 }
 
@@ -465,7 +435,7 @@ int PotionPuzzle::getNumRemainingIngredients() const {
 void PotionPuzzle::setTimeout(uint32 length) {
 	_timeoutStart = _eventLoop->getEventTime();
 	_timeoutLength = length;
-	_timeoutActive = true;
+    _state = kTimeout;
 }
 
 } // End of namespace Funhouse

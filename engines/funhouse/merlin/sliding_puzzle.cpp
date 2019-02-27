@@ -24,7 +24,7 @@
 
 namespace Funhouse {
 
-struct BltSlidingPuzzle { // type 44
+struct BltSlidingPuzzleInfo { // type 44
 	static const uint32 kType = kBltSlidingPuzzle;
 	static const uint kSize = 0xC;
 	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
@@ -49,27 +49,32 @@ void SlidingPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib 
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-	BltSlidingPuzzle slidingPuzzleInfo;
-	loadBltResource(slidingPuzzleInfo, boltlib, resourceList[1].value);
+    BltId puzzleInfoId = resourceList[1].value;
+
+	BltSlidingPuzzleInfo slidingPuzzleInfo;
+	loadBltResource(slidingPuzzleInfo, boltlib, puzzleInfoId);
 
 	// TODO: select proper difficulty based on player setting
 	BltResourceList difficultyInfo;
 	loadBltResourceArray(difficultyInfo, boltlib, slidingPuzzleInfo.difficulty1); // Ex: 3A34, 3B34, 3C34
+    BltId sceneId        = difficultyInfo[1].value;
+    BltId initialStateId = difficultyInfo[2].value;
+    BltId moveTablesId   = difficultyInfo[6].value;
 
-    // FIXME: difficultyInfo[3-5] probably refers to additional initial state tables.
+    // FIXME: difficultyInfo[3-5] are probably more initial state tables.
     BltU8Values initialState;
-    loadBltResourceArray(initialState, boltlib, difficultyInfo[2].value);
+    loadBltResourceArray(initialState, boltlib, initialStateId);
 
     _pieces.alloc(slidingPuzzleInfo.numPieces1);
     for (int i = 0; i < slidingPuzzleInfo.numPieces1; ++i) {
         _pieces[i] = initialState[i].value;
     }
 
-	_scene.load(eventLoop, graphics, boltlib, difficultyInfo[1].value);
+	_scene.load(eventLoop, graphics, boltlib, sceneId);
 
     BltResourceList moveTablesRes;
-    loadBltResourceArray(moveTablesRes, boltlib, difficultyInfo[6].value);
-    // FIXME: difficultyInfo[7-9] refers to additional move tables. What are they for?
+    loadBltResourceArray(moveTablesRes, boltlib, moveTablesId);
+    // FIXME: difficultyInfo[7-9] are more move tables. What are they for?
     for (int i = 0; i < kNumButtons * 2; ++i) {
         loadBltResourceArray(_moveTables[i], boltlib, moveTablesRes[i].value);
     }

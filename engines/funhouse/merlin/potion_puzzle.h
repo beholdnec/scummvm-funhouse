@@ -61,17 +61,13 @@ private:
 	static const uint32 kPlacing1Time = 500;
 	static const uint32 kPlacing2Time = 500;
 
-	enum Mode {
-		kWaitForPlayer,
-		kTransition
+	enum State {
+        kIdle,
+        kTransitioning,
+        kTimeout,
 	};
 
-	void enterWaitForPlayerMode();
-	void enterTransitionMode();
-
-	BoltCmd driveWaitForPlayer(const BoltMsg &msg);
-	BoltCmd driveTransition(const BoltMsg &msg);
-	BoltCmd driveTimeout(const BoltMsg &msg);
+	BoltCmd handleTransition(const BoltMsg &msg);
 
 	BoltCmd handleClick(Common::Point point);
 	BoltCmd requestIngredient(int ingredient);
@@ -99,14 +95,13 @@ private:
 	Common::Point _bowlPoints[3];
 	BltPotionPuzzleComboTable _reactionTable;
 	
-	Mode _mode;
+	State _state;
 
 	ScopedArray<bool> _shelfSlotOccupied; // False: Empty; True: Filled
 	static const int kNumBowlSlots = 3;
 	int _bowlSlots[kNumBowlSlots]; // Ingredients in bowl
 	int _requestedIngredient;
 	
-	bool _timeoutActive;
 	uint32 _timeoutStart;
 	uint32 _timeoutLength;
 };

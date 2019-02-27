@@ -27,12 +27,18 @@ namespace Funhouse {
 void WordPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
+    BltId difficultiesId = resourceList[0].value;
+
 	BltU16Values difficulties;
-	loadBltResourceArray(difficulties, boltlib, resourceList[0].value);
+	loadBltResourceArray(difficulties, boltlib, difficultiesId);
+    BltId difficultyId = BltShortId(difficulties[0].value);
+
 	// There are three difficulties, choose one here
 	BltResourceList difficulty;
-	loadBltResourceArray(difficulty, boltlib, BltShortId(difficulties[0].value)); // Difficulty 0
-	_scene.load(eventLoop, graphics, boltlib, difficulty[19].value);
+	loadBltResourceArray(difficulty, boltlib, difficultyId); // Difficulty 0
+    BltId sceneId = difficulty[19].value;
+
+	_scene.load(eventLoop, graphics, boltlib, sceneId);
 }
 
 void WordPuzzle::enter() {
@@ -43,6 +49,7 @@ BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
 	if (msg.type == Scene::kClickButton) {
 		return handleButtonClick(msg.num);
 	}
+
 	return _scene.handleMsg(msg);
 }
 
