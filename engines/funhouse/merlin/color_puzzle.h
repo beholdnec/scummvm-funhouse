@@ -56,6 +56,12 @@ private:
 	// or it may last as long as the sound
 	static const uint kMorphDuration = 500;
 
+    enum State {
+        kIdle,
+        kTransitioning,
+        kMorphing,
+    };
+
 	struct Piece {
 		int numStates;
 		BltPaletteMods palettes;
@@ -65,8 +71,6 @@ private:
 
 	BoltCmd handleButtonClick(int num);
 
-	void enterWaitForPlayerMode();
-	void enterTransitionMode();
 	void selectPiece(int piece);
 	void setPieceState(int piece, int state);
 	void morphPiece(int piece, int state);
@@ -76,17 +80,16 @@ private:
 	IBoltEventLoop *_eventLoop;
 	Scene _scene;
 
+    State _state;
 	Piece _pieces[kNumPieces];
 
     // TRANSITIONING
 
-    bool _transitioning;
     int _selectedPiece;
     int _transitionStep;
 
 	// MORPHING
 
-    bool _morphing;
 	uint32 _morphStartTime;
 	BltPaletteMods *_morphPaletteMods;
 	int _morphStartState;

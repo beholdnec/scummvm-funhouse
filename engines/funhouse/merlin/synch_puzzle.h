@@ -45,8 +45,12 @@ private:
 
     typedef ScopedArray<Item> ItemArray;
 
+    int getItemAtPosition(const Common::Point& pt);
+
     Graphics *_graphics;
+
 	Scene _scene;
+
     ItemArray _items;
 };
 

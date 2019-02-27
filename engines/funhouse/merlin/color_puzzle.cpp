@@ -27,9 +27,8 @@ namespace Funhouse {
 void ColorPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	_graphics = graphics;
 	_eventLoop = eventLoop;
-    _morphing = false;
 	_morphPaletteMods = nullptr;
-    _transitioning = false;
+    _state = kIdle;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -82,48 +81,53 @@ void ColorPuzzle::enter() {
 }
 
 BoltCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
-    if (_transitioning) {
-        if (_morphing) {
-            const uint32 progress = _eventLoop->getEventTime() - _morphStartTime;
-            if (progress < kMorphDuration) {
-                applyPaletteModBlended(_graphics, kFore, *_morphPaletteMods,
-                    _morphStartState, _morphEndState,
-                    Common::Rational(progress, kMorphDuration));
+    switch (_state) {
+    case kIdle:
+        // Handle input
+        if (msg.type == Scene::kClickButton) {
+            return handleButtonClick(msg.num);
+        }
+        return _scene.handleMsg(msg);
 
-                _graphics->markDirty();
-                return BoltCmd::kDone;
-            } else { // Done morphing
-                applyPaletteMod(_graphics, kFore, *_morphPaletteMods, _morphEndState);
-                _graphics->markDirty();
-                _morphing = false;
-                _morphPaletteMods = nullptr;
+    case kTransitioning:
+        if (_transitionStep < kNumTransitionSteps) {
+            int pieceNum = _pieces[_selectedPiece].transition.piece[_transitionStep];
+            int count = _pieces[_selectedPiece].transition.count[_transitionStep];
+            ++_transitionStep;
+
+            if (pieceNum >= 0) {
+                morphPiece(pieceNum, (_pieces[pieceNum].currentState + count) % _pieces[pieceNum].numStates);
                 return BoltCmd::kResend;
             }
-        } else {
-            if (_transitionStep < kNumTransitionSteps) {
-                int pieceNum = _pieces[_selectedPiece].transition.piece[_transitionStep];
-                int count = _pieces[_selectedPiece].transition.count[_transitionStep];
-                ++_transitionStep;
 
-                if (pieceNum >= 0) {
-                    morphPiece(pieceNum, (_pieces[pieceNum].currentState + count) % _pieces[pieceNum].numStates);
-                    return BoltCmd::kResend;
-                }
+            return BoltCmd::kDone;
+        } else { // Done transitioning
+            _state = kIdle;
+            return BoltCmd::kResend;
+        }
 
-                return BoltCmd::kDone;
-            } else { // Done transitioning
-                _transitioning = false;
-                return BoltCmd::kResend;
-            }
+    case kMorphing: {
+        const uint32 progress = _eventLoop->getEventTime() - _morphStartTime;
+        if (progress < kMorphDuration) {
+            applyPaletteModBlended(_graphics, kFore, *_morphPaletteMods,
+                _morphStartState, _morphEndState,
+                Common::Rational(progress, kMorphDuration));
+
+            _graphics->markDirty();
+            return BoltCmd::kDone;
+        } else { // Done morphing
+            applyPaletteMod(_graphics, kFore, *_morphPaletteMods, _morphEndState);
+            _graphics->markDirty();
+            _morphPaletteMods = nullptr;
+            _state = kTransitioning;
+            return BoltCmd::kResend;
         }
     }
 
-    // Handle input
-    if (msg.type == Scene::kClickButton) {
-        return handleButtonClick(msg.num);
+    default:
+        assert(false && "Invalid state");
+        return BoltCmd::kDone;
     }
-
-    return _scene.handleMsg(msg);
 }
 
 BoltCmd ColorPuzzle::handleButtonClick(int num) {
@@ -141,19 +145,10 @@ BoltCmd ColorPuzzle::handleButtonClick(int num) {
 	return CardCmd::kWin;
 }
 
-void ColorPuzzle::enterWaitForPlayerMode() {
-	// TODO: show cursor
-}
-
-void ColorPuzzle::enterTransitionMode() {
-	// TODO: hide cursor
-}
-
 void ColorPuzzle::selectPiece(int piece) {
-    enterTransitionMode();
-    _transitioning = true;
     _selectedPiece = piece;
     _transitionStep = 0;
+    _state = kTransitioning;
 }
 
 void ColorPuzzle::setPieceState(int piece, int state) {
@@ -174,7 +169,7 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 	_morphPaletteMods = paletteMods;
 	_morphStartState = startState;
 	_morphEndState = endState;
-    _morphing = true;
+    _state = kMorphing;
 }
 
 } // End of namespace Funhouse

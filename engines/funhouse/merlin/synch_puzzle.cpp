@@ -29,19 +29,17 @@ void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-
-    BltId difficultiesId = resourceList[0].value;
-    BltId sceneId = resourceList[4].value;
+    BltId difficultiesId = resourceList[0].value; // Ex: 7D00
+    BltId sceneId        = resourceList[4].value; // Ex: 7D0B
 
     BltU16Values difficultiesList;
     loadBltResourceArray(difficultiesList, boltlib, difficultiesId);
-
     // TODO: Select the difficulty that the player chose
-    BltId difficultyId = BltShortId(difficultiesList[0].value);
+    BltId difficultyId = BltShortId(difficultiesList[0].value); // Ex: 7A72
+
     BltResourceList difficulty;
     loadBltResourceArray(difficulty, boltlib, difficultyId);
-
-    BltId itemListId = difficulty[1].value;
+    BltId itemListId = difficulty[1].value; // Ex: 7A3D
 
     BltResourceList itemList;
     loadBltResourceArray(itemList, boltlib, itemListId);
@@ -81,13 +79,44 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
 		return handleButtonClick(msg.num);
 	}
 
+    if (msg.type == BoltMsg::kRightClick) {
+        // Instant win. TODO: remove.
+        return CardCmd::kWin;
+    }
+
+    if (msg.type == BoltMsg::kClick) {
+        int itemNum = getItemAtPosition(msg.point);
+        if (itemNum != -1) {
+            // TODO: implement state transitions
+            _items[itemNum].state = (_items[itemNum].state + 1) % _items[itemNum].sprites.getNumSprites();
+            enter(); // Redraw
+            return BoltCmd::kDone;
+        }
+    }
+
 	return _scene.handleMsg(msg);
 }
 
 BoltCmd SynchPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
-	// TODO: implement puzzle
-	return CardCmd(CardCmd::kWin);
+    return BoltCmd::kDone;
+}
+
+int SynchPuzzle::getItemAtPosition(const Common::Point &pt) {
+    int result = -1;
+
+    for (int i = 0; i < _items.size(); ++i) {
+        const Item &item = _items[i];
+        const Sprite &sprite = item.sprites.getSprite(item.state);
+        const Common::Point &origin = _scene.getOrigin();
+        if (sprite.image->query(pt.x - (sprite.pos.x - origin.x), pt.y - (sprite.pos.y - origin.y)) != 0) {
+            result = i;
+            // Don't break early. All items must be queried, since later items
+            // may overlap earlier items.
+        }
+    }
+
+    return result;
 }
 
 } // End of namespace Funhouse
