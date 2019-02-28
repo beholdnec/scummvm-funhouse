@@ -67,7 +67,7 @@ typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	_graphics = graphics;
     _eventLoop = eventLoop;
-    _animating = false;
+    _state = kIdle;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -105,76 +105,85 @@ void MemoryPuzzle::enter() {
 }
 
 BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-    // TODO: Golly I hate this code.
-    if (_animating) {
-        if (!_animIsOrderedToEnd) {
-            // Phase 1 - Advance frames, loop if end is reached until a maximum time has elapsed
-            uint32 animTime = _eventLoop->getEventTime() - _animStartTime;
-            if (animTime >= kSelectionDelay) {
-                _animating = false;
-                enter(); // Redraw
-                return BoltCmd::kResend;
-            } else {
-                uint32 frameDelta = _eventLoop->getEventTime() - _frameTime;
-                if (frameDelta < _frameDelay) {
-                    return BoltCmd::kDone;
-                } else { // Next frame
-                    _frameTime += _frameDelay;
-                    ++_frameNum;
-                    if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
-                        _frameNum = 0;
-                    }
+    switch (_state) {
+    case kIdle:
+        // XXX: right-click to win instantly. TODO: remove.
+        if (msg.type == BoltMsg::kRightClick) {
+            return kWin;
+        }
 
-                    drawItemFrame(_itemToAnimate, _frameNum);
+        if (msg.type == Scene::kClickButton) {
+            return handleButtonClick(msg.num);
+        }
 
-                    FrameType frameType = _itemList[_itemToAnimate].frames[_frameNum].type;
-                    switch (frameType) {
-                    case kProceed:
-                        _frameDelay = kAnimPeriod;
-                        break;
-                    case kWaitForEnd:
-                        _animIsOrderedToEnd = true;
-                        _frameDelay = kAnimEndingDelay;
-                        break;
-                    default:
-                        warning("Unknown frame type %d\n", (int)frameType);
-                        break;
-                    }
+        return _scene.handleMsg(msg);
 
-                    return BoltCmd::kResend;
-                }
-            }
+    case kAnimating: {
+        uint32 animTime = _eventLoop->getEventTime() - _animStartTime;
+        if (animTime >= kSelectionDelay) {
+            _state = kIdle;
+            enter(); // Redraw
+            return BoltCmd::kResend;
         } else {
-            // Phase 2 - Animation has been ordered to come to an end
             uint32 frameDelta = _eventLoop->getEventTime() - _frameTime;
             if (frameDelta < _frameDelay) {
                 return BoltCmd::kDone;
             } else { // Next frame
                 _frameTime += _frameDelay;
-                _frameDelay = kAnimPeriod;
                 ++_frameNum;
                 if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
-                    _animating = false;
-                    enter(); // Redraw
-                    return BoltCmd::kResend;
-                } else {
-                    drawItemFrame(_itemToAnimate, _frameNum);
-                    return BoltCmd::kResend;
+                    _frameNum = 0;
                 }
+
+                drawItemFrame(_itemToAnimate, _frameNum);
+
+                FrameType frameType = _itemList[_itemToAnimate].frames[_frameNum].type;
+                switch (frameType) {
+                case kProceed:
+                    _frameDelay = kAnimPeriod;
+                    break;
+                case kWaitForEnd:
+                    _frameDelay = kAnimEndingDelay;
+                    _state = kEndingAnimation;
+                    break;
+                default:
+                    warning("Unknown frame type %d\n", (int)frameType);
+                    break;
+                }
+
+                return BoltCmd::kResend;
             }
         }
+
+        return BoltCmd::kDone;
     }
 
-    // XXX: right-click to win instantly. TODO: remove.
-    if (msg.type == BoltMsg::kRightClick) {
-        return kWin;
+    case kEndingAnimation: {
+        // Phase 2 - Animation has been ordered to come to an end
+        uint32 frameDelta = _eventLoop->getEventTime() - _frameTime;
+        if (frameDelta < _frameDelay) {
+            return BoltCmd::kDone;
+        } else { // Next frame
+            _frameTime += _frameDelay;
+            _frameDelay = kAnimPeriod;
+            ++_frameNum;
+            if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
+                _state = kIdle;
+                enter(); // Redraw
+                return BoltCmd::kResend;
+            } else {
+                drawItemFrame(_itemToAnimate, _frameNum);
+                return BoltCmd::kResend;
+            }
+        }
+
+        return BoltCmd::kDone;
     }
 
-    if (msg.type == Scene::kClickButton) {
-        return handleButtonClick(msg.num);
+    default:
+        assert(false && "Invalid state");
+        return BoltCmd::kDone;
     }
-
-    return _scene.handleMsg(msg);
 }
 
 BoltCmd MemoryPuzzle::handleButtonClick(int num) {
@@ -182,12 +191,11 @@ BoltCmd MemoryPuzzle::handleButtonClick(int num) {
 	// TODO: implement puzzle
 
 	if (num >= 0 && num < _itemList.size()) {
-        _animating = true;
+        _state = kAnimating;
         _itemToAnimate = num;
         _frameNum = 0;
         _animStartTime = _eventLoop->getEventTime();
         _frameTime = _eventLoop->getEventTime();
-        _animIsOrderedToEnd = false;
         _frameDelay = kAnimPeriod;
 
         const Item &item = _itemList[_itemToAnimate];

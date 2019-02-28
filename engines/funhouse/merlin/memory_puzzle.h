@@ -43,6 +43,12 @@ private:
     const uint32 kSelectionDelay = 800;
     const uint32 kAnimEndingDelay = 400;
 
+    enum State {
+        kIdle,
+        kAnimating,
+        kEndingAnimation,
+    };
+
     enum FrameType {
         kProceed = 1,
         kWaitForEnd = -1,
@@ -71,8 +77,8 @@ private:
 	Scene _scene;
 	ItemList _itemList;
 
-    bool _animating;
-    bool _animIsOrderedToEnd;
+    State _state;
+
     int _itemToAnimate;
     uint32 _animStartTime;
     uint32 _frameTime;
