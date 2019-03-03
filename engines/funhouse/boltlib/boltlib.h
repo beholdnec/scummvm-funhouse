@@ -52,6 +52,8 @@ enum BltType {
 	kBltSlidingPuzzle = 44,
 	kBltParticleDeaths = 45, // action puzzles
 	kBltParticles = 46, // action puzzles
+    kBltSynchPuzzleInfo = 52,
+    kBltSynchPuzzleTransition = 53,
 	kBltMemoryPuzzleItemFrameList = 55,
 	kBltMemoryPuzzleItemList = 56,
     kBltColorPuzzleTransition = 58,

@@ -28,6 +28,20 @@
 
 namespace Funhouse {
 
+struct BltSynchPuzzleTransitionElement { // type 53
+    static const uint32 kType = kBltSynchPuzzleTransition;
+    static const uint kSize = 2;
+    void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
+        item = src.readInt8(0);
+        count = src.readInt8(1);
+    }
+
+    int8 item;
+    int8 count;
+};
+
+typedef ScopedArray<BltSynchPuzzleTransitionElement> BltSynchPuzzleTransition;
+
 class SynchPuzzle : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
@@ -38,9 +52,24 @@ protected:
 	BoltCmd handleButtonClick(int num);
 
 private:
+    static const int kTimeoutDelay = 250;
+
+    enum State {
+        kIdle,
+        kTransitioning,
+        kTimeout,
+    };
+
+    struct Move {
+        Move() : item(-1), count(0) {}
+        int item;
+        int count; // Negative for backwards; Positive for forwards
+    };
+
     struct Item {
         int state;
         BltSprites sprites;
+        ScopedArray<BltSynchPuzzleTransition> moveset;
     };
 
     typedef ScopedArray<Item> ItemArray;
@@ -48,10 +77,14 @@ private:
     int getItemAtPosition(const Common::Point& pt);
 
     Graphics *_graphics;
+    IBoltEventLoop *_eventLoop;
 
 	Scene _scene;
 
+    State _state;
     ItemArray _items;
+    ScopedArray<Move> _moveAgenda;
+    uint32 _timeoutStart;
 };
 
 } // End of namespace Funhouse

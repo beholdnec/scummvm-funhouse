@@ -24,12 +24,26 @@
 
 namespace Funhouse {
 
+struct BltSynchPuzzleInfo { // type 52
+    static const uint32 kType = kBltSynchPuzzleInfo;
+    static const uint kSize = 0x12;
+    void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
+        numItems = src.readUint8(0);
+        // TODO: More fields
+    }
+
+    uint8 numItems;
+};
+
 void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
     _graphics = graphics;
+    _eventLoop = eventLoop;
+    _state = kIdle;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
     BltId difficultiesId = resourceList[0].value; // Ex: 7D00
+    BltId infoId         = resourceList[1].value; // Ex: 7D01
     BltId sceneId        = resourceList[4].value; // Ex: 7D0B
 
     BltU16Values difficultiesList;
@@ -37,17 +51,51 @@ void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
     // TODO: Select the difficulty that the player chose
     BltId difficultyId = BltShortId(difficultiesList[0].value); // Ex: 7A72
 
+    BltSynchPuzzleInfo info;
+    loadBltResource(info, boltlib, infoId);
+
+    _moveAgenda.alloc(info.numItems - 1);
+
+    // Each difficulty has 4 possible puzzles. Choose one.
+    int puzzleNum = 0; // TODO: choose a random puzzle number 0-3
+
     BltResourceList difficulty;
     loadBltResourceArray(difficulty, boltlib, difficultyId);
-    BltId itemListId = difficulty[1].value; // Ex: 7A3D
+    BltId stateCountsId = difficulty[0].value; // Ex: 7A00
+    BltId itemListId    = difficulty[1].value; // Ex: 7A3D
+    BltId solutionId    = difficulty[3 + puzzleNum].value; // Ex: 7A3E
+    BltId initialId     = difficulty[7 + puzzleNum].value; // Ex: 7A42
+    BltId movesetsId    = difficulty[11 + puzzleNum].value; // Ex: 7A4E
+    // 0: State counts for each item
+    // 1: Sprites
+    // 2: Sounds
+    // 3-6: Solution states 0-3
+    // 7-10: Initial states 0-3
+    // 11-14: Movesets 0-3
+
+    BltU8Values stateCounts;
+    loadBltResourceArray(stateCounts, boltlib, stateCountsId);
 
     BltResourceList itemList;
     loadBltResourceArray(itemList, boltlib, itemListId);
+
+    BltResourceList movesets;
+    loadBltResourceArray(movesets, boltlib, movesetsId);
 
     _items.alloc(itemList.size());
     for (uint i = 0; i < _items.size(); ++i) {
         _items[i].state = 0;
         _items[i].sprites.load(boltlib, itemList[i].value);
+
+        BltResourceList moveset;
+        loadBltResourceArray(moveset, boltlib, movesets[i].value);
+
+        _items[i].moveset.alloc(stateCounts[i].value);
+        for (uint j = 0; j < stateCounts[i].value; ++j) {
+            loadBltResourceArray(_items[i].moveset[j], boltlib, moveset[j].value);
+        }
+
+        // TODO: set initial state
     }
 
 	_scene.load(eventLoop, graphics, boltlib, sceneId);
@@ -75,26 +123,85 @@ void SynchPuzzle::enter() {
 }
 
 BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
-	if (msg.type == Scene::kClickButton) {
-		return handleButtonClick(msg.num);
-	}
+    switch (_state) {
+    case kIdle:
+        if (msg.type == Scene::kClickButton) {
+            return handleButtonClick(msg.num);
+        }
 
-    if (msg.type == BoltMsg::kRightClick) {
-        // Instant win. TODO: remove.
-        return CardCmd::kWin;
-    }
+        if (msg.type == BoltMsg::kRightClick) {
+            // Instant win. TODO: remove.
+            return CardCmd::kWin;
+        }
 
-    if (msg.type == BoltMsg::kClick) {
-        int itemNum = getItemAtPosition(msg.point);
-        if (itemNum != -1) {
-            // TODO: implement state transitions
-            _items[itemNum].state = (_items[itemNum].state + 1) % _items[itemNum].sprites.getNumSprites();
-            enter(); // Redraw
+        if (msg.type == BoltMsg::kClick) {
+            int itemNum = getItemAtPosition(msg.point);
+            if (itemNum != -1) {
+                const BltSynchPuzzleTransition &transition = _items[itemNum].moveset[_items[itemNum].state];
+                for (int i = 0; i < transition.size(); ++i) {
+                    _moveAgenda[i].item = transition[i].item;
+                    _moveAgenda[i].count = transition[i].count;
+                }
+
+                // TODO: hide cursor during transition
+                _state = kTransitioning;
+                return BoltCmd::kResend;
+            }
+        }
+
+        // TODO: when clicking outside the pieces, a preview of the solution should be shown.
+
+        return _scene.handleMsg(msg);
+
+    case kTransitioning: {
+            // TODO: check win condition
+            for (int i = 0; i < _moveAgenda.size(); ++i) {
+                if (_moveAgenda[i].item != -1 && _moveAgenda[i].count != 0) {
+                    Item &item = _items[_moveAgenda[i].item];
+
+                    if (_moveAgenda[i].count > 0) {
+                        --_moveAgenda[i].count;
+
+                        ++item.state;
+                        if (item.state >= item.sprites.getNumSprites()) {
+                            item.state = 0;
+                        }
+                    } else {
+                        ++_moveAgenda[i].count;
+
+                        --item.state;
+                        if (item.state < 0) {
+                            item.state = item.sprites.getNumSprites() - 1;
+                        }
+                    }
+
+                    enter(); // Redraw
+
+                    _state = kTimeout;
+                    _timeoutStart = _eventLoop->getEventTime();
+                    return BoltCmd::kResend;
+                }
+            }
+
+            // Agenda is empty; return to idle state
+            _state = kIdle;
+            return BoltCmd::kResend;
+        }
+
+    case kTimeout: {
+        uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
+        if (delta < kTimeoutDelay) {
             return BoltCmd::kDone;
+        } else { // Timeout finished
+            _state = kTransitioning;
+            return BoltCmd::kResend;
         }
     }
 
-	return _scene.handleMsg(msg);
+    default:
+        assert(false && "Invalid state");
+        return BoltCmd::kDone;
+    }
 }
 
 BoltCmd SynchPuzzle::handleButtonClick(int num) {
