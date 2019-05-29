@@ -39,6 +39,7 @@ enum BltType {
 	kBltPalette = 10,
 	kBltColorCycles = 11,
 	kBltColorCycleSlot = 12,
+    kBltRect = 24,
 	kBltPlane = 26, // image, palette, hotspots
 	kBltSpriteList = 27, // image, x, y
 	kBltColors = 28, // just some colors, referenced by palette mods
@@ -47,6 +48,7 @@ enum BltType {
 	kBltButtonList = 31,
 	kBltScene = 32,
 	kBltMainMenu = 33,
+    kBltSubmenu = 37,
 	kBltHub = 40,
 	kBltHubItem = 41,
 	kBltSlidingPuzzle = 44,

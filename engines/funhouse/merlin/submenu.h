@@ -20,32 +20,43 @@
  *
  */
 
-#ifndef FUNHOUSE_MERLIN_HUB_H
-#define FUNHOUSE_MERLIN_HUB_H
+#ifndef FUNHOUSE_MERLIN_SUBMENU_H
+#define FUNHOUSE_MERLIN_SUBMENU_H
 
 #include "funhouse/bolt.h"
-#include "funhouse/scene.h"
-#include "funhouse/merlin/submenu.h"
+#include "funhouse/graphics.h"
+#include "funhouse/boltlib/palette.h"
+#include "funhouse/boltlib/sprites.h"
 
 namespace Funhouse {
 
-struct CardCmd;
-class MerlinEngine;
-struct HubEntry;
-	
-class HubCard : public Card {
+class Boltlib;
+struct BltId;
+
+class Submenu {
 public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
-	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
-protected:
-	BoltCmd handleButtonClick(int num);
+    void init(Graphics *graphics, Boltlib &boltlib, BltId id);
+    void enable(bool en = true);
+    bool isEnabled() const { return _enabled; }
+
+    BoltCmd handleMsg(const BoltMsg &msg);
 
 private:
-	Graphics *_graphics;
-	Scene _scene;
-    Submenu _submenu;
-	ScopedArray<BltImage> _itemImages;
+    struct Button {
+        Rect hotspot;
+        BltSprites hovered;
+        BltSprites unhovered;
+    };
+    typedef ScopedArray<Button> ButtonList;
+
+    int getButtonAt(const Common::Point &pt) const;
+
+    Graphics *_graphics;
+
+    bool _enabled;
+    BltImage _bgImage;
+    BltPalette _palette;
+    ButtonList _buttons;
 };
 
 } // End of namespace Funhouse

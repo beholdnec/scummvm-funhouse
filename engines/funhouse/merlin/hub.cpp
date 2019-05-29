@@ -63,6 +63,8 @@ void HubCard::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltl
 	_scene.load(eventLoop, _graphics, boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
+    _submenu.init(_graphics, boltlib, BltShortId(0x0718)); // TODO: see 0x0A04
+
 	BltResourceList hubItemsList;
 	loadBltResourceArray(hubItemsList, boltlib, hubInfo.itemListId);
 	_itemImages.alloc(hubInfo.numItems);
@@ -87,6 +89,15 @@ BoltCmd HubCard::handleMsg(const BoltMsg &msg) {
 	if (msg.type == Scene::kClickButton) {
 		return handleButtonClick(msg.num);
 	}
+
+    if (msg.type == BoltMsg::kRightClick) {
+        _submenu.enable();
+        return BoltCmd::kDone;
+    }
+
+    if (_submenu.isEnabled()) {
+        return _submenu.handleMsg(msg);
+    }
 
 	return _scene.handleMsg(msg);
 }
