@@ -37,6 +37,8 @@
 #include "funhouse/merlin/word_puzzle.h"
 #include "funhouse/merlin/hub.h"
 #include "funhouse/merlin/main_menu.h"
+#include "funhouse/merlin/file_menu.h"
+#include "funhouse/merlin/difficulty_menu.h"
 
 namespace Funhouse {
 
@@ -150,6 +152,20 @@ void MerlinGame::startMainMenu(BltId id) {
 	MainMenu* card = new MainMenu;
 	card->init(this, _graphics, _eventLoop, _boltlib, id);
 	setCurrentCard(card);
+}
+
+void MerlinGame::startFileMenu(BltId id) {
+    _currentCard.reset();
+    FileMenu* card = new FileMenu;
+    card->init(this, _graphics, _eventLoop, _boltlib, id);
+    setCurrentCard(card);
+}
+
+void MerlinGame::startDifficultyMenu(BltId id) {
+    _currentCard.reset();
+    DifficultyMenu* card = new DifficultyMenu;
+    card->init(this, _graphics, _eventLoop, _boltlib, id);
+    setCurrentCard(card);
 }
 
 class GenericMenuCard : public Card {
@@ -292,12 +308,12 @@ void MerlinGame::mainMenu(const void *param) {
 
 void MerlinGame::fileMenu(const void *param) {
 	static const uint16 kFileMenuId = 0x027A;
-	startMenu(BltShortId(kFileMenuId));
+	startFileMenu(BltShortId(kFileMenuId));
 }
 
 void MerlinGame::difficultyMenu(const void *param) {
 	static const uint16 kDifficultyMenuId = 0x006B;
-	startMenu(BltShortId(kDifficultyMenuId));
+	startDifficultyMenu(BltShortId(kDifficultyMenuId));
 }
 
 void MerlinGame::hub(const void *param) {

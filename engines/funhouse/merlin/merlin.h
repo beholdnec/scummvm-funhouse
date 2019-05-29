@@ -62,6 +62,8 @@ private:
 	void advanceSequence();
 	void enterSequenceEntry();
 	void startMainMenu(BltId id);
+    void startFileMenu(BltId id);
+    void startDifficultyMenu(BltId id);
 	void startMenu(BltId id);
 	void startMovie(PfFile &pfFile, uint32 name);
 
