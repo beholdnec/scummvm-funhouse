@@ -43,12 +43,6 @@ private:
     const uint32 kSelectionDelay = 800;
     const uint32 kAnimEndingDelay = 400;
 
-    enum State {
-        kIdle,
-        kAnimating,
-        kEndingAnimation,
-    };
-
     enum FrameType {
         kProceed = 1,
         kWaitForEnd = -1,
@@ -70,15 +64,20 @@ private:
 
 	typedef ScopedArray<Item> ItemList;
 
+    void startAnimation(int itemNum);
+    void driveAnimation();
     void drawItemFrame(int itemNum, int frameNum);
 
 	Graphics *_graphics;
     IBoltEventLoop *_eventLoop;
 	Scene _scene;
 	ItemList _itemList;
+    int _maxMemorize;
 
-    State _state;
+    int _curMemorize;
 
+    bool _animating;
+    bool _animationEnding;
     int _itemToAnimate;
     uint32 _animStartTime;
     uint32 _frameTime;

@@ -26,6 +26,19 @@
 
 namespace Funhouse {
 
+struct BltMemoryPuzzleInfo {
+    static const uint32 kType = kBltMemoryPuzzleInfos;
+    static const uint kSize = 0x10;
+    void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
+        maxMemorize = src.readUint16BE(2);
+        // TODO: the rest of the fields appear to be timing parameters
+    }
+
+    uint16 maxMemorize; // Number of items to memorize for this difficulty level
+};
+
+typedef ScopedArray<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
+
 struct BltMemoryPuzzleItem {
 	static const uint32 kType = kBltMemoryPuzzleItemList;
 	static const uint kSize = 0x10;
@@ -67,12 +80,19 @@ typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	_graphics = graphics;
     _eventLoop = eventLoop;
-    _state = kIdle;
+    _animating = false;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-	BltId sceneId = resourceList[1].value; // Ex: 8606
-    BltId itemsId = resourceList[3].value; // Ex: 865D
+    BltId infosId     = resourceList[0].value; // Ex: 8600
+	BltId sceneId     = resourceList[1].value; // Ex: 8606
+    BltId failSoundId = resourceList[2].value; // Ex: 8608
+    BltId itemsId     = resourceList[3].value; // Ex: 865D
+
+    BltMemoryPuzzleInfos infos;
+    loadBltResourceArray(infos, boltlib, infosId);
+    _maxMemorize = infos[0].maxMemorize; // TODO: select difficulty
+    _curMemorize = 3;
 
 	_scene.load(eventLoop, graphics, boltlib, sceneId);
 
@@ -105,8 +125,11 @@ void MemoryPuzzle::enter() {
 }
 
 BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-    switch (_state) {
-    case kIdle:
+    if (_animating) {
+        driveAnimation();
+    }
+    
+    if (!_animating) {
         // XXX: right-click to win instantly. TODO: remove.
         if (msg.type == BoltMsg::kRightClick) {
             return kWin;
@@ -117,20 +140,62 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
         }
 
         return _scene.handleMsg(msg);
+    }
 
-    case kAnimating: {
-        uint32 animTime = _eventLoop->getEventTime() - _animStartTime;
-        if (animTime >= kSelectionDelay) {
-            _state = kIdle;
-            enter(); // Redraw
-            return BoltCmd::kResend;
-        } else {
-            uint32 frameDelta = _eventLoop->getEventTime() - _frameTime;
-            if (frameDelta < _frameDelay) {
-                return BoltCmd::kDone;
-            } else { // Next frame
-                _frameTime += _frameDelay;
-                ++_frameNum;
+    return BoltCmd::kDone;
+}
+
+void MemoryPuzzle::startAnimation(int itemNum) {
+    _animating = true;
+    _animationEnding = false;
+    _itemToAnimate = itemNum;
+    _frameNum = 0;
+    _animStartTime = _eventLoop->getEventTime();
+    _frameTime = _eventLoop->getEventTime();
+    _frameDelay = kAnimPeriod;
+
+    drawItemFrame(_itemToAnimate, _frameNum);
+
+    const Item &item = _itemList[_itemToAnimate];
+    //applyPalette(_graphics, kFore, item.palette);
+    // XXX: applyPalette doesn't work correctly. Manually apply palette.
+    _graphics->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
+        0, 128);
+    if (item.colorCycles) {
+        applyColorCycles(_graphics, kFore, item.colorCycles.get());
+    } else {
+        _graphics->resetColorCycles();
+    }
+}
+
+void MemoryPuzzle::driveAnimation() {
+    if (!_animating) {
+        return;
+    }
+
+    bool done = false;
+    while (!done) {
+        // 1. Check selection delay
+        if (!_animationEnding) {
+            uint32 animTime = _eventLoop->getEventTime() - _animStartTime;
+            if (animTime >= kSelectionDelay) {
+                _animating = false;
+                enter(); // Redraw
+                done = true;
+                return;
+            }
+        }
+
+        // 2. Decide whether to advance frame
+        uint32 frameDelta = _eventLoop->getEventTime() - _frameTime;
+        bool advanceFrame = frameDelta >= _frameDelay;
+
+        // 3. Advance frame
+        if (advanceFrame) {
+            _frameTime += _frameDelay;
+            ++_frameNum;
+
+            if (!_animationEnding) {
                 if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
                     _frameNum = 0;
                 }
@@ -144,45 +209,27 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
                     break;
                 case kWaitForEnd:
                     _frameDelay = kAnimEndingDelay;
-                    _state = kEndingAnimation;
+                    _animationEnding = true;
                     break;
                 default:
                     warning("Unknown frame type %d\n", (int)frameType);
                     break;
                 }
-
-                return BoltCmd::kResend;
+            } else { // _animationEnding
+                if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
+                    _animating = false;
+                    enter(); // Redraw
+                    done = true;
+                    return;
+                } else {
+                    drawItemFrame(_itemToAnimate, _frameNum);
+                }
             }
         }
 
-        return BoltCmd::kDone;
-    }
-
-    case kEndingAnimation: {
-        // Phase 2 - Animation has been ordered to come to an end
-        uint32 frameDelta = _eventLoop->getEventTime() - _frameTime;
-        if (frameDelta < _frameDelay) {
-            return BoltCmd::kDone;
-        } else { // Next frame
-            _frameTime += _frameDelay;
-            _frameDelay = kAnimPeriod;
-            ++_frameNum;
-            if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
-                _state = kIdle;
-                enter(); // Redraw
-                return BoltCmd::kResend;
-            } else {
-                drawItemFrame(_itemToAnimate, _frameNum);
-                return BoltCmd::kResend;
-            }
+        if (!advanceFrame) {
+            done = true;
         }
-
-        return BoltCmd::kDone;
-    }
-
-    default:
-        assert(false && "Invalid state");
-        return BoltCmd::kDone;
     }
 }
 
@@ -191,27 +238,7 @@ BoltCmd MemoryPuzzle::handleButtonClick(int num) {
 	// TODO: implement puzzle
 
 	if (num >= 0 && num < _itemList.size()) {
-        _state = kAnimating;
-        _itemToAnimate = num;
-        _frameNum = 0;
-        _animStartTime = _eventLoop->getEventTime();
-        _frameTime = _eventLoop->getEventTime();
-        _frameDelay = kAnimPeriod;
-
-        const Item &item = _itemList[_itemToAnimate];
-        //applyPalette(_graphics, kFore, item.palette);
-        // XXX: applyPalette doesn't work correctly. Manually apply palette.
-        _graphics->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
-            0, 128);
-        if (item.colorCycles) {
-            // FIXME: color cycles are broken.
-            applyColorCycles(_graphics, kFore, item.colorCycles.get());
-        }
-        else {
-            _graphics->resetColorCycles();
-        }
-
-        drawItemFrame(_itemToAnimate, _frameNum);
+        startAnimation(num);
 	}
 
 	return BoltCmd::kDone;

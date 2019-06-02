@@ -91,8 +91,8 @@ void Submenu::enable(bool en) {
     _enabled = en;
     if (_enabled) {
         // TODO: The palette is special. Only certain colors are applied.
-        applyPalette(_graphics, kFore, _palette);
-        _bgImage.drawAt(_graphics->getPlaneSurface(kFore), 0, 0, true); // TODO: fix position
+        applyPalette(_graphics, kBack, _palette);
+        _bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true); // TODO: fix position
         _graphics->markDirty();
     }
 }
@@ -107,7 +107,7 @@ BoltCmd Submenu::handleMsg(const BoltMsg &msg) {
         if (num != -1) {
             for (int i = 0; i < _buttons.size(); ++i) {
                 const Sprite &sp = (i == num) ? _buttons[i].hovered.getSprite(0) : _buttons[i].unhovered.getSprite(0);
-                sp.image->drawAt(_graphics->getPlaneSurface(kFore), sp.pos.x, sp.pos.y, true);
+                sp.image->drawAt(_graphics->getPlaneSurface(kBack), sp.pos.x, sp.pos.y, true);
             }
 
             if (msg.type == BoltMsg::kClick) {
