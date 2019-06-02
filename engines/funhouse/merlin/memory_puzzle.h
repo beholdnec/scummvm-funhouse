@@ -25,11 +25,14 @@
 
 #include "funhouse/merlin/merlin.h"
 #include "funhouse/scene.h"
+#include "common/random.h"
 
 namespace Funhouse {
 
 class MemoryPuzzle : public Card {
 public:
+    MemoryPuzzle();
+
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
@@ -64,6 +67,8 @@ private:
 
 	typedef ScopedArray<Item> ItemList;
 
+    void startPlayback();
+    void drivePlayback();
     void startAnimation(int itemNum);
     void driveAnimation();
     void drawItemFrame(int itemNum, int frameNum);
@@ -74,7 +79,12 @@ private:
 	ItemList _itemList;
     int _maxMemorize;
 
+    Common::RandomSource _random;
     int _curMemorize;
+    ScopedArray<int> _solution;
+
+    bool _playingBack;
+    int _playbackStep;
 
     bool _animating;
     bool _animationEnding;

@@ -77,6 +77,9 @@ struct BltMemoryPuzzleItemFrame {
 
 typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 
+MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
+{}
+
 void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
 	_graphics = graphics;
     _eventLoop = eventLoop;
@@ -118,6 +121,15 @@ void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &
 			loadBltResource(*_itemList[i].colorCycles, boltlib, itemList[i].colorCyclesId);
 		}
 	}
+
+    _solution.alloc(_maxMemorize);
+    for (int i = 0; i < _maxMemorize; ++i) {
+        _solution[i] = _random.getRandomNumber(_itemList.size() - 1);
+    }
+
+    _playingBack = false;
+
+    startPlayback();
 }
 
 void MemoryPuzzle::enter() {
@@ -128,8 +140,12 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
     if (_animating) {
         driveAnimation();
     }
+
+    if (_playingBack) {
+        drivePlayback();
+    }
     
-    if (!_animating) {
+    if (!_animating && !_playingBack) {
         // XXX: right-click to win instantly. TODO: remove.
         if (msg.type == BoltMsg::kRightClick) {
             return kWin;
@@ -143,6 +159,29 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
     }
 
     return BoltCmd::kDone;
+}
+
+void MemoryPuzzle::startPlayback() {
+    _playingBack = true;
+    _playbackStep = 0;
+}
+
+void MemoryPuzzle::drivePlayback() {
+    if (!_playingBack) {
+        return;
+    }
+
+    if (_animating) {
+        return;
+    }
+
+    if (_playbackStep >= _curMemorize) {
+        _playingBack = false;
+        return;
+    }
+
+    startAnimation(_solution[_playbackStep]);
+    ++_playbackStep;
 }
 
 void MemoryPuzzle::startAnimation(int itemNum) {
