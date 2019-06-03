@@ -81,6 +81,7 @@ private:
 
     Common::RandomSource _random;
     int _curMemorize;
+    int _matches;
     ScopedArray<int> _solution;
 
     bool _playingBack;

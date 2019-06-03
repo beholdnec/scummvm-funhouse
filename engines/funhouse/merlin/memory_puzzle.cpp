@@ -128,6 +128,7 @@ void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &
     }
 
     _playingBack = false;
+    _matches = 0;
 
     startPlayback();
 }
@@ -146,6 +147,15 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
     }
     
     if (!_animating && !_playingBack) {
+        if (_matches >= _maxMemorize) {
+            return kWin;
+        } else if (_matches >= _curMemorize) {
+            _matches = 0;
+            _curMemorize += 3;
+            startPlayback();
+            return BoltCmd::kDone;
+        }
+
         // XXX: right-click to win instantly. TODO: remove.
         if (msg.type == BoltMsg::kRightClick) {
             return kWin;
@@ -156,6 +166,28 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
         }
 
         return _scene.handleMsg(msg);
+    }
+
+    return BoltCmd::kDone;
+}
+
+BoltCmd MemoryPuzzle::handleButtonClick(int num) {
+    debug(3, "Clicked button %d", num);
+    // TODO: implement puzzle
+
+    if (num >= 0 && num < _itemList.size()) {
+        if (_solution[_matches] == num) {
+            // Earn a new match
+            ++_matches;
+            // TODO: Play success sound
+            startAnimation(num);
+        } else {
+            // Mismatch
+            // TODO: Play fail sound
+            startAnimation(num);
+            _matches = 0;
+            startPlayback();
+        }
     }
 
     return BoltCmd::kDone;
@@ -185,6 +217,8 @@ void MemoryPuzzle::drivePlayback() {
 }
 
 void MemoryPuzzle::startAnimation(int itemNum) {
+    debug(3, "Starting animation for item %d", itemNum);
+
     _animating = true;
     _animationEnding = false;
     _itemToAnimate = itemNum;
@@ -270,17 +304,6 @@ void MemoryPuzzle::driveAnimation() {
             done = true;
         }
     }
-}
-
-BoltCmd MemoryPuzzle::handleButtonClick(int num) {
-	debug(3, "Clicked button %d", num);
-	// TODO: implement puzzle
-
-	if (num >= 0 && num < _itemList.size()) {
-        startAnimation(num);
-	}
-
-	return BoltCmd::kDone;
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {
