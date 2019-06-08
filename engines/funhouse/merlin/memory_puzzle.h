@@ -68,9 +68,9 @@ private:
 	typedef ScopedArray<Item> ItemList;
 
     void startPlayback();
-    void drivePlayback();
+    BoltCmd drivePlayback();
     void startAnimation(int itemNum);
-    void driveAnimation();
+    BoltCmd driveAnimation();
     void drawItemFrame(int itemNum, int frameNum);
 
 	Graphics *_graphics;
@@ -84,10 +84,10 @@ private:
     int _matches;
     ScopedArray<int> _solution;
 
-    bool _playingBack;
+    bool _playbackActive;
     int _playbackStep;
 
-    bool _animating;
+    bool _animationActive;
     bool _animationEnding;
     int _itemToAnimate;
     uint32 _animStartTime;
