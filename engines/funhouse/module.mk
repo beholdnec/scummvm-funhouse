@@ -13,12 +13,15 @@ MODULE_OBJS := \
 	labyrinth/labyrinth.o \
 	merlin/action_puzzle.o \
 	merlin/color_puzzle.o \
+	merlin/difficulty_menu.o \
+	merlin/file_menu.o \
 	merlin/hub.o \
 	merlin/main_menu.o \
 	merlin/memory_puzzle.o \
 	merlin/merlin.o \
 	merlin/potion_puzzle.o \
 	merlin/sliding_puzzle.o \
+	merlin/submenu.o \
 	merlin/synch_puzzle.o \
 	merlin/tangram_puzzle.o \
 	merlin/word_puzzle.o
