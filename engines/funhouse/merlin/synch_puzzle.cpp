@@ -38,7 +38,8 @@ struct BltSynchPuzzleInfo { // type 52
 void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
     _graphics = graphics;
     _eventLoop = eventLoop;
-    _state = kIdle;
+    _timeoutActive = false;
+    _transitionActive = false;
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -128,94 +129,101 @@ void SynchPuzzle::enter() {
 }
 
 BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
-    switch (_state) {
-    case kIdle:
-        if (msg.type == Scene::kClickButton) {
-            return handleButtonClick(msg.num);
-        }
+    if (_timeoutActive) {
+        return driveTimeout();
+    } else if (_transitionActive) {
+        return driveTransition();
+    }
 
-        if (msg.type == BoltMsg::kRightClick) {
-            // Instant win. TODO: remove.
-            return CardCmd::kWin;
-        }
+    if (msg.type == Scene::kClickButton) {
+        return handleButtonClick(msg.num);
+    }
 
-        if (msg.type == BoltMsg::kClick) {
-            int itemNum = getItemAtPosition(msg.point);
-            if (itemNum != -1) {
-                const BltSynchPuzzleTransition &transition = _items[itemNum].moveset[_items[itemNum].state];
-                for (int i = 0; i < transition.size(); ++i) {
-                    _moveAgenda[i].item = transition[i].item;
-                    _moveAgenda[i].count = transition[i].count;
-                }
+    if (msg.type == BoltMsg::kRightClick) {
+        // Instant win. TODO: remove.
+        return CardCmd::kWin;
+    }
 
-                // TODO: hide cursor during transition
-                _state = kTransitioning;
-                _eventLoop->setMsg(BoltMsg::kDrive);
-                return BoltCmd::kResend;
-            }
-        }
-
-        // TODO: when clicking outside the pieces, a preview of the solution should be shown.
-
-        return _scene.handleMsg(msg);
-
-    case kTransitioning: {
-            for (int i = 0; i < _moveAgenda.size(); ++i) {
-                if (_moveAgenda[i].item != -1 && _moveAgenda[i].count != 0) {
-                    Item &item = _items[_moveAgenda[i].item];
-
-                    if (_moveAgenda[i].count > 0) {
-                        --_moveAgenda[i].count;
-
-                        ++item.state;
-                        if (item.state >= item.sprites.getNumSprites()) {
-                            item.state = 0;
-                        }
-                    } else {
-                        ++_moveAgenda[i].count;
-
-                        --item.state;
-                        if (item.state < 0) {
-                            item.state = item.sprites.getNumSprites() - 1;
-                        }
-                    }
-
-                    enter(); // Redraw
-
-                    _state = kTimeout;
-                    _timeoutStart = _eventLoop->getEventTime();
-                    return BoltCmd::kResend;
-                }
+    if (msg.type == BoltMsg::kClick) {
+        int itemNum = getItemAtPosition(msg.point);
+        if (itemNum != -1) {
+            const Item &item = _items[itemNum];
+            const BltSynchPuzzleTransition &transition = item.moveset[item.state];
+            for (int i = 0; i < transition.size(); ++i) {
+                _moveAgenda[i].item = transition[i].item;
+                _moveAgenda[i].count = transition[i].count;
             }
 
-            // Agenda is empty; check win condition and return to idle state
-            if (isSolved()) {
-                return kWin;
-            }
-
-            _state = kIdle;
-            return BoltCmd::kResend;
-        }
-
-    case kTimeout: {
-        uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
-        if (delta < kTimeoutDelay) {
-            return BoltCmd::kDone;
-        } else { // Timeout finished
-            _state = kTransitioning;
+            // TODO: hide cursor during transition
+            _transitionActive = true;
+            _eventLoop->setMsg(BoltMsg::kDrive);
             return BoltCmd::kResend;
         }
     }
 
-    default:
-        assert(false && "Invalid state");
-        return BoltCmd::kDone;
-    }
+    // TODO: when clicking outside the pieces, a preview of the solution should be shown.
+
+    return _scene.handleMsg(msg);
 }
 
 BoltCmd SynchPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
     return BoltCmd::kDone;
+}
+
+void SynchPuzzle::setTimeout(uint32 delay) {
+    _timeoutActive = true;
+    _timeoutStart = _eventLoop->getEventTime();
+    _timeoutDelay = delay;
+}
+
+BoltCmd SynchPuzzle::driveTimeout() {
+    assert(_timeoutActive);
+
+    uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
+    if (delta < _timeoutDelay) {
+        return BoltCmd::kDone;
+    } else {
+        _timeoutActive = false;
+        return BoltCmd::kResend;
+    }
+}
+
+BoltCmd SynchPuzzle::driveTransition() {
+    for (int i = 0; i < _moveAgenda.size(); ++i) {
+        if (_moveAgenda[i].item != -1 && _moveAgenda[i].count != 0) {
+            Item &item = _items[_moveAgenda[i].item];
+
+            if (_moveAgenda[i].count > 0) {
+                --_moveAgenda[i].count;
+
+                ++item.state;
+                if (item.state >= item.sprites.getNumSprites()) {
+                    item.state = 0;
+                }
+            } else {
+                ++_moveAgenda[i].count;
+
+                --item.state;
+                if (item.state < 0) {
+                    item.state = item.sprites.getNumSprites() - 1;
+                }
+            }
+
+            enter(); // Redraw the scene
+
+            setTimeout(kTimeoutDelay);
+            return BoltCmd::kResend;
+        }
+    }
+
+    // Agenda is empty; check win condition and return to idle state
+    if (isSolved()) {
+        return kWin;
+    }
+
+    _transitionActive = false;
+    return BoltCmd::kResend;
 }
 
 int SynchPuzzle::getItemAtPosition(const Common::Point &pt) {

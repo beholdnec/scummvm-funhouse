@@ -54,12 +54,6 @@ protected:
 private:
     static const int kTimeoutDelay = 250;
 
-    enum State {
-        kIdle,
-        kTransitioning,
-        kTimeout,
-    };
-
     struct Move {
         Move() : item(-1), count(0) {}
         int item;
@@ -75,6 +69,9 @@ private:
 
     typedef ScopedArray<Item> ItemArray;
 
+    void setTimeout(uint32 delay);
+    BoltCmd driveTimeout();
+    BoltCmd driveTransition();
     int getItemAtPosition(const Common::Point& pt);
     bool isSolved() const;
 
@@ -83,10 +80,14 @@ private:
 
 	Scene _scene;
 
-    State _state;
     ItemArray _items;
+
+    bool _transitionActive;
     ScopedArray<Move> _moveAgenda;
+
+    bool _timeoutActive;
     uint32 _timeoutStart;
+    uint32 _timeoutDelay;
 };
 
 } // End of namespace Funhouse
