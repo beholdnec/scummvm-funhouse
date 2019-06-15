@@ -82,9 +82,16 @@ void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
     BltResourceList movesets;
     loadBltResourceArray(movesets, boltlib, movesetsId);
 
+    BltU8Values initial;
+    loadBltResourceArray(initial, boltlib, initialId);
+
+    BltU8Values solution;
+    loadBltResourceArray(solution, boltlib, solutionId);
+
     _items.alloc(itemList.size());
     for (uint i = 0; i < _items.size(); ++i) {
-        _items[i].state = 0;
+        _items[i].state = initial[i].value;
+        _items[i].solution = solution[i].value;
         _items[i].sprites.load(boltlib, itemList[i].value);
 
         BltResourceList moveset;
@@ -94,8 +101,6 @@ void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
         for (uint j = 0; j < stateCounts[i].value; ++j) {
             loadBltResourceArray(_items[i].moveset[j], boltlib, moveset[j].value);
         }
-
-        // TODO: set initial state
     }
 
 	_scene.load(eventLoop, graphics, boltlib, sceneId);
@@ -145,6 +150,7 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
 
                 // TODO: hide cursor during transition
                 _state = kTransitioning;
+                _eventLoop->setMsg(BoltMsg::kDrive);
                 return BoltCmd::kResend;
             }
         }
@@ -154,7 +160,6 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
         return _scene.handleMsg(msg);
 
     case kTransitioning: {
-            // TODO: check win condition
             for (int i = 0; i < _moveAgenda.size(); ++i) {
                 if (_moveAgenda[i].item != -1 && _moveAgenda[i].count != 0) {
                     Item &item = _items[_moveAgenda[i].item];
@@ -183,7 +188,11 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
                 }
             }
 
-            // Agenda is empty; return to idle state
+            // Agenda is empty; check win condition and return to idle state
+            if (isSolved()) {
+                return kWin;
+            }
+
             _state = kIdle;
             return BoltCmd::kResend;
         }
@@ -224,6 +233,19 @@ int SynchPuzzle::getItemAtPosition(const Common::Point &pt) {
     }
 
     return result;
+}
+
+bool SynchPuzzle::isSolved() const {
+    bool solved = true;
+
+    for (int i = 0; i < _items.size(); ++i) {
+        if (_items[i].state != _items[i].solution) {
+            solved = false;
+            break;
+        }
+    }
+
+    return solved;
 }
 
 } // End of namespace Funhouse

@@ -68,6 +68,7 @@ private:
 
     struct Item {
         int state;
+        int solution;
         BltSprites sprites;
         ScopedArray<BltSynchPuzzleTransition> moveset;
     };
@@ -75,6 +76,7 @@ private:
     typedef ScopedArray<Item> ItemArray;
 
     int getItemAtPosition(const Common::Point& pt);
+    bool isSolved() const;
 
     Graphics *_graphics;
     IBoltEventLoop *_eventLoop;
