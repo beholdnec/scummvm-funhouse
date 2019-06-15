@@ -40,12 +40,16 @@ void ColorPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
 	BltU16Values difficultyIds;
 	loadBltResourceArray(difficultyIds, boltlib, difficultiesId);
 
+    int puzzleNum = 0; // TODO: Choose a random puzzle 0..3.
+
 	// TODO: Load player's chosen difficulty
 	BltResourceList difficulty;
 	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultyIds[0].value));
 	BltId numStatesId        = difficulty[0].value;
 	BltId statePaletteModsId = difficulty[1].value;
-    BltId moveSetId          = difficulty[11].value; // Ex: 8D2E; FIXME: there are four moveset id's?
+    BltId solutionId         = difficulty[3 + puzzleNum].value; // Ex: 8D1E
+    BltId initialId          = difficulty[7 + puzzleNum].value; // Ex: 8D22
+    BltId moveSetId          = difficulty[11 + puzzleNum].value; // Ex: 8D2E
 
 	BltU8Values numStates;
 	loadBltResourceArray(numStates, boltlib, numStatesId);
@@ -56,13 +60,19 @@ void ColorPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
     BltResourceList moveSet;
     loadBltResourceArray(moveSet, boltlib, moveSetId);
 
+    BltU8Values solution;
+    loadBltResourceArray(solution, boltlib, solutionId);
+
+    BltU8Values initial;
+    loadBltResourceArray(initial, boltlib, initialId);
+
 	for (int i = 0; i < kNumPieces; ++i) {
 		Piece &p = _pieces[i];
 
 		p.numStates = numStates[i].value;
 		loadBltResourceArray(p.palettes, boltlib, statePaletteMods[i].value);
-		// FIXME: What is initial state? Is it random or chosen from a predefined set?
-		p.currentState = 1;
+		p.state = initial[i].value;
+        p.solution = solution[i].value;
 
         BltResourceList moveArray;
         loadBltResourceArray(moveArray, boltlib, moveSet[i].value);
@@ -76,7 +86,7 @@ void ColorPuzzle::enter() {
 	_scene.enter();
 	_morphPaletteMods = nullptr;
 	for (int i = 0; i < kNumPieces; ++i) {
-		setPieceState(i, _pieces[i].currentState); // Update display
+		setPieceState(i, _pieces[i].state); // Update display
 	}
 }
 
@@ -96,12 +106,16 @@ BoltCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
             ++_transitionStep;
 
             if (pieceNum >= 0) {
-                morphPiece(pieceNum, (_pieces[pieceNum].currentState + count) % _pieces[pieceNum].numStates);
+                morphPiece(pieceNum, (_pieces[pieceNum].state + count) % _pieces[pieceNum].numStates);
                 return BoltCmd::kResend;
             }
 
             return BoltCmd::kDone;
         } else { // Done transitioning
+            if (isSolved()) {
+                return kWin;
+            }
+
             _state = kIdle;
             return BoltCmd::kResend;
         }
@@ -152,15 +166,15 @@ void ColorPuzzle::selectPiece(int piece) {
 }
 
 void ColorPuzzle::setPieceState(int piece, int state) {
-	_pieces[piece].currentState = state;
+	_pieces[piece].state = state;
 	applyPaletteMod(_graphics, kFore, _pieces[piece].palettes, state);
 	_graphics->markDirty();
 }
 
 void ColorPuzzle::morphPiece(int piece, int state) {
 	debug(3, "morphing piece %d to state %d", piece, state);
-	int oldState = _pieces[piece].currentState;
-	_pieces[piece].currentState = state;
+	int oldState = _pieces[piece].state;
+	_pieces[piece].state = state;
 	startMorph(&_pieces[piece].palettes, oldState, state);
 }
 
@@ -170,6 +184,19 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 	_morphStartState = startState;
 	_morphEndState = endState;
     _state = kMorphing;
+}
+
+bool ColorPuzzle::isSolved() const {
+    bool solved = true;
+
+    for (int i = 0; i < kNumPieces; ++i) {
+        if (_pieces[i].state != _pieces[i].solution) {
+            solved = false;
+            break;
+        }
+    }
+
+    return solved;
 }
 
 } // End of namespace Funhouse

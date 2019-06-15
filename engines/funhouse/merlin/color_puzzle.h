@@ -65,7 +65,8 @@ private:
 	struct Piece {
 		int numStates;
 		BltPaletteMods palettes;
-		int currentState;
+		int state;
+        int solution;
         BltColorPuzzleTransition transition;
 	};
 
@@ -75,6 +76,7 @@ private:
 	void setPieceState(int piece, int state);
 	void morphPiece(int piece, int state);
     void startMorph(BltPaletteMods *paletteMods, int startState, int endState);
+    bool isSolved() const;
 
 	Graphics *_graphics;
 	IBoltEventLoop *_eventLoop;
