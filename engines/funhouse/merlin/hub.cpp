@@ -63,7 +63,7 @@ void HubCard::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltl
 	_scene.load(eventLoop, _graphics, boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
-    _submenu.init(_graphics, boltlib, BltShortId(0x0718)); // TODO: see 0x0A04
+    _submenu.init(eventLoop, _graphics, boltlib, BltShortId(0x0718)); // TODO: see 0x0A04
 
 	BltResourceList hubItemsList;
 	loadBltResourceArray(hubItemsList, boltlib, hubInfo.itemListId);
@@ -83,21 +83,24 @@ void HubCard::enter() {
 	for (uint i = 0; i < _itemImages.size(); ++i) {
 		_itemImages[i].drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true);
 	}
+
+    _graphics->markDirty();
 }
 
 BoltCmd HubCard::handleMsg(const BoltMsg &msg) {
-	if (msg.type == Scene::kClickButton) {
-		return handleButtonClick(msg.num);
-	}
+    BoltCmd cmd = _submenu.handleMsg(msg);
+    if (cmd.type != BoltCmd::kPass) {
+        return cmd;
+    }
 
-    if (msg.type == BoltMsg::kRightClick) {
-        _submenu.enable();
+    if (msg.type == BoltMsg::kRedraw) {
+        enter(); // Redraw scene
         return BoltCmd::kDone;
     }
 
-    if (_submenu.isEnabled()) {
-        return _submenu.handleMsg(msg);
-    }
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
+	}
 
 	return _scene.handleMsg(msg);
 }

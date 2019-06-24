@@ -35,9 +35,7 @@ struct BltId;
 
 class Submenu {
 public:
-    void init(Graphics *graphics, Boltlib &boltlib, BltId id);
-    void enable(bool en = true);
-    bool isEnabled() const { return _enabled; }
+    void init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId id);
 
     BoltCmd handleMsg(const BoltMsg &msg);
 
@@ -49,11 +47,13 @@ private:
     };
     typedef ScopedArray<Button> ButtonList;
 
+    void activate();
     int getButtonAt(const Common::Point &pt) const;
 
+    IBoltEventLoop *_eventLoop;
     Graphics *_graphics;
 
-    bool _enabled;
+    bool _active;
     BltImage _bgImage;
     BltPalette _palette;
     ButtonList _buttons;

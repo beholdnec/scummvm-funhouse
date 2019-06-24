@@ -60,10 +60,10 @@ struct BltSubmenu {
     BltId spriteListId;
 };
 
-void Submenu::init(Graphics *graphics, Boltlib &boltlib, BltId id) {
+void Submenu::init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId id) {
+    _eventLoop = eventLoop;
     _graphics = graphics;
-
-    _enabled = false;
+    _active = false;
 
     BltSubmenu submenu;
     loadBltResource(submenu, boltlib, id);
@@ -87,19 +87,22 @@ void Submenu::init(Graphics *graphics, Boltlib &boltlib, BltId id) {
     }
 }
 
-void Submenu::enable(bool en) {
-    _enabled = en;
-    if (_enabled) {
-        // TODO: The palette is special. Only certain colors are applied.
-        applyPalette(_graphics, kBack, _palette);
-        _bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true); // TODO: fix position
-        _graphics->markDirty();
-    }
-}
-
 BoltCmd Submenu::handleMsg(const BoltMsg &msg) {
-    if (!_enabled) {
+    if (msg.type == BoltMsg::kRightClick) {
+        if (!_active) {
+            activate();
+            return BoltCmd::kDone;
+        } else {
+            _active = false;
+            _eventLoop->setMsg(BoltMsg::kRedraw);
+            return BoltCmd::kResend;
+        }
+
         return BoltCmd::kDone;
+    }
+
+    if (!_active) {
+        return BoltCmd::kPass;
     }
 
     if (msg.type == BoltMsg::kClick || msg.type == BoltMsg::kHover) {
@@ -117,6 +120,14 @@ BoltCmd Submenu::handleMsg(const BoltMsg &msg) {
     }
 
     return BoltCmd::kDone;
+}
+
+void Submenu::activate() {
+    _active = true;
+    // FIXME: The palette is special. Only certain colors should be applied.
+    applyPalette(_graphics, kBack, _palette);
+    _bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true); // TODO: fix position
+    _graphics->markDirty();
 }
 
 int Submenu::getButtonAt(const Common::Point &pt) const {

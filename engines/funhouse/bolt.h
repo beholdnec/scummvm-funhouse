@@ -98,7 +98,8 @@ struct BoltMsg {
 		kTimer,
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
-		kDrive, // Drive events are fired constantly. TODO: eliminate Drive
+		kDrive,
+        kRedraw,
 		kMaxBoltMsg = 100
 	};
 
@@ -113,8 +114,9 @@ struct BoltMsg {
 struct BoltCmd {
 	enum Type {
 		// System commands
-		kDone = 0, // Message has been handled.
+		kDone = 0, // Message was handled.
 		kResend,   // Message should be resent. The game can use setMsg to change the message.
+        kPass,     // Message was not handled and should be passed to the next handler.
 		kMaxBoltCmd = 100
 	};
 
