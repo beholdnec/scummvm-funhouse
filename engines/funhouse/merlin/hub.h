@@ -25,7 +25,7 @@
 
 #include "funhouse/bolt.h"
 #include "funhouse/scene.h"
-#include "funhouse/merlin/submenu.h"
+#include "funhouse/merlin/popup.h"
 
 namespace Funhouse {
 
@@ -44,7 +44,7 @@ protected:
 private:
 	Graphics *_graphics;
 	Scene _scene;
-    Submenu _submenu;
+    Popup _popup;
 	ScopedArray<BltImage> _itemImages;
 };
 

@@ -21,7 +21,7 @@ MODULE_OBJS := \
 	merlin/merlin.o \
 	merlin/potion_puzzle.o \
 	merlin/sliding_puzzle.o \
-	merlin/submenu.o \
+	merlin/popup.o \
 	merlin/synch_puzzle.o \
 	merlin/tangram_puzzle.o \
 	merlin/word_puzzle.o

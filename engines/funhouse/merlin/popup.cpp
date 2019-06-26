@@ -20,7 +20,7 @@
  *
  */
 
-#include "funhouse/merlin/submenu.h"
+#include "funhouse/merlin/popup.h"
 
 #include "funhouse/boltlib/boltlib.h"
 #include "funhouse/graphics.h"
@@ -35,11 +35,6 @@ struct BltRect {
 	}
 
     Rect rect;
-    uint16 numButtons;
-    BltId bgImageId;
-    BltId paletteId;
-    BltId hotspotListId;
-    BltId spriteListId;
 };
 
 struct BltSubmenu {
@@ -60,7 +55,7 @@ struct BltSubmenu {
     BltId spriteListId;
 };
 
-void Submenu::init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId id) {
+void Popup::init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId id) {
     _eventLoop = eventLoop;
     _graphics = graphics;
     _active = false;
@@ -87,7 +82,7 @@ void Submenu::init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltl
     }
 }
 
-BoltCmd Submenu::handleMsg(const BoltMsg &msg) {
+BoltCmd Popup::handleMsg(const BoltMsg &msg) {
     if (msg.type == BoltMsg::kRightClick) {
         if (!_active) {
             activate();
@@ -122,7 +117,7 @@ BoltCmd Submenu::handleMsg(const BoltMsg &msg) {
     return BoltCmd::kDone;
 }
 
-void Submenu::activate() {
+void Popup::activate() {
     _active = true;
     // FIXME: The palette is special. Only certain colors should be applied.
     applyPalette(_graphics, kBack, _palette);
@@ -130,7 +125,7 @@ void Submenu::activate() {
     _graphics->markDirty();
 }
 
-int Submenu::getButtonAt(const Common::Point &pt) const {
+int Popup::getButtonAt(const Common::Point &pt) const {
     for (int i = 0; i < _buttons.size(); ++i) {
         if (_buttons[i].hotspot.contains(pt)) {
             return i;

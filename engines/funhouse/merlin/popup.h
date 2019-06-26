@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef FUNHOUSE_MERLIN_SUBMENU_H
-#define FUNHOUSE_MERLIN_SUBMENU_H
+#ifndef FUNHOUSE_MERLIN_POPUP_H
+#define FUNHOUSE_MERLIN_POPUP_H
 
 #include "funhouse/bolt.h"
 #include "funhouse/graphics.h"
@@ -33,7 +33,7 @@ namespace Funhouse {
 class Boltlib;
 struct BltId;
 
-class Submenu {
+class Popup {
 public:
     void init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId id);
 

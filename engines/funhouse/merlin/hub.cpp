@@ -63,7 +63,7 @@ void HubCard::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltl
 	_scene.load(eventLoop, _graphics, boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
-    _submenu.init(eventLoop, _graphics, boltlib, BltShortId(0x0718)); // TODO: see 0x0A04
+    _popup.init(eventLoop, _graphics, boltlib, BltShortId(0x0718)); // TODO: see 0x0A04
 
 	BltResourceList hubItemsList;
 	loadBltResourceArray(hubItemsList, boltlib, hubInfo.itemListId);
@@ -88,7 +88,7 @@ void HubCard::enter() {
 }
 
 BoltCmd HubCard::handleMsg(const BoltMsg &msg) {
-    BoltCmd cmd = _submenu.handleMsg(msg);
+    BoltCmd cmd = _popup.handleMsg(msg);
     if (cmd.type != BoltCmd::kPass) {
         return cmd;
     }
