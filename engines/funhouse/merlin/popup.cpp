@@ -37,8 +37,8 @@ struct BltRect {
     Rect rect;
 };
 
-struct BltSubmenu {
-	static const uint32 kType = kBltSubmenu;
+struct BltPopup {
+	static const uint32 kType = kBltPopup;
 	static const uint32 kSize = 0x12;
 	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
         numButtons = src.readUint16BE(0);
@@ -60,19 +60,19 @@ void Popup::init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib
     _graphics = graphics;
     _active = false;
 
-    BltSubmenu submenu;
-    loadBltResource(submenu, boltlib, id);
-    _buttons.alloc(submenu.numButtons);
-    _bgImage.load(boltlib, submenu.bgImageId);
-    _palette.load(boltlib, submenu.paletteId);
+    BltPopup popup;
+    loadBltResource(popup, boltlib, id);
+    _buttons.alloc(popup.numButtons);
+    _bgImage.load(boltlib, popup.bgImageId);
+    _palette.load(boltlib, popup.paletteId);
 
     BltResourceList hotspotList;
-    loadBltResourceArray(hotspotList, boltlib, submenu.hotspotListId);
+    loadBltResourceArray(hotspotList, boltlib, popup.hotspotListId);
 
     BltResourceList spriteList;
-    loadBltResourceArray(spriteList, boltlib, submenu.spriteListId);
+    loadBltResourceArray(spriteList, boltlib, popup.spriteListId);
 
-    for (int i = 0; i < submenu.numButtons; ++i) {
+    for (int i = 0; i < popup.numButtons; ++i) {
         BltRect hotspotRect;
         loadBltResource(hotspotRect, boltlib, hotspotList[i].value);
 

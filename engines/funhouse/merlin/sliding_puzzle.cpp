@@ -44,8 +44,12 @@ struct BltSlidingPuzzleInfo { // type 44
 	BltShortId difficulty3;
 };
 
-void SlidingPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
-    _graphics = graphics;
+void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+    _game = game;
+    _graphics = _game->getGraphics();
+
+    _popup.init(_game->getEventLoop(), _graphics, boltlib,
+        _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -70,7 +74,7 @@ void SlidingPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib 
         _pieces[i] = initialState[i].value;
     }
 
-	_scene.load(eventLoop, graphics, boltlib, sceneId);
+	_scene.load(_game->getEventLoop(), _graphics, boltlib, sceneId);
 
     BltResourceList moveTablesRes;
     loadBltResourceArray(moveTablesRes, boltlib, moveTablesId);
@@ -86,6 +90,11 @@ void SlidingPuzzle::enter() {
 }
 
 BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltCmd cmd = _popup.handleMsg(msg);
+    if (cmd.type != BoltCmd::kPass) {
+        return cmd;
+    }
+
 	if (msg.type == Scene::kClickButton) {
 		return handleButtonClick(msg.num);
 	}

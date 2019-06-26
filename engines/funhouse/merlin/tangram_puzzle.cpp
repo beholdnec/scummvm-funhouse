@@ -24,9 +24,13 @@
 
 namespace Funhouse {
 
-void TangramPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
-	_graphics = graphics;
+void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+    _game = game;
+	_graphics = _game->getGraphics();
     _pieceInHand = -1;
+
+    _popup.init(_game->getEventLoop(), _graphics, boltlib,
+        _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -75,6 +79,11 @@ void TangramPuzzle::enter() {
 }
 
 BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltCmd cmd = _popup.handleMsg(msg);
+    if (cmd.type != BoltCmd::kPass) {
+        return cmd;
+    }
+
 	if (msg.type == BoltMsg::kClick) {
 		// TODO: implement puzzle.
         if (_pieceInHand != -1) {

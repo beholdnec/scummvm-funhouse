@@ -35,11 +35,15 @@ struct BltSynchPuzzleInfo { // type 52
     uint8 numItems;
 };
 
-void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
-    _graphics = graphics;
-    _eventLoop = eventLoop;
+void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+    _game = game;
+    _graphics = _game->getGraphics();
+    _eventLoop = _game->getEventLoop();
     _timeoutActive = false;
     _transitionActive = false;
+
+    _popup.init(_eventLoop, _graphics, boltlib,
+        _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -104,7 +108,7 @@ void SynchPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &b
         }
     }
 
-	_scene.load(eventLoop, graphics, boltlib, sceneId);
+	_scene.load(_eventLoop, _graphics, boltlib, sceneId);
 }
 
 void SynchPuzzle::enter() {
@@ -133,6 +137,11 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
         return driveTimeout();
     } else if (_transitionActive) {
         return driveTransition();
+    }
+
+    BoltCmd cmd = _popup.handleMsg(msg);
+    if (cmd.type != BoltCmd::kPass) {
+        return cmd;
     }
 
     if (msg.type == Scene::kClickButton) {

@@ -42,6 +42,20 @@
 
 namespace Funhouse {
 
+struct BltPopupCatalog {
+    static const uint32 kType = kBltPopupCatalog;
+    static const uint32 kSize = 0x22;
+    void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
+        popupId[0] = BltId(src.readUint32BE(0x12));
+        popupId[1] = BltId(src.readUint32BE(0x18));
+        popupId[2] = BltId(src.readUint32BE(0x1E));
+    }
+
+    BltId popupId[3];
+};
+
+static const uint16 kPopupCatalogId = 0x0A04;
+
 void MerlinGame::init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop) {
 	_system = system;
 	_graphics = graphics;
@@ -56,6 +70,15 @@ void MerlinGame::init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, 
 	_challdirPf.load("CHALLDIR.PF");
 
 	_movie.setTriggerCallback(MerlinGame::movieTrigger, this);
+
+    // Load popup catalog
+    BltPopupCatalog popupCatalog;
+    loadBltResource(popupCatalog, _boltlib, BltShortId(kPopupCatalogId));
+    for (int i = 0; i < kNumPopupTypes; ++i) {
+        BltU16Values popupIds;
+        loadBltResourceArray(popupIds, _boltlib, popupCatalog.popupId[i]);
+        _popupResIds[i] = BltShortId(popupIds[0].value);
+    }
 
 	// Load cursor
 	initCursor();
@@ -81,6 +104,10 @@ Graphics* MerlinGame::getGraphics() {
 	return _graphics;
 }
 
+IBoltEventLoop* MerlinGame::getEventLoop() {
+    return _eventLoop;
+}
+
 bool MerlinGame::isInMovie() const {
 	return _movie.isRunning();
 }
@@ -96,6 +123,10 @@ void MerlinGame::startPotionMovie(int num) {
 	}
 
 	startMovie(_potionPf, kPotionMovies[num]);
+}
+
+BltId MerlinGame::getPopupResId(PopupType type) {
+    return _popupResIds[type];
 }
 
 void MerlinGame::initCursor() {
@@ -272,7 +303,7 @@ void MerlinGame::win() {
 void MerlinGame::puzzle(const PuzzleEntry *entry) {
 	_currentCard.reset();
 	_currentPuzzle = entry;
-	Card *card = _currentPuzzle->puzzle(_graphics, _eventLoop, _boltlib, BltShortId(_currentPuzzle->resId));
+	Card *card = _currentPuzzle->puzzle(this, _boltlib, BltShortId(_currentPuzzle->resId));
 	setCurrentCard(card);
 }
 
@@ -321,7 +352,7 @@ void MerlinGame::hub(const void *param) {
 	const HubEntry *entry = reinterpret_cast<const HubEntry*>(param);
 	_currentHub = entry;
 	HubCard *card = new HubCard;
-	card->init(_graphics, _eventLoop, _boltlib, BltShortId(entry->hubId));
+	card->init(this, _boltlib, BltShortId(entry->hubId));
 	setCurrentCard(card);
 }
 
@@ -401,9 +432,9 @@ void MerlinGame::potionPuzzle(const void *param) {
 // TODO: there are more: cursor, menus, etc.
 
 template<class T>
-static Card* makePuzzle(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+static Card* makePuzzle(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	T *card = new T;
-	card->init(graphics, eventLoop, boltlib, resId);
+	card->init(game, boltlib, resId);
 	return card;
 }
 

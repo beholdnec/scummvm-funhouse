@@ -24,13 +24,14 @@
 #define FUNHOUSE_MERLIN_WORD_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
+#include "funhouse/merlin/popup.h"
 #include "funhouse/scene.h"
 
 namespace Funhouse {
 
 class WordPuzzle : public Card {
 public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
@@ -38,6 +39,8 @@ protected:
 	BoltCmd handleButtonClick(int num);
 
 private:
+    MerlinGame *_game;
+    Popup _popup;
 	Scene _scene;
 };
 

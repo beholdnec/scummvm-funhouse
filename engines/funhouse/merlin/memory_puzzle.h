@@ -24,6 +24,7 @@
 #define FUNHOUSE_MERLIN_MEMORY_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
+#include "funhouse/merlin/popup.h"
 #include "funhouse/scene.h"
 #include "common/random.h"
 
@@ -33,7 +34,7 @@ class MemoryPuzzle : public Card {
 public:
     MemoryPuzzle();
 
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
@@ -73,9 +74,11 @@ private:
     BoltCmd driveAnimation();
     void drawItemFrame(int itemNum, int frameNum);
 
+    MerlinGame *_game;
 	Graphics *_graphics;
     IBoltEventLoop *_eventLoop;
 	Scene _scene;
+    Popup _popup;
 	ItemList _itemList;
     int _maxMemorize;
 

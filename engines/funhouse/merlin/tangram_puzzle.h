@@ -24,13 +24,14 @@
 #define FUNHOUSE_MERLIN_TANGRAM_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
+#include "funhouse/merlin/popup.h"
 #include "funhouse/boltlib/palette.h"
 
 namespace Funhouse {
 	
 class TangramPuzzle : public Card {
 public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
@@ -45,7 +46,10 @@ private:
     int getPieceAtPosition(const Common::Point& pos);
     void drawPieces();
 
+    MerlinGame *_game;
 	Graphics *_graphics;
+
+    Popup _popup;
 
     // Main resources
 	BltImage _bgImage;

@@ -24,19 +24,23 @@
 
 namespace Funhouse {
 
-void ColorPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
-	_graphics = graphics;
-	_eventLoop = eventLoop;
+void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+    _game = game;
+	_graphics = _game->getGraphics();
+	_eventLoop = _game->getEventLoop();
 	_morphPaletteMods = nullptr;
     _transitionActive = false;
     _morphActive = false;
+
+    _popup.init(_eventLoop, _graphics, boltlib,
+        _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
 	BltId difficultiesId = resourceList[0].value;
 	BltId sceneId        = resourceList[3].value;
 
-	_scene.load(eventLoop, graphics, boltlib, sceneId);
+	_scene.load(_eventLoop, _graphics, boltlib, sceneId);
 
 	BltU16Values difficultyIds;
 	loadBltResourceArray(difficultyIds, boltlib, difficultiesId);
@@ -96,6 +100,11 @@ BoltCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
         return driveMorph();
     } else if (_transitionActive) {
         return driveTransition();
+    }
+
+    BoltCmd cmd = _popup.handleMsg(msg);
+    if (cmd.type != BoltCmd::kPass) {
+        return cmd;
     }
 
     if (msg.type == Scene::kClickButton) {

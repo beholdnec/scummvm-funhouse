@@ -24,6 +24,7 @@
 #define FUNHOUSE_MERLIN_POTION_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
+#include "funhouse/merlin/popup.h"
 #include "funhouse/boltlib/palette.h"
 
 namespace Funhouse {
@@ -86,6 +87,7 @@ private:
 	MerlinGame *_game;
 	IBoltEventLoop *_eventLoop;
 	Graphics *_graphics;
+    Popup _popup;
 	BltImage _bgImage;
 	BltPalette _bgPalette;
 	Common::Point _origin;

@@ -80,12 +80,15 @@ typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
 {}
 
-void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
-	_graphics = graphics;
-    _eventLoop = eventLoop;
+void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+    _game = game;
+	_graphics = _game->getGraphics();
+    _eventLoop = _game->getEventLoop();
     _animationActive = false;
     _playbackActive = false;
     _matches = 0;
+
+    _popup.init(_eventLoop, _graphics, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
@@ -99,7 +102,7 @@ void MemoryPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &
     _maxMemorize = infos[0].maxMemorize; // TODO: select difficulty
     _curMemorize = 3;
 
-	_scene.load(eventLoop, graphics, boltlib, sceneId);
+	_scene.load(_eventLoop, _graphics, boltlib, sceneId);
 
 	BltMemoryPuzzleItemList itemList;
 	loadBltResourceArray(itemList, boltlib, itemsId);
@@ -152,10 +155,12 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
         return BoltCmd::kDone;
     }
 
-    // XXX: right-click to win instantly. TODO: remove.
-    if (msg.type == BoltMsg::kRightClick) {
-        return kWin;
-    } else if (msg.type == Scene::kClickButton) {
+    BoltCmd cmd = _popup.handleMsg(msg);
+    if (cmd.type != BoltCmd::kPass) {
+        return cmd;
+    }
+
+    if (msg.type == Scene::kClickButton) {
         return handleButtonClick(msg.num);
     }
 

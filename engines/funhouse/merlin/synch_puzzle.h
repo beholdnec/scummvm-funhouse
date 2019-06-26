@@ -24,6 +24,7 @@
 #define FUNHOUSE_MERLIN_SYNCH_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
+#include "funhouse/merlin/popup.h"
 #include "funhouse/scene.h"
 
 namespace Funhouse {
@@ -44,7 +45,7 @@ typedef ScopedArray<BltSynchPuzzleTransitionElement> BltSynchPuzzleTransition;
 
 class SynchPuzzle : public Card {
 public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
@@ -75,9 +76,11 @@ private:
     int getItemAtPosition(const Common::Point& pt);
     bool isSolved() const;
 
+    MerlinGame *_game;
     Graphics *_graphics;
     IBoltEventLoop *_eventLoop;
 
+    Popup _popup;
 	Scene _scene;
 
     ItemArray _items;

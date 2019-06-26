@@ -34,11 +34,12 @@ namespace Funhouse {
 class ActionPuzzle : public Card {
 public:
 	ActionPuzzle();
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
 protected:
+    MerlinGame *_game;
 	Graphics *_graphics;
 	IBoltEventLoop *_eventLoop;
 	BltImage _bgImage;

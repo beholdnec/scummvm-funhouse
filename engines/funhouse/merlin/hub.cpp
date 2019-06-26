@@ -55,15 +55,17 @@ struct BltHubItem { // type 41
 	BltId imageId;
 };
 
-void HubCard::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
-	_graphics = graphics;
+void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+    _game = game;
+	_graphics = _game->getGraphics();
 
 	BltHub hubInfo;
 	loadBltResource(hubInfo, boltlib, resId);
-	_scene.load(eventLoop, _graphics, boltlib, hubInfo.sceneId);
+	_scene.load(_game->getEventLoop(), _graphics, boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
-    _popup.init(eventLoop, _graphics, boltlib, BltShortId(0x0718)); // TODO: see 0x0A04
+    _popup.init(_game->getEventLoop(), _graphics, boltlib,
+        _game->getPopupResId(MerlinGame::kHubPopup));
 
 	BltResourceList hubItemsList;
 	loadBltResourceArray(hubItemsList, boltlib, hubInfo.itemListId);

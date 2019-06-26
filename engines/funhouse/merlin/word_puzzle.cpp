@@ -24,7 +24,12 @@
 
 namespace Funhouse {
 
-void WordPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+    _game = game;
+
+    _popup.init(_game->getEventLoop(), _game->getGraphics(), boltlib,
+        _game->getPopupResId(MerlinGame::kPuzzlePopup));
+
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
     BltId difficultiesId = resourceList[0].value;
@@ -38,7 +43,7 @@ void WordPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &bo
 	loadBltResourceArray(difficulty, boltlib, difficultyId); // Difficulty 0
     BltId sceneId = difficulty[19].value;
 
-	_scene.load(eventLoop, graphics, boltlib, sceneId);
+	_scene.load(_game->getEventLoop(), _game->getGraphics(), boltlib, sceneId);
 }
 
 void WordPuzzle::enter() {
@@ -46,6 +51,11 @@ void WordPuzzle::enter() {
 }
 
 BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltCmd cmd = _popup.handleMsg(msg);
+    if (cmd.type != BoltCmd::kPass) {
+        return cmd;
+    }
+
 	if (msg.type == Scene::kClickButton) {
 		return handleButtonClick(msg.num);
 	}

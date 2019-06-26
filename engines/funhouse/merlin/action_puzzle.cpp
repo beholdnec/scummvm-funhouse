@@ -53,9 +53,10 @@ struct BltParticles { // type 46
 	uint16 numParticles;
 };
 
-void ActionPuzzle::init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
-	_graphics = graphics;
-	_eventLoop = eventLoop;
+void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+    _game = game;
+	_graphics = _game->getGraphics();
+	_eventLoop = _game->getEventLoop();
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);

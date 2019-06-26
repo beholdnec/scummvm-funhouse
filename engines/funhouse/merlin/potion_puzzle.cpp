@@ -94,6 +94,9 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	_eventLoop = eventLoop;
 	_graphics = _game->getGraphics();
 
+    _popup.init(_eventLoop, _graphics, boltlib,
+        _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
+
 	BltPotionPuzzleInfo puzzle;
 	BltU16Values difficultyIds;
 	BltPotionPuzzleDifficultyDef difficulty;
@@ -154,14 +157,18 @@ void PotionPuzzle::enter() {
 
 BoltCmd PotionPuzzle::handleMsg(const BoltMsg &msg) {
     switch (_state) {
-    case kIdle:
+    case kIdle: {
+        BoltCmd cmd = _popup.handleMsg(msg);
+        if (cmd.type != BoltCmd::kPass) {
+            return cmd;
+        }
+
         if (msg.type == BoltMsg::kClick) {
             return handleClick(msg.point);
-        } else if (msg.type == BoltMsg::kRightClick) {
-            // Win instantly. TODO: Remove.
-            return Card::kEnd;
         }
+
         return BoltCmd::kDone;
+    }
 
     case kTransitioning:
         return handleTransition(msg);

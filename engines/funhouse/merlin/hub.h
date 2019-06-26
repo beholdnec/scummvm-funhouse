@@ -31,17 +31,19 @@ namespace Funhouse {
 
 struct CardCmd;
 class MerlinEngine;
+class MerlinGame;
 struct HubEntry;
 	
 class HubCard : public Card {
 public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 protected:
 	BoltCmd handleButtonClick(int num);
 
 private:
+    MerlinGame *_game;
 	Graphics *_graphics;
 	Scene _scene;
     Popup _popup;

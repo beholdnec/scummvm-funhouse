@@ -28,6 +28,7 @@
 
 namespace Funhouse {
 	
+class MerlinGame;
 struct PuzzleEntry;
 
 struct HubEntry {
@@ -37,7 +38,7 @@ struct HubEntry {
 };
 
 struct PuzzleEntry {
-	typedef Card* (*PuzzleFunc)(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	typedef Card* (*PuzzleFunc)(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	PuzzleFunc puzzle;
 	uint16 resId;
 	uint32 winMovie;
@@ -45,18 +46,47 @@ struct PuzzleEntry {
 
 class MerlinGame : public FunhouseGame {
 public:
+    static const int kNumPotionMovies;
+
+    enum PopupType {
+        kHubPopup = 0,
+        kPuzzlePopup = 1,
+        kPotionPuzzlePopup = 2,
+    };
+
 	// From FunhouseGame
 	virtual void init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop);
 	virtual BoltCmd handleMsg(const BoltMsg &msg);
 
 	Graphics* getGraphics();
+    IBoltEventLoop* getEventLoop();
 	bool isInMovie() const;
 	void startMAMovie(uint32 name);
 	void startPotionMovie(int num);
+    BltId getPopupResId(PopupType type);
 
-	static const int kNumPotionMovies;
 
 private:
+    typedef void (MerlinGame::*CallbackFunc)(const void *param);
+    struct Callback {
+        CallbackFunc func;
+        const void *param;
+    };
+
+    static const int kNumPopupTypes = 3;
+
+    static const HubEntry kStage1;
+    static const PuzzleEntry kStage1Puzzles[6];
+    static const HubEntry kStage2;
+    static const PuzzleEntry kStage2Puzzles[9];
+    static const HubEntry kStage3;
+    static const PuzzleEntry kStage3Puzzles[12];
+
+    static const Callback kSequence[];
+    static const int kSequenceSize;
+
+    static const uint32 kPotionMovies[];
+
 	void initCursor();
 	void resetSequence();
 	void advanceSequence();
@@ -97,11 +127,7 @@ private:
 	const HubEntry *_currentHub;
 	const PuzzleEntry *_currentPuzzle;
 
-	typedef void (MerlinGame::*CallbackFunc)(const void *param);
-	struct Callback {
-		CallbackFunc func;
-		const void *param;
-	};
+    BltId _popupResIds[kNumPopupTypes];
 
 	void plotMovie(const void *param);
 	void mainMenu(const void *param);
@@ -110,18 +136,6 @@ private:
 	void hub(const void *param);
 	void freeplayHub(const void *param);
 	void potionPuzzle(const void *param);
-
-	static const HubEntry kStage1;
-	static const PuzzleEntry kStage1Puzzles[6];
-	static const HubEntry kStage2;
-	static const PuzzleEntry kStage2Puzzles[9];
-	static const HubEntry kStage3;
-	static const PuzzleEntry kStage3Puzzles[12];
-
-	static const Callback kSequence[];
-	static const int kSequenceSize;
-
-	static const uint32 kPotionMovies[];
 };
 
 } // End of namespace Funhouse
