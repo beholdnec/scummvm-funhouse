@@ -29,13 +29,13 @@ namespace Funhouse {
 struct BltHub { // type 40
 	static const uint32 kType = kBltHub;
 	static const uint kSize = 0x10;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		sceneId = BltId(src.readUint32BE(0));
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		sceneId = BltId(src.getUint32BEAt(0));
 		// FIXME: unknown field at offset 4
-		bgPlaneId = BltId(src.readUint32BE(6));
+		bgPlaneId = BltId(src.getUint32BEAt(6));
 		// FIXME: unknown field at offset 0xA
-		numItems = src.readUint8(0xB);
-		itemListId = BltId(src.readUint32BE(0xC));
+		numItems = src.getUint8At(0xB);
+		itemListId = BltId(src.getUint32BEAt(0xC));
 	}
 
 	BltId sceneId;
@@ -47,9 +47,9 @@ struct BltHub { // type 40
 struct BltHubItem { // type 41
 	static const uint32 kType = kBltHubItem;
 	static const uint kSize = 0x10;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		// FIXME: unknown fields
-		imageId = BltId(src.readUint32BE(4));
+		imageId = BltId(src.getUint32BEAt(4));
 	}
 
 	BltId imageId;

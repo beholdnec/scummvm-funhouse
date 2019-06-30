@@ -37,11 +37,11 @@ class Graphics;
 struct BltColorCycleSlot {
 	static const uint32 kType = kBltColorCycleSlot;
 	static const uint kSize = 6;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		start = src.readUint16BE(0);
-		end = src.readUint16BE(2);
-		frames = src.readUint8(4);
-		plane = src.readUint8(5);
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		start = src.getUint16BEAt(0);
+		end = src.getUint16BEAt(2);
+		frames = src.getUint8At(4);
+		plane = src.getUint8At(5);
 	}
 
 	uint16 start;
@@ -53,12 +53,12 @@ struct BltColorCycleSlot {
 struct BltColorCycles {
 	static const uint32 kType = kBltColorCycles;
 	static const uint kSize = 0x18;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		for (int i = 0; i < 4; ++i) {
-			numSlots[i] = src.readUint16BE(i * 2); // Should be 1 or 0.
+			numSlots[i] = src.getUint16BEAt(i * 2); // Should be 1 or 0.
 		}
 		for (int i = 0; i < 4; ++i) {
-			BltId slotId = BltId(src.readUint32BE(8 + i * 4));
+			BltId slotId = BltId(src.getUint32BEAt(8 + i * 4));
 			if (slotId.isValid()) {
 				slots[i].reset(new BltColorCycleSlot);
 				loadBltResource(*slots[i], boltlib, slotId);
@@ -86,10 +86,10 @@ void applyPalette(Graphics *graphics, int plane, const BltPalette &palette);
 struct BltPaletteModElement { // type 29
 	static const uint32 kType = kBltPaletteMods;
 	static const uint kSize = 6;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		first = src.readUint8(0);
-		num = src.readUint8(1);
-		BltId colorsId(src.readUint32BE(2));
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		first = src.getUint8At(0);
+		num = src.getUint8At(1);
+		BltId colorsId(src.getUint32BEAt(2));
 		colors.reset(boltlib.loadResource(colorsId, kBltColors));
 	}
 

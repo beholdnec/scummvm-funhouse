@@ -27,13 +27,13 @@ namespace Funhouse {
 struct BltSlidingPuzzleInfo { // type 44
 	static const uint32 kType = kBltSlidingPuzzle;
 	static const uint kSize = 0xC;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		numPieces1 = src.readUint16BE(0);
-		difficulty1 = BltShortId(src.readUint16BE(2));
-		numPieces2 = src.readUint16BE(4);
-		difficulty2 = BltShortId(src.readUint16BE(6));
-		numPieces3 = src.readUint16BE(8);
-		difficulty3 = BltShortId(src.readUint16BE(0xA));
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		numPieces1 = src.getUint16BEAt(0);
+		difficulty1 = BltShortId(src.getUint16BEAt(2));
+		numPieces2 = src.getUint16BEAt(4);
+		difficulty2 = BltShortId(src.getUint16BEAt(6));
+		numPieces3 = src.getUint16BEAt(8);
+		difficulty3 = BltShortId(src.getUint16BEAt(0xA));
 	}
 
 	uint16 numPieces1;

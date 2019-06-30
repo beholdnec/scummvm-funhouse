@@ -49,11 +49,11 @@ struct Rect {
 	Rect() : left(0), right(0), top(0), bottom(0) { }
 	Rect(int16 l, int16 t, int16 r, int16 b)
 		: left(l), right(r), top(t), bottom(b) { }
-	Rect(const ConstSizedDataView<kSize> src) {
-		left = src.readInt16BE(0);
-		right = src.readInt16BE(2);
-		top = src.readInt16BE(4);
-		bottom = src.readInt16BE(6);
+	Rect(Common::Span<const byte> src) {
+		left = src.getInt16BEAt(0);
+		right = src.getInt16BEAt(2);
+		top = src.getInt16BEAt(4);
+		bottom = src.getInt16BEAt(6);
 	}
 
 	operator Common::Rect() const {

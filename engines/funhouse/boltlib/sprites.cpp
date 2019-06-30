@@ -27,10 +27,10 @@ namespace Funhouse {
 struct BltSpriteElement { // type 27
 	static const uint32 kType = kBltSpriteList;
 	static const uint kSize = 0x8;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-		pos.x = src.readInt16BE(0);
-		pos.y = src.readInt16BE(2);
-		imageId = BltId(src.readUint32BE(4));
+	void load(Common::Span<const byte> src, Boltlib &bltFile) {
+		pos.x = src.getInt16BEAt(0);
+		pos.y = src.getInt16BEAt(2);
+		imageId = BltId(src.getUint32BEAt(4));
 	}
 
 	Common::Point pos;

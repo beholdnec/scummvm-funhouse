@@ -200,9 +200,9 @@ void Movie::fillAudioQueue() {
 
 struct TimelineHeader {
 	static const uint kSize = 0xC;
-	TimelineHeader(const ConstSizedDataView<kSize> src) {
-		numCommands = src.readUint16BE(8);
-		framePeriod = src.readUint16BE(0xA);
+	TimelineHeader(Common::Span<const byte> src) {
+		numCommands = src.getUint16BEAt(8);
+		framePeriod = src.getUint16BEAt(0xA);
 	}
 
 	uint16 numCommands;
@@ -215,7 +215,7 @@ void Movie::startTimeline(ScopedBuffer::Movable buf, uint32 curTime) {
 	_curFrameTime = curTime;
 	_curFrameNum = 0;
 
-	TimelineHeader header(_timeline.slice(0));
+	TimelineHeader header(_timeline.span());
 	_numTimelineCmds = header.numCommands;
 	_framePeriod = header.framePeriod;
 	_timelineCursor = TimelineHeader::kSize;
@@ -239,10 +239,10 @@ void Movie::driveTimeline(uint32 curTime) {
 
 struct TimelineCommand {
 	static const int kSize = 5;
-	TimelineCommand(const ConstSizedDataView<kSize> src) {
-		delay = src.readUint16BE(0);
-		opcode = src.readUint16BE(2);
-		reps = src.readUint8(4);
+	TimelineCommand(Common::Span<const byte> src) {
+		delay = src.getUint16BEAt(0);
+		opcode = src.getUint16BEAt(2);
+		reps = src.getUint8At(4);
 	}
 
 	uint16 delay;
@@ -272,7 +272,7 @@ void Movie::stepTimeline() {
 	// There may be one or more timeline commands with 0 delay. Run them all in this step.
 	bool done = false;
 	while (!done) {
-		TimelineCommand cmd(_timeline.slice(_timelineCursor));
+		TimelineCommand cmd(_timeline.span().subspan(_timelineCursor));
 		if (_timelineReps <= 0) {
 			// Advance to next timeline command
 			_timelineCursor += TimelineCommand::kSize + getTimelineCmdParamSize(cmd.opcode);
@@ -303,7 +303,7 @@ void Movie::stepTimeline() {
 void Movie::loadTimelineCommand() {
 	assert(_timeline);
 
-	TimelineCommand cmd(_timeline.slice(_timelineCursor));
+	TimelineCommand cmd(_timeline.span().subspan(_timelineCursor));
 	_timelineReps = cmd.reps;
 }
 
@@ -326,7 +326,7 @@ int Movie::getTimelineCmdParamSize(uint16 opcode) {
 }
 
 void Movie::runTimelineCommand() {
-	TimelineCommand cmd(_timeline.slice(_timelineCursor));
+	TimelineCommand cmd(_timeline.span().subspan(_timelineCursor));
 	int paramsOffset = _timelineCursor + TimelineCommand::kSize;
 
 	switch (cmd.opcode) {
@@ -410,13 +410,13 @@ void Movie::runTimelineCommand() {
 
 struct CelsHeader {
 	static const int kSize = 0x14;
-	CelsHeader(const ConstSizedDataView<kSize> src) {
-		queueNum = src.readUint16BE(0);
-		width = src.readUint16BE(2);
-		height = src.readUint16BE(4);
-		numFrames = src.readUint16BE(6);
-		unk8 = src.readUint32BE(8);
-		controlDataOffset = src.readUint32BE(0xC);
+	CelsHeader(Common::Span<const byte> src) {
+		queueNum = src.getUint16BEAt(0);
+		width = src.getUint16BEAt(2);
+		height = src.getUint16BEAt(4);
+		numFrames = src.getUint16BEAt(6);
+		unk8 = src.getUint32BEAt(8);
+		controlDataOffset = src.getUint32BEAt(0xC);
 	}
 
 	uint16 queueNum;
@@ -430,7 +430,7 @@ struct CelsHeader {
 void Movie::loadCels(ScopedBuffer::Movable buf) {
 	_cels.reset(buf);
 
-	CelsHeader header(_cels.slice(0));
+	CelsHeader header(_cels.span());
 	assert(header.queueNum == 4);
 
 	debug(4, "loading cels width %d, height %d, numFrames %d, unk8 %d",
@@ -443,7 +443,7 @@ void Movie::loadCels(ScopedBuffer::Movable buf) {
 
 void Movie::stepCels() {
 	if (_cels) {
-		CelsHeader header(_cels.slice(0));
+		CelsHeader header(_cels.span());
 		if (_celsFrame >= header.numFrames) {
 			_celsFrame = header.numFrames - 1;
 			warning("Ran past end of cel sequence");
@@ -470,10 +470,10 @@ void Movie::stepCels() {
 
 struct CelCommand {
 	static const int kSize = 4;
-	CelCommand(const ConstSizedDataView<kSize> src) {
-		celNumber = src.readUint8(0);
-		opcode = src.readUint8(1);
-		paramSize = src.readUint16BE(2);
+	CelCommand(Common::Span<const byte> src) {
+		celNumber = src.getUint8At(0);
+		opcode = src.getUint8At(1);
+		paramSize = src.getUint16BEAt(2);
 	}
 
 	byte celNumber;
@@ -498,7 +498,7 @@ void Movie::stepCelCommands() {
 
 	bool done = false;
 	while (!done) {
-		CelCommand cmd(_cels.slice(_celControlCursor));
+		CelCommand cmd(_cels.span().subspan(_celControlCursor));
 		int paramsOffset = _celControlCursor + CelCommand::kSize;
 
 		// FIXME: There's still an off-by-one error causing a one frame desync.
@@ -515,12 +515,12 @@ void Movie::stepCelCommands() {
 			case CelOpcodes::kLoadBack:
 			{
 				debug(3, "cel command: load background");
-				const ConstSizedDataView<4> params = _cels.slice(paramsOffset);
+				Common::Span<const byte> params = _cels.span().subspan(paramsOffset);
 
 				_celsBackground.reset(fetchBuffer(_videoQueues[1]));
 
-				_celCurCameraX = params.readInt16BE(0);
-				_celCurCameraY = READ_BE_INT16(&_cels[paramsOffset + 2]);
+				_celCurCameraX = params.getInt16BEAt(0);
+                _celCurCameraY = params.getInt16BEAt(2);
 				_celNextCameraX = _celCurCameraX;
 				_celNextCameraY = _celCurCameraY;
 
@@ -532,10 +532,10 @@ void Movie::stepCelCommands() {
 			}
 			case CelOpcodes::kLoadForePalette:
 			{
-				const ConstSizedDataView<2> params = _cels.slice(paramsOffset);
+				Common::Span<const byte> params = _cels.span().subspan(paramsOffset);
 
-				byte numColors = params.readUint8(0);
-				byte firstColor = params.readUint8(1);
+				byte numColors = params.getUint8At(0);
+				byte firstColor = params.getUint8At(1);
 				debug(3, "cel command: load fore palette num %d first %d",
 					(int)numColors, (int)firstColor);
 				_graphics->setPlanePalette(kFore, &_cels[paramsOffset + 2], // TODO: utilize dataview here
@@ -546,11 +546,11 @@ void Movie::stepCelCommands() {
 			}
 			case CelOpcodes::kScroll:
 			{
-				const ConstSizedDataView<4> params = _cels.slice(paramsOffset);
+				Common::Span<const byte> params = _cels.span().subspan(paramsOffset);
 
-				uint16 duration = params.readUint16BE(0);
-				byte speed = params.readUint8(2);
-				byte type = params.readUint8(3);
+				uint16 duration = params.getUint16BEAt(0);
+				byte speed = params.getUint8At(2);
+				byte type = params.getUint8At(3);
 
 				debug(3, "cel command: scroll duration %d, speed %d, type %d",
 					(int)duration, (int)speed, (int)type);
@@ -632,12 +632,12 @@ void Movie::drawCelBackground() {
 
 void Movie::drawCel(const ScopedBuffer &src, uint16 frameNum) {
 	// Queue 4 buffers define a sequence of foreground cels and background control commands.
-	CelsHeader header(src.slice(0));
+	CelsHeader header(src.span());
 	assert(header.queueNum == 4);
 	assert(frameNum < header.numFrames);
 
-	uint32 rl7Offset = READ_BE_UINT32(&src[CelsHeader::kSize + frameNum * 8]);
-	uint32 rl7Size = READ_BE_UINT32(&src[CelsHeader::kSize + frameNum * 8 + 4]);
+    uint32 rl7Offset = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8);
+    uint32 rl7Size = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8 + 4);
 
 	decodeRL7(_graphics->getPlaneSurface(kFore), 0, 0, header.width, header.height,
 		&src[rl7Offset], rl7Size, false);
@@ -819,18 +819,18 @@ void Movie::driveFade(uint32 curTime) {
 
 struct Queue01ImageHeader {
 	const static int kSize = 0xD;
-	Queue01ImageHeader(const ConstSizedDataView<kSize> src) {
-		queueNum = src.readUint16BE(0);
-		width = src.readUint16BE(2);
-		height = src.readUint16BE(4);
+	Queue01ImageHeader(Common::Span<const byte> src) {
+		queueNum = src.getUint16BEAt(0);
+		width = src.getUint16BEAt(2);
+		height = src.getUint16BEAt(4);
 		// FIXME: Unknown fields
-		unk[0] = src.readUint8(6); // Always 128
-		unk[1] = src.readUint8(7); // Always 0
-		unk[2] = src.readUint8(8); // Always 0
-		unk[3] = src.readUint8(9); // Always 0
-		unk[4] = src.readUint8(0xA); // Something
-		unk[5] = src.readUint8(0xB); // Something (probably data size)
-		compression = src.readUint8(0xC);
+		unk[0] = src.getUint8At(6); // Always 128
+		unk[1] = src.getUint8At(7); // Always 0
+		unk[2] = src.getUint8At(8); // Always 0
+		unk[3] = src.getUint8At(9); // Always 0
+		unk[4] = src.getUint8At(0xA); // Something
+		unk[5] = src.getUint8At(0xB); // Something (probably data size)
+		compression = src.getUint8At(0xC);
 	}
 
 	uint16 queueNum;
@@ -841,7 +841,7 @@ struct Queue01ImageHeader {
 };
 
 void Movie::applyQueue0or1Palette(int plane, const ScopedBuffer &src) {
-	Queue01ImageHeader header(src.slice(0));
+	Queue01ImageHeader header(src.span());
 	assert(header.queueNum == 0 || header.queueNum == 1);
 
 	_graphics->setPlanePalette(plane, &src[Queue01ImageHeader::kSize], 0, 128);
@@ -850,7 +850,7 @@ void Movie::applyQueue0or1Palette(int plane, const ScopedBuffer &src) {
 void Movie::drawQueue0or1(int plane, const ScopedBuffer &src, int x, int y) {
 	// Queue 0 buffers define background frames for scene changes.
 	// Queue 1 buffers define background frames for use with cel sequences.
-	Queue01ImageHeader header(src.slice(0));
+	Queue01ImageHeader header(src.span());
 	assert(header.queueNum == 0 || header.queueNum == 1);
 
 	const byte *imageSrc = &src[Queue01ImageHeader::kSize + 128 * 3];
@@ -868,7 +868,7 @@ void Movie::drawQueue0or1(int plane, const ScopedBuffer &src, int x, int y) {
 
 void Movie::enqueueVideoBuffer(ScopedBuffer::Movable buf) {
 	ScopedBuffer myBuf(buf);
-	uint16 queueNum = READ_BE_UINT16(&myBuf[0]);
+    uint16 queueNum = myBuf.span().getUint16BEAt(0);
 	if (queueNum < 5) {
 		_videoQueues[queueNum].push(myBuf.release());
 	}

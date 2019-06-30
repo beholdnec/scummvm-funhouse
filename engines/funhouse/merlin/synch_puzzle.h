@@ -32,9 +32,9 @@ namespace Funhouse {
 struct BltSynchPuzzleTransitionElement { // type 53
     static const uint32 kType = kBltSynchPuzzleTransition;
     static const uint kSize = 2;
-    void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-        item = src.readInt8(0);
-        count = src.readInt8(1);
+    void load(Common::Span<const byte> src, Boltlib &boltlib) {
+        item = src.getInt8At(0);
+        count = src.getInt8At(1);
     }
 
     int8 item;

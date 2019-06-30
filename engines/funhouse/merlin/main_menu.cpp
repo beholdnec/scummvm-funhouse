@@ -29,10 +29,10 @@ namespace Funhouse {
 struct BltMainMenu {
 	static const uint32 kType = kBltMainMenu;
 	static const uint32 kSize = 0xC;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-		sceneId = BltId(src.readUint32BE(0));
-		colorbarsImageId = BltId(src.readUint32BE(4));
-		colorbarsPaletteId = BltId(src.readUint32BE(8));
+	void load(Common::Span<const byte> src, Boltlib &bltFile) {
+		sceneId = BltId(src.getUint32BEAt(0));
+		colorbarsImageId = BltId(src.getUint32BEAt(4));
+		colorbarsPaletteId = BltId(src.getUint32BEAt(8));
 	}
 
 	BltId sceneId;

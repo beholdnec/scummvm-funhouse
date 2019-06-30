@@ -30,7 +30,7 @@ namespace Funhouse {
 struct BltRect {
 	static const uint32 kType = kBltRect;
 	static const uint32 kSize = 8;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
+	void load(Common::Span<const byte> src, Boltlib &bltFile) {
         rect = Rect(src);
 	}
 
@@ -40,12 +40,12 @@ struct BltRect {
 struct BltPopup {
 	static const uint32 kType = kBltPopup;
 	static const uint32 kSize = 0x12;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-        numButtons = src.readUint16BE(0);
-        bgImageId = BltId(src.readUint32BE(2));
-        paletteId = BltId(src.readUint32BE(6));
-        hotspotListId = BltId(src.readUint32BE(0xA));
-        spriteListId = BltId(src.readUint32BE(0xE));
+	void load(Common::Span<const byte> src, Boltlib &bltFile) {
+        numButtons = src.getUint16BEAt(0);
+        bgImageId = BltId(src.getUint32BEAt(2));
+        paletteId = BltId(src.getUint32BEAt(6));
+        hotspotListId = BltId(src.getUint32BEAt(0xA));
+        spriteListId = BltId(src.getUint32BEAt(0xE));
 	}
 
     uint16 numButtons;

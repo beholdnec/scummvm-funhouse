@@ -30,17 +30,17 @@ namespace Funhouse {
 struct BltScene { // type 32
 	static const uint32 kType = kBltScene;
 	static const uint32 kSize = 0x24;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		forePlaneId = BltId(src.readUint32BE(0));
-		backPlaneId = BltId(src.readUint32BE(4));
-		numSprites = src.readUint8(0x8);
-		spritesId = BltId(src.readUint32BE(0xA));
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		forePlaneId = BltId(src.getUint32BEAt(0));
+		backPlaneId = BltId(src.getUint32BEAt(4));
+		numSprites = src.getUint8At(0x8);
+		spritesId = BltId(src.getUint32BEAt(0xA));
 		// FIXME: unknown fields at 0xD..0x16
-		colorCyclesId = BltId(src.readUint32BE(0x16));
-		numButtons = src.readUint16BE(0x1A);
-		buttonsId = BltId(src.readUint32BE(0x1C));
-		origin.x = src.readInt16BE(0x20);
-		origin.y = src.readInt16BE(0x22);
+		colorCyclesId = BltId(src.getUint32BEAt(0x16));
+		numButtons = src.getUint16BEAt(0x1A);
+		buttonsId = BltId(src.getUint32BEAt(0x1C));
+		origin.x = src.getInt16BEAt(0x20);
+		origin.y = src.getInt16BEAt(0x22);
 	}
 
 	BltId forePlaneId;
@@ -56,10 +56,10 @@ struct BltScene { // type 32
 struct BltPlane { // type 26
     static const uint32 kType = kBltPlane;
     static const uint kSize = 0x10;
-    void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-        imageId = BltId(src.readUint32BE(0));
-        paletteId = BltId(src.readUint32BE(4));
-        hotspotsId = BltId(src.readUint32BE(8));
+    void load(Common::Span<const byte> src, Boltlib &bltFile) {
+        imageId = BltId(src.getUint32BEAt(0));
+        paletteId = BltId(src.getUint32BEAt(4));
+        hotspotsId = BltId(src.getUint32BEAt(8));
     }
 
     BltId imageId;
@@ -75,11 +75,11 @@ struct BltButtonGraphicElement { // type 30
 		Sprites = 2
 	};
 
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		type = src.readUint16BE(0);
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		type = src.getUint16BEAt(0);
 		// FIXME: unknown field at 2. It points to an image in sliding puzzles.
-		hoveredId = BltId(src.readUint32BE(6));
-		idleId = BltId(src.readUint32BE(0xA));
+		hoveredId = BltId(src.getUint32BEAt(6));
+		idleId = BltId(src.getUint32BEAt(0xA));
 	}
 
 	uint16 type;
@@ -92,13 +92,13 @@ typedef ScopedArray<BltButtonGraphicElement> BltButtonGraphicsList;
 struct BltButtonElement { // type 31
 	static const uint32 kType = kBltButtonList;
 	static const uint kSize = 0x14;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		type = src.readUint16BE(0);
-		rect = Rect(src.slice(2));
-		plane = src.readUint16BE(0xA);
-		numGraphics = src.readUint16BE(0xC);
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		type = src.getUint16BEAt(0);
+		rect = Rect(src.subspan(2));
+		plane = src.getUint16BEAt(0xA);
+		numGraphics = src.getUint16BEAt(0xC);
 		// FIXME: unknown field at 0xE. Always 0 in game data.
-		graphicsId = BltId(src.readUint32BE(0x10));
+		graphicsId = BltId(src.getUint32BEAt(0x10));
 	}
 
 	enum HotspotType {

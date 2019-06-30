@@ -30,13 +30,13 @@ ActionPuzzle::ActionPuzzle() : _random("ActionPuzzleRandomSource")
 struct BltParticleDeaths { // type 45
 	static const uint32 kType = kBltParticleDeaths;
 	static const uint kSize = 0x12;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		numImages[0] = src.readUint16BE(0);
-		imagesListId[0] = BltId(src.readUint32BE(2));
-		numImages[1] = src.readUint16BE(6);
-		imagesListId[1] = BltId(src.readUint32BE(8));
-		numImages[2] = src.readUint16BE(0xC);
-		imagesListId[2] = BltId(src.readUint32BE(0xE));
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		numImages[0] = src.getUint16BEAt(0);
+		imagesListId[0] = BltId(src.getUint32BEAt(2));
+		numImages[1] = src.getUint16BEAt(6);
+		imagesListId[1] = BltId(src.getUint32BEAt(8));
+		numImages[2] = src.getUint16BEAt(0xC);
+		imagesListId[2] = BltId(src.getUint32BEAt(0xE));
 	}
 
 	uint16 numImages[3];
@@ -46,8 +46,8 @@ struct BltParticleDeaths { // type 45
 struct BltParticles { // type 46
 	static const uint32 kType = kBltParticles;
 	static const uint kSize = 2;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		numParticles = src.readUint16BE(0);
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		numParticles = src.getUint16BEAt(0);
 	}
 
 	uint16 numParticles;

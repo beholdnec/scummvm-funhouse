@@ -144,7 +144,7 @@ void loadBltResource(T &obj, Boltlib &boltlib, BltId id) {
 		if (res.size() != T::kSize) {
 			error("Invalid size for resource type %u: %u", (uint)T::kType, (uint)res.size());
 		}
-		obj.load(res.slice(0), boltlib);
+		obj.load(res.span(), boltlib);
 	}
 }
 
@@ -155,15 +155,15 @@ void loadBltResourceArray(ScopedArray<T>& array, Boltlib &boltlib, BltId id) {
 	uint numItems = res.size() / T::kSize;
 	array.alloc(numItems);
 	for (uint i = 0; i < numItems; ++i) {
-		array[i].load(res.slice(i * T::kSize), boltlib);
+		array[i].load(res.span().subspan(i * T::kSize), boltlib);
 	}
 }
 
 struct BltU8ValueElement { // type 1
 	static const uint32 kType = kBltU8Values;
 	static const uint kSize = 1;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		value = src.readUint8(0);
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		value = src.getUint8At(0);
 	}
 
 	byte value;
@@ -174,8 +174,8 @@ typedef ScopedArray<BltU8ValueElement> BltU8Values;
 struct BltS16ValueElement { // type 2
 	static const uint32 kType = kBltS16Values;
 	static const uint kSize = 2;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		value = src.readInt16BE(0);
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		value = src.getInt16BEAt(0);
 	}
 
 	int16 value;
@@ -186,8 +186,8 @@ typedef ScopedArray<BltS16ValueElement> BltS16Values;
 struct BltU16ValueElement { // type 3
 	static const uint32 kType = kBltU16Values;
 	static const uint kSize = 2;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-		value = src.readUint16BE(0);
+	void load(Common::Span<const byte> src, Boltlib &bltFile) {
+		value = src.getUint16BEAt(0);
 	}
 
 	uint16 value;
@@ -198,8 +198,8 @@ typedef ScopedArray<BltU16ValueElement> BltU16Values;
 struct BltResourceListElement { // type 6
 	static const uint32 kType = kBltResourceList;
 	static const uint kSize = 4;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-		value = BltId(src.readUint32BE(0));
+	void load(Common::Span<const byte> src, Boltlib &bltFile) {
+		value = BltId(src.getUint32BEAt(0));
 	}
 
 	BltId value;

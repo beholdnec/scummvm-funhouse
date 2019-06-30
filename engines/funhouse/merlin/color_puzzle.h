@@ -32,10 +32,10 @@ namespace Funhouse {
 struct BltColorPuzzleTransition { // type 58
     static const uint32 kType = kBltColorPuzzleTransition;
     static const uint kSize = 8;
-    void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
+    void load(Common::Span<const byte> src, Boltlib &boltlib) {
         for (int i = 0; i < 4; ++i) {
-            piece[i] = src.readInt8(i * 2);
-            count[i] = src.readUint8(i * 2 + 1);
+            piece[i] = src.getInt8At(i * 2);
+            count[i] = src.getUint8At(i * 2 + 1);
         }
     }
 

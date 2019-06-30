@@ -27,16 +27,16 @@ namespace Funhouse {
 struct BltPotionPuzzleInfo {
 	static const uint32 kType = kBltPotionPuzzle;
 	static const uint kSize = 0x46;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		difficultiesId = BltId(src.readUint32BE(0));
-		bgImageId = BltId(src.readUint32BE(4));
-		bgPaletteId = BltId(src.readUint32BE(8));
-		numShelfPoints = src.readUint16BE(0x16);
-		shelfPointsId = BltId(src.readUint32BE(0x18));
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		difficultiesId = BltId(src.getUint32BEAt(0));
+		bgImageId = BltId(src.getUint32BEAt(4));
+		bgPaletteId = BltId(src.getUint32BEAt(8));
+		numShelfPoints = src.getUint16BEAt(0x16);
+		shelfPointsId = BltId(src.getUint32BEAt(0x18));
 		// FIXME: U8Values resource specified at 0x1C has an unknown purpose.
-		basinPointsId = BltId(src.readUint32BE(0x20));
-		origin.x = src.readInt16BE(0x42);
-		origin.y = src.readInt16BE(0x44);
+		basinPointsId = BltId(src.getUint32BEAt(0x20));
+		origin.x = src.getInt16BEAt(0x42);
+		origin.y = src.getInt16BEAt(0x44);
 	}
 
 	BltId difficultiesId;
@@ -51,9 +51,9 @@ struct BltPotionPuzzleInfo {
 struct BltPotionPuzzleSpritePointElement {
 	static const uint32 kType = kBltPotionPuzzleSpritePoints;
 	static const uint kSize = 0x4;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		pos.x = src.readInt16BE(0);
-		pos.y = src.readInt16BE(2);
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		pos.x = src.getInt16BEAt(0);
+		pos.y = src.getInt16BEAt(2);
 	}
 
 	Common::Point pos;
@@ -64,10 +64,10 @@ typedef ScopedArray<BltPotionPuzzleSpritePointElement> BltPotionPuzzleSpritePoin
 struct BltPotionPuzzleDifficultyDef {
 	static const uint32 kType = kBltPotionPuzzleDifficulty;
 	static const uint kSize = 0xA;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		numIngredients = src.readUint16BE(0);
-		ingredientImagesId = BltId(src.readUint32BE(2));
-		comboTableListId = BltId(src.readUint32BE(6));
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		numIngredients = src.getUint16BEAt(0);
+		ingredientImagesId = BltId(src.getUint32BEAt(2));
+		comboTableListId = BltId(src.getUint32BEAt(6));
 	}
 
 	uint16 numIngredients;
@@ -78,9 +78,9 @@ struct BltPotionPuzzleDifficultyDef {
 struct BltPotionPuzzleComboTableListElement {
 	static const uint32 kType = kBltPotionPuzzleComboTableList;
 	static const uint kSize = 6;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		numCombos = src.readUint16BE(0);
-		comboTableId = BltId(src.readUint32BE(2));
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		numCombos = src.getUint16BEAt(0);
+		comboTableId = BltId(src.getUint32BEAt(2));
 	}
 
 	uint16 numCombos;

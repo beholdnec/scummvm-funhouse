@@ -29,8 +29,8 @@ namespace Funhouse {
 struct BltMemoryPuzzleInfo {
     static const uint32 kType = kBltMemoryPuzzleInfos;
     static const uint kSize = 0x10;
-    void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-        maxMemorize = src.readUint16BE(2);
+    void load(Common::Span<const byte> src, Boltlib &boltlib) {
+        maxMemorize = src.getUint16BEAt(2);
         // TODO: the rest of the fields appear to be timing parameters
     }
 
@@ -42,12 +42,12 @@ typedef ScopedArray<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
 struct BltMemoryPuzzleItem {
 	static const uint32 kType = kBltMemoryPuzzleItemList;
 	static const uint kSize = 0x10;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		numFrames = src.readUint16BE(0);
-		framesId = BltId(src.readUint32BE(2)); // Ex: 8642
-		paletteId = BltId(src.readUint32BE(6)); // Ex: 861D
-		colorCyclesId = BltId(src.readUint32BE(0xA));
-		soundId = BltShortId(src.readUint16BE(0xE)); // Ex: 860C
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		numFrames = src.getUint16BEAt(0);
+		framesId = BltId(src.getUint32BEAt(2)); // Ex: 8642
+		paletteId = BltId(src.getUint32BEAt(6)); // Ex: 861D
+		colorCyclesId = BltId(src.getUint32BEAt(0xA));
+		soundId = BltShortId(src.getUint16BEAt(0xE)); // Ex: 860C
 	}
 
 	uint16 numFrames;
@@ -62,12 +62,12 @@ typedef ScopedArray<BltMemoryPuzzleItem> BltMemoryPuzzleItemList;
 struct BltMemoryPuzzleItemFrame {
 	static const uint32 kType = kBltMemoryPuzzleItemFrameList;
 	static const uint kSize = 0xA;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		// FIXME: position at 0?
-		pos.x = src.readInt16BE(0);
-		pos.y = src.readInt16BE(2);
-		imageId = BltId(src.readUint32BE(4)); // 8640
-        type = src.readInt16BE(8);
+		pos.x = src.getInt16BEAt(0);
+		pos.y = src.getInt16BEAt(2);
+		imageId = BltId(src.getUint32BEAt(4)); // 8640
+        type = src.getInt16BEAt(8);
 	}
 
 	Common::Point pos;

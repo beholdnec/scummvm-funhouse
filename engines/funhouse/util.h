@@ -23,101 +23,12 @@
 #ifndef FUNHOUSE_UTIL_H
 #define FUNHOUSE_UTIL_H
 
-#include "common/queue.h"
 #include "common/endian.h"
+#include "common/queue.h"
+#include "common/span.h"
 #include "common/textconsole.h"
 
 namespace Funhouse {
-
-// DataView's:
-//
-// Lightweight classes for safely reading data fields out of an array of bytes,
-// inspired by JavaScript DataView's.
-//
-// These classes do not own the data they point to - the data must be kept alive
-// while the DataView is in use, and the data will not be freed when the DataView
-// is destroyed.
-//
-// DataViews with size 0 are allowed, but they cannot be read from or written to.
-
-// DataView with dynamic size that can only be read
-class ConstDataView {
-public:
-	ConstDataView(const byte* const data, const uint dataSize)
-		: _data(data), _dataSize(dataSize)
-	{ }
-
-	const byte* ptr() const {
-		return _data;
-	}
-
-	uint size() const {
-		return _dataSize;
-	}
-
-	// TODO
-
-private:
-	const byte* _data;
-	uint _dataSize;
-};
-
-// DataView with static size that can only be read
-template<uint S>
-class ConstSizedDataView {
-public:
-	ConstSizedDataView(const ConstDataView &dv, const uint offset = 0)
-		: _data(&dv.ptr()[offset])
-	{
-		// Don't "assert" here. This error can be caused by bad data files, not
-		// necessarily by a programming error in ScummVM. Therefore, this check
-		// should occur in Release builds.
-		if ((offset + S) > dv.size()) {
-			error("Data access out of bounds");
-		}
-	}
-
-	const byte* ptr() const {
-		return _data;
-	}
-
-	uint size() const {
-		return S;
-	}
-
-	ConstDataView slice(const uint offset = 0) const {
-		assert(offset <= S);
-		return ConstDataView(&_data[offset], S - offset);
-	}
-
-	int8 readInt8(const uint offset = 0) const {
-		assert((offset + sizeof(int8)) <= S);
-		return _data[offset];
-	}
-
-	uint8 readUint8(const uint offset = 0) const {
-		assert((offset + sizeof(uint8)) <= S);
-		return _data[offset];
-	}
-
-	int16 readInt16BE(const uint offset = 0) const {
-		assert((offset + sizeof(int16)) <= S);
-		return READ_BE_INT16(&_data[offset]);
-	}
-
-	uint16 readUint16BE(const uint offset = 0) const {
-		assert((offset + sizeof(uint16)) <= S);
-		return READ_BE_UINT16(&_data[offset]);
-	}
-
-	uint32 readUint32BE(const uint offset = 0) const {
-		assert((offset + sizeof(uint32)) <= S);
-		return READ_BE_UINT32(&_data[offset]);
-	}
-
-private:
-	const byte* _data;
-};
 
 template<class T>
 class ScopedArray {
@@ -193,10 +104,9 @@ public:
         return result;
     }
 
-	ConstDataView slice(const uint offset = 0) const {
-		assert(offset <= _internal.size);
-		return ConstDataView(&_internal.data[offset], _internal.size - offset);
-	}
+    Common::Span<const byte> span() const {
+        return Common::Span<const byte>(_internal.data, _internal.size);
+    }
 
 private:
 	// Prevent accidentally copying a ScopedArray. To clone a ScopedArray, use

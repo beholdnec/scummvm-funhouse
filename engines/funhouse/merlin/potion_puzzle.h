@@ -32,12 +32,12 @@ namespace Funhouse {
 struct BltPotionPuzzleComboTableElement {
 	static const uint32 kType = kBltPotionPuzzleComboTable;
 	static const uint kSize = 0x6;
-	void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-		a = src.readInt8(0);
-		b = src.readInt8(1);
-		c = src.readInt8(2);
-		d = src.readInt8(3);
-		movie = src.readUint16BE(4);
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		a = src.getInt8At(0);
+		b = src.getInt8At(1);
+		c = src.getInt8At(2);
+		d = src.getInt8At(3);
+		movie = src.getUint16BEAt(4);
 	}
 
 	int8 a;

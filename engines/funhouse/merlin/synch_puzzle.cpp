@@ -27,8 +27,8 @@ namespace Funhouse {
 struct BltSynchPuzzleInfo { // type 52
     static const uint32 kType = kBltSynchPuzzleInfo;
     static const uint kSize = 0x12;
-    void load(const ConstSizedDataView<kSize> src, Boltlib &boltlib) {
-        numItems = src.readUint8(0);
+    void load(Common::Span<const byte> src, Boltlib &boltlib) {
+        numItems = src.getUint8At(0);
         // TODO: More fields
     }
 

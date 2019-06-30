@@ -45,10 +45,10 @@ namespace Funhouse {
 struct BltPopupCatalog {
     static const uint32 kType = kBltPopupCatalog;
     static const uint32 kSize = 0x22;
-    void load(const ConstSizedDataView<kSize> src, Boltlib &bltFile) {
-        popupId[0] = BltId(src.readUint32BE(0x12));
-        popupId[1] = BltId(src.readUint32BE(0x18));
-        popupId[2] = BltId(src.readUint32BE(0x1E));
+    void load(Common::Span<const byte> src, Boltlib &bltFile) {
+        popupId[0] = BltId(src.getUint32BEAt(0x12));
+        popupId[1] = BltId(src.getUint32BEAt(0x18));
+        popupId[2] = BltId(src.getUint32BEAt(0x1E));
     }
 
     BltId popupId[3];

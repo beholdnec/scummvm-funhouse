@@ -49,10 +49,10 @@ void applyColorCycles(Graphics *graphics, int plane, const BltColorCycles *cycle
 
 struct BltPaletteHeader {
 	static const uint32 kSize = 6;
-	BltPaletteHeader(const ConstSizedDataView<kSize> src) {
-		target = src.readUint16BE(0);
-		bottom = src.readUint16BE(2);
-		top = src.readUint16BE(4);
+	BltPaletteHeader(Common::Span<const byte> src) {
+		target = src.getUint16BEAt(0);
+		bottom = src.getUint16BEAt(2);
+		top = src.getUint16BEAt(4);
 	}
 
 	uint16 target; // plane specifier (usually 2, meaning auto or user-specified?)
@@ -66,7 +66,7 @@ void BltPalette::load(Boltlib &boltlib, BltId id) {
 
 void applyPalette(Graphics *graphics, int plane, const BltPalette &palette) {
 	if (palette.data) {
-		BltPaletteHeader header(palette.data.slice(0));
+		BltPaletteHeader header(palette.data.span());
 		if (header.target == 0) {
 			// Both fore and back planes
 			if (header.bottom != 0) {

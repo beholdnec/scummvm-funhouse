@@ -589,13 +589,13 @@ void Graphics::commitVgaPalette(int first, int num) {
 
 struct BltImageHeader {
 	static const int kSize = 0x18;
-	BltImageHeader(const ConstSizedDataView<kSize> src) {
-		compression = src.readUint8(0);
+	BltImageHeader(Common::Span<const byte> src) {
+		compression = src.getUint8At(0);
 		// FIXME: unknown fields at 1..6
-		offset.x = src.readInt16BE(6);
-		offset.y = src.readInt16BE(8);
-		width = src.readUint16BE(0xA);
-		height = src.readUint16BE(0xC);
+		offset.x = src.getInt16BEAt(6);
+		offset.y = src.getInt16BEAt(8);
+		width = src.getUint16BEAt(0xA);
+		height = src.getUint16BEAt(0xC);
 		// FIXME: unknown fields at 0xE..0x18
 	}
 
@@ -617,7 +617,7 @@ void BltImage::drawAt(::Graphics::Surface &surface, int x, int y,
 	bool transparency) const {
 	assert(_res);
 
-	BltImageHeader header(_res.slice(0));
+	BltImageHeader header(_res.span());
 	int topLeftX = x + header.offset.x;
 	int topLeftY = y + header.offset.y;
 
@@ -629,7 +629,7 @@ void BltImage::drawWithTopLeftAnchor(
 
 	assert(_res);
 
-	BltImageHeader header(_res.slice(0));
+	BltImageHeader header(_res.span());
 	const byte *imageData = &_res[BltImageHeader::kSize];
 	int imageDataSize = _res.size() - BltImageHeader::kSize;
 
@@ -644,7 +644,7 @@ void BltImage::drawWithTopLeftAnchor(
 }
 
 byte BltImage::query(int x, int y) const {
-	BltImageHeader header(_res.slice(0));
+	BltImageHeader header(_res.span());
 	const byte *src = &_res[BltImageHeader::kSize];
 	int srcLen = _res.size() - BltImageHeader::kSize;
 	return header.compression ?
@@ -653,7 +653,7 @@ byte BltImage::query(int x, int y) const {
 }
 
 Common::Rect BltImage::getRect(const Common::Point &pos) const {
-	BltImageHeader header(_res.slice(0));
+	BltImageHeader header(_res.span());
 	Common::Rect result(0, 0, header.width, header.height);
 	result.translate(header.offset.x, header.offset.y);
 	result.translate(pos.x, pos.y);
@@ -661,17 +661,17 @@ Common::Rect BltImage::getRect(const Common::Point &pos) const {
 }
 
 uint16 BltImage::getWidth() const {
-	BltImageHeader header(_res.slice(0));
+	BltImageHeader header(_res.span());
 	return header.width;
 }
 
 uint16 BltImage::getHeight() const {
-	BltImageHeader header(_res.slice(0));
+	BltImageHeader header(_res.span());
 	return header.height;
 }
 
 Common::Point BltImage::getOffset() const {
-	BltImageHeader header(_res.slice(0));
+	BltImageHeader header(_res.span());
 	return header.offset;
 }
 
