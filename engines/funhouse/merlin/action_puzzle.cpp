@@ -58,6 +58,8 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_graphics = _game->getGraphics();
 	_eventLoop = _game->getEventLoop();
 
+    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
+
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
 	BltId difficultiesId = resourceList[0].value;
@@ -167,6 +169,11 @@ void ActionPuzzle::enter() {
 }
 
 BoltCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltCmd cmd = _popup.handleMsg(msg);
+    if (cmd.type != BoltCmd::kPass) {
+        return cmd;
+    }
+
 	switch (msg.type){
 	case BoltMsg::kClick:
 		return handleClick(msg.point);

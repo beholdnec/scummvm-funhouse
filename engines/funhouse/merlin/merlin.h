@@ -97,6 +97,7 @@ private:
     void startDifficultyMenu(BltId id);
 	void startMenu(BltId id);
 	void startMovie(PfFile &pfFile, uint32 name);
+    void exitOrReturn();
 
 	static void movieTrigger(void *param, uint16 triggerType);
 

@@ -131,6 +131,7 @@ public:
 	enum CardCmd {
 		// Card commands
 		kEnd = BoltCmd::kMaxBoltCmd,
+        kReturn,
 		kWin,
 		kEnterPuzzle,
 		kMaxCardCmd = BoltCmd::kMaxBoltCmd + 100

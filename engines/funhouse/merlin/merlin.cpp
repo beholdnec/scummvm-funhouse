@@ -199,6 +199,11 @@ void MerlinGame::startDifficultyMenu(BltId id) {
     setCurrentCard(card);
 }
 
+void MerlinGame::exitOrReturn() {
+    // TODO: Implement returning from hub to main menu, etc.
+    enterSequenceEntry();
+}
+
 class GenericMenuCard : public Card {
 public:
 	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId id) {
@@ -277,6 +282,10 @@ BoltCmd MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	case Card::kEnd:
 		advanceSequence();
 		return BoltCmd::kDone;
+
+    case Card::kReturn:
+        exitOrReturn();
+        return BoltCmd::kDone;
 
 	case Card::kWin:
 		win();

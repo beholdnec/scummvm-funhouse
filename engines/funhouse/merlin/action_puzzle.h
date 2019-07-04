@@ -25,6 +25,7 @@
 
 #include "funhouse/bolt.h"
 #include "funhouse/merlin/merlin.h"
+#include "funhouse/merlin/popup.h"
 #include "funhouse/boltlib/palette.h"
 #include "funhouse/boltlib/boltlib.h"
 #include "common/random.h"
@@ -42,6 +43,7 @@ protected:
     MerlinGame *_game;
 	Graphics *_graphics;
 	IBoltEventLoop *_eventLoop;
+    Popup _popup;
 	BltImage _bgImage;
 	BltPalette _backPalette;
 	BltPalette _forePalette;

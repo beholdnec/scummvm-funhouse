@@ -50,6 +50,7 @@ private:
 
     void activate();
     int getButtonAt(const Common::Point &pt) const;
+    BoltCmd handleButtonClick(int num);
 
     MerlinGame *_game;
     IBoltEventLoop *_eventLoop;

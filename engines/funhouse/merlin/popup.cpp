@@ -109,9 +109,21 @@ BoltCmd Popup::handleMsg(const BoltMsg &msg) {
             }
 
             if (msg.type == BoltMsg::kClick) {
-                warning("Submenu button %d not implemented", num);
+                return handleButtonClick(num);
             }
         }
+    }
+
+    return BoltCmd::kDone;
+}
+
+BoltCmd Popup::handleButtonClick(int num) {
+    switch (num) {
+    case 0: // Exit/Return
+        return Card::kReturn;
+    default:
+        warning("Popup button %d not implemented", num);
+        break;
     }
 
     return BoltCmd::kDone;
