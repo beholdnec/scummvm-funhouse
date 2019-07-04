@@ -2,6 +2,7 @@ MODULE := engines/funhouse
 
 MODULE_OBJS := \
 	bolt.o \
+	console.o \
 	detection.o \
 	graphics.o \
 	movie.o \

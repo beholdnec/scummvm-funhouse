@@ -40,6 +40,8 @@ struct Event;
 
 namespace Funhouse {
 
+class FunhouseConsole;
+
 // A Bolt::Rect differs from a Common::Rect in the following ways:
 // - Attributes are stored in left, right, top, bottom order
 // - All edges are inclusive, i.e. right and bottom are included in the
@@ -164,11 +166,14 @@ public:
 	virtual ~FunhouseGame() { }
 	virtual void init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop) = 0;
 	virtual BoltCmd handleMsg(const BoltMsg &msg) = 0;
+    virtual void win() = 0;
 };
 
 class FunhouseEngine : public Engine, public IBoltEventLoop {
 public:
 	FunhouseEngine(OSystem *syst, const ADGameDescription *gd);
+
+    void win();
 
 	// From Engine
 	virtual bool hasFeature(EngineFeature f) const;
@@ -186,6 +191,7 @@ protected:
 private:
 	void topLevelHandleMsg(const BoltMsg &msg);
 	
+    Common::ScopedPtr<FunhouseConsole> _console;
 	Graphics _graphics;
 	BoltMsg _curMsg;
 	uint32 _eventTime;

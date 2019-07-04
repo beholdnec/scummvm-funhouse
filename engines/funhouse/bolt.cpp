@@ -28,6 +28,7 @@
 #include "graphics/palette.h"
 #include "engines/advancedDetector.h"
 
+#include "funhouse/console.h"
 #include "funhouse/merlin/merlin.h"
 
 namespace Funhouse {
@@ -49,6 +50,8 @@ bool FunhouseEngine::hasFeature(const EngineFeature f) const {
 
 Common::Error FunhouseEngine::run() {
 	assert(_game);
+
+    _console.reset(new FunhouseConsole(this));
 
 	_eventTime = getTotalPlayTime();
 	_graphics.init(_system, this);
@@ -82,7 +85,12 @@ Common::Error FunhouseEngine::run() {
 				event.type = Common::EVENT_INVALID;
 			}
 
-			if (event.type == Common::EVENT_MOUSEMOVE) {
+            if (event.type == Common::EVENT_KEYDOWN &&
+                event.kbd.keycode == Common::KEYCODE_d &&
+                (event.kbd.flags & Common::KBD_CTRL)) {
+                _console->attach();
+                _console->onFrame();
+            } else if (event.type == Common::EVENT_MOUSEMOVE) {
 				BoltMsg msg(BoltMsg::kHover);
 				msg.point = event.mouse;
 				topLevelHandleMsg(msg);
@@ -110,6 +118,10 @@ Common::Error FunhouseEngine::run() {
 	}
 
 	return Common::kNoError;
+}
+
+void FunhouseEngine::win() {
+    _game->win();
 }
 
 uint32 FunhouseEngine::getEventTime() const {

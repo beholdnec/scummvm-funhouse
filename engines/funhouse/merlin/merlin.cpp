@@ -99,7 +99,6 @@ BoltCmd MerlinGame::handleMsg(const BoltMsg &msg) {
 	return BoltCmd::kDone;
 }
 
-
 Graphics* MerlinGame::getGraphics() {
 	return _graphics;
 }
@@ -310,10 +309,13 @@ void MerlinGame::redraw() {
 }
 
 void MerlinGame::win() {
-	_currentCard.reset();
-	assert(_currentPuzzle);
-	startMovie(_challdirPf, _currentPuzzle->winMovie);
-	enterSequenceEntry(); // Return to hub
+    if (_currentPuzzle) {
+        _currentCard.reset();
+	    startMovie(_challdirPf, _currentPuzzle->winMovie);
+	    enterSequenceEntry(); // Return to hub
+    } else {
+        warning("Win procedure is not possible here");
+    }
 }
 
 void MerlinGame::puzzle(const PuzzleEntry *entry) {
