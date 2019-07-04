@@ -94,8 +94,7 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	_eventLoop = eventLoop;
 	_graphics = _game->getGraphics();
 
-    _popup.init(_eventLoop, _graphics, boltlib,
-        _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
+    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
 
 	BltPotionPuzzleInfo puzzle;
 	BltU16Values difficultyIds;

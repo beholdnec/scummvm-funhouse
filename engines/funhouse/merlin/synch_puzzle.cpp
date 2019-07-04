@@ -42,8 +42,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _timeoutActive = false;
     _transitionActive = false;
 
-    _popup.init(_eventLoop, _graphics, boltlib,
-        _game->getPopupResId(MerlinGame::kPuzzlePopup));
+    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);

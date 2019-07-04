@@ -57,6 +57,7 @@ public:
 	// From FunhouseGame
 	virtual void init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop);
 	virtual BoltCmd handleMsg(const BoltMsg &msg);
+    void redraw();
 
 	Graphics* getGraphics();
     IBoltEventLoop* getEventLoop();

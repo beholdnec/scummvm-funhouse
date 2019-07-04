@@ -24,6 +24,7 @@
 
 #include "funhouse/boltlib/boltlib.h"
 #include "funhouse/graphics.h"
+#include "funhouse/merlin/merlin.h"
 
 namespace Funhouse {
     
@@ -55,9 +56,10 @@ struct BltPopup {
     BltId spriteListId;
 };
 
-void Popup::init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId id) {
-    _eventLoop = eventLoop;
-    _graphics = graphics;
+void Popup::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
+    _game = game;
+    _eventLoop = _game->getEventLoop();
+    _graphics = _game->getGraphics();
     _active = false;
 
     BltPopup popup;
@@ -86,11 +88,9 @@ BoltCmd Popup::handleMsg(const BoltMsg &msg) {
     if (msg.type == BoltMsg::kRightClick) {
         if (!_active) {
             activate();
-            return BoltCmd::kDone;
         } else {
             _active = false;
-            _eventLoop->setMsg(BoltMsg::kRedraw);
-            return BoltCmd::kResend;
+            _game->redraw();
         }
 
         return BoltCmd::kDone;

@@ -92,14 +92,13 @@ struct BoltMsg {
 	enum Type {
 		// System messages (>= 0)
 		kNone = 0,
+        kDrive,
 		kHover,
 		kClick,
 		kRightClick,
 		kTimer,
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
-		kDrive,
-        kRedraw,
 		kMaxBoltMsg = 100
 	};
 
@@ -139,6 +138,9 @@ public:
 
 	virtual ~Card() { }
 	virtual void enter() = 0;
+    virtual void redraw() {
+        enter();
+    }
 	virtual BoltCmd handleMsg(const BoltMsg &msg) = 0;
 };
 

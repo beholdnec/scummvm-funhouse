@@ -32,8 +32,7 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _transitionActive = false;
     _morphActive = false;
 
-    _popup.init(_eventLoop, _graphics, boltlib,
-        _game->getPopupResId(MerlinGame::kPuzzlePopup));
+    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);

@@ -29,8 +29,7 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_graphics = _game->getGraphics();
     _pieceInHand = -1;
 
-    _popup.init(_game->getEventLoop(), _graphics, boltlib,
-        _game->getPopupResId(MerlinGame::kPuzzlePopup));
+    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);

@@ -293,6 +293,13 @@ BoltCmd MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	return cmd;
 }
 
+void MerlinGame::redraw() {
+    if (!isInMovie()) {
+        assert(_currentCard);
+        _currentCard->redraw();
+    }
+}
+
 void MerlinGame::win() {
 	_currentCard.reset();
 	assert(_currentPuzzle);

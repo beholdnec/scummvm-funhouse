@@ -64,8 +64,7 @@ void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_scene.load(_game->getEventLoop(), _graphics, boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
-    _popup.init(_game->getEventLoop(), _graphics, boltlib,
-        _game->getPopupResId(MerlinGame::kHubPopup));
+    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kHubPopup));
 
 	BltResourceList hubItemsList;
 	loadBltResourceArray(hubItemsList, boltlib, hubInfo.itemListId);
@@ -93,11 +92,6 @@ BoltCmd HubCard::handleMsg(const BoltMsg &msg) {
     BoltCmd cmd = _popup.handleMsg(msg);
     if (cmd.type != BoltCmd::kPass) {
         return cmd;
-    }
-
-    if (msg.type == BoltMsg::kRedraw) {
-        enter(); // Redraw scene
-        return BoltCmd::kDone;
     }
 
 	if (msg.type == Scene::kClickButton) {

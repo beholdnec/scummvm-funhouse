@@ -88,7 +88,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _playbackActive = false;
     _matches = 0;
 
-    _popup.init(_eventLoop, _graphics, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
+    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);

@@ -32,10 +32,11 @@ namespace Funhouse {
 
 class Boltlib;
 struct BltId;
+class MerlinGame;
 
 class Popup {
 public:
-    void init(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId id);
+    void init(MerlinGame *game, Boltlib &boltlib, BltId id);
 
     BoltCmd handleMsg(const BoltMsg &msg);
 
@@ -50,6 +51,7 @@ private:
     void activate();
     int getButtonAt(const Common::Point &pt) const;
 
+    MerlinGame *_game;
     IBoltEventLoop *_eventLoop;
     Graphics *_graphics;
 
