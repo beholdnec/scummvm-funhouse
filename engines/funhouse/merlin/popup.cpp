@@ -131,9 +131,16 @@ BoltCmd Popup::handleButtonClick(int num) {
 
 void Popup::activate() {
     _active = true;
-    // FIXME: The palette is special. Only certain colors should be applied.
-    applyPalette(_graphics, kBack, _palette);
-    _bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true); // TODO: fix position
+
+    // The original engine does something hacky here: Only colors 121-127 are applied.
+    static const int kFirstPopupColor = 121;
+    static const int kNumPopupColors = 7;
+    _graphics->setPlanePalette(kBack, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
+
+    static const int kPopupX = -32;
+    static const int kPopupY = 168;
+    _bgImage.drawAt(_graphics->getPlaneSurface(kBack), kPopupX, kPopupY, true);
+
     _graphics->markDirty();
 }
 
