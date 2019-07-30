@@ -62,8 +62,7 @@ private:
     // Puzzle state
     PieceArray _pieces;
     int _pieceInHand; // -1 if no piece is in hand
-    Common::Point _initialHandPos;
-    Common::Point _initialPiecePos;
+	Common::Point _grabPos;
 };
 
 } // End of namespace Funhouse

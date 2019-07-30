@@ -87,16 +87,14 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 		// TODO: implement puzzle.
         if (_pieceInHand != -1) {
             // Place piece
-            _pieces[_pieceInHand].pos.x = _initialPiecePos.x + msg.point.x - _initialHandPos.x;
-            _pieces[_pieceInHand].pos.y = _initialPiecePos.y + msg.point.y - _initialHandPos.y;
+			_pieces[_pieceInHand].pos = msg.point - _grabPos;
             _pieceInHand = -1;
             drawPieces();
         } else {
             _pieceInHand = getPieceAtPosition(msg.point);
             if (_pieceInHand != -1) {
                 // Pick up piece
-                _initialHandPos = msg.point;
-                _initialPiecePos = _pieces[_pieceInHand].pos;
+				_grabPos = msg.point - _pieces[_pieceInHand].pos;
                 debug(3, "Picked up piece %d", _pieceInHand);
             }
         }
@@ -107,8 +105,7 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
     if (msg.type == BoltMsg::kHover) {
         // Move piece. TODO: Pieces should snap to a coarse grid.
         if (_pieceInHand != -1) {
-            _pieces[_pieceInHand].pos.x = _initialPiecePos.x + msg.point.x - _initialHandPos.x;
-            _pieces[_pieceInHand].pos.y = _initialPiecePos.y + msg.point.y - _initialHandPos.y;
+			_pieces[_pieceInHand].pos = msg.point - _grabPos;
             drawPieces();
             return BoltCmd::kDone;
         }
