@@ -58,6 +58,7 @@ private:
 
     // Per-difficulty resources
     BltPalette _forePalette;
+	int _gridSpacing;
 
     // Puzzle state
     PieceArray _pieces;

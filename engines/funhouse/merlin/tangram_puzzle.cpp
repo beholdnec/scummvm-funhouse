@@ -24,6 +24,16 @@
 
 namespace Funhouse {
 
+struct BltTangramPuzzleDifficultyInfo {
+	static const uint32 kType = kBltTangramPuzzleDifficultyInfo;
+	static const uint kSize = 0x6;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		gridSpacing = src.getUint8At(1);
+	}
+
+	uint8 gridSpacing;
+};
+
 void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
 	_graphics = _game->getGraphics();
@@ -33,7 +43,7 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-    BltId difficultiesId = resourceList[0].value;
+    BltId difficultiesId = resourceList[0].value; // Ex: 7100
 	BltId bgImageId      = resourceList[2].value;
 	BltId paletteId      = resourceList[3].value;
 	BltId colorCyclesId  = resourceList[4].value;
@@ -49,8 +59,13 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     BltResourceList difficultyResources;
     loadBltResourceArray(difficultyResources, boltlib, difficultyId);
-    BltId forePaletteId = difficultyResources[1].value; // Ex: 6E01
-    BltId images1Id     = difficultyResources[2].value; // Ex: 6E3A
+	BltId tangramDifficultyId = difficultyResources[0].value; // Ex: 6E00
+    BltId forePaletteId       = difficultyResources[1].value; // Ex: 6E01
+    BltId images1Id           = difficultyResources[2].value; // Ex: 6E3A
+
+	BltTangramPuzzleDifficultyInfo difficultyInfo;
+	loadBltResource(difficultyInfo, boltlib, tangramDifficultyId);
+	_gridSpacing = difficultyInfo.gridSpacing;
 
     _forePalette.load(boltlib, forePaletteId);
 
@@ -77,7 +92,12 @@ void TangramPuzzle::enter() {
 	_graphics->markDirty();
 }
 
+static int16 snap(int16 x, int spacing) {
+	return x / spacing * spacing; // TODO: Refine snapping formula
+}
+
 BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
+	// FIXME: Is popup allowed while a piece is held?
     BoltCmd cmd = _popup.handleMsg(msg);
     if (cmd.type != BoltCmd::kPass) {
         return cmd;
@@ -87,7 +107,10 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 		// TODO: implement puzzle.
         if (_pieceInHand != -1) {
             // Place piece
-			_pieces[_pieceInHand].pos = msg.point - _grabPos;
+			Piece& p = _pieces[_pieceInHand];
+			p.pos = msg.point - _grabPos;
+			p.pos.x = snap(p.pos.x, _gridSpacing);
+			p.pos.y = snap(p.pos.y, _gridSpacing);
             _pieceInHand = -1;
             drawPieces();
         } else {
@@ -103,9 +126,12 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 	}
 
     if (msg.type == BoltMsg::kHover) {
-        // Move piece. TODO: Pieces should snap to a coarse grid.
+        // Move piece
         if (_pieceInHand != -1) {
-			_pieces[_pieceInHand].pos = msg.point - _grabPos;
+			Piece& p = _pieces[_pieceInHand];
+			p.pos = msg.point - _grabPos;
+			p.pos.x = snap(p.pos.x, _gridSpacing);
+			p.pos.y = snap(p.pos.y, _gridSpacing);
             drawPieces();
             return BoltCmd::kDone;
         }
@@ -114,7 +140,7 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
     if (msg.type == BoltMsg::kRightClick) {
         // Win instantly. TODO: remove.
         // The win condition is when all pieces have been placed such that their sprites are
-        // anchored at position 0, 0.
+        // anchored at position 0, 0. (??)
         return Card::kWin;
     }
 

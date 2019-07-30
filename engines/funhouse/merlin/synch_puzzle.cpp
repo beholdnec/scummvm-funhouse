@@ -147,11 +147,6 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
         return handleButtonClick(msg.num);
     }
 
-    if (msg.type == BoltMsg::kRightClick) {
-        // Instant win. TODO: remove.
-        return CardCmd::kWin;
-    }
-
     if (msg.type == BoltMsg::kClick) {
         int itemNum = getItemAtPosition(msg.point);
         if (itemNum != -1) {
