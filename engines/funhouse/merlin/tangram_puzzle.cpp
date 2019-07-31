@@ -28,9 +28,12 @@ struct BltTangramPuzzleDifficultyInfo {
 	static const uint32 kType = kBltTangramPuzzleDifficultyInfo;
 	static const uint kSize = 0x6;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		numPieces = src.getUint8At(0);
 		gridSpacing = src.getUint8At(1);
+		// TODO: Unknown fields
 	}
 
+	uint8 numPieces;
 	uint8 gridSpacing;
 };
 
@@ -59,9 +62,10 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     BltResourceList difficultyResources;
     loadBltResourceArray(difficultyResources, boltlib, difficultyId);
-	BltId tangramDifficultyId = difficultyResources[0].value; // Ex: 6E00
-    BltId forePaletteId       = difficultyResources[1].value; // Ex: 6E01
-    BltId images1Id           = difficultyResources[2].value; // Ex: 6E3A
+	BltId tangramDifficultyId     = difficultyResources[0].value; // Ex: 6E00
+    BltId forePaletteId           = difficultyResources[1].value; // Ex: 6E01
+    BltId placedImagesCatalogId   = difficultyResources[2].value; // Ex: 6E3A
+	BltId unplacedImagesCatalogId = difficultyResources[3].value; // Ex: 6E3B
 
 	BltTangramPuzzleDifficultyInfo difficultyInfo;
 	loadBltResource(difficultyInfo, boltlib, tangramDifficultyId);
@@ -69,17 +73,31 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     _forePalette.load(boltlib, forePaletteId);
 
-    BltResourceList images1List;
-    loadBltResourceArray(images1List, boltlib, images1Id);
-    BltId images1_1Id = images1List[0].value; // Ex: 6E32
+	_pieces.alloc(difficultyInfo.numPieces);
 
-    BltResourceList images1_1List;
-    loadBltResourceArray(images1_1List, boltlib, images1_1Id);
+	int puzzleVariant = 0; // TODO: Choose a random puzzle variant 0..3.
 
-    _pieces.alloc(images1_1List.size()); // TODO: Use #-of-pieces value in difficulty info
-    for (int i = 0; i < images1_1List.size(); ++i) {
-        _pieces[i].image.load(boltlib, images1_1List[i].value);
+    BltResourceList placedImagesCatalog;
+    loadBltResourceArray(placedImagesCatalog, boltlib, placedImagesCatalogId);
+    BltId placedImagesId = placedImagesCatalog[puzzleVariant].value; // Ex: 6E32
+
+    BltResourceList placedImagesList;
+    loadBltResourceArray(placedImagesList, boltlib, placedImagesId);
+
+    for (int i = 0; i < placedImagesList.size(); ++i) {
+        _pieces[i].placedImage.load(boltlib, placedImagesList[i].value);
     }
+
+	BltResourceList unplacedImagesCatalog;
+	loadBltResourceArray(unplacedImagesCatalog, boltlib, unplacedImagesCatalogId);
+	BltId unplacedImagesId = unplacedImagesCatalog[puzzleVariant].value; // Ex: 6E36
+
+	BltResourceList unplacedImagesList;
+	loadBltResourceArray(unplacedImagesList, boltlib, unplacedImagesId);
+
+	for (int i = 0; i < unplacedImagesList.size(); ++i) {
+		_pieces[i].unplacedImage.load(boltlib, unplacedImagesList[i].value);
+	}
 }
 
 void TangramPuzzle::enter() {
@@ -112,6 +130,10 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 			p.pos.x = snap(p.pos.x, _gridSpacing);
 			p.pos.y = snap(p.pos.y, _gridSpacing);
             _pieceInHand = -1;
+			// XXX: toggle between placed and unplaced.
+			// TODO: Piece should be set to the placed state if it is dropped entirely within the window;
+			//       otherwise, it should be sent back to its original position in the unplaced state.
+			p.placed = !p.placed;
             drawPieces();
         } else {
             _pieceInHand = getPieceAtPosition(msg.point);
@@ -137,13 +159,6 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
         }
     }
 
-    if (msg.type == BoltMsg::kRightClick) {
-        // Win instantly. TODO: remove.
-        // The win condition is when all pieces have been placed such that their sprites are
-        // anchored at position 0, 0. (??)
-        return Card::kWin;
-    }
-
 	return BoltCmd::kDone;
 }
 
@@ -154,9 +169,9 @@ int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {
     // overlap earlier pieces.
     for (int i = 0; i < _pieces.size(); ++i) {
         const Piece& piece = _pieces[i];
-        if (piece.image.query(
-            pos.x - piece.pos.x - piece.image.getOffset().x,
-            pos.y - piece.pos.y - piece.image.getOffset().y) != 0) {
+        if (piece.getImage().query(
+            pos.x - piece.pos.x - piece.getImage().getOffset().x,
+            pos.y - piece.pos.y - piece.getImage().getOffset().y) != 0) {
             result = i;
         }
     }
@@ -165,18 +180,22 @@ int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {
 }
 
 void TangramPuzzle::drawPieces() {
+	_graphics->clearPlane(kBack);
     _graphics->clearPlane(kFore);
+
+	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
 
     for (int i = 0; i < _pieces.size(); ++i) {
         if (i != _pieceInHand) {
             const Piece& piece = _pieces[i];
-            piece.image.drawAt(_graphics->getPlaneSurface(kFore), piece.pos.x, piece.pos.y, true);
+            piece.getImage().drawAt(_graphics->getPlaneSurface(kBack), piece.pos.x, piece.pos.y, true);
         }
     }
 
     if (_pieceInHand != -1) {
         const Piece& pieceInHand = _pieces[_pieceInHand];
-        pieceInHand.image.drawAt(_graphics->getPlaneSurface(kFore), pieceInHand.pos.x, pieceInHand.pos.y, true);
+		// The piece in hand is drawn on the foreground plane, so it has different colors.
+        pieceInHand.placedImage.drawAt(_graphics->getPlaneSurface(kFore), pieceInHand.pos.x, pieceInHand.pos.y, true);
     }
 
     _graphics->markDirty();

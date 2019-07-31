@@ -37,7 +37,15 @@ public:
 
 private:
     struct Piece {
-        BltImage image;
+		Piece() : placed(false) {}
+
+		const BltImage& getImage() const {
+			return placed ? placedImage : unplacedImage;
+		}
+
+		bool placed;
+		BltImage placedImage;
+		BltImage unplacedImage;
         Common::Point pos;
     };
 
