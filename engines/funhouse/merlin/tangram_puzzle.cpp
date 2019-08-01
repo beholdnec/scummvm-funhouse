@@ -140,6 +140,7 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
             if (_pieceInHand != -1) {
                 // Pick up piece
 				_grabPos = msg.point - _pieces[_pieceInHand].pos;
+				drawPieces();
                 debug(3, "Picked up piece %d", _pieceInHand);
             }
         }
@@ -169,11 +170,19 @@ int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {
     // overlap earlier pieces.
     for (int i = 0; i < _pieces.size(); ++i) {
         const Piece& piece = _pieces[i];
-        if (piece.getImage().query(
-            pos.x - piece.pos.x - piece.getImage().getOffset().x,
-            pos.y - piece.pos.y - piece.getImage().getOffset().y) != 0) {
-            result = i;
-        }
+		if (piece.placed) {
+			if (piece.placedImage.query(
+				pos.x - piece.pos.x - piece.placedImage.getOffset().x,
+				pos.y - piece.pos.y - piece.placedImage.getOffset().y) != 0) {
+				result = i;
+			}
+		} else {
+			if (piece.unplacedImage.query(
+				pos.x - piece.unplacedImage.getOffset().x,
+				pos.y - piece.unplacedImage.getOffset().y) != 0) {
+				result = i;
+			}
+		}
     }
 
     return result;
@@ -188,7 +197,11 @@ void TangramPuzzle::drawPieces() {
     for (int i = 0; i < _pieces.size(); ++i) {
         if (i != _pieceInHand) {
             const Piece& piece = _pieces[i];
-            piece.getImage().drawAt(_graphics->getPlaneSurface(kBack), piece.pos.x, piece.pos.y, true);
+			if (piece.placed) {
+				piece.placedImage.drawAt(_graphics->getPlaneSurface(kBack), piece.pos.x, piece.pos.y, true);
+			} else {
+				piece.unplacedImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true);
+			}
         }
     }
 

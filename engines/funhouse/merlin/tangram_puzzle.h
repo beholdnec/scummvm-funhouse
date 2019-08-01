@@ -39,14 +39,10 @@ private:
     struct Piece {
 		Piece() : placed(false) {}
 
-		const BltImage& getImage() const {
-			return placed ? placedImage : unplacedImage;
-		}
-
-		bool placed;
 		BltImage placedImage;
 		BltImage unplacedImage;
-        Common::Point pos;
+		bool placed;
+        Common::Point pos; // Note that `pos` is relevant only if `placed` is true.
     };
 
     typedef ScopedArray<Piece> PieceArray;
