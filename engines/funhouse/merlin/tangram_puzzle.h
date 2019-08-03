@@ -41,8 +41,12 @@ private:
 
 		BltImage placedImage;
 		BltImage unplacedImage;
+		BltU8Values collision;
 		bool placed;
-        Common::Point pos; // Note that `pos` is relevant only if `placed` is true.
+		// The position of the upper left of the piece's image (NOT including
+		// the offset specified in the BltImage). This field is only relevant
+		// when the piece is placed.
+        Common::Point pos;
     };
 
     typedef ScopedArray<Piece> PieceArray;
@@ -63,6 +67,7 @@ private:
     // Per-difficulty resources
     BltPalette _forePalette;
 	int _gridSpacing;
+	BltU8Values _windowCollision;
 
     // Puzzle state
     PieceArray _pieces;
