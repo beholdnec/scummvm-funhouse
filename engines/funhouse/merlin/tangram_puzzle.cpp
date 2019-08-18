@@ -30,11 +30,15 @@ struct BltTangramPuzzleDifficultyInfo {
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		numPieces = src.getUint8At(0);
 		gridSpacing = src.getUint8At(1);
+		offsetX = src.getInt8At(2);
+		offsetY = src.getInt8At(3);
 		// TODO: Unknown fields
 	}
 
 	uint8 numPieces;
 	uint8 gridSpacing;
+	int8 offsetX;
+	int8 offsetY;
 };
 
 void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
@@ -72,6 +76,7 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	BltTangramPuzzleDifficultyInfo difficultyInfo;
 	loadBltResource(difficultyInfo, boltlib, tangramDifficultyId);
 	_gridSpacing = difficultyInfo.gridSpacing;
+	_offset = Common::Point(difficultyInfo.offsetX, difficultyInfo.offsetY);
 
     _forePalette.load(boltlib, forePaletteId);
 
@@ -119,6 +124,33 @@ static int16 snap(int16 x, int spacing) {
 	return x / spacing * spacing; // TODO: Refine snapping formula
 }
 
+static uint8 queryCollision(const BltU8Values& collision, int x, int y) {
+	uint8 w = collision[0].value;
+	uint8 h = collision[1].value;
+	if (x < 0 || x >= w || y < 0 || y >= h) {
+		return 0;
+	}
+
+	return collision[2 + y * w + x].value;
+}
+
+static bool isShapeInWindow(const BltU8Values& shape, int sx, int sy, const BltU8Values& window) {
+	uint8 width = shape[0].value;
+	uint8 height = shape[1].value;
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
+			uint8 s = queryCollision(shape, x, y);
+			uint8 w = queryCollision(window, x + sx, y + sy);
+			if (s != 0 && w != 5) {
+				// TODO: Fix collision detection logic; fails on diamond window
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 	// FIXME: Is popup allowed while a piece is held?
     BoltCmd cmd = _popup.handleMsg(msg);
@@ -132,19 +164,26 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
             // Place piece
 			Piece& p = _pieces[_pieceInHand];
 			p.pos = msg.point - _grabPos;
-			p.pos.x = snap(p.pos.x, _gridSpacing);
-			p.pos.y = snap(p.pos.y, _gridSpacing);
-            _pieceInHand = -1;
-			// XXX: toggle between placed and unplaced.
-			// TODO: Piece should be set to the placed state if it is dropped entirely within the window;
-			//       otherwise, it should be sent back to its original position in the unplaced state.
-			p.placed = !p.placed;
+			p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
+			p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
+			_pieceInHand = -1;
+			if (isShapeInWindow(p.collision, (p.pos.x - _offset.x) / _gridSpacing, (p.pos.y - _offset.y) / _gridSpacing, _windowCollision)) {
+				p.placed = true;
+			} else {
+				p.placed = false;
+			}
             drawPieces();
         } else {
             _pieceInHand = getPieceAtPosition(msg.point);
             if (_pieceInHand != -1) {
                 // Pick up piece
-				_grabPos = msg.point - _pieces[_pieceInHand].pos;
+				// First, move the piece to be under the cursor
+				// TODO: Restrict to screen
+				Piece& p = _pieces[_pieceInHand];
+				_grabPos = Common::Point(p.placedImage.getWidth() / 2, p.placedImage.getHeight() / 2);
+				p.pos = msg.point - _grabPos;
+				p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
+				p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
 				drawPieces();
                 debug(3, "Picked up piece %d", _pieceInHand);
             }
@@ -159,24 +198,14 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 			// TODO: Restrict piece to a region inset from the screen.
 			Piece& p = _pieces[_pieceInHand];
 			p.pos = msg.point - _grabPos;
-			p.pos.x = snap(p.pos.x, _gridSpacing);
-			p.pos.y = snap(p.pos.y, _gridSpacing);
+			p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
+			p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
             drawPieces();
             return BoltCmd::kDone;
         }
     }
 
 	return BoltCmd::kDone;
-}
-
-static uint8 queryCollision(const BltU8Values& collision, int x, int y) {
-	uint8 w = collision[0].value;
-	uint8 h = collision[1].value;
-	if (x < 0 || x >= w || y < 0 || y >= h) {
-		return 0;
-	}
-
-	return collision[2 + y * w + x].value;
 }
 
 int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {

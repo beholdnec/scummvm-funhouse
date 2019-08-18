@@ -67,6 +67,7 @@ private:
     // Per-difficulty resources
     BltPalette _forePalette;
 	int _gridSpacing;
+	Common::Point _offset;
 	BltU8Values _windowCollision;
 
     // Puzzle state
