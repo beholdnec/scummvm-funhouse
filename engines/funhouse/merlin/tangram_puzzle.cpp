@@ -128,27 +128,33 @@ static uint8 queryCollision(const BltU8Values& collision, int x, int y) {
 	uint8 w = collision[0].value;
 	uint8 h = collision[1].value;
 	if (x < 0 || x >= w || y < 0 || y >= h) {
-		return 0;
+		return 5; // Empty
 	}
 
 	return collision[2 + y * w + x].value;
 }
 
-static bool isShapeInWindow(const BltU8Values& shape, int sx, int sy, const BltU8Values& window) {
-	uint8 width = shape[0].value;
-	uint8 height = shape[1].value;
+static bool doShapesCollide(const BltU8Values& shapeA, int ax, int ay, const BltU8Values& shapeB, int bx, int by) {
+	uint8 width = shapeA[0].value;
+	uint8 height = shapeA[1].value;
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			uint8 s = queryCollision(shape, x, y);
-			uint8 w = queryCollision(window, x + sx, y + sy);
-			if (s != 0 && w != 5) {
-				// TODO: Fix collision detection logic; fails on diamond window
-				return false;
+			uint8 a = queryCollision(shapeA, x, y);
+			uint8 b = queryCollision(shapeB, x + ax - bx, y + ay - by);
+			// Collision values:
+			//   0: Solid
+			//   1: Upper left
+			//   2: Upper right
+			//   3: Lower left
+			//   4: Lower right
+			//   5: Empty
+			if (a != 5 && b != 5 && (a + b) != 5) {
+				return true;
 			}
 		}
 	}
 
-	return true;
+	return false;
 }
 
 BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
@@ -167,11 +173,10 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 			p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
 			p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
 			_pieceInHand = -1;
-			if (isShapeInWindow(p.collision, (p.pos.x - _offset.x) / _gridSpacing, (p.pos.y - _offset.y) / _gridSpacing, _windowCollision)) {
-				p.placed = true;
-			} else {
-				p.placed = false;
-			}
+			p.placed = !doShapesCollide(p.collision,
+				(p.pos.x - _offset.x) / _gridSpacing,
+				(p.pos.y - _offset.y) / _gridSpacing,
+				_windowCollision, 0, 0);
             drawPieces();
         } else {
             _pieceInHand = getPieceAtPosition(msg.point);
