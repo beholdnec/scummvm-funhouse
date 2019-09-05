@@ -134,13 +134,15 @@ static uint8 queryCollision(const BltU8Values& collision, int x, int y) {
 	return collision[2 + y * w + x].value;
 }
 
-static bool doShapesCollide(const BltU8Values& shapeA, int ax, int ay, const BltU8Values& shapeB, int bx, int by) {
-	uint8 width = shapeA[0].value;
-	uint8 height = shapeA[1].value;
+bool TangramPuzzle::pieceIsPlaceableAt(int pieceNum, int px, int py) {
+	const Piece& piece = _pieces[pieceNum];
+	uint8 width = piece.collision[0].value;
+	uint8 height = piece.collision[1].value;
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			uint8 a = queryCollision(shapeA, x, y);
-			uint8 b = queryCollision(shapeB, x + ax - bx, y + ay - by);
+			int a = queryCollision(piece.collision, x, y);
+			int b = getCollisionAt(px + x, py + y);
+			debug(3, "comparing collision a = %d, b = %d", a, b);
 			// Collision values:
 			//   0: Solid
 			//   1: Upper left
@@ -149,12 +151,12 @@ static bool doShapesCollide(const BltU8Values& shapeA, int ax, int ay, const Blt
 			//   4: Lower right
 			//   5: Empty
 			if (a != 5 && b != 5 && (a + b) != 5) {
-				return true;
+				return false;
 			}
 		}
 	}
 
-	return false;
+	return true;
 }
 
 BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
@@ -172,11 +174,10 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 			p.pos = msg.point - _grabPos;
 			p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
 			p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
-			_pieceInHand = -1;
-			p.placed = !doShapesCollide(p.collision,
+			p.placed = pieceIsPlaceableAt(_pieceInHand,
 				(p.pos.x - _offset.x) / _gridSpacing,
-				(p.pos.y - _offset.y) / _gridSpacing,
-				_windowCollision, 0, 0);
+				(p.pos.y - _offset.y) / _gridSpacing);
+			_pieceInHand = -1;
             drawPieces();
         } else {
             _pieceInHand = getPieceAtPosition(msg.point);
@@ -233,6 +234,35 @@ int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {
     }
 
     return result;
+}
+
+int TangramPuzzle::getCollisionAt(int x, int y) {
+	int result = queryCollision(_windowCollision, x, y);
+	if (result == 0) {
+		return result;
+	}
+
+	for (int i = 0; i < _pieces.size(); ++i) {
+		if (i == _pieceInHand || !_pieces[i].placed) {
+			continue;
+		}
+
+		const Piece& piece = _pieces[i];
+		int px = (piece.pos.x - _offset.x) / _gridSpacing;
+		int py = (piece.pos.y - _offset.y) / _gridSpacing;
+		int pieceCollision = queryCollision(piece.collision, x - px, y - py);
+		if (result == 5) {
+			result = pieceCollision;
+		} else if (pieceCollision != 5) {
+			result = 0;
+		}
+		
+		if (result == 0) {
+			break;
+		}
+	}
+
+	return result;
 }
 
 void TangramPuzzle::drawPieces() {
