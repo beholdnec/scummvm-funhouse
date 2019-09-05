@@ -179,6 +179,10 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 				(p.pos.y - _offset.y) / _gridSpacing);
 			_pieceInHand = -1;
             drawPieces();
+
+			if (checkWin()) {
+				return kWin;
+			}
         } else {
             _pieceInHand = getPieceAtPosition(msg.point);
             if (_pieceInHand != -1) {
@@ -263,6 +267,20 @@ int TangramPuzzle::getCollisionAt(int x, int y) {
 	}
 
 	return result;
+}
+
+bool TangramPuzzle::checkWin() {
+	int w = _windowCollision[0].value;
+	int h = _windowCollision[1].value;
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			if (getCollisionAt(x, y) != 0) {
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 void TangramPuzzle::drawPieces() {

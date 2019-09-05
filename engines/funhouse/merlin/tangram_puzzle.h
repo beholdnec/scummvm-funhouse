@@ -54,6 +54,7 @@ private:
     int getPieceAtPosition(const Common::Point& pos);
 	bool pieceIsPlaceableAt(int pieceNum, int x, int y);
 	int getCollisionAt(int x, int y);
+	bool checkWin();
     void drawPieces();
 
     MerlinGame *_game;
