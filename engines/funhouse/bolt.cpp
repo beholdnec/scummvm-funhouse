@@ -55,7 +55,7 @@ Common::Error FunhouseEngine::run() {
 
 	_eventTime = getTotalPlayTime();
 	_graphics.init(_system, this);
-	_game->init(_system, &_graphics, _mixer, this);
+	_game->init(_system, this, _mixer);
 	
 	while (!shouldQuit()) {
 		_eventTime = getTotalPlayTime();
@@ -142,6 +142,10 @@ void FunhouseEngine::setTimer(uint32 delay, int id) {
 	newTimer.delay = delay;
 	newTimer.id = id;
 	_timers.push_back(newTimer);
+}
+
+Graphics* FunhouseEngine::getGraphics() {
+	return &_graphics;
 }
 
 void FunhouseEngine::topLevelHandleMsg(const BoltMsg &msg) {

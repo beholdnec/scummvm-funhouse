@@ -61,7 +61,7 @@ void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltHub hubInfo;
 	loadBltResource(hubInfo, boltlib, resId);
-	_scene.load(_game->getEventLoop(), _graphics, boltlib, hubInfo.sceneId);
+	_scene.load(_game->getEngine(), boltlib, hubInfo.sceneId);
 	_scene.setBackPlane(boltlib, hubInfo.bgPlaneId);
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kHubPopup));

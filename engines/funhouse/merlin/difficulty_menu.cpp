@@ -21,13 +21,14 @@
  */
 
 #include "funhouse/merlin/difficulty_menu.h"
+#include "funhouse/merlin/merlin.h"
 
 namespace Funhouse {
     
-void DifficultyMenu::init(MerlinGame *game, Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+void DifficultyMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_game = game;
 
-	_scene.load(eventLoop, graphics, boltlib, resId);
+	_scene.load(_game->getEngine(), boltlib, resId);
 }
 
 void DifficultyMenu::enter() {
@@ -43,6 +44,46 @@ BoltCmd DifficultyMenu::handleMsg(const BoltMsg &msg) {
 }
 
 BoltCmd DifficultyMenu::handleButtonClick(int num) {
+	// Words
+	if (num >= 12 && num <= 14) {
+		for (int i = 12; i <= 14; ++i) {
+			_scene.setButtonGraphicsSet(i, num == i ? 1 : 0);
+		}
+		return BoltCmd::kDone;
+	}
+
+	// Shapes
+	if (num >= 15 && num <= 17) {
+		for (int i = 15; i <= 17; ++i) {
+			_scene.setButtonGraphicsSet(i, num == i ? 1 : 0);
+		}
+		return BoltCmd::kDone;
+	}
+
+	// Action
+	if (num >= 18 && num <= 20) {
+		for (int i = 18; i <= 20; ++i) {
+			_scene.setButtonGraphicsSet(i, num == i ? 1 : 0);
+		}
+		return BoltCmd::kDone;
+	}
+
+	// Memory
+	if (num >= 21 && num <= 23) {
+		for (int i = 21; i <= 23; ++i) {
+			_scene.setButtonGraphicsSet(i, num == i ? 1 : 0);
+		}
+		return BoltCmd::kDone;
+	}
+
+	// Logic
+	if (num >= 24 && num <= 26) {
+		for (int i = 24; i <= 26; ++i) {
+			_scene.setButtonGraphicsSet(i, num == i ? 1 : 0);
+		}
+		return BoltCmd::kDone;
+	}
+
 	switch (num) {
 	case -1: // No button
 		return Card::kEnd;

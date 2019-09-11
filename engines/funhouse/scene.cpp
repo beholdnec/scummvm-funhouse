@@ -25,6 +25,8 @@
 #include "funhouse/bolt.h"
 #include "funhouse/boltlib/palette.h"
 
+#include "common/events.h"
+
 namespace Funhouse {
 
 struct BltScene { // type 32
@@ -116,10 +118,10 @@ struct BltButtonElement { // type 31
 
 typedef ScopedArray<BltButtonElement> BltButtonList;
 
-void Scene::load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId sceneId)
+void Scene::load(FunhouseEngine *engine, Boltlib &boltlib, BltId sceneId)
 {
-	_eventLoop = eventLoop;
-	_graphics = graphics;
+	_engine = engine;
+	_graphics = _engine->getGraphics();
 
 	BltScene sceneInfo;
 	loadBltResource(sceneInfo, boltlib, sceneId);
@@ -198,7 +200,7 @@ void Scene::redrawSprites() {
         _forePlane.image.drawAt(_graphics->getPlaneSurface(kFore), 0, 0, false);
     }
     else {
-        _graphics->clearPlane(kFore);
+		_graphics->clearPlane(kFore);
     }
 
     // Draw sprites
@@ -225,7 +227,7 @@ BoltCmd Scene::handleMsg(const BoltMsg &msg) {
 	case BoltMsg::kClick: {
 		BoltMsg newMsg(kClickButton);
 		newMsg.num = getButtonAtPoint(msg.point);
-		_eventLoop->setMsg(newMsg);
+		_engine->setMsg(newMsg);
 		return BoltCmd::kResend;
 	}
 	}
@@ -239,6 +241,19 @@ void Scene::setBackPlane(Boltlib &boltlib, BltId id) {
     _backPlane.image.load(boltlib, bltBackPlane.imageId);
     _backPlane.palette.load(boltlib, bltBackPlane.paletteId);
     _backPlane.hotspots.load(boltlib, bltBackPlane.hotspotsId);
+}
+
+void Scene::setButtonGraphicsSet(int buttonNum, int graphicsSet) {
+	assert(buttonNum >= 0 && buttonNum < _buttons.size());
+
+	Button& button = _buttons[buttonNum];
+	assert(graphicsSet >= 0 && graphicsSet < button.graphics.size());
+
+	button.graphicsSet = graphicsSet;
+
+	// TODO: Undraw old graphics set?
+	drawButton(button, buttonNum == getButtonAtPoint(_engine->getEventManager()->getMousePos()));
+	_graphics->markDirty();
 }
 
 int Scene::getButtonAtPoint(const Common::Point &pt) {
@@ -271,14 +286,14 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 }
 
 void Scene::drawButton(const Button &button, bool hovered) {
-	// TODO: support states other than 0
 	if (button.graphics) {
-		if (button.graphics[0].graphicsType == kPaletteMods) {
-			const BltPaletteMods &paletteMod = hovered ? button.graphics[0].hoveredPaletteMods : button.graphics[0].idlePaletteMods;
+		const ButtonGraphics& graphicsSet = button.graphics[button.graphicsSet];
+		if (graphicsSet.graphicsType == kPaletteMods) {
+			const BltPaletteMods &paletteMod = hovered ? graphicsSet.hoveredPaletteMods : graphicsSet.idlePaletteMods;
 			applyPaletteMod(_graphics, button.plane, paletteMod, 0);
 		}
-		else if (button.graphics[0].graphicsType == kSprites) {
-			const BltSprites &spriteList = hovered ? button.graphics[0].hoveredSprites : button.graphics[0].idleSprites;
+		else if (graphicsSet.graphicsType == kSprites) {
+			const BltSprites &spriteList = hovered ? graphicsSet.hoveredSprites : graphicsSet.idleSprites;
 			if (spriteList.getNumSprites() > 0) {
 				const Sprite &sprite = spriteList.getSprite(0);
 				Common::Point pos = sprite.pos - _origin;

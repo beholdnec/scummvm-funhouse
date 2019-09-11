@@ -42,7 +42,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	loadBltResourceArray(difficulty, boltlib, difficultyId); // Difficulty 0
     BltId sceneId = difficulty[19].value;
 
-	_scene.load(_game->getEventLoop(), _game->getGraphics(), boltlib, sceneId);
+	_scene.load(_game->getEngine(), boltlib, sceneId);
 }
 
 void WordPuzzle::enter() {

@@ -39,19 +39,17 @@ public:
 		kClickButton = BoltMsg::kMaxBoltMsg
 	};
 
-	void load(IBoltEventLoop *eventLoop, Graphics *graphics, Boltlib &boltlib, BltId sceneId);
+	void load(FunhouseEngine *engine, Boltlib &boltlib, BltId sceneId);
 	void enter();
     void redrawSprites();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
 	void setBackPlane(Boltlib &boltlib, BltId id);
+	void setButtonGraphicsSet(int buttonNum, int graphicsSet);
 	const Common::Point& getOrigin() const { return _origin; }
     BltSprites& getSprites() { return _sprites; }
 
 private:
-	IBoltEventLoop *_eventLoop;
-	Graphics *_graphics;
-
     struct Plane {
         BltImage image;
         BltPalette palette;
@@ -84,6 +82,8 @@ private:
 	typedef ScopedArray<ButtonGraphics> ButtonGraphicsArray;
 
 	struct Button {
+		Button() : graphicsSet(0) { }
+
 		HotspotType hotspotType;
 		uint16 plane;
         // If hotspotType == kRect: this field holds the rectangular area of the button.
@@ -92,14 +92,17 @@ private:
 		Rect hotspot;
 
 		ButtonGraphicsArray graphics;
+		int graphicsSet;
 	};
 
 	typedef ScopedArray<Button> ButtonArray;
-
+	
     // Return the number of button at a given point, or return -1 if there is no button.
     int getButtonAtPoint(const Common::Point &pt);
     void drawButton(const Button &button, bool hovered);
 
+	FunhouseEngine *_engine;
+	Graphics *_graphics;
     Plane _forePlane;
     Plane _backPlane;
     Common::ScopedPtr<BltColorCycles> _colorCycles;

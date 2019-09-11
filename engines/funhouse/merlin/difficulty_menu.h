@@ -32,7 +32,7 @@ class MerlinGame;
 
 class DifficultyMenu : public Card {
 public:
-    void init(MerlinGame *game, Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+    void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
     void enter();
     BoltCmd handleMsg(const BoltMsg &msg);
 private:

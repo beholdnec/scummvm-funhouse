@@ -73,7 +73,7 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
         _pieces[i] = initialState[i].value;
     }
 
-	_scene.load(_game->getEventLoop(), _graphics, boltlib, sceneId);
+	_scene.load(_game->getEngine(), boltlib, sceneId);
 
     BltResourceList moveTablesRes;
     loadBltResourceArray(moveTablesRes, boltlib, moveTablesId);

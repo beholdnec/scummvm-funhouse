@@ -40,12 +40,12 @@ struct BltMainMenu {
 	BltId colorbarsPaletteId;
 };
 
-void MainMenu::init(MerlinGame *game, Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+void MainMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_game = game;
 
 	BltMainMenu mainMenu;
 	loadBltResource(mainMenu, boltlib, resId);
-	_scene.load(eventLoop, graphics, boltlib, mainMenu.sceneId);
+	_scene.load(_game->getEngine(), boltlib, mainMenu.sceneId);
 }
 
 void MainMenu::enter() {

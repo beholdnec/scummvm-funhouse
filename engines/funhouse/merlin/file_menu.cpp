@@ -21,13 +21,14 @@
  */
 
 #include "funhouse/merlin/file_menu.h"
+#include "funhouse/merlin/merlin.h"
 
 namespace Funhouse {
     
-void FileMenu::init(MerlinGame *game, Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+void FileMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_game = game;
 
-	_scene.load(eventLoop, graphics, boltlib, resId);
+	_scene.load(_game->getEngine(), boltlib, resId);
 }
 
 void FileMenu::enter() {

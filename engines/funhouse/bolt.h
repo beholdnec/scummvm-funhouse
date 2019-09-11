@@ -161,10 +161,12 @@ public:
 	virtual void setTimer(uint32 delay, int id) = 0;
 };
 
+class FunhouseEngine;
+
 class FunhouseGame {
 public:
 	virtual ~FunhouseGame() { }
-	virtual void init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop) = 0;
+	virtual void init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mixer) = 0;
 	virtual BoltCmd handleMsg(const BoltMsg &msg) = 0;
     virtual void win() = 0;
 };
@@ -183,6 +185,8 @@ public:
 	virtual void setMsg(const BoltMsg &msg);
 	virtual void requestSmoothAnimation();
 	virtual void setTimer(uint32 delay, int id);
+
+	Graphics* getGraphics();
 
 protected:
 	// From Engine

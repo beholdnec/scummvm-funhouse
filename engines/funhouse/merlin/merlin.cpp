@@ -56,11 +56,12 @@ struct BltPopupCatalog {
 
 static const uint16 kPopupCatalogId = 0x0A04;
 
-void MerlinGame::init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop) {
+void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mixer) {
 	_system = system;
-	_graphics = graphics;
+	_engine = engine;
+	_graphics = _engine->getGraphics();
 	_mixer = mixer;
-	_eventLoop = eventLoop;
+	_eventLoop = _engine;
 
 	_boltlib.load("BOLTLIB.BLT");
 
@@ -97,6 +98,14 @@ BoltCmd MerlinGame::handleMsg(const BoltMsg &msg) {
 
 	assert(false); // Unreachable; there must be an active movie or card
 	return BoltCmd::kDone;
+}
+
+OSystem* MerlinGame::getSystem() {
+	return _system;
+}
+
+FunhouseEngine* MerlinGame::getEngine() {
+	return _engine;
 }
 
 Graphics* MerlinGame::getGraphics() {
@@ -180,21 +189,21 @@ void MerlinGame::enterSequenceEntry() {
 void MerlinGame::startMainMenu(BltId id) {
 	_currentCard.reset();
 	MainMenu* card = new MainMenu;
-	card->init(this, _graphics, _eventLoop, _boltlib, id);
+	card->init(this, _boltlib, id);
 	setCurrentCard(card);
 }
 
 void MerlinGame::startFileMenu(BltId id) {
     _currentCard.reset();
     FileMenu* card = new FileMenu;
-    card->init(this, _graphics, _eventLoop, _boltlib, id);
+    card->init(this, _boltlib, id);
     setCurrentCard(card);
 }
 
 void MerlinGame::startDifficultyMenu(BltId id) {
     _currentCard.reset();
     DifficultyMenu* card = new DifficultyMenu;
-    card->init(this, _graphics, _eventLoop, _boltlib, id);
+    card->init(this, _boltlib, id);
     setCurrentCard(card);
 }
 
@@ -205,8 +214,8 @@ void MerlinGame::exitOrReturn() {
 
 class GenericMenuCard : public Card {
 public:
-	void init(Graphics *graphics, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId id) {
-		_scene.load(eventLoop, graphics, boltlib, id);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId id) {
+		_scene.load(game->getEngine(), boltlib, id);
 	}
 
 	void enter() {
@@ -229,7 +238,7 @@ private:
 void MerlinGame::startMenu(BltId id) {
 	_currentCard.reset();
 	GenericMenuCard* menuCard = new GenericMenuCard;
-	menuCard->init(_graphics, _eventLoop, _boltlib, id);
+	menuCard->init(this, _boltlib, id);
 	setCurrentCard(menuCard);
 }
 
@@ -378,7 +387,7 @@ void MerlinGame::freeplayHub(const void *param) {
 	_currentCard.reset();
 	uint16 sceneId = *reinterpret_cast<const uint16*>(param);
 	GenericMenuCard *card = new GenericMenuCard;
-	card->init(_graphics, _eventLoop, _boltlib, BltShortId(sceneId));
+	card->init(this, _boltlib, BltShortId(sceneId));
 	setCurrentCard(card);
 }
 

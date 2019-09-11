@@ -55,11 +55,13 @@ public:
     };
 
 	// From FunhouseGame
-	virtual void init(OSystem *system, Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop);
+	virtual void init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mixer);
 	virtual BoltCmd handleMsg(const BoltMsg &msg);
     virtual void win();
     
     void redraw();
+	OSystem* getSystem();
+	FunhouseEngine* getEngine();
 	Graphics* getGraphics();
     IBoltEventLoop* getEventLoop();
 	bool isInMovie() const;
@@ -107,6 +109,7 @@ private:
 	void puzzle(const PuzzleEntry *entry);
 
 	OSystem *_system;
+	FunhouseEngine *_engine;
 	Graphics *_graphics;
 	Audio::Mixer *_mixer;
 	IBoltEventLoop *_eventLoop;
