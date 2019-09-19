@@ -24,7 +24,7 @@
 #define FUNHOUSE_MERLIN_COLOR_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
-#include "funhouse/merlin/popup.h"
+#include "funhouse/merlin/popup_menu.h"
 #include "funhouse/scene.h"
 
 namespace Funhouse {
@@ -78,7 +78,7 @@ private:
     MerlinGame *_game;
 	Graphics *_graphics;
 	IBoltEventLoop *_eventLoop;
-    Popup _popup;
+    PopupMenu _popup;
 	Scene _scene;
 
 	Piece _pieces[kNumPieces];

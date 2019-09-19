@@ -24,7 +24,7 @@
 #define FUNHOUSE_MERLIN_SYNCH_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
-#include "funhouse/merlin/popup.h"
+#include "funhouse/merlin/popup_menu.h"
 #include "funhouse/scene.h"
 
 namespace Funhouse {
@@ -80,7 +80,7 @@ private:
     Graphics *_graphics;
     IBoltEventLoop *_eventLoop;
 
-    Popup _popup;
+    PopupMenu _popup;
 	Scene _scene;
 
     ItemArray _items;

@@ -24,7 +24,7 @@
 #define FUNHOUSE_MERLIN_WORD_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
-#include "funhouse/merlin/popup.h"
+#include "funhouse/merlin/popup_menu.h"
 #include "funhouse/scene.h"
 
 namespace Funhouse {
@@ -40,7 +40,7 @@ protected:
 
 private:
     MerlinGame *_game;
-    Popup _popup;
+    PopupMenu _popup;
 	Scene _scene;
 };
 

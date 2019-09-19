@@ -20,9 +20,9 @@ MODULE_OBJS := \
 	merlin/main_menu.o \
 	merlin/memory_puzzle.o \
 	merlin/merlin.o \
+	merlin/popup_menu.o \
 	merlin/potion_puzzle.o \
 	merlin/sliding_puzzle.o \
-	merlin/popup.o \
 	merlin/synch_puzzle.o \
 	merlin/tangram_puzzle.o \
 	merlin/word_puzzle.o

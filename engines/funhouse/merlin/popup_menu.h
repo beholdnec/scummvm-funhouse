@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef FUNHOUSE_MERLIN_POPUP_H
-#define FUNHOUSE_MERLIN_POPUP_H
+#ifndef FUNHOUSE_MERLIN_POPUP_MENU_H
+#define FUNHOUSE_MERLIN_POPUP_MENU_H
 
 #include "funhouse/bolt.h"
 #include "funhouse/graphics.h"
@@ -34,7 +34,7 @@ class Boltlib;
 struct BltId;
 class MerlinGame;
 
-class Popup {
+class PopupMenu {
 public:
     void init(MerlinGame *game, Boltlib &boltlib, BltId id);
 

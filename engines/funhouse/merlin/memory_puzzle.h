@@ -24,7 +24,7 @@
 #define FUNHOUSE_MERLIN_MEMORY_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
-#include "funhouse/merlin/popup.h"
+#include "funhouse/merlin/popup_menu.h"
 #include "funhouse/scene.h"
 #include "common/random.h"
 
@@ -78,7 +78,7 @@ private:
 	Graphics *_graphics;
     IBoltEventLoop *_eventLoop;
 	Scene _scene;
-    Popup _popup;
+    PopupMenu _popup;
 	ItemList _itemList;
     int _maxMemorize;
 

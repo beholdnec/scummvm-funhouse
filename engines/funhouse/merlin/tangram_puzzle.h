@@ -24,7 +24,7 @@
 #define FUNHOUSE_MERLIN_TANGRAM_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
-#include "funhouse/merlin/popup.h"
+#include "funhouse/merlin/popup_menu.h"
 #include "funhouse/boltlib/palette.h"
 
 namespace Funhouse {
@@ -60,7 +60,7 @@ private:
     MerlinGame *_game;
 	Graphics *_graphics;
 
-    Popup _popup;
+    PopupMenu _popup;
 
     // Main resources
 	BltImage _bgImage;

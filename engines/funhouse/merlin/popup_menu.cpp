@@ -20,7 +20,7 @@
  *
  */
 
-#include "funhouse/merlin/popup.h"
+#include "funhouse/merlin/popup_menu.h"
 
 #include "funhouse/boltlib/boltlib.h"
 #include "funhouse/graphics.h"
@@ -56,7 +56,7 @@ struct BltPopup {
     BltId spriteListId;
 };
 
-void Popup::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
+void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
     _game = game;
     _eventLoop = _game->getEventLoop();
     _graphics = _game->getGraphics();
@@ -84,7 +84,7 @@ void Popup::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
     }
 }
 
-BoltCmd Popup::handleMsg(const BoltMsg &msg) {
+BoltCmd PopupMenu::handleMsg(const BoltMsg &msg) {
     if (msg.type == BoltMsg::kRightClick) {
         if (!_active) {
             activate();
@@ -117,7 +117,7 @@ BoltCmd Popup::handleMsg(const BoltMsg &msg) {
     return BoltCmd::kDone;
 }
 
-BoltCmd Popup::handleButtonClick(int num) {
+BoltCmd PopupMenu::handleButtonClick(int num) {
     switch (num) {
     case 0: // Exit/Return
         return Card::kReturn;
@@ -129,7 +129,7 @@ BoltCmd Popup::handleButtonClick(int num) {
     return BoltCmd::kDone;
 }
 
-void Popup::activate() {
+void PopupMenu::activate() {
     _active = true;
 
     // The original engine does something hacky here: Only colors 121-127 are applied.
@@ -144,7 +144,7 @@ void Popup::activate() {
     _graphics->markDirty();
 }
 
-int Popup::getButtonAt(const Common::Point &pt) const {
+int PopupMenu::getButtonAt(const Common::Point &pt) const {
     for (int i = 0; i < _buttons.size(); ++i) {
         if (_buttons[i].hotspot.contains(pt)) {
             return i;

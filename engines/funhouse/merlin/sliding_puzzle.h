@@ -24,7 +24,7 @@
 #define FUNHOUSE_MERLIN_SLIDING_PUZZLE_H
 
 #include "funhouse/merlin/merlin.h"
-#include "funhouse/merlin/popup.h"
+#include "funhouse/merlin/popup_menu.h"
 #include "funhouse/scene.h"
 
 namespace Funhouse {
@@ -42,7 +42,7 @@ protected:
 private:
     MerlinGame *_game;
     Graphics *_graphics;
-    Popup _popup;
+    PopupMenu _popup;
 	Scene _scene;
 
     static const int kNumButtons = 4;
