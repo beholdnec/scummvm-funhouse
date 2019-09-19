@@ -42,6 +42,10 @@ private:
     MerlinGame *_game;
     PopupMenu _popup;
 	Scene _scene;
+
+	BltSprites _normalSprites;
+	BltSprites _highlightedSprites;
+	BltSprites _selectedSprites;
 };
 
 } // End of namespace Funhouse

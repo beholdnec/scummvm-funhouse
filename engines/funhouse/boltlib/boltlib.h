@@ -54,19 +54,20 @@ enum BltType {
 	kBltHubItem = 41,
 	kBltSlidingPuzzle = 44,
 	kBltParticleDeaths = 45, // action puzzles
-	kBltParticles = 46, // action puzzles
+	kBltParticles                   = 46, // action puzzles
+	kBltWordPuzzleInfo              = 49,
 	kBltTangramPuzzleDifficultyInfo = 51,
-    kBltSynchPuzzleInfo = 52,
-    kBltSynchPuzzleTransition = 53,
-    kBltMemoryPuzzleInfos = 54,
-	kBltMemoryPuzzleItemFrameList = 55,
-	kBltMemoryPuzzleItemList = 56,
-    kBltColorPuzzleTransition = 58,
-	kBltPotionPuzzle = 59,
-	kBltPotionPuzzleSpritePoints = 60, // potion puzzles
-	kBltPotionPuzzleDifficulty = 61, // potion puzzles
-	kBltPotionPuzzleComboTableList = 62,
-	kBltPotionPuzzleComboTable = 63
+    kBltSynchPuzzleInfo             = 52,
+    kBltSynchPuzzleTransition       = 53,
+    kBltMemoryPuzzleInfos           = 54,
+	kBltMemoryPuzzleItemFrameList   = 55,
+	kBltMemoryPuzzleItemList        = 56,
+    kBltColorPuzzleTransition       = 58,
+	kBltPotionPuzzle                = 59,
+	kBltPotionPuzzleSpritePoints    = 60, // potion puzzles
+	kBltPotionPuzzleDifficulty      = 61, // potion puzzles
+	kBltPotionPuzzleComboTableList  = 62,
+	kBltPotionPuzzleComboTable      = 63,
 };
 
 struct BltShortId {
