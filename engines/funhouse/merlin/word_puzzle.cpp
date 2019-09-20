@@ -23,9 +23,19 @@
 #include "funhouse/merlin/word_puzzle.h"
 
 namespace Funhouse {
-	
+
 struct BltWordPuzzleInfo {
-    static const uint32 kType = kBltWordPuzzleInfo;
+	static const uint32 kType = kBltWordPuzzleInfo;
+	static const uint kSize = 0x4;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		centerX = src.getInt16BEAt(2);
+	}
+
+	int16 centerX;
+};
+	
+struct BltWordPuzzleVariantInfo {
+    static const uint32 kType = kBltWordPuzzleVariantInfo;
     static const uint kSize = 0x4;
     void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		numChars = src.getUint8At(0);
@@ -44,10 +54,15 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-    BltId difficultiesId          = resourceList[0].value;
-	BltId normalSpriteListId      = resourceList[2].value;
-	BltId highlightedSpriteListId = resourceList[3].value;
-	BltId selectedSpriteListId    = resourceList[4].value;
+    BltId difficultiesId          = resourceList[0].value; // Ex: 6100
+	BltId infoId                  = resourceList[1].value; // Ex: 6101
+	BltId normalSpriteListId      = resourceList[2].value; // Ex: 61B4
+	BltId highlightedSpriteListId = resourceList[3].value; // Ex: 61B5
+	BltId selectedSpriteListId    = resourceList[4].value; // Ex: 61B6
+
+	BltWordPuzzleInfo puzzleInfo;
+	loadBltResource(puzzleInfo, boltlib, infoId);
+	_centerX = puzzleInfo.centerX;
 
 	_normalSprites.load(boltlib, normalSpriteListId);
 	_highlightedSprites.load(boltlib, highlightedSpriteListId);
@@ -62,16 +77,28 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltResourceList difficulty;
 	loadBltResourceArray(difficulty, boltlib, difficultyId);
-	BltId infoId        = difficulty[puzzleVariant].value; // Ex: 5E00
-	BltId lineLengthsId = difficulty[4 + puzzleVariant].value; // Ex: 5E01
-	BltId solutionId    = difficulty[12 + puzzleVariant].value; // Ex: 5E03
-    BltId sceneId       = difficulty[16 + puzzleVariant].value; // Ex: 5E05
+	BltId variantInfoId    = difficulty[puzzleVariant].value; // Ex: 5E00
+	BltId lineLengthsId    = difficulty[4 + puzzleVariant].value; // Ex: 5E01
+	BltId lineYPositionsId = difficulty[8 + puzzleVariant].value; // Ex: 5E02
+	BltId solutionId       = difficulty[12 + puzzleVariant].value; // Ex: 5E03
+    BltId sceneId          = difficulty[16 + puzzleVariant].value; // Ex: 5E05
+
+	BltWordPuzzleVariantInfo variantInfo;
+	loadBltResource(variantInfo, boltlib, variantInfoId);
+
+	loadBltResourceArray(_lineYPositions, boltlib, lineYPositionsId);
 
 	_scene.load(_game->getEngine(), boltlib, sceneId);
 }
 
 void WordPuzzle::enter() {
 	_scene.enter();
+
+	for (int i = 0; i < _lineYPositions.size(); ++i) {
+		static const int kFirstCustomButton = 26;
+		_scene.overrideButtonGraphics(kFirstCustomButton + i, Common::Point(_centerX, _lineYPositions[i].value),
+			_highlightedSprites.getImageFromSet(i), _normalSprites.getImageFromSet(i));
+	}
 }
 
 BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {

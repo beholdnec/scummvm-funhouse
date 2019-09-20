@@ -46,6 +46,9 @@ private:
 	BltSprites _normalSprites;
 	BltSprites _highlightedSprites;
 	BltSprites _selectedSprites;
+
+	int16 _centerX;
+	BltU8Values _lineYPositions;
 };
 
 } // End of namespace Funhouse

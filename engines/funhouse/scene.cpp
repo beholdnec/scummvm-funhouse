@@ -256,6 +256,19 @@ void Scene::setButtonGraphicsSet(int buttonNum, int graphicsSet) {
 	_graphics->markDirty();
 }
 
+void Scene::overrideButtonGraphics(int buttonNumber, Common::Point position, BltImage* hoveredImage, BltImage* idleImage) {
+	assert(buttonNumber >= 0 && buttonNumber < _buttons.size());
+
+	Button& button = _buttons[buttonNumber];
+	button.overrideGraphics = true;
+	button.overridePosition = position;
+	button.overrideHoveredImage = hoveredImage;
+	button.overrideIdleImage = idleImage;
+
+	drawButton(button, buttonNumber == getButtonAtPoint(_engine->getEventManager()->getMousePos()));
+	_graphics->markDirty();
+}
+
 int Scene::getButtonAtPoint(const Common::Point &pt) {
 	byte foreHotspotColor = 0;
 	if (_forePlane.hotspots) {
@@ -269,7 +282,12 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 
 	for (int i = 0; i < (int)_buttons.size(); ++i) {
 		const Button &button = _buttons[i];
-		if (button.hotspotType == kRect) {
+		if (button.overrideGraphics) {
+			// For buttons with overridden graphics, the hotspot is the image.
+			if (button.overrideIdleImage->getRect(button.overridePosition).contains(_origin + pt)) {
+				return i;
+			}
+		} else if (button.hotspotType == kRect) {
 			if (button.hotspot.contains(_origin + pt)) {
 				return i;
 			}
@@ -286,7 +304,11 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 }
 
 void Scene::drawButton(const Button &button, bool hovered) {
-	if (button.graphics) {
+	if (button.overrideGraphics) {
+		BltImage* image = hovered ? button.overrideHoveredImage : button.overrideIdleImage;
+		Common::Point position = button.overridePosition - _origin;
+		image->drawAt(_graphics->getPlaneSurface(button.plane), position.x, position.y, true);
+	} else if (button.graphics) {
 		const ButtonGraphics& graphicsSet = button.graphics[button.graphicsSet];
 		if (graphicsSet.graphicsType == kPaletteMods) {
 			const BltPaletteMods &paletteMod = hovered ? graphicsSet.hoveredPaletteMods : graphicsSet.idlePaletteMods;
