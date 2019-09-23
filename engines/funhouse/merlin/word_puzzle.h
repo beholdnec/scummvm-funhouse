@@ -39,6 +39,8 @@ protected:
 	BoltCmd handleButtonClick(int num);
 
 private:
+	void arrangeButtons();
+
     MerlinGame *_game;
     PopupMenu _popup;
 	Scene _scene;
@@ -48,7 +50,11 @@ private:
 	BltSprites _selectedSprites;
 
 	int16 _centerX;
+	int _numChars;
+	int _numLines;
 	BltU8Values _lineYPositions;
+	BltU8Values _lineLengths;
+	BltU8Values _solution;
 };
 
 } // End of namespace Funhouse

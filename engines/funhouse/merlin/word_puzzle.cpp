@@ -85,20 +85,19 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltWordPuzzleVariantInfo variantInfo;
 	loadBltResource(variantInfo, boltlib, variantInfoId);
+	_numChars = variantInfo.numChars;
+	_numLines = variantInfo.numLines;
 
+	loadBltResourceArray(_lineLengths, boltlib, lineLengthsId);
 	loadBltResourceArray(_lineYPositions, boltlib, lineYPositionsId);
+	loadBltResourceArray(_solution, boltlib, solutionId);
 
 	_scene.load(_game->getEngine(), boltlib, sceneId);
 }
 
 void WordPuzzle::enter() {
 	_scene.enter();
-
-	for (int i = 0; i < _lineYPositions.size(); ++i) {
-		static const int kFirstCustomButton = 26;
-		_scene.overrideButtonGraphics(kFirstCustomButton + i, Common::Point(_centerX, _lineYPositions[i].value),
-			_highlightedSprites.getImageFromSet(i), _normalSprites.getImageFromSet(i));
-	}
+	arrangeButtons();
 }
 
 BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
@@ -122,6 +121,27 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 	}
 
 	return BoltCmd::kDone;
+}
+
+void WordPuzzle::arrangeButtons() {
+	int curChar = 0;
+	for (int lineNumber = 0; lineNumber < _numLines; ++lineNumber) {
+		int lineLength = _lineLengths[lineNumber].value;
+		int x = _centerX; // TODO: center line around centerX
+		int y = _lineYPositions[lineNumber].value;
+		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
+			static const int kFirstCustomButton = 26;
+			int ch = _solution[curChar].value;
+			Common::Point position(x, y);
+			if (ch >= 0 && ch < 26) {
+				BltImage* highlightedSprite = _highlightedSprites.getImageFromSet(ch);
+				BltImage* normalSprite = _normalSprites.getImageFromSet(ch);
+				_scene.overrideButtonGraphics(kFirstCustomButton + curChar, position, highlightedSprite, normalSprite);
+				x += normalSprite->getWidth();
+			}
+			++curChar;
+		}
+	}
 }
 
 } // End of namespace Funhouse
