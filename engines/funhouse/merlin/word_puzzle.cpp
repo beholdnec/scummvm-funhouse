@@ -127,12 +127,26 @@ void WordPuzzle::arrangeButtons() {
 	int curChar = 0;
 	for (int lineNumber = 0; lineNumber < _numLines; ++lineNumber) {
 		int lineLength = _lineLengths[lineNumber].value;
-		int x = _centerX; // TODO: center line around centerX
+
+		int lineLengthInPixels = 0;
+		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
+			int ch = _solution[curChar + charNumber].value;
+			// TODO: handle spaces
+			if (ch >= 0 && ch < 26) {
+				BltImage* normalSprite = _normalSprites.getImageFromSet(ch);
+				lineLengthInPixels += normalSprite->getWidth();
+			}
+		}
+
+		int x = _centerX - lineLengthInPixels / 2;
 		int y = _lineYPositions[lineNumber].value;
+
+		// FIXME: kerning looks wrong
 		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
 			static const int kFirstCustomButton = 26;
 			int ch = _solution[curChar].value;
 			Common::Point position(x, y);
+			// TODO: handle spaces
 			if (ch >= 0 && ch < 26) {
 				BltImage* highlightedSprite = _highlightedSprites.getImageFromSet(ch);
 				BltImage* normalSprite = _normalSprites.getImageFromSet(ch);
