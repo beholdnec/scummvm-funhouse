@@ -54,11 +54,12 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, resId);
-    BltId difficultiesId          = resourceList[0].value; // Ex: 6100
-	BltId infoId                  = resourceList[1].value; // Ex: 6101
-	BltId normalSpriteListId      = resourceList[2].value; // Ex: 61B4
-	BltId highlightedSpriteListId = resourceList[3].value; // Ex: 61B5
-	BltId selectedSpriteListId    = resourceList[4].value; // Ex: 61B6
+    BltId difficultiesId          = resourceList[0].value;  // Ex: 6100
+	BltId infoId                  = resourceList[1].value;  // Ex: 6101
+	BltId normalSpriteListId      = resourceList[2].value;  // Ex: 61B4
+	BltId highlightedSpriteListId = resourceList[3].value;  // Ex: 61B5
+	BltId selectedSpriteListId    = resourceList[4].value;  // Ex: 61B6
+	BltId charWidthsId            = resourceList[10].value; // Ex: 61B3
 
 	BltWordPuzzleInfo puzzleInfo;
 	loadBltResource(puzzleInfo, boltlib, infoId);
@@ -67,6 +68,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_normalSprites.load(boltlib, normalSpriteListId);
 	_highlightedSprites.load(boltlib, highlightedSpriteListId);
 	_selectedSprites.load(boltlib, selectedSpriteListId);
+	loadBltResourceArray(_charWidths, boltlib, charWidthsId);
 
 	BltU16Values difficulties;
 	loadBltResourceArray(difficulties, boltlib, difficultiesId);
@@ -131,11 +133,7 @@ void WordPuzzle::arrangeButtons() {
 		int lineLengthInPixels = 0;
 		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
 			int ch = _solution[curChar + charNumber].value;
-			// TODO: handle spaces
-			if (ch >= 0 && ch < 26) {
-				BltImage* normalSprite = _normalSprites.getImageFromSet(ch);
-				lineLengthInPixels += normalSprite->getWidth();
-			}
+			lineLengthInPixels += _charWidths[ch].value;
 		}
 
 		int x = _centerX - lineLengthInPixels / 2;
@@ -151,8 +149,8 @@ void WordPuzzle::arrangeButtons() {
 				BltImage* highlightedSprite = _highlightedSprites.getImageFromSet(ch);
 				BltImage* normalSprite = _normalSprites.getImageFromSet(ch);
 				_scene.overrideButtonGraphics(kFirstCustomButton + curChar, position, highlightedSprite, normalSprite);
-				x += normalSprite->getWidth();
 			}
+			x += _charWidths[ch].value;
 			++curChar;
 		}
 	}

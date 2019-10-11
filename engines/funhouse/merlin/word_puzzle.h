@@ -48,6 +48,7 @@ private:
 	BltSprites _normalSprites;
 	BltSprites _highlightedSprites;
 	BltSprites _selectedSprites;
+	BltU8Values _charWidths;
 
 	int16 _centerX;
 	int _numChars;
