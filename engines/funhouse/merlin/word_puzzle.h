@@ -39,6 +39,8 @@ protected:
 	BoltCmd handleButtonClick(int num);
 
 private:
+	static const int kNumLetters = 26;
+
 	void arrangeButtons();
 
     MerlinGame *_game;
@@ -56,6 +58,9 @@ private:
 	BltU8Values _lineYPositions;
 	BltU8Values _lineLengths;
 	BltU8Values _solution;
+
+	int _selectedChar; // -1 if no character selected
+	int _letterAssignments[kNumLetters];
 };
 
 } // End of namespace Funhouse

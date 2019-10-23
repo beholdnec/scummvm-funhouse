@@ -256,6 +256,20 @@ void Scene::setButtonGraphicsSet(int buttonNum, int graphicsSet) {
 	_graphics->markDirty();
 }
 
+int Scene::getButtonData(int buttonNum) {
+	assert(buttonNum >= 0 && buttonNum < _buttons.size());
+
+	Button& button = _buttons[buttonNum];
+	return button.data;
+}
+
+void Scene::setButtonData(int buttonNum, int data) {
+	assert(buttonNum >= 0 && buttonNum < _buttons.size());
+
+	Button& button = _buttons[buttonNum];
+	button.data = data;
+}
+
 void Scene::overrideButtonGraphics(int buttonNumber, Common::Point position, BltImage* hoveredImage, BltImage* idleImage) {
 	assert(buttonNumber >= 0 && buttonNumber < _buttons.size());
 

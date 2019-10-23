@@ -49,6 +49,11 @@ struct BltWordPuzzleVariantInfo {
 
 void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
+	_selectedChar = -1;
+	for (int i = 0; i < kNumLetters; ++i) {
+		// FIXME: Correctly assign letters
+		_letterAssignments[i] = 26 + i;
+	}
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
@@ -115,42 +120,71 @@ BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
 	return _scene.handleMsg(msg);
 }
 
+static const int kFirstCustomButton = 26;
+
 BoltCmd WordPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
-	// TODO: implement puzzle
-	if (num != -1) {
-		return Card::kWin;
+
+	if (num >= 0 && num < kNumLetters) {
+		_selectedChar = num;
+		arrangeButtons();
+	} else if (num >= kFirstCustomButton) {
+		if (_selectedChar == -1) {
+			// TODO: handle clicking unassigned buttons
+			// TODO: prevent assigning a letter to more than one slot
+			int ch = _scene.getButtonData(num);
+			if (ch >= 0 && ch < kNumLetters) {
+				_selectedChar = _scene.getButtonData(num);
+			}
+		} else {
+			int ch = _scene.getButtonData(num);
+			_letterAssignments[ch] = _selectedChar;
+			_selectedChar = -1;
+		}
+		arrangeButtons();
+
+		// TODO: check win condition
 	}
 
 	return BoltCmd::kDone;
 }
 
 void WordPuzzle::arrangeButtons() {
+	// Redraw entire scene (FIXME: avoid doing this)
+	_scene.enter();
+
 	int curChar = 0;
-	for (int lineNumber = 0; lineNumber < _numLines; ++lineNumber) {
-		int lineLength = _lineLengths[lineNumber].value;
+	for (int lineNum = 0; lineNum < _numLines; ++lineNum) {
+		int lineLength = _lineLengths[lineNum].value;
 
 		int lineLengthInPixels = 0;
 		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
 			int ch = _solution[curChar + charNumber].value;
-			lineLengthInPixels += _charWidths[ch].value;
+			if (ch >= 0 && ch < kNumLetters) {
+				int assignedLetter = _letterAssignments[ch];
+				lineLengthInPixels += _charWidths[assignedLetter].value;
+			} else {
+				lineLengthInPixels += _charWidths[ch].value;
+			}
 		}
 
 		int x = _centerX - lineLengthInPixels / 2;
-		int y = _lineYPositions[lineNumber].value;
+		int y = _lineYPositions[lineNum].value;
 
-		// FIXME: kerning looks wrong
-		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
-			static const int kFirstCustomButton = 26;
+		for (int charNum = 0; charNum < lineLength; ++charNum) {
 			int ch = _solution[curChar].value;
-			Common::Point position(x, y);
-			// TODO: handle spaces
-			if (ch >= 0 && ch < 26) {
-				BltImage* highlightedSprite = _highlightedSprites.getImageFromSet(ch);
-				BltImage* normalSprite = _normalSprites.getImageFromSet(ch);
-				_scene.overrideButtonGraphics(kFirstCustomButton + curChar, position, highlightedSprite, normalSprite);
+			if (ch >= 0 && ch < kNumLetters) {
+				int assignedLetter = _letterAssignments[ch];
+				BltImage* selectedSprite = _selectedSprites.getImageFromSet(assignedLetter);
+				BltImage* highlightedSprite = (_selectedChar == assignedLetter) ? selectedSprite : _highlightedSprites.getImageFromSet(assignedLetter);
+				BltImage* normalSprite = (_selectedChar == assignedLetter) ? selectedSprite : _normalSprites.getImageFromSet(assignedLetter);
+				_scene.overrideButtonGraphics(kFirstCustomButton + curChar, Common::Point(x, y), highlightedSprite, normalSprite);
+				_scene.setButtonData(kFirstCustomButton + curChar, ch);
+				x += _charWidths[assignedLetter].value;
+			} else {
+				x += _charWidths[ch].value;
 			}
-			x += _charWidths[ch].value;
+
 			++curChar;
 		}
 	}

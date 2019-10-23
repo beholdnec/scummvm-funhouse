@@ -48,6 +48,8 @@ public:
 	void setButtonGraphicsSet(int buttonNum, int graphicsSet);
 	const Common::Point& getOrigin() const { return _origin; }
     BltSprites& getSprites() { return _sprites; }
+	int getButtonData(int buttonNum);
+	void setButtonData(int buttonNum, int data);
 	void overrideButtonGraphics(int buttonNumber, Common::Point position, BltImage* hoveredImage, BltImage* idleImage);
 
 private:
@@ -83,7 +85,7 @@ private:
 	typedef ScopedArray<ButtonGraphics> ButtonGraphicsArray;
 
 	struct Button {
-		Button() : graphicsSet(0), overrideGraphics(false), overrideHoveredImage(nullptr), overrideIdleImage(nullptr) { }
+		Button() : graphicsSet(0), overrideGraphics(false), overrideHoveredImage(nullptr), overrideIdleImage(nullptr), data(0) { }
 
 		HotspotType hotspotType;
 		uint16 plane;
@@ -99,6 +101,7 @@ private:
 		Common::Point overridePosition;
 		BltImage* overrideHoveredImage;
 		BltImage* overrideIdleImage;
+		int data;
 	};
 
 	typedef ScopedArray<Button> ButtonArray;
