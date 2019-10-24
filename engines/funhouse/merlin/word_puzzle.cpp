@@ -49,10 +49,10 @@ struct BltWordPuzzleVariantInfo {
 
 void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
-	_selectedChar = -1;
+	_selectedGlyph = -1;
 	for (int i = 0; i < kNumLetters; ++i) {
-		// FIXME: Correctly assign letters
-		_letterAssignments[i] = 26 + i;
+		_runeToLetterList[i] = -1;
+		_letterToRuneList[i] = -1;
 	}
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
@@ -120,31 +120,88 @@ BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
 	return _scene.handleMsg(msg);
 }
 
-static const int kFirstCustomButton = 26;
+int WordPuzzle::glyphToRune(int glyph) const {
+	if (glyph >= kNumLetters && glyph < kNumLetters + kNumLetters) {
+		return glyph - kNumLetters;
+	}
+
+	return -1;
+}
+
+int WordPuzzle::glyphToLetter(int glyph) const {
+	if (glyph >= 0 && glyph < kNumLetters) {
+		return glyph;
+	}
+
+	return -1;
+}
+
+int WordPuzzle::runeToGlyph(int rune) const {
+	assert(rune >= 0 && rune < kNumLetters);
+	return kNumLetters + rune;
+}
+
+int WordPuzzle::letterToGlyph(int letter) const {
+	assert(letter >= 0 && letter < kNumLetters);
+	return letter;
+}
 
 BoltCmd WordPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 
-	if (num >= 0 && num < kNumLetters) {
-		_selectedChar = num;
-		arrangeButtons();
-	} else if (num >= kFirstCustomButton) {
-		if (_selectedChar == -1) {
-			// TODO: handle clicking unassigned buttons
-			// TODO: prevent assigning a letter to more than one slot
-			int ch = _scene.getButtonData(num);
-			if (ch >= 0 && ch < kNumLetters) {
-				_selectedChar = _scene.getButtonData(num);
-			}
-		} else {
-			int ch = _scene.getButtonData(num);
-			_letterAssignments[ch] = _selectedChar;
-			_selectedChar = -1;
-		}
-		arrangeButtons();
-
-		// TODO: check win condition
+	if (num == -1) {
+		return BoltCmd::kDone;
 	}
+
+	int selectedLetter = glyphToLetter(_selectedGlyph);
+	int selectedRune = glyphToRune(_selectedGlyph);
+
+	int clickedLetter = -1;
+	if (num >= 0 && num < kNumLetters) {
+		clickedLetter = num;
+	}
+
+	int clickedRune = -1;
+	if (num >= kNumLetters) {
+		clickedRune = _scene.getButtonData(num);
+	}
+
+	// TODO: implement unselecting
+	// TODO: prevent assigning a letter to more than one rune
+	// TODO: assigned letters should disappear from the box
+	if (_selectedGlyph == -1) {
+		if (num >= 0 && num < kNumLetters) {
+			// Select letter
+			_selectedGlyph = letterToGlyph(num);
+		} else {
+			// Select rune
+			_selectedGlyph = runeToGlyph(_scene.getButtonData(num));
+		}
+	} else if (selectedLetter != -1) {
+		if (clickedRune != -1) {
+			// Assign selected letter to rune
+			_letterToRuneList[selectedLetter] = clickedRune;
+			_runeToLetterList[clickedRune] = selectedLetter;
+			_selectedGlyph = -1;
+		} else if (clickedLetter != -1) {
+			// Select another letter
+			_selectedGlyph = letterToGlyph(clickedLetter);
+		}
+	} else if (selectedRune != -1) {
+		if (clickedLetter != -1) {
+			// Assign selected rune to letter
+			_letterToRuneList[clickedLetter] = selectedRune;
+			_runeToLetterList[selectedRune] = clickedLetter;
+			_selectedGlyph = -1;
+		} else if (clickedRune != -1) {
+			// Select another rune
+			_selectedGlyph = runeToGlyph(clickedRune);
+		}
+	}
+
+	arrangeButtons();
+
+	// TODO: check win condition
 
 	return BoltCmd::kDone;
 }
@@ -161,8 +218,11 @@ void WordPuzzle::arrangeButtons() {
 		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
 			int ch = _solution[curChar + charNumber].value;
 			if (ch >= 0 && ch < kNumLetters) {
-				int assignedLetter = _letterAssignments[ch];
-				lineLengthInPixels += _charWidths[assignedLetter].value;
+				int glyph = _runeToLetterList[ch];
+				if (glyph == -1) {
+					glyph = kNumLetters + ch;
+				}
+				lineLengthInPixels += _charWidths[glyph].value;
 			} else {
 				lineLengthInPixels += _charWidths[ch].value;
 			}
@@ -174,13 +234,16 @@ void WordPuzzle::arrangeButtons() {
 		for (int charNum = 0; charNum < lineLength; ++charNum) {
 			int ch = _solution[curChar].value;
 			if (ch >= 0 && ch < kNumLetters) {
-				int assignedLetter = _letterAssignments[ch];
-				BltImage* selectedSprite = _selectedSprites.getImageFromSet(assignedLetter);
-				BltImage* highlightedSprite = (_selectedChar == assignedLetter) ? selectedSprite : _highlightedSprites.getImageFromSet(assignedLetter);
-				BltImage* normalSprite = (_selectedChar == assignedLetter) ? selectedSprite : _normalSprites.getImageFromSet(assignedLetter);
-				_scene.overrideButtonGraphics(kFirstCustomButton + curChar, Common::Point(x, y), highlightedSprite, normalSprite);
-				_scene.setButtonData(kFirstCustomButton + curChar, ch);
-				x += _charWidths[assignedLetter].value;
+				int glyph = _runeToLetterList[ch];
+				if (glyph == -1) {
+					glyph = kNumLetters + ch;
+				}
+				BltImage* selectedSprite = _selectedSprites.getImageFromSet(glyph);
+				BltImage* highlightedSprite = (_selectedGlyph == glyph) ? selectedSprite : _highlightedSprites.getImageFromSet(glyph);
+				BltImage* normalSprite = (_selectedGlyph == glyph) ? selectedSprite : _normalSprites.getImageFromSet(glyph);
+				_scene.overrideButtonGraphics(kNumLetters + curChar, Common::Point(x, y), highlightedSprite, normalSprite);
+				_scene.setButtonData(kNumLetters + curChar, ch);
+				x += _charWidths[glyph].value;
 			} else {
 				x += _charWidths[ch].value;
 			}

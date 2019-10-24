@@ -41,6 +41,10 @@ protected:
 private:
 	static const int kNumLetters = 26;
 
+	int glyphToRune(int glyph) const;
+	int glyphToLetter(int glyph) const;
+	int runeToGlyph(int rune) const;
+	int letterToGlyph(int letter) const;
 	void arrangeButtons();
 
     MerlinGame *_game;
@@ -59,8 +63,9 @@ private:
 	BltU8Values _lineLengths;
 	BltU8Values _solution;
 
-	int _selectedChar; // -1 if no character selected
-	int _letterAssignments[kNumLetters];
+	int _selectedGlyph; // -1: No selection; 0-25: English; 26-51: Runes
+	int _runeToLetterList[kNumLetters];
+	int _letterToRuneList[kNumLetters];
 };
 
 } // End of namespace Funhouse
