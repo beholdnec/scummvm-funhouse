@@ -51,8 +51,8 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
 	_selectedGlyph = -1;
 	for (int i = 0; i < kNumLetters; ++i) {
-		_runeToLetterList[i] = -1;
-		_letterToRuneList[i] = -1;
+		_runeToLetterMap[i] = -1;
+		_letterToRuneMap[i] = -1;
 	}
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
@@ -146,6 +146,29 @@ int WordPuzzle::letterToGlyph(int letter) const {
 	return letter;
 }
 
+void WordPuzzle::mapRuneAndLetter(int rune, int letter) {
+	assert(rune == -1 || (rune >= 0 && rune < kNumLetters));
+	assert(letter == -1 || (letter >= 0 && letter < kNumLetters));
+
+	// Remove existing mappings
+	if (rune != -1 && _runeToLetterMap[rune] != -1) {
+		_letterToRuneMap[_runeToLetterMap[rune]] = -1;
+		_runeToLetterMap[rune] = -1;
+	}
+	if (letter != -1 && _letterToRuneMap[letter] != -1) {
+		_runeToLetterMap[_letterToRuneMap[letter]] = -1;
+		_letterToRuneMap[letter] = -1;
+	}
+
+	// Add new mapping
+	if (rune != -1) {
+		_runeToLetterMap[rune] = letter;
+	}
+	if (letter != -1) {
+		_letterToRuneMap[letter] = rune;
+	}
+}
+
 BoltCmd WordPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 
@@ -175,13 +198,14 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 			_selectedGlyph = letterToGlyph(num);
 		} else {
 			// Select rune
+			// Note that a rune will be selected even if the player clicks on a rune that has been
+			// assigned to a letter.
 			_selectedGlyph = runeToGlyph(_scene.getButtonData(num));
 		}
 	} else if (selectedLetter != -1) {
 		if (clickedRune != -1) {
 			// Assign selected letter to rune
-			_letterToRuneList[selectedLetter] = clickedRune;
-			_runeToLetterList[clickedRune] = selectedLetter;
+			mapRuneAndLetter(clickedRune, selectedLetter);
 			_selectedGlyph = -1;
 		} else if (clickedLetter != -1) {
 			// Select another letter
@@ -190,12 +214,20 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 	} else if (selectedRune != -1) {
 		if (clickedLetter != -1) {
 			// Assign selected rune to letter
-			_letterToRuneList[clickedLetter] = selectedRune;
-			_runeToLetterList[selectedRune] = clickedLetter;
+			mapRuneAndLetter(selectedRune, clickedLetter);
 			_selectedGlyph = -1;
 		} else if (clickedRune != -1) {
-			// Select another rune
-			_selectedGlyph = runeToGlyph(clickedRune);
+			if (selectedRune != clickedRune && (_runeToLetterMap[selectedRune] != -1 || _runeToLetterMap[clickedRune] != -1)) {
+				// Swap rune assignments (FIXME: is this correct behavior?)
+				int oldSelectedRuneLetter = _runeToLetterMap[selectedRune];
+				int oldClickedRuneLetter = _runeToLetterMap[clickedRune];
+				mapRuneAndLetter(selectedRune, oldClickedRuneLetter);
+				mapRuneAndLetter(clickedRune, oldSelectedRuneLetter);
+				_selectedGlyph = -1;
+			} else {
+				// Select another rune
+				_selectedGlyph = runeToGlyph(clickedRune);
+			}
 		}
 	}
 
@@ -218,9 +250,9 @@ void WordPuzzle::arrangeButtons() {
 		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
 			int ch = _solution[curChar + charNumber].value;
 			if (ch >= 0 && ch < kNumLetters) {
-				int glyph = _runeToLetterList[ch];
+				int glyph = _runeToLetterMap[ch];
 				if (glyph == -1) {
-					glyph = kNumLetters + ch;
+					glyph = runeToGlyph(ch);
 				}
 				lineLengthInPixels += _charWidths[glyph].value;
 			} else {
@@ -234,9 +266,9 @@ void WordPuzzle::arrangeButtons() {
 		for (int charNum = 0; charNum < lineLength; ++charNum) {
 			int ch = _solution[curChar].value;
 			if (ch >= 0 && ch < kNumLetters) {
-				int glyph = _runeToLetterList[ch];
+				int glyph = _runeToLetterMap[ch];
 				if (glyph == -1) {
-					glyph = kNumLetters + ch;
+					glyph = runeToGlyph(ch);
 				}
 				BltImage* selectedSprite = _selectedSprites.getImageFromSet(glyph);
 				BltImage* highlightedSprite = (_selectedGlyph == glyph) ? selectedSprite : _highlightedSprites.getImageFromSet(glyph);

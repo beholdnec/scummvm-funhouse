@@ -45,6 +45,7 @@ private:
 	int glyphToLetter(int glyph) const;
 	int runeToGlyph(int rune) const;
 	int letterToGlyph(int letter) const;
+	void mapRuneAndLetter(int rune, int letter);
 	void arrangeButtons();
 
     MerlinGame *_game;
@@ -64,8 +65,8 @@ private:
 	BltU8Values _solution;
 
 	int _selectedGlyph; // -1: No selection; 0-25: English; 26-51: Runes
-	int _runeToLetterList[kNumLetters];
-	int _letterToRuneList[kNumLetters];
+	int _runeToLetterMap[kNumLetters];
+	int _letterToRuneMap[kNumLetters];
 };
 
 } // End of namespace Funhouse
