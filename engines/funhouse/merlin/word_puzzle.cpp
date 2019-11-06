@@ -233,7 +233,9 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 
 	arrangeButtons();
 
-	// TODO: check win condition
+	if (isSolved()) {
+		return kWin;
+	}
 
 	return BoltCmd::kDone;
 }
@@ -283,6 +285,20 @@ void WordPuzzle::arrangeButtons() {
 			++curChar;
 		}
 	}
+}
+
+bool WordPuzzle::isSolved() {
+	for (int i = 0; i < _solution.size(); ++i) {
+		// The puzzle is solved when all runes in the solution are mapped to their corresponding letters
+		int ch = _solution[i].value;
+		if (ch >= 0 && ch < kNumLetters) {
+			if (_runeToLetterMap[ch] != ch) {
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 } // End of namespace Funhouse

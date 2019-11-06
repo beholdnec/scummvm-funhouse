@@ -47,6 +47,7 @@ private:
 	int letterToGlyph(int letter) const;
 	void mapRuneAndLetter(int rune, int letter);
 	void arrangeButtons();
+	bool isSolved();
 
     MerlinGame *_game;
     PopupMenu _popup;
