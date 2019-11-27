@@ -68,6 +68,7 @@ public:
 	void startMAMovie(uint32 name);
 	void startPotionMovie(int num);
     BltId getPopupResId(PopupType type);
+	bool isPuzzleSolved(int num) const;
 
 
 private:
@@ -85,6 +86,7 @@ private:
     static const PuzzleEntry kStage2Puzzles[9];
     static const HubEntry kStage3;
     static const PuzzleEntry kStage3Puzzles[12];
+	static const HubEntry* const kHubEntries[3];
 
     static const Callback kSequence[];
     static const int kSequenceSize;
@@ -106,7 +108,7 @@ private:
 
 	BoltCmd handleMsgInMovie(const BoltMsg &msg);
 	BoltCmd handleMsgInCard(const BoltMsg &msg);
-	void puzzle(const PuzzleEntry *entry);
+	void puzzle(int num, const PuzzleEntry *entry);
 
 	OSystem *_system;
 	FunhouseEngine *_engine;
@@ -131,6 +133,10 @@ private:
 	int _sequenceCursor;
 	const HubEntry *_currentHub;
 	const PuzzleEntry *_currentPuzzle;
+
+	int _currentHubNum;
+	int _currentPuzzleNum;
+	Common::Array<bool> _puzzlesSolved;
 
     BltId _popupResIds[kNumPopupTypes];
 

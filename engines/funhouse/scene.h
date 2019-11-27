@@ -48,6 +48,7 @@ public:
 	void setButtonGraphicsSet(int buttonNum, int graphicsSet);
 	const Common::Point& getOrigin() const { return _origin; }
     BltSprites& getSprites() { return _sprites; }
+	void setButtonEnable(int buttonNum, bool enable);
 	int getButtonData(int buttonNum);
 	void setButtonData(int buttonNum, int data);
 	void overrideButtonGraphics(int buttonNumber, Common::Point position, BltImage* hoveredImage, BltImage* idleImage);
@@ -85,7 +86,7 @@ private:
 	typedef ScopedArray<ButtonGraphics> ButtonGraphicsArray;
 
 	struct Button {
-		Button() : graphicsSet(0), overrideGraphics(false), overrideHoveredImage(nullptr), overrideIdleImage(nullptr), data(0) { }
+		Button() : graphicsSet(0), enable(true), overrideGraphics(false), overrideHoveredImage(nullptr), overrideIdleImage(nullptr), data(0) { }
 
 		HotspotType hotspotType;
 		uint16 plane;
@@ -96,6 +97,8 @@ private:
 
 		ButtonGraphicsArray graphics;
 		int graphicsSet;
+
+		bool enable;
 
 		bool overrideGraphics;
 		Common::Point overridePosition;
@@ -109,6 +112,7 @@ private:
     // Return the number of button at a given point, or return -1 if there is no button.
     int getButtonAtPoint(const Common::Point &pt);
     void drawButton(const Button &button, bool hovered);
+	void drawButtons(int hoveredButton);
 
 	FunhouseEngine *_engine;
 	Graphics *_graphics;

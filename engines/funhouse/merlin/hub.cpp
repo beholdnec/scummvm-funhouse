@@ -77,12 +77,21 @@ void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 }
 
 void HubCard::enter() {
+	// Disable buttons for solved puzzles
+	// FIXME: avoid looping through this stuff twice
+	for (int i = 0; i < _itemImages.size(); ++i) {
+		if (_game->isPuzzleSolved(i)) {
+			_scene.setButtonEnable(i, false);
+		}
+	}
+
 	_scene.enter();
 
 	// Draw item images to back plane
-	// FIXME: Only draw items that are unlocked.
-	for (uint i = 0; i < _itemImages.size(); ++i) {
-		_itemImages[i].drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true);
+	for (int i = 0; i < _itemImages.size(); ++i) {
+		if (_game->isPuzzleSolved(i)) {
+			_itemImages[i].drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true);
+		}
 	}
 
     _graphics->markDirty();

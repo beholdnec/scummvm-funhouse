@@ -81,6 +81,9 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
         _popupResIds[i] = BltShortId(popupIds[0].value);
     }
 
+	_currentHubNum = -1;
+	_currentPuzzleNum = -1;
+
 	// Load cursor
 	initCursor();
 
@@ -303,11 +306,15 @@ BoltCmd MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 		if (cmd.num < 0 || cmd.num >= _currentHub->numPuzzles) {
 			assert(false && "Tried to enter invalid puzzle number");
 		}
-		puzzle(&_currentHub->puzzles[cmd.num]);
+		puzzle(cmd.num, &_currentHub->puzzles[cmd.num]);
 		return BoltCmd::kDone;
 	}
 
 	return cmd;
+}
+
+bool MerlinGame::isPuzzleSolved(int num) const {
+	return _puzzlesSolved[num];
 }
 
 void MerlinGame::redraw() {
@@ -319,6 +326,7 @@ void MerlinGame::redraw() {
 
 void MerlinGame::win() {
     if (_currentPuzzle) {
+		_puzzlesSolved[_currentPuzzleNum] = true;
         _currentCard.reset();
 	    startMovie(_challdirPf, _currentPuzzle->winMovie);
 	    enterSequenceEntry(); // Return to hub
@@ -327,7 +335,8 @@ void MerlinGame::win() {
     }
 }
 
-void MerlinGame::puzzle(const PuzzleEntry *entry) {
+void MerlinGame::puzzle(int num, const PuzzleEntry *entry) {
+	_currentPuzzleNum = num;
 	_currentCard.reset();
 	_currentPuzzle = entry;
 	Card *card = _currentPuzzle->puzzle(this, _boltlib, BltShortId(_currentPuzzle->resId));
@@ -376,8 +385,23 @@ void MerlinGame::difficultyMenu(const void *param) {
 
 void MerlinGame::hub(const void *param) {
 	_currentCard.reset();
-	const HubEntry *entry = reinterpret_cast<const HubEntry*>(param);
+
+	int newHubNum = reinterpret_cast<int>(param);
+	const HubEntry *entry = kHubEntries[newHubNum];
+
+	if (newHubNum != _currentHubNum) {
+		// Initialize new hub
+
+		_currentHubNum = newHubNum;
+
+		_puzzlesSolved.resize(entry->numPuzzles);
+		for (int i = 0; i < entry->numPuzzles; ++i) {
+			_puzzlesSolved[i] = false;
+		}
+	}
+
 	_currentHub = entry;
+
 	HubCard *card = new HubCard;
 	card->init(this, _boltlib, BltShortId(entry->hubId));
 	setCurrentCard(card);
@@ -512,6 +536,8 @@ const PuzzleEntry MerlinGame::kStage3Puzzles[12] = {
 	{ makeMemoryPuzzle,  0x887B, MKTAG('S', 'T', 'L', 'C') }, // stalactites & stalagmites
 };
 
+const HubEntry* const MerlinGame::kHubEntries[] = { &MerlinGame::kStage1, &MerlinGame::kStage2, &MerlinGame::kStage3 };
+
 static const uint32 kPlotMovieBMPR = MKTAG('B', 'M', 'P', 'R');
 static const uint32 kPlotMovieINTR = MKTAG('I', 'N', 'T', 'R');
 static const uint32 kPlotMoviePLOG = MKTAG('P', 'L', 'O', 'G');
@@ -539,15 +565,15 @@ MerlinGame::kSequence[] = {
 
 	// Stage 1: Forest
 	{ &MerlinGame::plotMovie, &kPlotMoviePLOG },
-	{ &MerlinGame::hub, &MerlinGame::kStage1 },
+	{ &MerlinGame::hub, reinterpret_cast<void*>(0) },
 
 	// Stage 2: Laboratory
 	{ &MerlinGame::plotMovie, &kPlotMovieLABT },
-	{ &MerlinGame::hub, &MerlinGame::kStage2 },
+	{ &MerlinGame::hub, reinterpret_cast<void*>(1) },
 
 	// Stage 3: Cave
 	{ &MerlinGame::plotMovie, &kPlotMovieCAV1 },
-	{ &MerlinGame::hub, &MerlinGame::kStage3 },
+	{ &MerlinGame::hub, reinterpret_cast<void*>(2) },
 
 	// Finale movie is hidden until the game is fully implemented. 
 	//{ &MerlinGame::plotMovie, &kPlotMovieFNLE },

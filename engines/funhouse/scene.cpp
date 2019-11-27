@@ -191,6 +191,8 @@ void Scene::enter() {
 
     redrawSprites();
 
+	drawButtons(-1);
+
 	_graphics->markDirty();
 }
 
@@ -217,10 +219,7 @@ BoltCmd Scene::handleMsg(const BoltMsg &msg) {
 	switch (msg.type) {
 	case BoltMsg::kHover: {
 		int hoveredButton = getButtonAtPoint(msg.point);
-		for (uint i = 0; i < _buttons.size(); ++i) {
-			drawButton(_buttons[i], (int)i == hoveredButton);
-		}
-		_graphics->markDirty();
+		drawButtons(hoveredButton);
 		break;
 	}
 
@@ -254,6 +253,11 @@ void Scene::setButtonGraphicsSet(int buttonNum, int graphicsSet) {
 	// TODO: Undraw old graphics set?
 	drawButton(button, buttonNum == getButtonAtPoint(_engine->getEventManager()->getMousePos()));
 	_graphics->markDirty();
+}
+
+void Scene::setButtonEnable(int buttonNum, bool enable) {
+	Button& button = _buttons[buttonNum];
+	button.enable = enable;
 }
 
 int Scene::getButtonData(int buttonNum) {
@@ -296,20 +300,21 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 
 	for (int i = 0; i < (int)_buttons.size(); ++i) {
 		const Button &button = _buttons[i];
-		if (button.overrideGraphics) {
-			// For buttons with overridden graphics, the hotspot is the image.
-			if (button.overrideIdleImage->getRect(button.overridePosition).contains(_origin + pt)) {
-				return i;
-			}
-		} else if (button.hotspotType == kRect) {
-			if (button.hotspot.contains(_origin + pt)) {
-				return i;
-			}
-		}
-		else if (button.hotspotType == kHotspotQuery) {
-			byte color = button.plane ? backHotspotColor : foreHotspotColor;
-			if (color >= button.hotspot.left && color <= button.hotspot.right) {
-				return i;
+		if (button.enable) {
+			if (button.overrideGraphics) {
+				// For buttons with overridden graphics, the hotspot is the image.
+				if (button.overrideIdleImage->getRect(button.overridePosition).contains(_origin + pt)) {
+					return i;
+				}
+			} else if (button.hotspotType == kRect) {
+				if (button.hotspot.contains(_origin + pt)) {
+					return i;
+				}
+			} else if (button.hotspotType == kHotspotQuery) {
+				byte color = button.plane ? backHotspotColor : foreHotspotColor;
+				if (color >= button.hotspot.left && color <= button.hotspot.right) {
+					return i;
+				}
 			}
 		}
 	}
@@ -317,7 +322,12 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 	return -1;
 }
 
+
 void Scene::drawButton(const Button &button, bool hovered) {
+	if (!button.enable) {
+		return;
+	}
+
 	if (button.overrideGraphics) {
 		BltImage* image = hovered ? button.overrideHoveredImage : button.overrideIdleImage;
 		Common::Point position = button.overridePosition - _origin;
@@ -339,6 +349,13 @@ void Scene::drawButton(const Button &button, bool hovered) {
 			}
 		}
 	}
+}
+
+void Scene::drawButtons(int hoveredButton) {
+	for (int i = 0; i < _buttons.size(); ++i) {
+		drawButton(_buttons[i], (int)i == hoveredButton);
+	}
+	_graphics->markDirty();
 }
 
 } // End of namespace Funhouse
