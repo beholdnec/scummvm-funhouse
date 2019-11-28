@@ -153,7 +153,7 @@ void Scene::redraw() {
     for (int i = 0; i < _sprites.size(); ++i) {
 		const Sprite &sprite = _sprites[i];
 
-		Common::Point position = sprite.position - _origin;
+		Common::Point position = sprite.position + _spriteImages.getSprite(i).pos - _origin;
 		// FIXME: Are sprites drawn to back or fore plane? Is it selectable?
 		_spriteImages.getImageFromSet(sprite.imageNum)->drawAt(_graphics->getPlaneSurface(kFore), position.x, position.y, true);
     }
@@ -198,6 +198,10 @@ void Scene::loadColorCycles(Boltlib &boltlib, BltId id) {
 
 void Scene::loadSpriteImages(Boltlib &boltlib, BltId id) {
 	_spriteImages.load(boltlib, id);
+	for (int i = 0; i < _sprites.size(); ++i) {
+		_sprites[i].position = Common::Point(0, 0);
+		_sprites[i].imageNum = i;
+	}
 }
 
 Common::Point Scene::getOrigin() const {
