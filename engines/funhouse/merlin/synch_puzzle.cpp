@@ -107,7 +107,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
         }
     }
 
-	_scene.load(_game->getEngine(), boltlib, sceneId);
+	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 }
 
 void SynchPuzzle::enter() {

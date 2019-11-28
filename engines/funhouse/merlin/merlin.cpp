@@ -218,7 +218,7 @@ void MerlinGame::exitOrReturn() {
 class GenericMenuCard : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId id) {
-		_scene.load(game->getEngine(), boltlib, id);
+		loadScene(_scene, game->getEngine(), boltlib, id);
 	}
 
 	void enter() {

@@ -28,7 +28,7 @@ namespace Funhouse {
 void FileMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_game = game;
 
-	_scene.load(_game->getEngine(), boltlib, resId);
+	loadScene(_scene, _game->getEngine(), boltlib, resId);
 }
 
 void FileMenu::enter() {

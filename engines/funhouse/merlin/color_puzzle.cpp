@@ -39,7 +39,7 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	BltId difficultiesId = resourceList[0].value;
 	BltId sceneId        = resourceList[3].value;
 
-	_scene.load(_game->getEngine(), boltlib, sceneId);
+	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
 	BltU16Values difficultyIds;
 	loadBltResourceArray(difficultyIds, boltlib, difficultiesId);

@@ -73,7 +73,7 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
         _pieces[i] = initialState[i].value;
     }
 
-	_scene.load(_game->getEngine(), boltlib, sceneId);
+	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
     BltResourceList moveTablesRes;
     loadBltResourceArray(moveTablesRes, boltlib, moveTablesId);
@@ -108,10 +108,10 @@ BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 
 void SlidingPuzzle::setSprites() {
     for (int i = 0; i < _pieces.size(); ++i) {
-        _scene.getSprites().setSpriteImage(i, _scene.getSprites().getImageFromSet(_pieces[i]));
+		_scene.setSpriteImageNum(i, _pieces[i]);
     }
 
-    _scene.redrawSprites();
+    _scene.redraw();
     _graphics->markDirty();
 }
 

@@ -45,7 +45,7 @@ void MainMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltMainMenu mainMenu;
 	loadBltResource(mainMenu, boltlib, resId);
-	_scene.load(_game->getEngine(), boltlib, mainMenu.sceneId);
+	loadScene(_scene, _game->getEngine(), boltlib, mainMenu.sceneId);
 }
 
 void MainMenu::enter() {

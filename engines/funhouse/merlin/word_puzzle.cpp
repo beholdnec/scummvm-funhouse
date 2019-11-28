@@ -99,7 +99,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	loadBltResourceArray(_lineYPositions, boltlib, lineYPositionsId);
 	loadBltResourceArray(_solution, boltlib, solutionId);
 
-	_scene.load(_game->getEngine(), boltlib, sceneId);
+	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 }
 
 void WordPuzzle::enter() {
@@ -186,7 +186,7 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 
 	int clickedRune = -1;
 	if (num >= kNumLetters) {
-		clickedRune = _scene.getButtonData(num);
+		clickedRune = reinterpret_cast<int>(_scene.getButtonUserData(num));
 	}
 
 	// TODO: implement unselecting
@@ -200,7 +200,7 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 			// Select rune
 			// Note that a rune will be selected even if the player clicks on a rune that has been
 			// assigned to a letter.
-			_selectedGlyph = runeToGlyph(_scene.getButtonData(num));
+			_selectedGlyph = runeToGlyph(reinterpret_cast<int>(_scene.getButtonUserData(num)));
 		}
 	} else if (selectedLetter != -1) {
 		if (clickedRune != -1) {
@@ -276,7 +276,7 @@ void WordPuzzle::arrangeButtons() {
 				BltImage* highlightedSprite = (_selectedGlyph == glyph) ? selectedSprite : _highlightedSprites.getImageFromSet(glyph);
 				BltImage* normalSprite = (_selectedGlyph == glyph) ? selectedSprite : _normalSprites.getImageFromSet(glyph);
 				_scene.overrideButtonGraphics(kNumLetters + curChar, Common::Point(x, y), highlightedSprite, normalSprite);
-				_scene.setButtonData(kNumLetters + curChar, ch);
+				_scene.setButtonUserData(kNumLetters + curChar, reinterpret_cast<void*>(ch));
 				x += _charWidths[glyph].value;
 			} else {
 				x += _charWidths[ch].value;
