@@ -104,8 +104,10 @@ BoltCmd PopupMenu::handleMsg(const BoltMsg &msg) {
         int num = getButtonAt(msg.point);
         if (num != -1) {
             for (int i = 0; i < _buttons.size(); ++i) {
-                const Sprite &sp = (i == num) ? _buttons[i].hovered.getSprite(0) : _buttons[i].unhovered.getSprite(0);
-                sp.image->drawAt(_graphics->getPlaneSurface(kBack), sp.pos.x, sp.pos.y, true);
+				const BltSprites &sprites = (i == num) ? _buttons[i].hovered : _buttons[i].unhovered;
+				const Common::Point &spritePos = sprites.getSpritePosition(0);
+				const BltImage *spriteImage = sprites.getSpriteImage(0);
+                spriteImage->drawAt(_graphics->getPlaneSurface(kBack), spritePos.x, spritePos.y, true);
             }
 
             if (msg.type == BoltMsg::kClick) {

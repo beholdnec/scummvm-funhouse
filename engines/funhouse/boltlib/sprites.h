@@ -27,25 +27,24 @@
 
 namespace Funhouse {
 
-struct Sprite {
-    Common::Point pos;
-    BltImage *image;
-};
-
 class BltSprites {
 public:
     void load(Boltlib &boltlib, BltId id);
-    const Sprite& getSprite(uint i) const;
-    uint getNumSprites() const;
-    BltImage* getImageFromSet(uint i) { return &_imageSet[i]; }
-    void setSpriteImage(uint i, BltImage *image);
+
+    int getSpriteCount() const;
+	const Common::Point& getSpritePosition(int num) const;
+	const BltImage* getSpriteImage(int num) const;
+    void setSpriteImageNum(int num, int imageNum);
+	BltImage* getImageFromSet(int num);
 
 private:
-    typedef ScopedArray<Sprite> SpriteArray;
+	struct Sprite {
+		Common::Point pos;
+		int imageNum;
+	};
 
-    ScopedArray<BltImage> _imageSet;
-
-    SpriteArray _sprites;
+    ScopedArray<BltImage> _images;
+    ScopedArray<Sprite> _sprites;
 };
     
 } // End of namespace Funhouse

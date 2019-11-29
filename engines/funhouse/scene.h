@@ -55,7 +55,7 @@ public:
 	void loadBackPlane(Boltlib &boltlib, BltId planeId);
 	void loadForePlane(Boltlib &boltlib, BltId planeId);
 	void loadColorCycles(Boltlib &boltlib, BltId id);
-	void loadSpriteImages(Boltlib &boltlib, BltId id);
+	void loadSprites(Boltlib &boltlib, BltId id);
 
 	Common::Point getOrigin() const;
 	void setOrigin(const Common::Point &origin);
@@ -120,15 +120,6 @@ private:
 	};
 
 	typedef ScopedArray<Button> ButtonArray;
-
-	struct Sprite {
-		Sprite();
-
-		Common::Point position;
-		int imageNum;
-	};
-
-	typedef ScopedArray<Sprite> SpriteArray;
 	
 	void loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId);
     // Return the button at a given point, or -1 if there is no button.
@@ -143,10 +134,9 @@ private:
     Plane _forePlane;
     Plane _backPlane;
     Common::ScopedPtr<BltColorCycles> _colorCycles;
-	BltSprites _spriteImages;
 
 	ButtonArray _buttons;
-	SpriteArray _sprites;
+	BltSprites _sprites;
 };
 
 void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sceneId);

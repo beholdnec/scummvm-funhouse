@@ -43,25 +43,34 @@ void BltSprites::load(Boltlib &boltlib, BltId id) {
     BltSpriteList spriteList;
     loadBltResourceArray(spriteList, boltlib, id);
 
+	_images.alloc(spriteList.size());
     _sprites.alloc(spriteList.size());
-    _imageSet.alloc(spriteList.size());
     for (uint i = 0; i < _sprites.size(); ++i) {
+		_images[i].load(boltlib, spriteList[i].imageId);
         _sprites[i].pos = spriteList[i].pos;
-        _imageSet[i].load(boltlib, spriteList[i].imageId);
-        _sprites[i].image = &_imageSet[i];
+        _sprites[i].imageNum = i;
     }
 }
 
-const Sprite& BltSprites::getSprite(uint i) const {
-    return _sprites[i];
-}
-
-uint BltSprites::getNumSprites() const {
+int BltSprites::getSpriteCount() const {
     return _sprites.size();
 }
 
-void BltSprites::setSpriteImage(uint i, BltImage *image) {
-    _sprites[i].image = image;
+const Common::Point& BltSprites::getSpritePosition(int num) const {
+	return _sprites[num].pos;
+}
+
+const BltImage* BltSprites::getSpriteImage(int num) const {
+	return &_images[_sprites[num].imageNum];
+}
+
+void BltSprites::setSpriteImageNum(int i, int imageNum) {
+	assert(imageNum >= 0 && imageNum < _images.size());
+    _sprites[i].imageNum = imageNum;
+}
+
+BltImage* BltSprites::getImageFromSet(int num) {
+	return &_images[num];
 }
 
 } // End of namespace Funhouse

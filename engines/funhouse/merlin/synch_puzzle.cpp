@@ -125,9 +125,10 @@ void SynchPuzzle::enter() {
 
     for (uint i = 0; i < _items.size(); ++i) {
         const Item &item = _items[i];
-        const Sprite &sprite = item.sprites.getSprite(item.state);
+		const Common::Point &spritePos = item.sprites.getSpritePosition(item.state);
+		const BltImage *spriteImage = item.sprites.getSpriteImage(item.state);
         const Common::Point &origin = _scene.getOrigin();
-        sprite.image->drawAt(_graphics->getPlaneSurface(kFore), sprite.pos.x - origin.x, sprite.pos.y - origin.y, true);
+        spriteImage->drawAt(_graphics->getPlaneSurface(kFore), spritePos.x - origin.x, spritePos.y - origin.y, true);
     }
 }
 
@@ -201,7 +202,7 @@ BoltCmd SynchPuzzle::driveTransition() {
                 --_moveAgenda[i].count;
 
                 ++item.state;
-                if (item.state >= item.sprites.getNumSprites()) {
+                if (item.state >= item.sprites.getSpriteCount()) {
                     item.state = 0;
                 }
             } else {
@@ -209,7 +210,7 @@ BoltCmd SynchPuzzle::driveTransition() {
 
                 --item.state;
                 if (item.state < 0) {
-                    item.state = item.sprites.getNumSprites() - 1;
+                    item.state = item.sprites.getSpriteCount() - 1;
                 }
             }
 
@@ -234,9 +235,10 @@ int SynchPuzzle::getItemAtPosition(const Common::Point &pt) {
 
     for (int i = 0; i < _items.size(); ++i) {
         const Item &item = _items[i];
-        const Sprite &sprite = item.sprites.getSprite(item.state);
+		const Common::Point spritePos = item.sprites.getSpritePosition(item.state);
+		const BltImage* spriteImage = item.sprites.getSpriteImage(item.state);
         const Common::Point &origin = _scene.getOrigin();
-        if (sprite.image->query(pt.x - (sprite.pos.x - origin.x), pt.y - (sprite.pos.y - origin.y)) != 0) {
+        if (spriteImage->query(pt.x - (spritePos.x - origin.x), pt.y - (spritePos.y - origin.y)) != 0) {
             result = i;
             // Don't break early. All items must be queried, since later items
             // may overlap earlier items.

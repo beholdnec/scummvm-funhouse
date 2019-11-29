@@ -127,7 +127,6 @@ void Scene::init(FunhouseEngine *engine, int numButtons, int numSprites)
 	_graphics = _engine->getGraphics();
 
 	_buttons.alloc(numButtons);
-	_sprites.alloc(numSprites);
 }
 
 void Scene::enter() {
@@ -150,12 +149,10 @@ void Scene::redraw() {
 		_graphics->clearPlane(kFore);
 	}
 
-    for (int i = 0; i < _sprites.size(); ++i) {
-		const Sprite &sprite = _sprites[i];
-
-		Common::Point position = sprite.position + _spriteImages.getSprite(i).pos - _origin;
+    for (int i = 0; i < _sprites.getSpriteCount(); ++i) {
+		Common::Point position = _sprites.getSpritePosition(i) - _origin;
 		// FIXME: Are sprites drawn to back or fore plane? Is it selectable?
-		_spriteImages.getImageFromSet(sprite.imageNum)->drawAt(_graphics->getPlaneSurface(kFore), position.x, position.y, true);
+		_sprites.getSpriteImage(i)->drawAt(_graphics->getPlaneSurface(kFore), position.x, position.y, true);
     }
 
     _graphics->markDirty();
@@ -196,12 +193,8 @@ void Scene::loadColorCycles(Boltlib &boltlib, BltId id) {
 	}
 }
 
-void Scene::loadSpriteImages(Boltlib &boltlib, BltId id) {
-	_spriteImages.load(boltlib, id);
-	for (int i = 0; i < _sprites.size(); ++i) {
-		_sprites[i].position = Common::Point(0, 0);
-		_sprites[i].imageNum = i;
-	}
+void Scene::loadSprites(Boltlib &boltlib, BltId id) {
+	_sprites.load(boltlib, id);
 }
 
 Common::Point Scene::getOrigin() const {
@@ -213,9 +206,7 @@ void Scene::setOrigin(const Common::Point &origin) {
 }
 
 void Scene::setSpriteImageNum(int num, int imageNum) {
-	Sprite &sprite = _sprites[num];
-	assert(imageNum >= 0 && imageNum < _spriteImages.getNumSprites());
-	sprite.imageNum = imageNum;
+	_sprites.setSpriteImageNum(num, imageNum);
 }
 
 void Scene::setButtonGraphics(int num, int graphicsNum) {
@@ -340,11 +331,11 @@ void Scene::drawButton(const Button &button, bool hovered) {
 		}
 		else if (graphicsSet.graphicsType == kSprites) {
 			const BltSprites &spriteList = hovered ? graphicsSet.hoveredSprites : graphicsSet.idleSprites;
-			if (spriteList.getNumSprites() > 0) {
-				const Funhouse::Sprite &sprite = spriteList.getSprite(0);
-				Common::Point pos = sprite.pos - _origin;
-				if (sprite.image) {
-					sprite.image->drawAt(_graphics->getPlaneSurface(button.plane), pos.x, pos.y, true);
+			if (spriteList.getSpriteCount() > 0) {
+				Common::Point pos = spriteList.getSpritePosition(0) - _origin;
+				const BltImage* spriteImage = spriteList.getSpriteImage(0);
+				if (spriteImage) {
+					spriteImage->drawAt(_graphics->getPlaneSurface(button.plane), pos.x, pos.y, true);
 				}
 			}
 		}
@@ -370,9 +361,6 @@ void Scene::loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId) {
 Scene::Button::Button() : enable(false), graphicsNum(0), overrideGraphics(false)
 { }
 
-Scene::Sprite::Sprite() : imageNum(0)
-{ }
-
 void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sceneId) {
 	BltScene sceneInfo;
 	loadBltResource(sceneInfo, boltlib, sceneId);
@@ -381,7 +369,7 @@ void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sce
 	scene.loadBackPlane(boltlib, sceneInfo.backPlaneId);
 	scene.loadForePlane(boltlib, sceneInfo.forePlaneId);
 	scene.loadColorCycles(boltlib, sceneInfo.colorCyclesId);
-	scene.loadSpriteImages(boltlib, sceneInfo.spritesId);
+	scene.loadSprites(boltlib, sceneInfo.spritesId);
 
 	BltButtonList buttons;
 	loadBltResourceArray(buttons, boltlib, sceneInfo.buttonsId);
