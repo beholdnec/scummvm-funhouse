@@ -209,74 +209,62 @@ void Scene::setSpriteImageNum(int num, int imageNum) {
 	_sprites.setSpriteImageNum(num, imageNum);
 }
 
-void Scene::setButtonGraphics(int num, int graphicsNum) {
-	Button& button = _buttons[num];
-	assert(graphicsNum >= 0 && graphicsNum < button.graphicsSet.size());
-	button.graphicsNum = graphicsNum;
+Scene::Button::Button() : _enable(false), _userData(nullptr), _graphicsNum(0), _overrideGraphics(false)
+{ }
 
-	// TODO: Undraw old graphics set?
-	drawButton(button, num == getButtonAtPoint(_engine->getEventManager()->getMousePos()));
-	_graphics->markDirty();
+void Scene::Button::setEnable(bool enable) {
+	_enable = enable;
 }
 
-void Scene::setButtonEnable(int num, bool enable) {
-	Button &button = _buttons[num];
-	button.enable = enable;
-	// TODO: redraw?
+void* Scene::Button::getUserData() const {
+	return _userData;
 }
 
-void* Scene::getButtonUserData(int num) const {
-	const Button &button = _buttons[num];
-	return button.userData;
+void Scene::Button::setUserData(void *userData) {
+	_userData = userData;
 }
 
-void Scene::setButtonUserData(int num, void *userData) {
-	Button &button = _buttons[num];
-	button.userData = userData;
+void Scene::Button::setGraphics(int num) {
+	assert(num >= 0 && num < _graphicsSet.size());
+	_graphicsNum = num;
 }
 
-void Scene::setButtonPlane(int num, uint16 plane) {
-	Button &button = _buttons[num];
-	button.plane = plane;
+void Scene::Button::setHotspot(HotspotType type, Rect hotspot) {
+	_hotspotType = type;
+	_hotspot = hotspot;
 }
 
-void Scene::setButtonHotspot(int num, HotspotType type, Rect hotspot) {
-	Button &button = _buttons[num];
-	button.hotspotType = type;
-	button.hotspot = hotspot;
+void Scene::Button::setPlane(uint16 plane) {
+	_plane = plane;
 }
 
-void Scene::loadButtonGraphicsSet(int num, Boltlib &boltlib, BltId id) {
-	Button &button = _buttons[num];
-
+void Scene::Button::loadGraphicsSet(Boltlib &boltlib, BltId id) {
 	BltButtonGraphicsList buttonGraphics;
 	loadBltResourceArray(buttonGraphics, boltlib, id);
 
-	button.graphicsSet.alloc(buttonGraphics.size());
+	_graphicsSet.alloc(buttonGraphics.size());
 	for (uint j = 0; j < buttonGraphics.size(); ++j) {
-		button.graphicsSet[j].graphicsType = static_cast<GraphicsType>(buttonGraphics[j].type);
+		_graphicsSet[j].graphicsType = static_cast<GraphicsType>(buttonGraphics[j].type);
 		if (buttonGraphics[j].type == kPaletteMods) {
-			loadBltResourceArray(button.graphicsSet[j].hoveredPaletteMods, boltlib, buttonGraphics[j].hoveredId);
-			loadBltResourceArray(button.graphicsSet[j].idlePaletteMods, boltlib, buttonGraphics[j].idleId);
+			loadBltResourceArray(_graphicsSet[j].hoveredPaletteMods, boltlib, buttonGraphics[j].hoveredId);
+			loadBltResourceArray(_graphicsSet[j].idlePaletteMods, boltlib, buttonGraphics[j].idleId);
 		}
 		else if (buttonGraphics[j].type == kSprites) {
-			button.graphicsSet[j].hoveredSprites.load(boltlib, buttonGraphics[j].hoveredId);
-			button.graphicsSet[j].idleSprites.load(boltlib, buttonGraphics[j].idleId);
+			_graphicsSet[j].hoveredSprites.load(boltlib, buttonGraphics[j].hoveredId);
+			_graphicsSet[j].idleSprites.load(boltlib, buttonGraphics[j].idleId);
 		}
 	}
 }
 
-void Scene::overrideButtonGraphics(int buttonNumber, Common::Point position, BltImage* hoveredImage, BltImage* idleImage) {
-	assert(buttonNumber >= 0 && buttonNumber < _buttons.size());
+void Scene::Button::overrideGraphics(Common::Point position, BltImage* hoveredImage, BltImage* idleImage) {
+	_overrideGraphics = true;
+	_overridePosition = position;
+	_overrideHoveredImage = hoveredImage;
+	_overrideIdleImage = idleImage;
+}
 
-	Button& button = _buttons[buttonNumber];
-	button.overrideGraphics = true;
-	button.overridePosition = position;
-	button.overrideHoveredImage = hoveredImage;
-	button.overrideIdleImage = idleImage;
-
-	drawButton(button, buttonNumber == getButtonAtPoint(_engine->getEventManager()->getMousePos()));
-	_graphics->markDirty();
+Scene::Button& Scene::getButton(int num) {
+	return _buttons[num];
 }
 
 int Scene::getButtonAtPoint(const Common::Point &pt) {
@@ -292,19 +280,19 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 
 	for (int i = 0; i < (int)_buttons.size(); ++i) {
 		const Button &button = _buttons[i];
-		if (button.enable) {
-			if (button.overrideGraphics) {
+		if (button._enable) {
+			if (button._overrideGraphics) {
 				// For buttons with overridden graphics, the hotspot is the image.
-				if (button.overrideIdleImage->getRect(button.overridePosition).contains(_origin + pt)) {
+				if (button._overrideIdleImage->getRect(button._overridePosition).contains(_origin + pt)) {
 					return i;
 				}
-			} else if (button.hotspotType == kRect) {
-				if (button.hotspot.contains(_origin + pt)) {
+			} else if (button._hotspotType == kRect) {
+				if (button._hotspot.contains(_origin + pt)) {
 					return i;
 				}
-			} else if (button.hotspotType == kHotspotQuery) {
-				byte color = button.plane ? backHotspotColor : foreHotspotColor;
-				if (color >= button.hotspot.left && color <= button.hotspot.right) {
+			} else if (button._hotspotType == kHotspotQuery) {
+				byte color = button._plane ? backHotspotColor : foreHotspotColor;
+				if (color >= button._hotspot.left && color <= button._hotspot.right) {
 					return i;
 				}
 			}
@@ -315,19 +303,19 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 }
 
 void Scene::drawButton(const Button &button, bool hovered) {
-	if (!button.enable) {
+	if (!button._enable) {
 		return;
 	}
 
-	if (button.overrideGraphics) {
-		BltImage* image = hovered ? button.overrideHoveredImage : button.overrideIdleImage;
-		Common::Point position = button.overridePosition - _origin;
-		image->drawAt(_graphics->getPlaneSurface(button.plane), position.x, position.y, true);
-	} else if (button.graphicsSet) {
-		const ButtonGraphics& graphicsSet = button.graphicsSet[button.graphicsNum];
+	if (button._overrideGraphics) {
+		BltImage* image = hovered ? button._overrideHoveredImage : button._overrideIdleImage;
+		Common::Point position = button._overridePosition - _origin;
+		image->drawAt(_graphics->getPlaneSurface(button._plane), position.x, position.y, true);
+	} else if (button._graphicsSet) {
+		const ButtonGraphics& graphicsSet = button._graphicsSet[button._graphicsNum];
 		if (graphicsSet.graphicsType == kPaletteMods) {
 			const BltPaletteMods &paletteMod = hovered ? graphicsSet.hoveredPaletteMods : graphicsSet.idlePaletteMods;
-			applyPaletteMod(_graphics, button.plane, paletteMod, 0);
+			applyPaletteMod(_graphics, button._plane, paletteMod, 0);
 		}
 		else if (graphicsSet.graphicsType == kSprites) {
 			const BltSprites &spriteList = hovered ? graphicsSet.hoveredSprites : graphicsSet.idleSprites;
@@ -335,7 +323,7 @@ void Scene::drawButton(const Button &button, bool hovered) {
 				Common::Point pos = spriteList.getSpritePosition(0) - _origin;
 				const BltImage* spriteImage = spriteList.getSpriteImage(0);
 				if (spriteImage) {
-					spriteImage->drawAt(_graphics->getPlaneSurface(button.plane), pos.x, pos.y, true);
+					spriteImage->drawAt(_graphics->getPlaneSurface(button._plane), pos.x, pos.y, true);
 				}
 			}
 		}
@@ -358,9 +346,6 @@ void Scene::loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId) {
 	plane.hotspots.load(boltlib, bltPlane.hotspotsId);
 }
 
-Scene::Button::Button() : enable(false), graphicsNum(0), overrideGraphics(false)
-{ }
-
 void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sceneId) {
 	BltScene sceneInfo;
 	loadBltResource(sceneInfo, boltlib, sceneId);
@@ -377,10 +362,11 @@ void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sce
 	scene.init(engine, sceneInfo.numButtons, sceneInfo.numSprites);
 
 	for (uint i = 0; i < buttons.size(); ++i) {
-		scene.setButtonEnable(i, true);
-		scene.setButtonHotspot(i, static_cast<Scene::HotspotType>(buttons[i].type), buttons[i].rect);
-		scene.setButtonPlane(i, buttons[i].plane);
-		scene.loadButtonGraphicsSet(i, boltlib, buttons[i].graphicsId);
+		Scene::Button &button = scene.getButton(i);
+		button.setEnable(true);
+		button.setHotspot(static_cast<Scene::HotspotType>(buttons[i].type), buttons[i].rect);
+		button.setPlane(buttons[i].plane);
+		button.loadGraphicsSet(boltlib, buttons[i].graphicsId);
 	}
 }
 

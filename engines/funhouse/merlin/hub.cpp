@@ -81,7 +81,7 @@ void HubCard::enter() {
 	// FIXME: avoid looping through this stuff twice
 	for (int i = 0; i < _itemImages.size(); ++i) {
 		if (_game->isPuzzleSolved(i)) {
-			_scene.setButtonEnable(i, false);
+			_scene.getButton(i).setEnable(false);
 		}
 	}
 

@@ -186,7 +186,7 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 
 	int clickedRune = -1;
 	if (num >= kNumLetters) {
-		clickedRune = reinterpret_cast<int>(_scene.getButtonUserData(num));
+		clickedRune = reinterpret_cast<int>(_scene.getButton(num).getUserData());
 	}
 
 	// TODO: implement unselecting
@@ -200,7 +200,7 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 			// Select rune
 			// Note that a rune will be selected even if the player clicks on a rune that has been
 			// assigned to a letter.
-			_selectedGlyph = runeToGlyph(reinterpret_cast<int>(_scene.getButtonUserData(num)));
+			_selectedGlyph = runeToGlyph(reinterpret_cast<int>(_scene.getButton(num).getUserData()));
 		}
 	} else if (selectedLetter != -1) {
 		if (clickedRune != -1) {
@@ -275,8 +275,9 @@ void WordPuzzle::arrangeButtons() {
 				BltImage* selectedSprite = _selectedSprites.getImageFromSet(glyph);
 				BltImage* highlightedSprite = (_selectedGlyph == glyph) ? selectedSprite : _highlightedSprites.getImageFromSet(glyph);
 				BltImage* normalSprite = (_selectedGlyph == glyph) ? selectedSprite : _normalSprites.getImageFromSet(glyph);
-				_scene.overrideButtonGraphics(kNumLetters + curChar, Common::Point(x, y), highlightedSprite, normalSprite);
-				_scene.setButtonUserData(kNumLetters + curChar, reinterpret_cast<void*>(ch));
+				Scene::Button &button = _scene.getButton(kNumLetters + curChar);
+				button.overrideGraphics(Common::Point(x, y), highlightedSprite, normalSprite);
+				button.setUserData(reinterpret_cast<void*>(ch));
 				x += _charWidths[glyph].value;
 			} else {
 				x += _charWidths[ch].value;

@@ -47,7 +47,7 @@ BoltCmd DifficultyMenu::handleButtonClick(int num) {
 	// Words
 	if (num >= 12 && num <= 14) {
 		for (int i = 12; i <= 14; ++i) {
-			_scene.setButtonGraphics(i, num == i ? 1 : 0);
+			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
 		}
 		return BoltCmd::kDone;
 	}
@@ -55,7 +55,7 @@ BoltCmd DifficultyMenu::handleButtonClick(int num) {
 	// Shapes
 	if (num >= 15 && num <= 17) {
 		for (int i = 15; i <= 17; ++i) {
-			_scene.setButtonGraphics(i, num == i ? 1 : 0);
+			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
 		}
 		return BoltCmd::kDone;
 	}
@@ -63,7 +63,7 @@ BoltCmd DifficultyMenu::handleButtonClick(int num) {
 	// Action
 	if (num >= 18 && num <= 20) {
 		for (int i = 18; i <= 20; ++i) {
-			_scene.setButtonGraphics(i, num == i ? 1 : 0);
+			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
 		}
 		return BoltCmd::kDone;
 	}
@@ -71,7 +71,7 @@ BoltCmd DifficultyMenu::handleButtonClick(int num) {
 	// Memory
 	if (num >= 21 && num <= 23) {
 		for (int i = 21; i <= 23; ++i) {
-			_scene.setButtonGraphics(i, num == i ? 1 : 0);
+			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
 		}
 		return BoltCmd::kDone;
 	}
@@ -79,7 +79,7 @@ BoltCmd DifficultyMenu::handleButtonClick(int num) {
 	// Logic
 	if (num >= 24 && num <= 26) {
 		for (int i = 24; i <= 26; ++i) {
-			_scene.setButtonGraphics(i, num == i ? 1 : 0);
+			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
 		}
 		return BoltCmd::kDone;
 	}
