@@ -155,6 +155,8 @@ void Scene::redraw() {
 		_sprites.getSpriteImage(i)->drawAt(_graphics->getPlaneSurface(kFore), position.x, position.y, true);
     }
 
+	drawButtons(getButtonAtPoint(_engine->getEventManager()->getMousePos()));
+
     _graphics->markDirty();
 }
 
