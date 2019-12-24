@@ -24,15 +24,28 @@
 #include "funhouse/merlin/merlin.h"
 
 namespace Funhouse {
-    
+
+struct BltFileMenu {
+	static const uint32 kType = kBltFileMenu;
+	static const uint kSize = 0xA6;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		sceneId = BltId(src.getUint32BEAt(0));
+	}
+	
+	BltId sceneId;
+};
+
 void FileMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_game = game;
 
-	loadScene(_scene, _game->getEngine(), boltlib, resId);
+	BltFileMenu fileMenu;
+	loadBltResource(fileMenu, boltlib, resId);
+
+	loadScene(_scene, _game->getEngine(), boltlib, fileMenu.sceneId);
 }
 
 void FileMenu::enter() {
-  _scene.enter();
+	_scene.enter();
 }
 
 BoltCmd FileMenu::handleMsg(const BoltMsg &msg) {
@@ -44,12 +57,24 @@ BoltCmd FileMenu::handleMsg(const BoltMsg &msg) {
 }
 
 BoltCmd FileMenu::handleButtonClick(int num) {
-	switch (num) {
-	case -1: // No button
-		return Card::kEnd;
-	default:
-		warning("unknown main menu button %d", num);
+	static const int kFirstFileButton = 4;
+	static const int kNumFiles = 12;
+	
+	if (num >= kFirstFileButton && num < kFirstFileButton + kNumFiles) {
+		int fileNum = num - kFirstFileButton;
+		for (int i = 0; i < kNumFiles; ++i) {
+			_scene.getButton(kFirstFileButton + i).setGraphics(i == fileNum ? 1 : 0);
+		}
+		_scene.redraw();
 		return BoltCmd::kDone;
+	} else {
+		switch (num) {
+		case -1: // No button
+			return Card::kEnd;
+		default:
+			warning("unknown main menu button %d", num);
+			return BoltCmd::kDone;
+		}
 	}
 }
 

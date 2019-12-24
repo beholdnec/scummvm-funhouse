@@ -374,7 +374,7 @@ void MerlinGame::mainMenu(const void *param) {
 }
 
 void MerlinGame::fileMenu(const void *param) {
-	static const uint16 kFileMenuId = 0x027A;
+	static const uint16 kFileMenuId = 0x02A0;
 	startFileMenu(BltShortId(kFileMenuId));
 }
 

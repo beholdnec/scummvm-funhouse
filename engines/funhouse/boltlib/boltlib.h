@@ -48,6 +48,7 @@ enum BltType {
 	kBltButtonList = 31,
 	kBltScene = 32,
 	kBltMainMenu = 33,
+	kBltFileMenu = 34,
     kBltPopup = 37,
     kBltPopupCatalog = 38,
 	kBltHub = 40,
