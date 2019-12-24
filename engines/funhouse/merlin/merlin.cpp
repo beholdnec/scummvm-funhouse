@@ -62,6 +62,12 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 	_graphics = _engine->getGraphics();
 	_mixer = mixer;
 	_eventLoop = _engine;
+	_fileNum = -1;
+	_wordsDifficulty = 0;
+	_shapesDifficulty = 0;
+	_actionDifficulty = 0;
+	_memoryDifficulty = 0;
+	_logicDifficulty = 0;
 
 	_boltlib.load("BOLTLIB.BLT");
 
@@ -134,6 +140,15 @@ void MerlinGame::startPotionMovie(int num) {
 	}
 
 	startMovie(_potionPf, kPotionMovies[num]);
+}
+
+int MerlinGame::getFile() const {
+	return _fileNum;
+}
+
+void MerlinGame::setFile(int num) {
+	assert(num >= 0 && num < kNumFiles);
+	_fileNum = num;
 }
 
 BltId MerlinGame::getPopupResId(PopupType type) {
@@ -315,6 +330,51 @@ BoltCmd MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 
 bool MerlinGame::isPuzzleSolved(int num) const {
 	return _puzzlesSolved[num];
+}
+
+int MerlinGame::getWordsDifficulty() const {
+	return _wordsDifficulty;
+}
+
+void MerlinGame::setWordsDifficulty(int difficulty) {
+	assert(difficulty >= 0 && difficulty < 3);
+	_wordsDifficulty = difficulty;
+}
+
+int MerlinGame::getShapesDifficulty() const {
+	return _shapesDifficulty;
+}
+
+void MerlinGame::setShapesDifficulty(int difficulty) {
+	assert(difficulty >= 0 && difficulty < 3);
+	_shapesDifficulty = difficulty;
+}
+
+int MerlinGame::getActionDifficulty() const {
+	return _actionDifficulty;
+}
+
+void MerlinGame::setActionDifficulty(int difficulty) {
+	assert(difficulty >= 0 && difficulty < 3);
+	_actionDifficulty = difficulty;
+}
+
+int MerlinGame::getMemoryDifficulty() const {
+	return _memoryDifficulty;
+}
+
+void MerlinGame::setMemoryDifficulty(int difficulty) {
+	assert(difficulty >= 0 && difficulty < 3);
+	_memoryDifficulty = difficulty;
+}
+
+int MerlinGame::getLogicDifficulty() const {
+	return _logicDifficulty;
+}
+
+void MerlinGame::setLogicDifficulty(int difficulty) {
+	assert(difficulty >= 0 && difficulty < 3);
+	_logicDifficulty = difficulty;
 }
 
 void MerlinGame::redraw() {

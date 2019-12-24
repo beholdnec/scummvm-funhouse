@@ -67,9 +67,23 @@ public:
 	bool isInMovie() const;
 	void startMAMovie(uint32 name);
 	void startPotionMovie(int num);
+	int getFile() const;
+	void setFile(int num);
     BltId getPopupResId(PopupType type);
 	bool isPuzzleSolved(int num) const;
 
+	int getWordsDifficulty() const;
+	void setWordsDifficulty(int difficulty);
+	int getShapesDifficulty() const;
+	void setShapesDifficulty(int difficulty);
+	int getActionDifficulty() const;
+	void setActionDifficulty(int difficulty);
+	int getMemoryDifficulty() const;
+	void setMemoryDifficulty(int difficulty);
+	int getLogicDifficulty() const;
+	void setLogicDifficulty(int difficulty);
+
+	static const int kNumFiles = 12;
 
 private:
     typedef void (MerlinGame::*CallbackFunc)(const void *param);
@@ -129,6 +143,17 @@ private:
 
 	void setCurrentCard(Card *card);
 	void enterCurrentCard(bool cursorActive);
+
+	// Number of current file. -1 if no file is selected.
+	int _fileNum;
+
+	// Difficulty levels:
+	// 0: beginner; 1: advanced; 2: expert
+	int _wordsDifficulty;
+	int _shapesDifficulty;
+	int _actionDifficulty;
+	int _memoryDifficulty;
+	int _logicDifficulty;
 
 	int _sequenceCursor;
 	const HubEntry *_currentHub;

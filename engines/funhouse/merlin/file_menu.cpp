@@ -46,6 +46,7 @@ void FileMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 void FileMenu::enter() {
 	_scene.enter();
+	setButtons();
 }
 
 BoltCmd FileMenu::handleMsg(const BoltMsg &msg) {
@@ -56,26 +57,43 @@ BoltCmd FileMenu::handleMsg(const BoltMsg &msg) {
 	return _scene.handleMsg(msg);
 }
 
+static const int kFirstFileButton = 4;
+static const int kNumFiles = 12;
+
 BoltCmd FileMenu::handleButtonClick(int num) {
-	static const int kFirstFileButton = 4;
-	static const int kNumFiles = 12;
 	
 	if (num >= kFirstFileButton && num < kFirstFileButton + kNumFiles) {
-		int fileNum = num - kFirstFileButton;
-		for (int i = 0; i < kNumFiles; ++i) {
-			_scene.getButton(kFirstFileButton + i).setGraphics(i == fileNum ? 1 : 0);
-		}
-		_scene.redraw();
+		_game->setFile(num - kFirstFileButton);
+		setButtons();
 		return BoltCmd::kDone;
 	} else {
 		switch (num) {
 		case -1: // No button
-			return Card::kEnd;
+			return BoltCmd::kDone;
+		case 1: // Play
+			if (_game->getFile() != -1) {
+				return Card::kEnd;
+			} else {
+				return BoltCmd::kDone;
+			}
 		default:
 			warning("unknown main menu button %d", num);
 			return BoltCmd::kDone;
 		}
 	}
+}
+
+void FileMenu::setButtons() {
+	for (int i = 0; i < kNumFiles; ++i) {
+		_scene.getButton(kFirstFileButton + i).setGraphics(i == _game->getFile() ? 1 : 0);
+	}
+
+	static const int kPlayButton = 1;
+	if (_game->getFile() != -1) {
+		_scene.getButton(kPlayButton).setGraphics(1);
+	}
+
+	_scene.redraw();
 }
 
 } // End of namespace Funhouse

@@ -37,6 +37,7 @@ public:
     BoltCmd handleMsg(const BoltMsg &msg);
 private:
     BoltCmd handleButtonClick(int num);
+	void setButtons();
 
     MerlinGame *_game;
     Scene _scene;

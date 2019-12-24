@@ -32,7 +32,8 @@ void DifficultyMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 }
 
 void DifficultyMenu::enter() {
-  _scene.enter();
+	_scene.enter();
+	setButtons();
 }
 
 BoltCmd DifficultyMenu::handleMsg(const BoltMsg &msg) {
@@ -43,54 +44,91 @@ BoltCmd DifficultyMenu::handleMsg(const BoltMsg &msg) {
 	return _scene.handleMsg(msg);
 }
 
+static const int kPlayButton = 3;
+static const int kFirstWordsDifficultyButton = 12;
+static const int kFirstShapesDifficultyButton = 15;
+static const int kFirstActionDifficultyButton = 18;
+static const int kFirstMemoryDifficultyButton = 21;
+static const int kFirstLogicDifficultyButton = 24;
+
 BoltCmd DifficultyMenu::handleButtonClick(int num) {
 	// Words
-	if (num >= 12 && num <= 14) {
-		for (int i = 12; i <= 14; ++i) {
-			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
-		}
+	if (num >= kFirstWordsDifficultyButton && num < kFirstWordsDifficultyButton + 3) {
+		_game->setWordsDifficulty(num - kFirstWordsDifficultyButton);
+		setButtons();
 		return BoltCmd::kDone;
 	}
 
 	// Shapes
-	if (num >= 15 && num <= 17) {
-		for (int i = 15; i <= 17; ++i) {
-			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
-		}
+	if (num >= kFirstShapesDifficultyButton && num < kFirstShapesDifficultyButton + 3) {
+		_game->setShapesDifficulty(num - kFirstShapesDifficultyButton);
+		setButtons();
 		return BoltCmd::kDone;
 	}
 
 	// Action
-	if (num >= 18 && num <= 20) {
-		for (int i = 18; i <= 20; ++i) {
-			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
-		}
+	if (num >= kFirstActionDifficultyButton && num < kFirstActionDifficultyButton + 3) {
+		_game->setActionDifficulty(num - kFirstActionDifficultyButton);
+		setButtons();
 		return BoltCmd::kDone;
 	}
 
 	// Memory
-	if (num >= 21 && num <= 23) {
-		for (int i = 21; i <= 23; ++i) {
-			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
-		}
+	if (num >= kFirstMemoryDifficultyButton && num < kFirstMemoryDifficultyButton + 3) {
+		_game->setMemoryDifficulty(num - kFirstMemoryDifficultyButton);
+		setButtons();
 		return BoltCmd::kDone;
 	}
 
 	// Logic
-	if (num >= 24 && num <= 26) {
-		for (int i = 24; i <= 26; ++i) {
-			_scene.getButton(i).setGraphics(num == i ? 1 : 0);
-		}
+	if (num >= kFirstLogicDifficultyButton && num < kFirstLogicDifficultyButton + 3) {
+		_game->setLogicDifficulty(num - kFirstLogicDifficultyButton);
+		setButtons();
 		return BoltCmd::kDone;
 	}
 
 	switch (num) {
 	case -1: // No button
+		return BoltCmd::kDone;
+	case kPlayButton: // Play
 		return Card::kEnd;
+	case 4: // Beginner
+		setAllDifficulties(0);
+		return BoltCmd::kDone;
+	case 5: // Advanced
+		setAllDifficulties(1);
+		return BoltCmd::kDone;
+	case 6: // Expert
+		setAllDifficulties(2);
+		return BoltCmd::kDone;
 	default:
 		warning("unknown main menu button %d", num);
 		return BoltCmd::kDone;
 	}
+}
+
+void DifficultyMenu::setAllDifficulties(int difficulty) {
+	_game->setWordsDifficulty(difficulty);
+	_game->setShapesDifficulty(difficulty);
+	_game->setActionDifficulty(difficulty);
+	_game->setMemoryDifficulty(difficulty);
+	_game->setLogicDifficulty(difficulty);
+	setButtons();
+}
+
+void DifficultyMenu::setButtons() {
+	for (int i = 0; i < 3; ++i) {
+		_scene.getButton(kFirstWordsDifficultyButton + i).setGraphics(i == _game->getWordsDifficulty() ? 1 : 0);
+		_scene.getButton(kFirstShapesDifficultyButton + i).setGraphics(i == _game->getShapesDifficulty() ? 1 : 0);
+		_scene.getButton(kFirstActionDifficultyButton + i).setGraphics(i == _game->getActionDifficulty() ? 1 : 0);
+		_scene.getButton(kFirstMemoryDifficultyButton + i).setGraphics(i == _game->getMemoryDifficulty() ? 1 : 0);
+		_scene.getButton(kFirstLogicDifficultyButton + i).setGraphics(i == _game->getLogicDifficulty() ? 1 : 0);
+	}
+
+	// TODO: Hide play button if difficulties haven't all been selected
+	_scene.getButton(3).setGraphics(1);
+
+	_scene.redraw();
 }
 
 } // End of namespace Funhouse
