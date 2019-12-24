@@ -82,9 +82,8 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltU16Values difficultiesList;
 	loadBltResourceArray(difficultiesList, boltlib, difficultiesId);
-	// TODO: select difficulty based on player option
 	BltResourceList difficulty;
-	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultiesList[0].value));
+	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultiesList[_game->getActionDifficulty()].value));
 	BltId forePaletteId = difficulty[1].value;
 	BltId backColorCyclesId = difficulty[2].value;
 	BltId foreColorCyclesId = difficulty[3].value;

@@ -99,7 +99,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     BltMemoryPuzzleInfos infos;
     loadBltResourceArray(infos, boltlib, infosId);
-    _maxMemorize = infos[0].maxMemorize; // TODO: select difficulty
+    _maxMemorize = infos[_game->getMemoryDifficulty()].maxMemorize;
     _curMemorize = 3;
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);

@@ -77,8 +77,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltU16Values difficulties;
 	loadBltResourceArray(difficulties, boltlib, difficultiesId);
-	// TODO: Pick difficulty 0-2 here
-    BltId difficultyId = BltShortId(difficulties[0].value); // Ex: 5E18
+    BltId difficultyId = BltShortId(difficulties[_game->getWordsDifficulty()].value); // Ex: 5E18
 
 	int puzzleVariant = 0; // TODO: Choose puzzle variant 0-3
 
@@ -241,9 +240,6 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 }
 
 void WordPuzzle::arrangeButtons() {
-	// Redraw entire scene (FIXME: avoid doing this)
-	_scene.enter();
-
 	int curChar = 0;
 	for (int lineNum = 0; lineNum < _numLines; ++lineNum) {
 		int lineLength = _lineLengths[lineNum].value;
@@ -286,6 +282,9 @@ void WordPuzzle::arrangeButtons() {
 			++curChar;
 		}
 	}
+
+	// Redraw entire scene (FIXME: avoid doing this)
+	_scene.redraw();
 }
 
 bool WordPuzzle::isSolved() {

@@ -46,9 +46,8 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     int puzzleNum = 0; // TODO: Choose a random puzzle 0..3.
 
-	// TODO: Load player's chosen difficulty
 	BltResourceList difficulty;
-	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultyIds[0].value));
+	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultyIds[_game->getLogicDifficulty()].value));
 	BltId numStatesId        = difficulty[0].value;
 	BltId statePaletteModsId = difficulty[1].value;
     BltId solutionId         = difficulty[3 + puzzleNum].value; // Ex: 8D1E

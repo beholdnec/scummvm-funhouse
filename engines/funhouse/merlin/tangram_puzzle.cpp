@@ -61,7 +61,7 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     BltU16Values difficulties;
     loadBltResourceArray(difficulties, boltlib, difficultiesId);
-    BltId difficultyId = BltShortId(difficulties[0].value); // TODO: Choose based on player settings
+    BltId difficultyId = BltShortId(difficulties[_game->getShapesDifficulty()].value);
     // Ex: 6E5A, 6F42, 708A
 
     BltResourceList difficultyResources;

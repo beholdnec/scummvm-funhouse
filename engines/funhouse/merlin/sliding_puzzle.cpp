@@ -57,9 +57,17 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	BltSlidingPuzzleInfo slidingPuzzleInfo;
 	loadBltResource(slidingPuzzleInfo, boltlib, puzzleInfoId);
 
-	// TODO: select proper difficulty based on player setting
+	BltId difficultyId;
+	uint16 numPieces = 0;
+	switch (_game->getLogicDifficulty()) { // FIXME: is this logic or shapes?
+	case 0: difficultyId = slidingPuzzleInfo.difficulty1; numPieces = slidingPuzzleInfo.numPieces1; break;
+	case 1: difficultyId = slidingPuzzleInfo.difficulty2; numPieces = slidingPuzzleInfo.numPieces2; break;
+	case 2: difficultyId = slidingPuzzleInfo.difficulty3; numPieces = slidingPuzzleInfo.numPieces3; break;
+	default: assert(false && "Invalid sliding puzzle difficulty"); break;
+	}
+
 	BltResourceList difficultyInfo;
-	loadBltResourceArray(difficultyInfo, boltlib, slidingPuzzleInfo.difficulty1); // Ex: 3A34, 3B34, 3C34
+	loadBltResourceArray(difficultyInfo, boltlib, difficultyId); // Ex: 3A34, 3B34, 3C34
     BltId sceneId        = difficultyInfo[1].value;
     BltId initialStateId = difficultyInfo[2].value;
     BltId moveTablesId   = difficultyInfo[6].value;
@@ -68,8 +76,8 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     BltU8Values initialState;
     loadBltResourceArray(initialState, boltlib, initialStateId);
 
-    _pieces.alloc(slidingPuzzleInfo.numPieces1);
-    for (int i = 0; i < slidingPuzzleInfo.numPieces1; ++i) {
+    _pieces.alloc(numPieces);
+    for (int i = 0; i < numPieces; ++i) {
         _pieces[i] = initialState[i].value;
     }
 
