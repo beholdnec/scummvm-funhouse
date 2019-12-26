@@ -23,6 +23,7 @@
 #ifndef FUNHOUSE_MERLIN_MEMORY_PUZZLE_H
 #define FUNHOUSE_MERLIN_MEMORY_PUZZLE_H
 
+#include "funhouse/boltlib/sound.h"
 #include "funhouse/merlin/merlin.h"
 #include "funhouse/merlin/popup_menu.h"
 #include "funhouse/scene.h"
@@ -64,6 +65,7 @@ private:
 		ItemFrameList frames;
 		BltPalette palette;
 		Common::ScopedPtr<BltColorCycles> colorCycles;
+		BltSound sound;
 	};
 
 	typedef ScopedArray<Item> ItemList;

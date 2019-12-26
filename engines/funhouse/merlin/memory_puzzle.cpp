@@ -125,6 +125,8 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 			_itemList[i].colorCycles.reset(new BltColorCycles);
 			loadBltResource(*_itemList[i].colorCycles, boltlib, itemList[i].colorCyclesId);
 		}
+
+		_itemList[i].sound.load(boltlib, itemList[i].soundId);
 	}
 
     _solution.alloc(_maxMemorize);
@@ -219,7 +221,7 @@ void MemoryPuzzle::startAnimation(int itemNum) {
 
     drawItemFrame(_itemToAnimate, _frameNum);
 
-    const Item &item = _itemList[_itemToAnimate];
+    Item &item = _itemList[_itemToAnimate];
     //applyPalette(_graphics, kFore, item.palette);
     // XXX: applyPalette doesn't work correctly. Manually apply palette.
     _graphics->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
@@ -229,6 +231,8 @@ void MemoryPuzzle::startAnimation(int itemNum) {
     } else {
         _graphics->resetColorCycles();
     }
+
+	item.sound.play(_game->getEngine()->_mixer);
 }
 
 BoltCmd MemoryPuzzle::driveAnimation() {

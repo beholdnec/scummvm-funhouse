@@ -35,6 +35,7 @@ enum BltType {
 	kBltS16Values = 2, // signed 16-bit values
 	kBltU16Values = 3, // unsigned 16-bit values
 	kBltResourceList = 6,
+	kBltSound = 7,
 	kBltImage = 8,
 	kBltPalette = 10,
 	kBltColorCycles = 11,
