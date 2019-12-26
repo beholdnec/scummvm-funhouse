@@ -25,6 +25,7 @@
 
 #include "funhouse/boltlib/boltlib.h"
 #include "audio/mixer.h"
+#include "common/random.h"
 
 namespace Audio {
 class SeekableAudioStream;
@@ -36,6 +37,7 @@ namespace Funhouse {
 class BltSound {
 public:
 	BltSound();
+	~BltSound();
 	void load(Boltlib &boltlib, BltId id);
 	void play(Audio::Mixer *mixer);
 
@@ -43,6 +45,18 @@ private:
 	Audio::SeekableAudioStream *_audioStream;
 	Audio::SoundHandle _audioHandle;
 	BltResource _resource;
+	Audio::Mixer *_mixer;
+};
+
+class BltSoundList {
+public:
+	BltSoundList();
+	void load(Boltlib &boltlib, BltId id);
+	void play(Audio::Mixer *mixer);
+
+private:
+	ScopedArray<BltSound> _sounds;
+	Common::RandomSource _random; // FIXME: use the game's random source
 };
 
 } // End of namespace Funhouse

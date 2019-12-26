@@ -21,6 +21,7 @@
  */
 
 #include "funhouse/merlin/color_puzzle.h"
+#include "funhouse/boltlib/sound.h"
 
 namespace Funhouse {
 
@@ -48,8 +49,9 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltResourceList difficulty;
 	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultyIds[_game->getLogicDifficulty()].value));
-	BltId numStatesId        = difficulty[0].value;
-	BltId statePaletteModsId = difficulty[1].value;
+	BltId numStatesId        = difficulty[0].value; // Ex: 8D00
+	BltId statePaletteModsId = difficulty[1].value; // Ex: 8D1D
+	BltId soundsId           = difficulty[2].value; // Ex: 8D52
     BltId solutionId         = difficulty[3 + puzzleNum].value; // Ex: 8D1E
     BltId initialId          = difficulty[7 + puzzleNum].value; // Ex: 8D22
     BltId moveSetId          = difficulty[11 + puzzleNum].value; // Ex: 8D2E
@@ -59,6 +61,13 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltResourceList statePaletteMods;
 	loadBltResourceArray(statePaletteMods, boltlib, statePaletteModsId);
+
+	BltResourceList soundLists;
+	loadBltResourceArray(soundLists, boltlib, soundsId);
+	_soundLists.alloc(soundLists.size());
+	for (int i = 0; i < soundLists.size(); ++i) {
+		_soundLists[i].load(boltlib, soundLists[i].value);
+	}
 
     BltResourceList moveSet;
     loadBltResourceArray(moveSet, boltlib, moveSetId);
@@ -188,6 +197,7 @@ void ColorPuzzle::morphPiece(int piece, int state) {
 	int oldState = _pieces[piece].state;
 	_pieces[piece].state = state;
 	startMorph(&_pieces[piece].palettes, oldState, state);
+	_soundLists[piece].play(_game->getEngine()->_mixer);
 }
 
 void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int endState) {

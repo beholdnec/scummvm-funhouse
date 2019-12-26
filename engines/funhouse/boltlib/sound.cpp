@@ -28,10 +28,19 @@
 
 namespace Funhouse {
 
-BltSound::BltSound() : _audioStream(nullptr)
+BltSound::BltSound() : _audioStream(nullptr), _mixer(nullptr)
 { }
 
-// FIXME: Implement destructor; prevent memory leaks
+BltSound::~BltSound() {
+	if (_mixer) {
+		_mixer->stopHandle(_audioHandle); // Mixer deletes the audio stream (FIXME: really?)
+		_audioStream = nullptr;
+	}
+	else {
+		delete _audioStream;
+		_audioStream = nullptr;
+	}
+}
 
 void BltSound::load(Boltlib &boltlib, BltId id) {
 	_resource.reset(boltlib.loadResource(id, kBltSound));
@@ -43,8 +52,26 @@ void BltSound::play(Audio::Mixer *mixer) {
 		return;
 	}
 
+	_mixer = mixer;
 	_audioStream->rewind();
 	mixer->playStream(Audio::Mixer::kSFXSoundType, &_audioHandle, _audioStream, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO);
+}
+
+BltSoundList::BltSoundList() : _random("SoundRandomSource")
+{ }
+
+void BltSoundList::load(Boltlib &boltlib, BltId id) {
+	BltU16Values soundIds;
+	loadBltResourceArray(soundIds, boltlib, id);
+	_sounds.alloc(soundIds.size());
+	for (int i = 0; i < _sounds.size(); ++i) {
+		_sounds[i].load(boltlib, BltShortId(soundIds[i].value));
+	}
+}
+
+void BltSoundList::play(Audio::Mixer *mixer) {
+	int num = _random.getRandomNumber(_sounds.size() - 1);
+	_sounds[num].play(mixer);
 }
 
 } // End of namespace Funhouse

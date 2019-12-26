@@ -43,6 +43,8 @@ struct BltColorPuzzleTransition { // type 58
     uint8 count[4];
 };
 
+class BltSoundList;
+
 class ColorPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
@@ -80,6 +82,7 @@ private:
 	IBoltEventLoop *_eventLoop;
     PopupMenu _popup;
 	Scene _scene;
+	ScopedArray<BltSoundList> _soundLists;
 
 	Piece _pieces[kNumPieces];
 
