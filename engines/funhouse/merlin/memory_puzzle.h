@@ -72,7 +72,7 @@ private:
 
     void startPlayback();
     BoltCmd drivePlayback();
-    void startAnimation(int itemNum);
+    void startAnimation(int itemNum, bool playSound = true);
     BoltCmd driveAnimation();
     void drawItemFrame(int itemNum, int frameNum);
 
@@ -82,10 +82,11 @@ private:
 	Scene _scene;
     PopupMenu _popup;
 	ItemList _itemList;
-    int _maxMemorize;
+    int _finalGoal;
+	BltSoundList _failSound;
 
     Common::RandomSource _random;
-    int _curMemorize;
+    int _goal;
     int _matches;
     ScopedArray<int> _solution;
 

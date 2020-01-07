@@ -30,11 +30,11 @@ struct BltMemoryPuzzleInfo {
     static const uint32 kType = kBltMemoryPuzzleInfos;
     static const uint kSize = 0x10;
     void load(Common::Span<const byte> src, Boltlib &boltlib) {
-        maxMemorize = src.getUint16BEAt(2);
+        finalGoal = src.getUint16BEAt(2);
         // TODO: the rest of the fields appear to be timing parameters
     }
 
-    uint16 maxMemorize; // Number of items to memorize for this difficulty level
+    uint16 finalGoal; // Number of matches to win
 };
 
 typedef ScopedArray<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
@@ -99,8 +99,8 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     BltMemoryPuzzleInfos infos;
     loadBltResourceArray(infos, boltlib, infosId);
-    _maxMemorize = infos[_game->getMemoryDifficulty()].maxMemorize;
-    _curMemorize = 3;
+    _finalGoal = infos[_game->getMemoryDifficulty()].finalGoal;
+    _goal = 3;
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
@@ -129,8 +129,10 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 		_itemList[i].sound.load(boltlib, itemList[i].soundId);
 	}
 
-    _solution.alloc(_maxMemorize);
-    for (int i = 0; i < _maxMemorize; ++i) {
+	_failSound.load(boltlib, failSoundId);
+
+    _solution.alloc(_finalGoal);
+    for (int i = 0; i < _finalGoal; ++i) {
         _solution[i] = _random.getRandomNumber(_itemList.size() - 1);
     }
 
@@ -148,11 +150,11 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
         return drivePlayback();
     }
     
-    if (_matches >= _maxMemorize) {
+    if (_matches >= _finalGoal) {
         return kWin;
-    } else if (_matches >= _curMemorize) {
+    } else if (_matches >= _goal) {
         _matches = 0;
-        _curMemorize += 3;
+        _goal += 3;
         startPlayback();
         return BoltCmd::kDone;
     }
@@ -176,13 +178,12 @@ BoltCmd MemoryPuzzle::handleButtonClick(int num) {
         if (_solution[_matches] == num) {
             // Earn a new match
             ++_matches;
-            // TODO: Play success sound
             startAnimation(num);
         } else {
             // Mismatch
             _matches = 0;
-            // TODO: Play fail sound
-            startAnimation(num);
+			_failSound.play(_game->getEngine()->_mixer);
+            startAnimation(num, false);
             startPlayback();
         }
     }
@@ -198,7 +199,7 @@ void MemoryPuzzle::startPlayback() {
 BoltCmd MemoryPuzzle::drivePlayback() {
     assert(_playbackActive);
 
-    if (_playbackStep < _curMemorize) {
+    if (_playbackStep < _goal) {
         startAnimation(_solution[_playbackStep]);
         ++_playbackStep;
         return BoltCmd::kResend;
@@ -208,7 +209,7 @@ BoltCmd MemoryPuzzle::drivePlayback() {
     return BoltCmd::kResend;
 }
 
-void MemoryPuzzle::startAnimation(int itemNum) {
+void MemoryPuzzle::startAnimation(int itemNum, bool playSound) {
     debug(3, "Starting animation for item %d", itemNum);
 
     _animationActive = true;
@@ -232,7 +233,9 @@ void MemoryPuzzle::startAnimation(int itemNum) {
         _graphics->resetColorCycles();
     }
 
-	item.sound.play(_game->getEngine()->_mixer);
+	if (playSound) {
+		item.sound.play(_game->getEngine()->_mixer);
+	}
 }
 
 BoltCmd MemoryPuzzle::driveAnimation() {
