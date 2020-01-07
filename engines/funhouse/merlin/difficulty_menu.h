@@ -37,8 +37,9 @@ public:
     BoltCmd handleMsg(const BoltMsg &msg);
 private:
     BoltCmd handleButtonClick(int num);
+	bool isReadyToPlay() const;
 	void setAllDifficulties(int difficulty);
-	void setButtons();
+	void setupButtons();
 
     MerlinGame *_game;
     Scene _scene;

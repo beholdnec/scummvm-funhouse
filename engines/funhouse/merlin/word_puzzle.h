@@ -26,6 +26,7 @@
 #include "funhouse/merlin/merlin.h"
 #include "funhouse/merlin/popup_menu.h"
 #include "funhouse/scene.h"
+#include "funhouse/boltlib/sound.h"
 
 namespace Funhouse {
 
@@ -35,23 +36,26 @@ public:
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
-protected:
-	BoltCmd handleButtonClick(int num);
-
 private:
 	static const int kNumLetters = 26;
 
+	BoltCmd handlePopupButtonClick(int num);
+	BoltCmd handleReset();
+	BoltCmd handleButtonClick(int num);
+
+	void reset();
 	int glyphToRune(int glyph) const;
 	int glyphToLetter(int glyph) const;
 	int runeToGlyph(int rune) const;
 	int letterToGlyph(int letter) const;
 	void mapRuneAndLetter(int rune, int letter);
-	void arrangeButtons();
+	void setupButtons();
 	bool isSolved();
 
     MerlinGame *_game;
     PopupMenu _popup;
 	Scene _scene;
+	BltSoundList _resetSound;
 
 	BltSprites _normalSprites;
 	BltSprites _highlightedSprites;

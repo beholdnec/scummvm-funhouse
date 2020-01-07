@@ -38,6 +38,7 @@ class PopupMenu {
 public:
     void init(MerlinGame *game, Boltlib &boltlib, BltId id);
 
+	void dismiss();
     BoltCmd handleMsg(const BoltMsg &msg);
 
 private:

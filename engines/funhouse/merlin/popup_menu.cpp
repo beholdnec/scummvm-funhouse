@@ -84,6 +84,10 @@ void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
     }
 }
 
+void PopupMenu::dismiss() {
+	_active = false;
+}
+
 BoltCmd PopupMenu::handleMsg(const BoltMsg &msg) {
     if (msg.type == BoltMsg::kRightClick) {
         if (!_active) {
@@ -95,6 +99,10 @@ BoltCmd PopupMenu::handleMsg(const BoltMsg &msg) {
 
         return BoltCmd::kDone;
     }
+
+	if (msg.type == BoltMsg::kPopupButtonClick) {
+		return BoltCmd::kPass;
+	}
 
     if (!_active) {
         return BoltCmd::kPass;
@@ -120,15 +128,10 @@ BoltCmd PopupMenu::handleMsg(const BoltMsg &msg) {
 }
 
 BoltCmd PopupMenu::handleButtonClick(int num) {
-    switch (num) {
-    case 0: // Exit/Return
-        return Card::kReturn;
-    default:
-        warning("Popup button %d not implemented", num);
-        break;
-    }
-
-    return BoltCmd::kDone;
+	BoltMsg msg(BoltMsg::kPopupButtonClick);
+	msg.num = num;
+	_game->getEngine()->setMsg(msg);
+    return BoltCmd::kResend;
 }
 
 void PopupMenu::activate() {

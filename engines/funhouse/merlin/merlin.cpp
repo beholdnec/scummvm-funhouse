@@ -63,11 +63,11 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 	_mixer = mixer;
 	_eventLoop = _engine;
 	_fileNum = -1;
-	_wordsDifficulty = 0;
-	_shapesDifficulty = 0;
-	_actionDifficulty = 0;
-	_memoryDifficulty = 0;
-	_logicDifficulty = 0;
+	_wordsDifficulty = -1;
+	_shapesDifficulty = -1;
+	_actionDifficulty = -1;
+	_memoryDifficulty = -1;
+	_logicDifficulty = -1;
 
 	_boltlib.load("BOLTLIB.BLT");
 

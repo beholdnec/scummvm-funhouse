@@ -49,11 +49,6 @@ struct BltWordPuzzleVariantInfo {
 
 void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
-	_selectedGlyph = -1;
-	for (int i = 0; i < kNumLetters; ++i) {
-		_runeToLetterMap[i] = -1;
-		_letterToRuneMap[i] = -1;
-	}
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
@@ -65,10 +60,13 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	BltId highlightedSpriteListId = resourceList[3].value;  // Ex: 61B5
 	BltId selectedSpriteListId    = resourceList[4].value;  // Ex: 61B6
 	BltId charWidthsId            = resourceList[10].value; // Ex: 61B3
+	BltId resetSoundId            = resourceList[11].value; // Ex: 61D9
 
 	BltWordPuzzleInfo puzzleInfo;
 	loadBltResource(puzzleInfo, boltlib, infoId);
 	_centerX = puzzleInfo.centerX;
+
+	_resetSound.load(boltlib, resetSoundId);
 
 	_normalSprites.load(boltlib, normalSpriteListId);
 	_highlightedSprites.load(boltlib, highlightedSpriteListId);
@@ -99,11 +97,13 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	loadBltResourceArray(_solution, boltlib, solutionId);
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
+
+	reset();
 }
 
 void WordPuzzle::enter() {
 	_scene.enter();
-	arrangeButtons();
+	setupButtons();
 }
 
 BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
@@ -112,11 +112,119 @@ BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
         return cmd;
     }
 
-	if (msg.type == Scene::kClickButton) {
+	switch (msg.type) {
+	case BoltMsg::kPopupButtonClick:
+		return handlePopupButtonClick(msg.num);
+	case Scene::kClickButton:
 		return handleButtonClick(msg.num);
+	default:
+		return _scene.handleMsg(msg);
+	}
+}
+
+BoltCmd WordPuzzle::handlePopupButtonClick(int num) {
+	switch (num) {
+	case 0: // Return
+		return Card::kReturn;
+	case 3: // Reset
+		return handleReset();
+	default:
+		warning("Unhandled popup button %d", num);
+		return BoltCmd::kDone;
+	}
+}
+
+BoltCmd WordPuzzle::handleReset() {
+	_popup.dismiss();
+	_resetSound.play(_game->getEngine()->_mixer);
+	reset();
+	setupButtons();
+	return BoltCmd::kDone;
+}
+
+BoltCmd WordPuzzle::handleButtonClick(int num) {
+	debug(3, "Clicked button %d", num);
+
+	if (num == -1) {
+		return BoltCmd::kDone;
 	}
 
-	return _scene.handleMsg(msg);
+	int selectedLetter = glyphToLetter(_selectedGlyph);
+	int selectedRune = glyphToRune(_selectedGlyph);
+
+	int clickedLetter = -1;
+	if (num >= 0 && num < kNumLetters) {
+		clickedLetter = num;
+	}
+
+	int clickedRune = -1;
+	if (num >= kNumLetters) {
+		clickedRune = reinterpret_cast<int>(_scene.getButton(num).getUserData());
+	}
+
+	// TODO: implement unselecting
+	// TODO: prevent assigning a letter to more than one rune
+	// TODO: assigned letters should disappear from the box
+	if (_selectedGlyph == -1) {
+		if (num >= 0 && num < kNumLetters) {
+			// Select letter
+			_selectedGlyph = letterToGlyph(num);
+		}
+		else {
+			// Select rune
+			// Note that a rune will be selected even if the player clicks on a rune that has been
+			// assigned to a letter.
+			_selectedGlyph = runeToGlyph(reinterpret_cast<int>(_scene.getButton(num).getUserData()));
+		}
+	}
+	else if (selectedLetter != -1) {
+		if (clickedRune != -1) {
+			// Assign selected letter to rune
+			mapRuneAndLetter(clickedRune, selectedLetter);
+			_selectedGlyph = -1;
+		}
+		else if (clickedLetter != -1) {
+			// Select another letter
+			_selectedGlyph = letterToGlyph(clickedLetter);
+		}
+	}
+	else if (selectedRune != -1) {
+		if (clickedLetter != -1) {
+			// Assign selected rune to letter
+			mapRuneAndLetter(selectedRune, clickedLetter);
+			_selectedGlyph = -1;
+		}
+		else if (clickedRune != -1) {
+			if (selectedRune != clickedRune && (_runeToLetterMap[selectedRune] != -1 || _runeToLetterMap[clickedRune] != -1)) {
+				// Swap rune assignments (FIXME: is this correct behavior?)
+				int oldSelectedRuneLetter = _runeToLetterMap[selectedRune];
+				int oldClickedRuneLetter = _runeToLetterMap[clickedRune];
+				mapRuneAndLetter(selectedRune, oldClickedRuneLetter);
+				mapRuneAndLetter(clickedRune, oldSelectedRuneLetter);
+				_selectedGlyph = -1;
+			}
+			else {
+				// Select another rune
+				_selectedGlyph = runeToGlyph(clickedRune);
+			}
+		}
+	}
+
+	setupButtons();
+
+	if (isSolved()) {
+		return kWin;
+	}
+
+	return BoltCmd::kDone;
+}
+
+void WordPuzzle::reset() {
+	_selectedGlyph = -1;
+	for (int i = 0; i < kNumLetters; ++i) {
+		_runeToLetterMap[i] = -1;
+		_letterToRuneMap[i] = -1;
+	}
 }
 
 int WordPuzzle::glyphToRune(int glyph) const {
@@ -168,78 +276,7 @@ void WordPuzzle::mapRuneAndLetter(int rune, int letter) {
 	}
 }
 
-BoltCmd WordPuzzle::handleButtonClick(int num) {
-	debug(3, "Clicked button %d", num);
-
-	if (num == -1) {
-		return BoltCmd::kDone;
-	}
-
-	int selectedLetter = glyphToLetter(_selectedGlyph);
-	int selectedRune = glyphToRune(_selectedGlyph);
-
-	int clickedLetter = -1;
-	if (num >= 0 && num < kNumLetters) {
-		clickedLetter = num;
-	}
-
-	int clickedRune = -1;
-	if (num >= kNumLetters) {
-		clickedRune = reinterpret_cast<int>(_scene.getButton(num).getUserData());
-	}
-
-	// TODO: implement unselecting
-	// TODO: prevent assigning a letter to more than one rune
-	// TODO: assigned letters should disappear from the box
-	if (_selectedGlyph == -1) {
-		if (num >= 0 && num < kNumLetters) {
-			// Select letter
-			_selectedGlyph = letterToGlyph(num);
-		} else {
-			// Select rune
-			// Note that a rune will be selected even if the player clicks on a rune that has been
-			// assigned to a letter.
-			_selectedGlyph = runeToGlyph(reinterpret_cast<int>(_scene.getButton(num).getUserData()));
-		}
-	} else if (selectedLetter != -1) {
-		if (clickedRune != -1) {
-			// Assign selected letter to rune
-			mapRuneAndLetter(clickedRune, selectedLetter);
-			_selectedGlyph = -1;
-		} else if (clickedLetter != -1) {
-			// Select another letter
-			_selectedGlyph = letterToGlyph(clickedLetter);
-		}
-	} else if (selectedRune != -1) {
-		if (clickedLetter != -1) {
-			// Assign selected rune to letter
-			mapRuneAndLetter(selectedRune, clickedLetter);
-			_selectedGlyph = -1;
-		} else if (clickedRune != -1) {
-			if (selectedRune != clickedRune && (_runeToLetterMap[selectedRune] != -1 || _runeToLetterMap[clickedRune] != -1)) {
-				// Swap rune assignments (FIXME: is this correct behavior?)
-				int oldSelectedRuneLetter = _runeToLetterMap[selectedRune];
-				int oldClickedRuneLetter = _runeToLetterMap[clickedRune];
-				mapRuneAndLetter(selectedRune, oldClickedRuneLetter);
-				mapRuneAndLetter(clickedRune, oldSelectedRuneLetter);
-				_selectedGlyph = -1;
-			} else {
-				// Select another rune
-				_selectedGlyph = runeToGlyph(clickedRune);
-			}
-		}
-	}
-
-	arrangeButtons();
-
-	if (isSolved()) {
-		return kWin;
-	}
-
-	return BoltCmd::kDone;
-}
-
-void WordPuzzle::arrangeButtons() {
+void WordPuzzle::setupButtons() {
 	int curChar = 0;
 	for (int lineNum = 0; lineNum < _numLines; ++lineNum) {
 		int lineLength = _lineLengths[lineNum].value;

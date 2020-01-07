@@ -101,6 +101,7 @@ struct BoltMsg {
 		kTimer,
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
+		kPopupButtonClick,
 		kMaxBoltMsg = 100
 	};
 
