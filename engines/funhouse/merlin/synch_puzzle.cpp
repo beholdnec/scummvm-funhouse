@@ -143,6 +143,10 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
         return cmd;
     }
 
+	if (msg.type == BoltMsg::kPopupButtonClick) {
+		return handlePopupButtonClick(msg.num);
+	}
+
     if (msg.type == Scene::kClickButton) {
         return handleButtonClick(msg.num);
     }
@@ -167,6 +171,16 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
     // TODO: when clicking outside the pieces, a preview of the solution should be shown.
 
     return _scene.handleMsg(msg);
+}
+
+BoltCmd SynchPuzzle::handlePopupButtonClick(int num) {
+	switch (num) {
+	case 0: // Return
+		return Card::kReturn;
+	default:
+		warning("Unhandled popup button %d", num);
+		return BoltCmd::kDone;
+	}
 }
 
 BoltCmd SynchPuzzle::handleButtonClick(int num) {

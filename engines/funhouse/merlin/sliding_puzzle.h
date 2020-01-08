@@ -36,10 +36,10 @@ public:
 	BoltCmd handleMsg(const BoltMsg &msg);
     void setSprites();
 
-protected:
+private:
+	BoltCmd handlePopupButtonClick(int num);
 	BoltCmd handleButtonClick(int num);
 
-private:
     MerlinGame *_game;
     Graphics *_graphics;
     PopupMenu _popup;

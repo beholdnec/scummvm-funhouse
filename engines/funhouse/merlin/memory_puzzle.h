@@ -39,9 +39,6 @@ public:
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
-protected:
-	BoltCmd handleButtonClick(int num);
-
 private:
     // TODO: this value probably comes from boltlib.blt somewhere
     const uint32 kAnimPeriod = 50;
@@ -70,6 +67,8 @@ private:
 
 	typedef ScopedArray<Item> ItemList;
 
+	BoltCmd handlePopupButtonClick(int num);
+	BoltCmd handleButtonClick(int num);
     void startPlayback();
     BoltCmd drivePlayback();
     void startAnimation(int itemNum, bool playSound = true);

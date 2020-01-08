@@ -67,6 +67,7 @@ private:
         BltColorPuzzleTransition transition;
 	};
 
+	BoltCmd handlePopupButtonClick(int num);
 	BoltCmd handleButtonClick(int num);
 
     BoltCmd driveTransition();

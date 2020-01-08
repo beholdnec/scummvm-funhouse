@@ -49,9 +49,6 @@ public:
 	void enter();
 	BoltCmd handleMsg(const BoltMsg &msg);
 
-protected:
-	BoltCmd handleButtonClick(int num);
-
 private:
     static const int kTimeoutDelay = 250;
 
@@ -70,6 +67,8 @@ private:
 
     typedef ScopedArray<Item> ItemArray;
 
+	BoltCmd handlePopupButtonClick(int num);
+	BoltCmd handleButtonClick(int num);
     void setTimeout(uint32 delay);
     BoltCmd driveTimeout();
     BoltCmd driveTransition();

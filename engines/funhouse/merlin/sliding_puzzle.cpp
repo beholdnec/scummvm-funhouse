@@ -102,16 +102,14 @@ BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
         return cmd;
     }
 
-	if (msg.type == Scene::kClickButton) {
+	switch (msg.type) {
+	case BoltMsg::kPopupButtonClick:
+		return handlePopupButtonClick(msg.num);
+	case Scene::kClickButton:
 		return handleButtonClick(msg.num);
+	default:
+		return _scene.handleMsg(msg);
 	}
-
-    if (msg.type == BoltMsg::kRightClick) {
-        // XXX: win instantly. TODO: remove.
-        return Card::kWin;
-    }
-
-	return _scene.handleMsg(msg);
 }
 
 void SlidingPuzzle::setSprites() {
@@ -121,6 +119,16 @@ void SlidingPuzzle::setSprites() {
 
     _scene.redraw();
     _graphics->markDirty();
+}
+
+BoltCmd SlidingPuzzle::handlePopupButtonClick(int num) {
+	switch (num) {
+	case 0: // Return
+		return Card::kReturn;
+	default:
+		warning("Unhandled popup button %d", num);
+		return BoltCmd::kDone;
+	}
 }
 
 BoltCmd SlidingPuzzle::handleButtonClick(int num) {

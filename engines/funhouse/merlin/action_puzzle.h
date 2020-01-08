@@ -40,6 +40,27 @@ public:
 	BoltCmd handleMsg(const BoltMsg &msg);
 
 protected:
+	struct Particle {
+		int imageNum;
+		int pathNum;
+		int deathNum; // 0: not dying; 1+: in death sequence
+		int deathProgress;
+		int progress;
+	};
+
+	typedef Common::List<Particle> ParticleList;
+
+	BoltCmd handlePopupButtonClick(int num);
+	const BltImage& getParticleImage(const Particle &particle);
+	Common::Point getParticlePos(const Particle &particle);
+	BoltCmd handleClick(const Common::Point &pt);
+	bool isParticleAtPoint(const Particle &particle, const Common::Point &pt);
+	void spawnParticle(int imageNum, int pathNum);
+	void drawBack();
+	void drawFore();
+	void tick();
+	BoltCmd win();
+
     MerlinGame *_game;
 	Graphics *_graphics;
 	IBoltEventLoop *_eventLoop;
@@ -61,26 +82,7 @@ protected:
 
 	uint32 _curTime;
 
-	struct Particle {
-		int imageNum;
-		int pathNum;
-		int deathNum; // 0: not dying; 1+: in death sequence
-		int deathProgress;
-		int progress;
-	};
-
-	typedef Common::List<Particle> ParticleList;
 	ParticleList _particles;
-
-	const BltImage& getParticleImage(const Particle &particle);
-	Common::Point getParticlePos(const Particle &particle);
-	BoltCmd handleClick(const Common::Point &pt);
-	bool isParticleAtPoint(const Particle &particle, const Common::Point &pt);
-	void spawnParticle(int imageNum, int pathNum);
-	void drawBack();
-	void drawFore();
-	void tick();
-	BoltCmd win();
 
 	static const int kTickPeriod = 50;
 	Common::RandomSource _random;

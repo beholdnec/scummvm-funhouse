@@ -166,6 +166,10 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
         return cmd;
     }
 
+	if (msg.type == BoltMsg::kPopupButtonClick) {
+		return handlePopupButtonClick(msg.num);
+	}
+
 	if (msg.type == BoltMsg::kClick) {
 		// TODO: implement puzzle.
         if (_pieceInHand != -1) {
@@ -216,6 +220,16 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
     }
 
 	return BoltCmd::kDone;
+}
+
+BoltCmd TangramPuzzle::handlePopupButtonClick(int num) {
+	switch (num) {
+	case 0: // Return
+		return Card::kReturn;
+	default:
+		warning("Unhandled popup button %d", num);
+		return BoltCmd::kDone;
+	}
 }
 
 int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {

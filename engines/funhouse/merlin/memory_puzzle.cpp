@@ -164,11 +164,24 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
         return cmd;
     }
 
-    if (msg.type == Scene::kClickButton) {
-        return handleButtonClick(msg.num);
-    }
+	switch (msg.type) {
+	case BoltMsg::kPopupButtonClick:
+		return handlePopupButtonClick(msg.num);
+	case Scene::kClickButton:
+		return handleButtonClick(msg.num);
+	default:
+		return _scene.handleMsg(msg);
+	}
+}
 
-    return _scene.handleMsg(msg);
+BoltCmd MemoryPuzzle::handlePopupButtonClick(int num) {
+	switch (num) {
+	case 0: // Return
+		return Card::kReturn;
+	default:
+		warning("Unhandled popup button %d", num);
+		return BoltCmd::kDone;
+	}
 }
 
 BoltCmd MemoryPuzzle::handleButtonClick(int num) {

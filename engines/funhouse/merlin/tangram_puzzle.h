@@ -51,6 +51,7 @@ private:
 
     typedef ScopedArray<Piece> PieceArray;
 
+	BoltCmd handlePopupButtonClick(int num);
     int getPieceAtPosition(const Common::Point& pos);
 	bool pieceIsPlaceableAt(int pieceNum, int x, int y);
 	int getCollisionAt(int x, int y);

@@ -174,14 +174,14 @@ BoltCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
     }
 
 	switch (msg.type){
+	case BoltMsg::kPopupButtonClick:
+		return handlePopupButtonClick(msg.num);
 	case BoltMsg::kClick:
 		return handleClick(msg.point);
-
 	case BoltMsg::kRightClick:
 		// Right-click to win instantly
 		// TODO: remove
 		return win();
-
 	case BoltMsg::kDrive: {
 		// TODO: eliminate Drive events in favor of Timers
 		uint32 diff = _eventLoop->getEventTime() - _curTime;
@@ -198,6 +198,16 @@ BoltCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
 	}
 
 	return BoltCmd::kDone;
+}
+
+BoltCmd ActionPuzzle::handlePopupButtonClick(int num) {
+	switch (num) {
+	case 0: // Return
+		return Card::kReturn;
+	default:
+		warning("Unhandled popup button %d", num);
+		return BoltCmd::kDone;
+	}
 }
 
 const BltImage& ActionPuzzle::getParticleImage(const Particle &particle) {
