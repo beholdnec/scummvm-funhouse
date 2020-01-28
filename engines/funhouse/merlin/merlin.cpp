@@ -392,6 +392,7 @@ void MerlinGame::win() {
 	    enterSequenceEntry(); // Return to hub
     } else {
         warning("Win procedure is not possible here");
+		advanceSequence();
     }
 }
 

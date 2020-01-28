@@ -287,14 +287,15 @@ BoltCmd PotionPuzzle::requestUndo() {
 }
 
 BoltCmd PotionPuzzle::performReaction() {
-	const int ingredientA = _bowlSlots[2];
-	const int ingredientB = _bowlSlots[0];
+	int ingredientA = _bowlSlots[0];
+	int ingredientB = _bowlSlots[2];
 
 	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) && !isValidIngredient(_bowlSlots[1])
 		&& "Invalid bowl state in performReaction");
 
 	// Find reaction
 
+#if 0
 	// NOTE: Different movies can play depending on which ingredients are on the left and right.
 	//       The final object is always the same, though.
 	//       Example: On the stump puzzle (easy difficulty), when combining the rock and acorn, the SHMR
@@ -338,6 +339,42 @@ BoltCmd PotionPuzzle::performReaction() {
 			}
 		}
 	}
+#endif
+
+	int bestMatch = -1;
+	byte uvarH = 0x2;
+	byte uvarL = 0x3;
+	const BltPotionPuzzleComboTableElement *reactionInfo = nullptr;
+	for (uint i = 0; i < _reactionTable.size(); ++i) {
+		reactionInfo = &_reactionTable[i];
+		debug(3, "checking reaction %d, %d, %d, %d, %d",
+			(int)reactionInfo->a, (int)reactionInfo->b, (int)reactionInfo->c, (int)reactionInfo->d,
+			(int)reactionInfo->movie);
+
+		if (_bowlSlots[0] == reactionInfo->a && _bowlSlots[2] == reactionInfo->b) {
+			uvarL = 0;
+			bestMatch = i;
+		}
+		else {
+			if (_bowlSlots[0] == reactionInfo->b && _bowlSlots[2] == reactionInfo->a && 1 < uvarL) {
+				uvarL = 0x1;
+				bestMatch = i;
+				continue;
+			}
+			if (((((_bowlSlots[0] == reactionInfo->a) && (reactionInfo->b == -1)) ||
+				((_bowlSlots[0] == reactionInfo->b && (reactionInfo->a == -1)))) && (2 < uvarL)) ||
+				((((_bowlSlots[2] == reactionInfo->a && (reactionInfo->b == -1)) ||
+				((_bowlSlots[2] == reactionInfo->b && (reactionInfo->a == -1)))) && (2 < uvarL))))
+			{
+				uvarL = uvarH;
+				bestMatch = i;
+			}
+		}
+
+		if (uvarL == 0) {
+			break;
+		}
+	}
 
 	if (bestMatch < 0) {
 		warning("No reaction found for ingredients %d, %d", ingredientA, ingredientB);
@@ -352,13 +389,54 @@ BoltCmd PotionPuzzle::performReaction() {
 	// Perform reaction
 	reactionInfo = &_reactionTable[bestMatch];
 
-	// FIXME: Does reactionInfo->c have any special meaning?
-	_bowlSlots[0] = kNoIngredient;
-	_bowlSlots[1] = reactionInfo->d;
-	_bowlSlots[2] = kNoIngredient;
-	// NOTE: The game doesn't redraw puzzle until midway through the movie. The movie
-	//       sends a special redraw command.
-	_game->startPotionMovie(reactionInfo->movie);
+	if (reactionInfo->c == -1) {
+		// FIXME: Does the original program check if all ingredients are used?
+		return Card::kWin;
+	}
+	else {
+		if (reactionInfo->c != (int8)0xfd) { // I don't think this is ever false...
+			ingredientA = reactionInfo->c;
+		}
+		if (reactionInfo->d != (int8)0xfd) { // I don't think this is ever false...
+			ingredientB = reactionInfo->d;
+		}
+		if (ingredientA == (int8)0xfe && ingredientB == (int8)0xfe) {
+			_bowlSlots[0] = kNoIngredient;
+			_bowlSlots[1] = kNoIngredient;
+			_bowlSlots[2] = kNoIngredient;
+		} else {
+			if (ingredientA == (int8)0xfe) {
+				_bowlSlots[0] = kNoIngredient;
+				_bowlSlots[1] = ingredientB;
+				_bowlSlots[2] = kNoIngredient;
+			} else {
+				if (ingredientB == (int8)0xfe) {
+					// FIXME: Here the original saves the ingredient in slot 1 for some reason?
+					_bowlSlots[0] = kNoIngredient;
+					_bowlSlots[1] = ingredientA;
+					_bowlSlots[2] = kNoIngredient;
+				} else {
+					warning("Whoops! No reaction available?");
+					_bowlSlots[0] = ingredientA;
+					_bowlSlots[2] = ingredientB;
+				}
+			}
+		}
+
+		// Start the movie, but don't redraw the puzzle. The movie sends a
+		// special command to redraw the puzzle.
+		_game->startPotionMovie(reactionInfo->movie);
+#if 0
+		// FIXME: Does reactionInfo->c have any special meaning?
+		_bowlSlots[0] = kNoIngredient;
+		_bowlSlots[1] = reactionInfo->d;
+		_bowlSlots[2] = kNoIngredient;
+		// NOTE: The game doesn't redraw puzzle until midway through the movie. The movie
+		//       sends a special redraw command.
+		_game->startPotionMovie(reactionInfo->movie);
+#endif
+	}
+
 
 	return BoltCmd::kDone;
 }
