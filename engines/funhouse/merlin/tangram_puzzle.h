@@ -33,7 +33,7 @@ class TangramPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
+    BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
     struct Piece {
@@ -51,7 +51,7 @@ private:
 
     typedef ScopedArray<Piece> PieceArray;
 
-	BoltCmd handlePopupButtonClick(int num);
+	BoltRsp handlePopupButtonClick(int num);
     int getPieceAtPosition(const Common::Point& pos);
 	bool pieceIsPlaceableAt(int pieceNum, int x, int y);
 	int getCollisionAt(int x, int y);

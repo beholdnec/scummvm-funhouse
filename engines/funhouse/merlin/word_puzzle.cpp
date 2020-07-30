@@ -106,9 +106,9 @@ void WordPuzzle::enter() {
 	setupButtons();
 }
 
-BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltCmd cmd = _popup.handleMsg(msg);
-    if (cmd.type != BoltCmd::kPass) {
+BoltRsp WordPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltRsp cmd = _popup.handleMsg(msg);
+    if (cmd != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -122,31 +122,32 @@ BoltCmd WordPuzzle::handleMsg(const BoltMsg &msg) {
 	}
 }
 
-BoltCmd WordPuzzle::handlePopupButtonClick(int num) {
+BoltRsp WordPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-		return Card::kReturn;
+        _game->getEngine()->setMsg(Card::kReturn);
+        return BoltRsp::kDone;
 	case 3: // Reset
 		return handleReset();
 	default:
 		warning("Unhandled popup button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 
-BoltCmd WordPuzzle::handleReset() {
+BoltRsp WordPuzzle::handleReset() {
 	_popup.dismiss();
 	_resetSound.play(_game->getEngine()->_mixer);
 	reset();
 	setupButtons();
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
-BoltCmd WordPuzzle::handleButtonClick(int num) {
+BoltRsp WordPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 
 	if (num == -1) {
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 
 	int selectedLetter = glyphToLetter(_selectedGlyph);
@@ -213,10 +214,10 @@ BoltCmd WordPuzzle::handleButtonClick(int num) {
 	setupButtons();
 
 	if (isSolved()) {
-		return kWin;
+        _game->getEngine()->setMsg(kWin);
 	}
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
 void WordPuzzle::reset() {

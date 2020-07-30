@@ -56,7 +56,7 @@ public:
 
 	// From FunhouseGame
 	virtual void init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mixer);
-	virtual BoltCmd handleMsg(const BoltMsg &msg);
+	virtual BoltRsp handleMsg(const BoltMsg &msg);
     virtual void win();
     
     void redraw();
@@ -120,8 +120,8 @@ private:
 
 	static void movieTrigger(void *param, uint16 triggerType);
 
-	BoltCmd handleMsgInMovie(const BoltMsg &msg);
-	BoltCmd handleMsgInCard(const BoltMsg &msg);
+	BoltRsp handleMsgInMovie(const BoltMsg &msg);
+	BoltRsp handleMsgInCard(const BoltMsg &msg);
 	void puzzle(int num, const PuzzleEntry *entry);
 
 	OSystem *_system;

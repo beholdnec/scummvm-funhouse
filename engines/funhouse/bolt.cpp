@@ -128,6 +128,10 @@ uint32 FunhouseEngine::getEventTime() const {
 	return _eventTime;
 }
 
+BoltMsg FunhouseEngine::getMsg() const {
+    return _curMsg;
+}
+
 void FunhouseEngine::setMsg(const BoltMsg &msg) {
 	_curMsg = msg;
 }
@@ -155,20 +159,13 @@ void FunhouseEngine::topLevelHandleMsg(const BoltMsg &msg) {
 
 	bool yield = false;
 	while (!yield) {
-		// Make a copy of the current message to prevent interference if the handler calls setMsg.
 		BoltMsg msgCopy = _curMsg;
-		BoltCmd cmd = _game->handleMsg(msgCopy);
-		switch (cmd.type) {
-		case BoltCmd::kDone:
-			yield = true;
-			break;
-		case BoltCmd::kResend:
-			break;
-		default:
-			assert(false && "Invalid BoltCmd"); // Unreachable
-			yield = true;
-			break;
-		}
+        setMsg(BoltMsg::kYield);
+		_game->handleMsg(msgCopy);
+
+        if (_curMsg.type == BoltMsg::kYield) {
+            yield = true;
+        }
 	}
 
 	_graphics.presentIfDirty();

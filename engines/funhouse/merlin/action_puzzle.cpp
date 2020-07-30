@@ -167,9 +167,9 @@ void ActionPuzzle::enter() {
 	_graphics->markDirty();
 }
 
-BoltCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltCmd cmd = _popup.handleMsg(msg);
-    if (cmd.type != BoltCmd::kPass) {
+BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltRsp cmd = _popup.handleMsg(msg);
+    if (cmd != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -197,16 +197,17 @@ BoltCmd ActionPuzzle::handleMsg(const BoltMsg &msg) {
 	}
 	}
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
-BoltCmd ActionPuzzle::handlePopupButtonClick(int num) {
+BoltRsp ActionPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-		return Card::kReturn;
+        _game->getEngine()->setMsg(Card::kReturn);
+		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 
@@ -224,7 +225,7 @@ Common::Point ActionPuzzle::getParticlePos(const Particle &particle) {
 	return _paths[particle.pathNum][particle.progress];
 }
 
-BoltCmd ActionPuzzle::handleClick(const Common::Point &pt) {
+BoltRsp ActionPuzzle::handleClick(const Common::Point &pt) {
 	for (ParticleList::iterator it = _particles.begin(); it != _particles.end(); ++it) {
 		if (isParticleAtPoint(*it, pt)) {
 			// Kill particle
@@ -232,7 +233,7 @@ BoltCmd ActionPuzzle::handleClick(const Common::Point &pt) {
 		}
 	}
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
 bool ActionPuzzle::isParticleAtPoint(const Particle &particle, const Common::Point &pt) {
@@ -325,11 +326,12 @@ void ActionPuzzle::tick() {
 	_graphics->markDirty();
 }
 
-BoltCmd ActionPuzzle::win() {
+BoltRsp ActionPuzzle::win() {
 	// Redraw background before starting win movie
 	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
 	_graphics->clearPlane(kFore);
-	return Card::kWin;
+    _game->getEngine()->setMsg(Card::kWin);
+	return BoltRsp::kDone;
 }
 
 } // End of namespace Funhouse

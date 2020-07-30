@@ -49,7 +49,7 @@ void FileMenu::enter() {
 	setButtons();
 }
 
-BoltCmd FileMenu::handleMsg(const BoltMsg &msg) {
+BoltRsp FileMenu::handleMsg(const BoltMsg &msg) {
 	if (msg.type == Scene::kClickButton) {
 		return handleButtonClick(msg.num);
 	}
@@ -60,25 +60,26 @@ BoltCmd FileMenu::handleMsg(const BoltMsg &msg) {
 static const int kFirstFileButton = 4;
 static const int kNumFiles = 12;
 
-BoltCmd FileMenu::handleButtonClick(int num) {
+BoltRsp FileMenu::handleButtonClick(int num) {
 	
 	if (num >= kFirstFileButton && num < kFirstFileButton + kNumFiles) {
 		_game->setFile(num - kFirstFileButton);
 		setButtons();
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	} else {
 		switch (num) {
 		case -1: // No button
-			return BoltCmd::kDone;
+			return BoltRsp::kDone;
 		case 1: // Play
 			if (_game->getFile() != -1) {
-				return Card::kEnd;
+                _game->getEngine()->setMsg(Card::kEnd);
+				return BoltRsp::kDone;
 			} else {
-				return BoltCmd::kDone;
+				return BoltRsp::kDone;
 			}
 		default:
 			warning("unknown main menu button %d", num);
-			return BoltCmd::kDone;
+			return BoltRsp::kDone;
 		}
 	}
 }

@@ -36,7 +36,7 @@ void DifficultyMenu::enter() {
 	setupButtons();
 }
 
-BoltCmd DifficultyMenu::handleMsg(const BoltMsg &msg) {
+BoltRsp DifficultyMenu::handleMsg(const BoltMsg &msg) {
 	if (msg.type == Scene::kClickButton) {
 		return handleButtonClick(msg.num);
 	}
@@ -54,62 +54,63 @@ static const int kFirstActionDifficultyButton = 18;
 static const int kFirstMemoryDifficultyButton = 21;
 static const int kFirstLogicDifficultyButton = 24;
 
-BoltCmd DifficultyMenu::handleButtonClick(int num) {
+BoltRsp DifficultyMenu::handleButtonClick(int num) {
 	// Words
 	if (num >= kFirstWordsDifficultyButton && num < kFirstWordsDifficultyButton + 3) {
 		_game->setWordsDifficulty(num - kFirstWordsDifficultyButton);
 		setupButtons();
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 
 	// Shapes
 	if (num >= kFirstShapesDifficultyButton && num < kFirstShapesDifficultyButton + 3) {
 		_game->setShapesDifficulty(num - kFirstShapesDifficultyButton);
 		setupButtons();
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 
 	// Action
 	if (num >= kFirstActionDifficultyButton && num < kFirstActionDifficultyButton + 3) {
 		_game->setActionDifficulty(num - kFirstActionDifficultyButton);
 		setupButtons();
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 
 	// Memory
 	if (num >= kFirstMemoryDifficultyButton && num < kFirstMemoryDifficultyButton + 3) {
 		_game->setMemoryDifficulty(num - kFirstMemoryDifficultyButton);
 		setupButtons();
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 
 	// Logic
 	if (num >= kFirstLogicDifficultyButton && num < kFirstLogicDifficultyButton + 3) {
 		_game->setLogicDifficulty(num - kFirstLogicDifficultyButton);
 		setupButtons();
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 
 	switch (num) {
 	case -1: // No button
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	case kPlayButton: // Play
 		if (isReadyToPlay()) {
-			return Card::kEnd;
+            _game->getEngine()->setMsg(Card::kEnd);
+			return BoltRsp::kDone;
 		}
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	case kAllBeginnerButton: // Beginner
 		setAllDifficulties(0);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	case kAllAdvancedButton: // Advanced
 		setAllDifficulties(1);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	case kAllExpertButton: // Expert
 		setAllDifficulties(2);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	default:
 		warning("unknown main menu button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 

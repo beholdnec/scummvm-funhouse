@@ -33,12 +33,12 @@ class SlidingPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
+    BoltRsp handleMsg(const BoltMsg &msg);
     void setSprites();
 
 private:
-	BoltCmd handlePopupButtonClick(int num);
-	BoltCmd handleButtonClick(int num);
+    BoltRsp handlePopupButtonClick(int num);
+    BoltRsp handleButtonClick(int num);
 
     MerlinGame *_game;
     Graphics *_graphics;

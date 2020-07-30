@@ -25,6 +25,7 @@
 
 #include "audio/mixer.h"
 
+#include "funhouse/bolt.h"
 #include "funhouse/util.h"
 
 class OSystem;
@@ -39,7 +40,6 @@ class File;
 
 namespace Funhouse {
 
-struct BoltCmd;
 struct BoltMsg;
 class IBoltEventLoop;
 class BoltEngine;
@@ -56,7 +56,7 @@ public:
 	void stop();
 
 	bool isRunning() const;
-	BoltCmd handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 	typedef void (*TriggerCallback)(void *param, uint16 triggerType);
 	void setTriggerCallback(TriggerCallback callback, void *param);

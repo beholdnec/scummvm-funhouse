@@ -94,7 +94,8 @@ struct BoltMsg {
 	enum Type {
 		// System messages (>= 0)
 		kNone = 0,
-        kDrive,
+        kYield, // Break out of the message loop. Present a frame and gather more input.
+        kDrive, // Continue processing messages.
 		kHover,
 		kClick,
 		kRightClick,
@@ -102,7 +103,8 @@ struct BoltMsg {
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
 		kPopupButtonClick,
-		kMaxBoltMsg = 100
+		kCardMsgs = 100,
+        kSceneMsgs = 200,
 	};
 
 	BoltMsg(int type_ = kNone) : type(type_), num(0) { }
@@ -112,32 +114,21 @@ struct BoltMsg {
 	Common::Point point;
 };
 
-// Commands that the game returns to the engine after handling a message.
-struct BoltCmd {
-	enum Type {
-		// System commands
-		kDone = 0, // Message was handled.
-		kResend,   // Message should be resent. The game can use setMsg to change the message.
-        kPass,     // Message was not handled and should be passed to the next handler.
-		kMaxBoltCmd = 100
-	};
-
-	int type;
-	int num;
-
-	BoltCmd(int type_ = kDone) : type(type_), num(0) { }
+// Responses to a message.
+enum BoltRsp {
+    kDone, // Message was handled.
+    kPass, // Message was not handled and should be passed to the next handler.
 };
 
 class Card {
 public:
-	// Card-specific commands for use in BoltCmd
-	enum CardCmd {
-		// Card commands
-		kEnd = BoltCmd::kMaxBoltCmd,
-        kReturn,
-		kWin,
-		kEnterPuzzle,
-		kMaxCardCmd = BoltCmd::kMaxBoltCmd + 100
+	// Card-specific messages
+	enum CardMsg {
+		kEnd = BoltMsg::kCardMsgs, // Advance to the next card in sequence.
+        kReturn, // Pause and leave the card.
+		kWin, // Win the current puzzle.
+		kEnterPuzzle, // Enter a puzzle
+		kMaxCardCmd = BoltMsg::kCardMsgs + 100,
 	};
 
 	virtual ~Card() { }
@@ -145,7 +136,7 @@ public:
     virtual void redraw() {
         enter();
     }
-	virtual BoltCmd handleMsg(const BoltMsg &msg) = 0;
+	virtual BoltRsp handleMsg(const BoltMsg &msg) = 0;
 };
 
 enum TimerId {
@@ -168,7 +159,7 @@ class FunhouseGame {
 public:
 	virtual ~FunhouseGame() { }
 	virtual void init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mixer) = 0;
-	virtual BoltCmd handleMsg(const BoltMsg &msg) = 0;
+	virtual BoltRsp handleMsg(const BoltMsg &msg) = 0;
     virtual void win() = 0;
 };
 
@@ -183,6 +174,7 @@ public:
 
 	// From IBoltEventLoop (for internal game use)
 	virtual uint32 getEventTime() const;
+    virtual BoltMsg getMsg() const;
 	virtual void setMsg(const BoltMsg &msg);
 	virtual void requestSmoothAnimation();
 	virtual void setTimer(uint32 delay, int id);
@@ -198,9 +190,11 @@ private:
 	
     Common::ScopedPtr<FunhouseConsole> _console;
 	Graphics _graphics;
+
+    Common::ScopedPtr<FunhouseGame> _game;
+
 	BoltMsg _curMsg;
 	uint32 _eventTime;
-	Common::ScopedPtr<FunhouseGame> _game;
 
 	struct Timer {
 		uint32 start;

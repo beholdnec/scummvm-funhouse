@@ -160,7 +160,7 @@ void Scene::redraw() {
     _graphics->markDirty();
 }
 
-BoltCmd Scene::handleMsg(const BoltMsg &msg) {
+BoltRsp Scene::handleMsg(const BoltMsg &msg) {
 	switch (msg.type) {
 	case BoltMsg::kHover: {
 		int hoveredButton = getButtonAtPoint(msg.point);
@@ -172,11 +172,11 @@ BoltCmd Scene::handleMsg(const BoltMsg &msg) {
 		BoltMsg newMsg(kClickButton);
 		newMsg.num = getButtonAtPoint(msg.point);
 		_engine->setMsg(newMsg);
-		return BoltCmd::kResend;
+        break;
 	}
 	}
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
 void Scene::loadBackPlane(Boltlib &boltlib, BltId planeId) {

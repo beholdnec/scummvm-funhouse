@@ -88,7 +88,7 @@ void PopupMenu::dismiss() {
 	_active = false;
 }
 
-BoltCmd PopupMenu::handleMsg(const BoltMsg &msg) {
+BoltRsp PopupMenu::handleMsg(const BoltMsg &msg) {
     if (msg.type == BoltMsg::kRightClick) {
         if (!_active) {
             activate();
@@ -97,15 +97,15 @@ BoltCmd PopupMenu::handleMsg(const BoltMsg &msg) {
             _game->redraw();
         }
 
-        return BoltCmd::kDone;
+        return BoltRsp::kDone;
     }
 
 	if (msg.type == BoltMsg::kPopupButtonClick) {
-		return BoltCmd::kPass;
+		return BoltRsp::kPass;
 	}
 
     if (!_active) {
-        return BoltCmd::kPass;
+        return BoltRsp::kPass;
     }
 
     if (msg.type == BoltMsg::kClick || msg.type == BoltMsg::kHover) {
@@ -124,14 +124,14 @@ BoltCmd PopupMenu::handleMsg(const BoltMsg &msg) {
         }
     }
 
-    return BoltCmd::kDone;
+    return BoltRsp::kDone;
 }
 
-BoltCmd PopupMenu::handleButtonClick(int num) {
+BoltRsp PopupMenu::handleButtonClick(int num) {
 	BoltMsg msg(BoltMsg::kPopupButtonClick);
 	msg.num = num;
 	_game->getEngine()->setMsg(msg);
-    return BoltCmd::kResend;
+    return BoltRsp::kDone;
 }
 
 void PopupMenu::activate() {

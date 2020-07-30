@@ -102,15 +102,15 @@ void ColorPuzzle::enter() {
 	}
 }
 
-BoltCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
+BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
     if (_morphActive) {
         return driveMorph();
     } else if (_transitionActive) {
         return driveTransition();
     }
 
-    BoltCmd cmd = _popup.handleMsg(msg);
-    if (cmd.type != BoltCmd::kPass) {
+    BoltRsp cmd = _popup.handleMsg(msg);
+    if (cmd != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -124,31 +124,33 @@ BoltCmd ColorPuzzle::handleMsg(const BoltMsg &msg) {
 	}
 }
 
-BoltCmd ColorPuzzle::handlePopupButtonClick(int num) {
+BoltRsp ColorPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-		return Card::kReturn;
+        _game->getEngine()->setMsg(Card::kReturn);
+		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 
-BoltCmd ColorPuzzle::handleButtonClick(int num) {
+BoltRsp ColorPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 
 	if (num >= 0 && num < kNumPieces) {
 		selectPiece(num);
 
 		_eventLoop->setMsg(BoltMsg::kDrive);
-		return BoltCmd::kResend;
+		return BoltRsp::kDone;
 	}
 
 	// TODO: clicking outside of pieces should show the solution
-	return CardCmd::kWin;
+    _game->getEngine()->setMsg(Card::kWin);
+	return BoltRsp::kDone;
 }
 
-BoltCmd ColorPuzzle::driveTransition() {
+BoltRsp ColorPuzzle::driveTransition() {
     assert(_transitionActive);
 
     if (_transitionStep < kNumTransitionSteps) {
@@ -159,21 +161,24 @@ BoltCmd ColorPuzzle::driveTransition() {
         if (pieceNum >= 0) {
             // FIXME: This isn't how it should work...
             morphPiece(pieceNum, (_pieces[pieceNum].state + count) % _pieces[pieceNum].numStates);
-            return BoltCmd::kResend;
+            _game->getEngine()->setMsg(BoltMsg::kDrive);
+            return BoltRsp::kDone;
         }
 
-        return BoltCmd::kDone;
+        return BoltRsp::kDone;
     }
 
     if (isSolved()) {
-        return kWin;
+        _game->getEngine()->setMsg(kWin);
+        return BoltRsp::kDone;
     }
 
     _transitionActive = false;
-    return BoltCmd::kResend;
+    _game->getEngine()->setMsg(BoltMsg::kDrive);
+    return BoltRsp::kDone;
 }
 
-BoltCmd ColorPuzzle::driveMorph() {
+BoltRsp ColorPuzzle::driveMorph() {
     assert(_morphActive);
 
     const uint32 delta = _eventLoop->getEventTime() - _morphStartTime;
@@ -183,14 +188,15 @@ BoltCmd ColorPuzzle::driveMorph() {
             Common::Rational(delta, kMorphDuration));
 
         _graphics->markDirty();
-        return BoltCmd::kDone;
+        return BoltRsp::kDone;
     }
 
     applyPaletteMod(_graphics, kFore, *_morphPaletteMods, _morphEndState);
     _graphics->markDirty();
     _morphPaletteMods = nullptr;
     _morphActive = false;
-    return BoltCmd::kResend;
+    _game->getEngine()->setMsg(BoltMsg::kDrive);
+    return BoltRsp::kDone;
 }
 
 void ColorPuzzle::selectPiece(int piece) {

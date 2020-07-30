@@ -52,7 +52,7 @@ void MainMenu::enter() {
   _scene.enter();
 }
 
-BoltCmd MainMenu::handleMsg(const BoltMsg &msg) {
+BoltRsp MainMenu::handleMsg(const BoltMsg &msg) {
 	if (msg.type == Scene::kClickButton) {
 		return handleButtonClick(msg.num);
 	}
@@ -60,21 +60,22 @@ BoltCmd MainMenu::handleMsg(const BoltMsg &msg) {
 	return _scene.handleMsg(msg);
 }
 
-BoltCmd MainMenu::handleButtonClick(int num) {
+BoltRsp MainMenu::handleButtonClick(int num) {
 	switch (num) {
 	case -1: // No button
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	case 0: // Play
-		return Card::kEnd;
+        _game->getEngine()->setMsg(Card::kEnd);
+		return BoltRsp::kDone;
 	case 1: // Credits
 		_game->startMAMovie(MKTAG('C', 'R', 'D', 'T'));
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	case 4: // Tour
 		_game->startMAMovie(MKTAG('T', 'O', 'U', 'R'));
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	default:
 		warning("unknown main menu button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 

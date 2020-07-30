@@ -38,9 +38,9 @@ class HubCard : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 protected:
-	BoltCmd handleButtonClick(int num);
+	BoltRsp handleButtonClick(int num);
 
 private:
     MerlinGame *_game;

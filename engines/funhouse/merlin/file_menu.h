@@ -34,9 +34,9 @@ class FileMenu : public Card {
 public:
     void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
     void enter();
-    BoltCmd handleMsg(const BoltMsg &msg);
+    BoltRsp handleMsg(const BoltMsg &msg);
 private:
-    BoltCmd handleButtonClick(int num);
+    BoltRsp handleButtonClick(int num);
 	void setButtons();
 
     MerlinGame *_game;

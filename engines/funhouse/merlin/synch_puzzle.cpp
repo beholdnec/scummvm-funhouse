@@ -131,15 +131,15 @@ void SynchPuzzle::enter() {
     }
 }
 
-BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
+BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
     if (_timeoutActive) {
         return driveTimeout();
     } else if (_transitionActive) {
         return driveTransition();
     }
 
-    BoltCmd cmd = _popup.handleMsg(msg);
-    if (cmd.type != BoltCmd::kPass) {
+    BoltRsp cmd = _popup.handleMsg(msg);
+    if (cmd != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -164,7 +164,7 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
             // TODO: hide cursor during transition
             _transitionActive = true;
             _eventLoop->setMsg(BoltMsg::kDrive);
-            return BoltCmd::kResend;
+            return BoltRsp::kDone;
         }
     }
 
@@ -173,19 +173,20 @@ BoltCmd SynchPuzzle::handleMsg(const BoltMsg &msg) {
     return _scene.handleMsg(msg);
 }
 
-BoltCmd SynchPuzzle::handlePopupButtonClick(int num) {
+BoltRsp SynchPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-		return Card::kReturn;
+        _game->getEngine()->setMsg(Card::kReturn);
+		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 
-BoltCmd SynchPuzzle::handleButtonClick(int num) {
+BoltRsp SynchPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
-    return BoltCmd::kDone;
+    return BoltRsp::kDone;
 }
 
 void SynchPuzzle::setTimeout(uint32 delay) {
@@ -194,19 +195,20 @@ void SynchPuzzle::setTimeout(uint32 delay) {
     _timeoutDelay = delay;
 }
 
-BoltCmd SynchPuzzle::driveTimeout() {
+BoltRsp SynchPuzzle::driveTimeout() {
     assert(_timeoutActive);
 
     uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
     if (delta < _timeoutDelay) {
-        return BoltCmd::kDone;
+        return BoltRsp::kDone;
     } else {
         _timeoutActive = false;
-        return BoltCmd::kResend;
+        _game->getEngine()->setMsg(BoltMsg::kDrive);
+        return BoltRsp::kDone;
     }
 }
 
-BoltCmd SynchPuzzle::driveTransition() {
+BoltRsp SynchPuzzle::driveTransition() {
     for (int i = 0; i < _moveAgenda.size(); ++i) {
         if (_moveAgenda[i].item != -1 && _moveAgenda[i].count != 0) {
             Item &item = _items[_moveAgenda[i].item];
@@ -230,17 +232,20 @@ BoltCmd SynchPuzzle::driveTransition() {
             enter(); // Redraw the scene
 
             setTimeout(kTimeoutDelay);
-            return BoltCmd::kResend;
+            _game->getEngine()->setMsg(BoltMsg::kDrive);
+            return BoltRsp::kDone;
         }
     }
 
     // Agenda is empty; check win condition and return to idle state
     if (isSolved()) {
-        return kWin;
+        _game->getEngine()->setMsg(kWin);
+        return BoltRsp::kDone;
     }
 
     _transitionActive = false;
-    return BoltCmd::kResend;
+    _game->getEngine()->setMsg(BoltMsg::kDrive);
+    return BoltRsp::kDone;
 }
 
 int SynchPuzzle::getItemAtPosition(const Common::Point &pt) {

@@ -34,9 +34,9 @@ class DifficultyMenu : public Card {
 public:
     void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
     void enter();
-    BoltCmd handleMsg(const BoltMsg &msg);
+    BoltRsp handleMsg(const BoltMsg &msg);
 private:
-    BoltCmd handleButtonClick(int num);
+    BoltRsp handleButtonClick(int num);
 	bool isReadyToPlay() const;
 	void setAllDifficulties(int difficulty);
 	void setupButtons();

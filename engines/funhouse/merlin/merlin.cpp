@@ -97,7 +97,7 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 	resetSequence();
 }
 
-BoltCmd MerlinGame::handleMsg(const BoltMsg &msg) {
+BoltRsp MerlinGame::handleMsg(const BoltMsg &msg) {
 	// Play movie over anything else
 	if (_movie.isRunning()) {
 		return handleMsgInMovie(msg);
@@ -106,7 +106,7 @@ BoltCmd MerlinGame::handleMsg(const BoltMsg &msg) {
 	}
 
 	assert(false); // Unreachable; there must be an active movie or card
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
 OSystem* MerlinGame::getSystem() {
@@ -233,6 +233,7 @@ void MerlinGame::exitOrReturn() {
 class GenericMenuCard : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId id) {
+        _game = game;
 		loadScene(_scene, game->getEngine(), boltlib, id);
 	}
 
@@ -240,16 +241,18 @@ public:
 		_scene.enter();
 	}
 
-	BoltCmd handleMsg(const BoltMsg &msg) {
+	BoltRsp handleMsg(const BoltMsg &msg) {
 		if (msg.type == Scene::kClickButton) {
 			warning("Unhandled button %d", msg.num);
-			return Card::kEnd;
+            _game->getEngine()->setMsg(Card::kEnd);
+			return BoltRsp::kDone;
 		}
 
 		return _scene.handleMsg(msg);
 	}
 
 private:
+    MerlinGame* _game;
 	Scene _scene;
 };
 
@@ -279,8 +282,8 @@ void MerlinGame::movieTrigger(void *param, uint16 triggerType) {
 	}
 }
 
-BoltCmd MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
-	BoltCmd cmd = BoltCmd::kDone;
+BoltRsp MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
+	BoltRsp cmd = BoltRsp::kDone;
 	if (msg.type == BoltMsg::kClick) {
 		_movie.stop();
 	} else {
@@ -300,29 +303,35 @@ BoltCmd MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
 	return cmd;
 }
 
-BoltCmd MerlinGame::handleMsgInCard(const BoltMsg &msg) {
+BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	assert(_currentCard);
 
-	BoltCmd cmd = _currentCard->handleMsg(msg);
-	switch (cmd.type) {
+	BoltRsp cmd = _currentCard->handleMsg(msg);
+
+    BoltMsg newMsg = _engine->getMsg();
+	switch (newMsg.type) {
 	case Card::kEnd:
 		advanceSequence();
-		return BoltCmd::kDone;
+        _engine->setMsg(BoltMsg::kDrive);
+		return BoltRsp::kDone;
 
     case Card::kReturn:
         exitOrReturn();
-        return BoltCmd::kDone;
+        _engine->setMsg(BoltMsg::kDrive);
+        return BoltRsp::kDone;
 
 	case Card::kWin:
 		win();
-		return BoltCmd::kDone;
+        _engine->setMsg(BoltMsg::kDrive);
+		return BoltRsp::kDone;
 
 	case Card::kEnterPuzzle:
-		if (cmd.num < 0 || cmd.num >= _currentHub->numPuzzles) {
+		if (newMsg.num < 0 || newMsg.num >= _currentHub->numPuzzles) {
 			assert(false && "Tried to enter invalid puzzle number");
 		}
-		puzzle(cmd.num, &_currentHub->puzzles[cmd.num]);
-		return BoltCmd::kDone;
+		puzzle(newMsg.num, &_currentHub->puzzles[newMsg.num]);
+        _engine->setMsg(BoltMsg::kDrive);
+		return BoltRsp::kDone;
 	}
 
 	return cmd;
@@ -419,6 +428,7 @@ void MerlinGame::enterCurrentCard(bool cursorActive) {
 	if (cursorActive) {
 		BoltMsg hoverMsg(BoltMsg::kHover);
 		hoverMsg.point = _system->getEventManager()->getMousePos();
+        _engine->setMsg(BoltMsg::kYield); // This is required to prevent accidentally repeating events
 		handleMsgInCard(hoverMsg);
 	}
 }

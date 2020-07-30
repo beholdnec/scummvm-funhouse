@@ -96,9 +96,9 @@ void SlidingPuzzle::enter() {
     setSprites();
 }
 
-BoltCmd SlidingPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltCmd cmd = _popup.handleMsg(msg);
-    if (cmd.type != BoltCmd::kPass) {
+BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltRsp cmd = _popup.handleMsg(msg);
+    if (cmd != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -121,17 +121,18 @@ void SlidingPuzzle::setSprites() {
     _graphics->markDirty();
 }
 
-BoltCmd SlidingPuzzle::handlePopupButtonClick(int num) {
+BoltRsp SlidingPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-		return Card::kReturn;
+        _game->getEngine()->setMsg(Card::kReturn);
+		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 
-BoltCmd SlidingPuzzle::handleButtonClick(int num) {
+BoltRsp SlidingPuzzle::handleButtonClick(int num) {
     if (num >= 0 && num < kNumButtons * 2) {
         ScopedArray<int> oldPieces(_pieces.clone());
         for (uint i = 0; i < _pieces.size(); ++i) {
@@ -149,13 +150,14 @@ BoltCmd SlidingPuzzle::handleButtonClick(int num) {
         }
 
         if (win) {
-            return kWin;
+            _game->getEngine()->setMsg(kWin);
+            return BoltRsp::kDone;
         }
     } else if (num != -1) {
         warning("Unhandled button %d", num);
     }
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
 } // End of namespace Bolt

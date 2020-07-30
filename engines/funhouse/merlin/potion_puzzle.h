@@ -54,7 +54,7 @@ public:
 	// From Card
 	void init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
 	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
+    BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
 	static const int kNoIngredient = -1; // NOTE: original game uses 0xFE for this value...
@@ -62,18 +62,14 @@ private:
 	static const uint32 kPlacing1Time = 500;
 	static const uint32 kPlacing2Time = 500;
 
-	enum State {
-        kIdle,
-        kTransitioning,
-        kTimeout,
-	};
+    BoltRsp handleIdle(const BoltMsg &msg);
+    BoltRsp handleTimeout(const BoltMsg &msg);
+    BoltRsp handleTransition(const BoltMsg &msg);
 
-	BoltCmd handleTransition(const BoltMsg &msg);
-
-	BoltCmd handleClick(Common::Point point);
-	BoltCmd requestIngredient(int ingredient);
-	BoltCmd requestUndo();
-	BoltCmd performReaction();
+    BoltRsp handleClick(Common::Point point);
+    BoltRsp requestIngredient(int ingredient);
+    BoltRsp requestUndo();
+    BoltRsp performReaction();
 	void reset();
 
 	bool isValidIngredient(int ingredient) const;
@@ -96,14 +92,13 @@ private:
 	ScopedArray<Common::Point> _shelfPoints;
 	Common::Point _bowlPoints[3];
 	BltPotionPuzzleComboTable _reactionTable;
-	
-	State _state;
 
 	ScopedArray<bool> _shelfSlotOccupied; // False: Empty; True: Filled
 	static const int kNumBowlSlots = 3;
 	int _bowlSlots[kNumBowlSlots]; // Ingredients in bowl
 	int _requestedIngredient;
 	
+    bool _timeout;
 	uint32 _timeoutStart;
 	uint32 _timeoutLength;
 };

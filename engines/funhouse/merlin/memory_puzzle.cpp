@@ -143,24 +143,28 @@ void MemoryPuzzle::enter() {
 	_scene.enter();
 }
 
-BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-    if (_animationActive) {
-        return driveAnimation();
-    } else if (_playbackActive) {
-        return drivePlayback();
+BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltRsp cmd;
+
+    if ((cmd = handleAnimation()) != BoltRsp::kPass) {
+        return cmd;
+    }
+
+    if ((cmd = handlePlayback()) != BoltRsp::kPass) {
+        return cmd;
     }
     
     if (_matches >= _finalGoal) {
-        return kWin;
+        _game->getEngine()->setMsg(kWin);
+        return BoltRsp::kDone;
     } else if (_matches >= _goal) {
         _matches = 0;
         _goal += 3;
         startPlayback();
-        return BoltCmd::kDone;
+        return BoltRsp::kDone;
     }
 
-    BoltCmd cmd = _popup.handleMsg(msg);
-    if (cmd.type != BoltCmd::kPass) {
+    if ((cmd = _popup.handleMsg(msg)) != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -169,22 +173,23 @@ BoltCmd MemoryPuzzle::handleMsg(const BoltMsg &msg) {
 		return handlePopupButtonClick(msg.num);
 	case Scene::kClickButton:
 		return handleButtonClick(msg.num);
-	default:
-		return _scene.handleMsg(msg);
 	}
+
+    return _scene.handleMsg(msg);
 }
 
-BoltCmd MemoryPuzzle::handlePopupButtonClick(int num) {
+BoltRsp MemoryPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-		return Card::kReturn;
+        _game->getEngine()->setMsg(Card::kReturn);
+		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 
-BoltCmd MemoryPuzzle::handleButtonClick(int num) {
+BoltRsp MemoryPuzzle::handleButtonClick(int num) {
     debug(3, "Clicked button %d", num);
 
     if (num >= 0 && num < _itemList.size()) {
@@ -201,7 +206,7 @@ BoltCmd MemoryPuzzle::handleButtonClick(int num) {
         }
     }
 
-    return BoltCmd::kDone;
+    return BoltRsp::kDone;
 }
 
 void MemoryPuzzle::startPlayback() {
@@ -209,17 +214,21 @@ void MemoryPuzzle::startPlayback() {
     _playbackStep = 0;
 }
 
-BoltCmd MemoryPuzzle::drivePlayback() {
-    assert(_playbackActive);
+BoltRsp MemoryPuzzle::handlePlayback() {
+    if (!_playbackActive) {
+        return BoltRsp::kPass;
+    }
 
     if (_playbackStep < _goal) {
         startAnimation(_solution[_playbackStep]);
         ++_playbackStep;
-        return BoltCmd::kResend;
+        _game->getEngine()->setMsg(BoltMsg::kDrive);
+        return BoltRsp::kDone;
     }
 
     _playbackActive = false;
-    return BoltCmd::kResend;
+    _game->getEngine()->setMsg(BoltMsg::kDrive);
+    return BoltRsp::kDone;
 }
 
 void MemoryPuzzle::startAnimation(int itemNum, bool playSound) {
@@ -251,8 +260,10 @@ void MemoryPuzzle::startAnimation(int itemNum, bool playSound) {
 	}
 }
 
-BoltCmd MemoryPuzzle::driveAnimation() {
-    assert(_animationActive);
+BoltRsp MemoryPuzzle::handleAnimation() {
+    if (!_animationActive) {
+        return BoltRsp::kPass;
+    }
 
     // 1. Check selection delay
     if (!_animationEnding) {
@@ -260,7 +271,8 @@ BoltCmd MemoryPuzzle::driveAnimation() {
         if (animTime >= kSelectionDelay) {
             _animationActive = false;
             enter(); // Redraw the scene
-            return BoltCmd::kResend;
+            _game->getEngine()->setMsg(BoltMsg::kDrive);
+            return BoltRsp::kDone;
         }
     }
 
@@ -293,14 +305,15 @@ BoltCmd MemoryPuzzle::driveAnimation() {
             if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
                 _animationActive = false;
                 enter(); // Redraw the scene
-                return BoltCmd::kResend;
+                _game->getEngine()->setMsg(BoltMsg::kDrive);
+                return BoltRsp::kDone;
             } else {
                 drawItemFrame(_itemToAnimate, _frameNum);
             }
         }
     }
 
-    return BoltCmd::kDone;
+    return BoltRsp::kDone;
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {

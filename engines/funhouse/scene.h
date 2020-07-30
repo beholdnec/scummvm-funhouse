@@ -36,7 +36,7 @@ namespace Funhouse {
 class Scene {
 public:
 	enum SceneMsg {
-		kClickButton = BoltMsg::kMaxBoltMsg
+		kClickButton = BoltMsg::kSceneMsgs,
 	};
 
 	enum HotspotType {
@@ -102,7 +102,7 @@ public:
 	void init(FunhouseEngine *engine, int numButtons, int numSprites);
 	void enter();
 	void redraw();
-	BoltCmd handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 	void loadBackPlane(Boltlib &boltlib, BltId planeId);
 	void loadForePlane(Boltlib &boltlib, BltId planeId);

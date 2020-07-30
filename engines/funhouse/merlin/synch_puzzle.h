@@ -47,7 +47,7 @@ class SynchPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
+    BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
     static const int kTimeoutDelay = 250;
@@ -67,11 +67,11 @@ private:
 
     typedef ScopedArray<Item> ItemArray;
 
-	BoltCmd handlePopupButtonClick(int num);
-	BoltCmd handleButtonClick(int num);
+    BoltRsp handlePopupButtonClick(int num);
+    BoltRsp handleButtonClick(int num);
     void setTimeout(uint32 delay);
-    BoltCmd driveTimeout();
-    BoltCmd driveTransition();
+    BoltRsp driveTimeout();
+    BoltRsp driveTransition();
     int getItemAtPosition(const Common::Point& pt);
     bool isSolved() const;
 

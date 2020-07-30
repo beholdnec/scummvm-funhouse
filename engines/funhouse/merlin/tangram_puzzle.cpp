@@ -159,10 +159,10 @@ bool TangramPuzzle::pieceIsPlaceableAt(int pieceNum, int px, int py) {
 	return true;
 }
 
-BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
+BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 	// FIXME: Is popup allowed while a piece is held?
-    BoltCmd cmd = _popup.handleMsg(msg);
-    if (cmd.type != BoltCmd::kPass) {
+    BoltRsp cmd = _popup.handleMsg(msg);
+    if (cmd != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -185,7 +185,8 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
             drawPieces();
 
 			if (checkWin()) {
-				return kWin;
+                _game->getEngine()->setMsg(kWin);
+				return BoltRsp::kDone;
 			}
         } else {
             _pieceInHand = getPieceAtPosition(msg.point);
@@ -203,7 +204,7 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
             }
         }
 
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 
     if (msg.type == BoltMsg::kHover) {
@@ -215,20 +216,21 @@ BoltCmd TangramPuzzle::handleMsg(const BoltMsg &msg) {
 			p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
 			p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
             drawPieces();
-            return BoltCmd::kDone;
+            return BoltRsp::kDone;
         }
     }
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
-BoltCmd TangramPuzzle::handlePopupButtonClick(int num) {
+BoltRsp TangramPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-		return Card::kReturn;
+        _game->getEngine()->setMsg(Card::kReturn);
+		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 }
 

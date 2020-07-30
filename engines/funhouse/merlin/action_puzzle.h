@@ -37,7 +37,7 @@ public:
 	ActionPuzzle();
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 protected:
 	struct Particle {
@@ -50,16 +50,16 @@ protected:
 
 	typedef Common::List<Particle> ParticleList;
 
-	BoltCmd handlePopupButtonClick(int num);
+    BoltRsp handlePopupButtonClick(int num);
 	const BltImage& getParticleImage(const Particle &particle);
 	Common::Point getParticlePos(const Particle &particle);
-	BoltCmd handleClick(const Common::Point &pt);
+    BoltRsp handleClick(const Common::Point &pt);
 	bool isParticleAtPoint(const Particle &particle, const Common::Point &pt);
 	void spawnParticle(int imageNum, int pathNum);
 	void drawBack();
 	void drawFore();
 	void tick();
-	BoltCmd win();
+	BoltRsp win();
 
     MerlinGame *_game;
 	Graphics *_graphics;

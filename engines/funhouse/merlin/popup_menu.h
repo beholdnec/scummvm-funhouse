@@ -39,7 +39,7 @@ public:
     void init(MerlinGame *game, Boltlib &boltlib, BltId id);
 
 	void dismiss();
-    BoltCmd handleMsg(const BoltMsg &msg);
+    BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
     struct Button {
@@ -51,7 +51,7 @@ private:
 
     void activate();
     int getButtonAt(const Common::Point &pt) const;
-    BoltCmd handleButtonClick(int num);
+    BoltRsp handleButtonClick(int num);
 
     MerlinGame *_game;
     IBoltEventLoop *_eventLoop;

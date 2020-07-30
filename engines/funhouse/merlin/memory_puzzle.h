@@ -37,7 +37,7 @@ public:
 
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
     // TODO: this value probably comes from boltlib.blt somewhere
@@ -67,12 +67,12 @@ private:
 
 	typedef ScopedArray<Item> ItemList;
 
-	BoltCmd handlePopupButtonClick(int num);
-	BoltCmd handleButtonClick(int num);
+	BoltRsp handlePopupButtonClick(int num);
+	BoltRsp handleButtonClick(int num);
     void startPlayback();
-    BoltCmd drivePlayback();
+    BoltRsp handlePlayback();
     void startAnimation(int itemNum, bool playSound = true);
-    BoltCmd driveAnimation();
+    BoltRsp handleAnimation();
     void drawItemFrame(int itemNum, int frameNum);
 
     MerlinGame *_game;

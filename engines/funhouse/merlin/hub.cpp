@@ -97,9 +97,9 @@ void HubCard::enter() {
     _graphics->markDirty();
 }
 
-BoltCmd HubCard::handleMsg(const BoltMsg &msg) {
-    BoltCmd cmd = _popup.handleMsg(msg);
-    if (cmd.type != BoltCmd::kPass) {
+BoltRsp HubCard::handleMsg(const BoltMsg &msg) {
+    BoltRsp cmd = _popup.handleMsg(msg);
+    if (cmd != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -110,14 +110,16 @@ BoltCmd HubCard::handleMsg(const BoltMsg &msg) {
 	return _scene.handleMsg(msg);
 }
 
-BoltCmd HubCard::handleButtonClick(int num) {
+BoltRsp HubCard::handleButtonClick(int num) {
 	if (num == -1) {
 		// If no button was clicked, complete stage and transition to next hub.
-		return Card::kEnd;
+        _game->getEngine()->setMsg(Card::kEnd);
+		return BoltRsp::kDone;
 	} else {
-		BoltCmd cmd(Card::kEnterPuzzle);
+		BoltMsg cmd(Card::kEnterPuzzle);
 		cmd.num = num;
-		return cmd;
+        _game->getEngine()->setMsg(cmd);
+		return BoltRsp::kDone;
 	}
 }
 

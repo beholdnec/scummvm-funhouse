@@ -93,6 +93,7 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 	_game = game;
 	_eventLoop = eventLoop;
 	_graphics = _game->getGraphics();
+    _timeout = false;
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
 
@@ -143,8 +144,6 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 		_bowlPoints[i] = bowlPoints[i].pos;
 	}
 	
-	_state = kIdle;
-	
 	_shelfSlotOccupied.alloc(puzzle.numShelfPoints);
 
 	reset();
@@ -154,41 +153,50 @@ void PotionPuzzle::enter() {
 	draw();
 }
 
-BoltCmd PotionPuzzle::handleMsg(const BoltMsg &msg) {
-    switch (_state) {
-    case kIdle: {
-        BoltCmd cmd = _popup.handleMsg(msg);
-        if (cmd.type != BoltCmd::kPass) {
-            return cmd;
-        }
+BoltRsp PotionPuzzle::handleMsg(const BoltMsg &msg) {
+    BoltRsp cmd;
 
-        if (msg.type == BoltMsg::kClick) {
-            return handleClick(msg.point);
-        }
-
-        return BoltCmd::kDone;
+    if ((cmd = handleTimeout(msg)) != BoltRsp::kPass) {
+        return cmd;
     }
 
-    case kTransitioning:
-        return handleTransition(msg);
-
-    case kTimeout: {
-        const uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
-        if (delta >= _timeoutLength) {
-            _state = kTransitioning;
-            return BoltCmd::kResend;
-        }
-
-        return BoltCmd::kDone;
+    if ((cmd = handleTransition(msg)) != BoltRsp::kPass) {
+        return cmd;
     }
 
-    default:
-        assert(false && "Invalid state");
-        return BoltCmd::kDone;
-    }
+    return handleIdle(msg);
 }
 
-BoltCmd PotionPuzzle::handleTransition(const BoltMsg &msg) {
+BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
+    BoltRsp cmd;
+
+    if ((cmd = _popup.handleMsg(msg)) != BoltRsp::kPass) {
+        return cmd;
+    }
+
+    if (msg.type == BoltMsg::kClick) {
+        return handleClick(msg.point);
+    }
+
+    return BoltRsp::kDone;
+}
+
+BoltRsp PotionPuzzle::handleTimeout(const BoltMsg &msg) {
+    if (!_timeout) {
+        return BoltRsp::kPass;
+    }
+
+    uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
+    if (delta >= _timeoutLength) {
+        _timeout = false;
+        _game->getEngine()->setMsg(BoltMsg::kDrive);
+        return BoltRsp::kDone;
+    }
+
+    return BoltRsp::kDone;
+}
+
+BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
 	// Examine bowl to decide what action to take
 	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[2])) {
 		// Left and right bowl slots occupied; perform reaction
@@ -217,7 +225,8 @@ BoltCmd PotionPuzzle::handleTransition(const BoltMsg &msg) {
 
 		// TODO: Play "plunk" sound
 		setTimeout(kPlacing2Time);
-		return BoltCmd::kResend;
+        _game->getEngine()->setMsg(BoltMsg::kDrive);
+		return BoltRsp::kDone;
 	}
 
 	int numRemainingIngredients = getNumRemainingIngredients();
@@ -228,15 +237,15 @@ BoltCmd PotionPuzzle::handleTransition(const BoltMsg &msg) {
 		reset();
 		draw();
 		// TODO: Play "reset" sound
-		return BoltCmd::kResend;
+        _game->getEngine()->setMsg(BoltMsg::kDrive);
+		return BoltRsp::kDone;
 	}
 
-	// No action taken; change to idle mode
-    _state = kIdle;
-	return BoltCmd::kResend;
+	// No action taken
+	return BoltRsp::kPass;
 }
 
-BoltCmd PotionPuzzle::handleClick(Common::Point point) {
+BoltRsp PotionPuzzle::handleClick(Common::Point point) {
 	// Eat the click event
 	_eventLoop->setMsg(BoltMsg::kDrive);
 
@@ -270,23 +279,24 @@ BoltCmd PotionPuzzle::handleClick(Common::Point point) {
 		}
 	}
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
-BoltCmd PotionPuzzle::requestIngredient(int ingredient) {
+BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
 	setTimeout(kPlacing1Time);
-	return BoltCmd::kResend;
+    _game->getEngine()->setMsg(BoltMsg::kDrive);
+	return BoltRsp::kDone;
 }
 
-BoltCmd PotionPuzzle::requestUndo() {
+BoltRsp PotionPuzzle::requestUndo() {
 	// TODO
 	warning("Undo not implemented");
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
-BoltCmd PotionPuzzle::performReaction() {
+BoltRsp PotionPuzzle::performReaction() {
 	int ingredientA = _bowlSlots[0];
 	int ingredientB = _bowlSlots[2];
 
@@ -294,52 +304,6 @@ BoltCmd PotionPuzzle::performReaction() {
 		&& "Invalid bowl state in performReaction");
 
 	// Find reaction
-
-#if 0
-	// NOTE: Different movies can play depending on which ingredients are on the left and right.
-	//       The final object is always the same, though.
-	//       Example: On the stump puzzle (easy difficulty), when combining the rock and acorn, the SHMR
-	//       movie plays if the acorn is on the left. Otherwise, the OOZE movie plays. Both reactions result
-	//       in gravel.
-	int bestMatch = -1;
-	const BltPotionPuzzleComboTableElement *reactionInfo = nullptr;
-	for (uint i = 0; i < _reactionTable.size(); ++i) {
-		reactionInfo = &_reactionTable[i];
-		debug(3, "checking reaction %d, %d, %d, %d, %d",
-			(int)reactionInfo->a, (int)reactionInfo->b, (int)reactionInfo->c, (int)reactionInfo->d,
-			(int)reactionInfo->movie);
-
-		if (ingredientA == reactionInfo->a && ingredientB == reactionInfo->b) {
-			if (reactionInfo->c == -1 && reactionInfo->d == -1) {
-				// FIXME: I'm not sure the original program checks if all ingredients are used.
-				if (getNumRemainingIngredients() == 0) {
-					// Win condition!
-					return Card::kEnd;
-				}
-				else {
-					// Not all ingredients are used -- reject this entry.
-					continue;
-				}
-			}
-
-			bestMatch = i;
-			break; // Perfect match found; break early
-		}
-
-		if (ingredientA == reactionInfo->b && ingredientB == reactionInfo->a) {
-			if (bestMatch < 0) {
-				bestMatch = i; // Imperfect match found; keep searching
-			}
-		}
-
-		// Wildcard
-		if (reactionInfo->a == -1 && ingredientB == reactionInfo->b) {
-			if (bestMatch < 0) {
-				bestMatch = i;
-			}
-		}
-	}
-#endif
 
 	int bestMatch = -1;
 	byte uvarH = 0x2;
@@ -383,7 +347,7 @@ BoltCmd PotionPuzzle::performReaction() {
 		_bowlSlots[1] = kNoIngredient;
 		_bowlSlots[2] = kNoIngredient;
 		draw();
-		return BoltCmd::kDone;
+		return BoltRsp::kDone;
 	}
 
 	// Perform reaction
@@ -391,7 +355,8 @@ BoltCmd PotionPuzzle::performReaction() {
 
 	if (reactionInfo->c == -1) {
 		// FIXME: Does the original program check if all ingredients are used?
-		return Card::kWin;
+        _game->getEngine()->setMsg(kWin);
+		return BoltRsp::kDone;
 	}
 	else {
 		if (reactionInfo->c != (int8)0xfd) { // I don't think this is ever false...
@@ -426,19 +391,10 @@ BoltCmd PotionPuzzle::performReaction() {
 		// Start the movie, but don't redraw the puzzle. The movie sends a
 		// special command to redraw the puzzle.
 		_game->startPotionMovie(reactionInfo->movie);
-#if 0
-		// FIXME: Does reactionInfo->c have any special meaning?
-		_bowlSlots[0] = kNoIngredient;
-		_bowlSlots[1] = reactionInfo->d;
-		_bowlSlots[2] = kNoIngredient;
-		// NOTE: The game doesn't redraw puzzle until midway through the movie. The movie
-		//       sends a special redraw command.
-		_game->startPotionMovie(reactionInfo->movie);
-#endif
 	}
 
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
 void PotionPuzzle::reset() {
@@ -519,7 +475,7 @@ int PotionPuzzle::getNumRemainingIngredients() const {
 void PotionPuzzle::setTimeout(uint32 length) {
 	_timeoutStart = _eventLoop->getEventTime();
 	_timeoutLength = length;
-    _state = kTimeout;
+    _timeout = true;
 }
 
 } // End of namespace Funhouse

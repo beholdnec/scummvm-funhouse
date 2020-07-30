@@ -130,7 +130,7 @@ bool Movie::isRunning() const {
 	return _graphics && (_timelineActive || isAudioRunning());
 }
 
-BoltCmd Movie::handleMsg(const BoltMsg &msg) {
+BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 	bool handled = false;
 	switch (msg.type) {
 	case BoltMsg::kSmoothAnimation:
@@ -158,7 +158,7 @@ BoltCmd Movie::handleMsg(const BoltMsg &msg) {
 		_eventLoop->requestSmoothAnimation();
 	}
 
-	return BoltCmd::kDone;
+	return BoltRsp::kDone;
 }
 
 void Movie::setTriggerCallback(TriggerCallback callback, void *param) {

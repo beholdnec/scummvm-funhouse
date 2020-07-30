@@ -49,7 +49,7 @@ class ColorPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
-	BoltCmd handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
 	// All color puzzles in Merlin's Apprentice have 4 pieces.
@@ -67,11 +67,11 @@ private:
         BltColorPuzzleTransition transition;
 	};
 
-	BoltCmd handlePopupButtonClick(int num);
-	BoltCmd handleButtonClick(int num);
+	BoltRsp handlePopupButtonClick(int num);
+	BoltRsp handleButtonClick(int num);
 
-    BoltCmd driveTransition();
-    BoltCmd driveMorph();
+    BoltRsp driveTransition();
+    BoltRsp driveMorph();
 	void selectPiece(int piece);
 	void setPieceState(int piece, int state);
 	void morphPiece(int piece, int state);
