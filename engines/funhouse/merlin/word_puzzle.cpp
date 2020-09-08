@@ -75,7 +75,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltU16Values difficulties;
 	loadBltResourceArray(difficulties, boltlib, difficultiesId);
-    BltId difficultyId = BltShortId(difficulties[_game->getWordsDifficulty()].value); // Ex: 5E18
+    BltId difficultyId = BltShortId(difficulties[_game->getDifficulty(kWordsDifficulty)].value); // Ex: 5E18
 
 	int puzzleVariant = 0; // TODO: Choose puzzle variant 0-3
 

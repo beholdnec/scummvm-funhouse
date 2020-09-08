@@ -48,47 +48,17 @@ static const int kPlayButton = 3;
 static const int kAllBeginnerButton = 4;
 static const int kAllAdvancedButton = 5;
 static const int kAllExpertButton = 6;
-static const int kFirstWordsDifficultyButton = 12;
-static const int kFirstShapesDifficultyButton = 15;
-static const int kFirstActionDifficultyButton = 18;
-static const int kFirstMemoryDifficultyButton = 21;
-static const int kFirstLogicDifficultyButton = 24;
+static const int kFirstDifficultyButton = 12;
 
 BoltRsp DifficultyMenu::handleButtonClick(int num) {
-	// Words
-	if (num >= kFirstWordsDifficultyButton && num < kFirstWordsDifficultyButton + 3) {
-		_game->setWordsDifficulty(num - kFirstWordsDifficultyButton);
-		setupButtons();
-		return BoltRsp::kDone;
-	}
-
-	// Shapes
-	if (num >= kFirstShapesDifficultyButton && num < kFirstShapesDifficultyButton + 3) {
-		_game->setShapesDifficulty(num - kFirstShapesDifficultyButton);
-		setupButtons();
-		return BoltRsp::kDone;
-	}
-
-	// Action
-	if (num >= kFirstActionDifficultyButton && num < kFirstActionDifficultyButton + 3) {
-		_game->setActionDifficulty(num - kFirstActionDifficultyButton);
-		setupButtons();
-		return BoltRsp::kDone;
-	}
-
-	// Memory
-	if (num >= kFirstMemoryDifficultyButton && num < kFirstMemoryDifficultyButton + 3) {
-		_game->setMemoryDifficulty(num - kFirstMemoryDifficultyButton);
-		setupButtons();
-		return BoltRsp::kDone;
-	}
-
-	// Logic
-	if (num >= kFirstLogicDifficultyButton && num < kFirstLogicDifficultyButton + 3) {
-		_game->setLogicDifficulty(num - kFirstLogicDifficultyButton);
-		setupButtons();
-		return BoltRsp::kDone;
-	}
+    if (num >= kFirstDifficultyButton && num < kFirstDifficultyButton + 3 * kNumDifficultyCategories) {
+        DifficultyCategory category = static_cast<DifficultyCategory>((num - kFirstDifficultyButton) / 3);
+        int level = (num - kFirstDifficultyButton) % 3;
+        warning("setting difficulty category %d to level %d", category, level);
+        _game->setDifficulty(category, level);
+        setupButtons();
+        return BoltRsp::kDone;
+    }
 
 	switch (num) {
 	case -1: // No button
@@ -115,29 +85,27 @@ BoltRsp DifficultyMenu::handleButtonClick(int num) {
 }
 
 bool DifficultyMenu::isReadyToPlay() const {
-	return _game->getWordsDifficulty() >= 0 &&
-		_game->getShapesDifficulty() >= 0 &&
-		_game->getActionDifficulty() >= 0 &&
-		_game->getMemoryDifficulty() >= 0 &&
-		_game->getLogicDifficulty() >= 0;
+    for (int i = 0; i < kNumDifficultyCategories; ++i) {
+        if (_game->getDifficulty(static_cast<DifficultyCategory>(i)) < 0) {
+            return false;
+        }
+    }
+
+    return  true;
 }
 
 void DifficultyMenu::setAllDifficulties(int difficulty) {
-	_game->setWordsDifficulty(difficulty);
-	_game->setShapesDifficulty(difficulty);
-	_game->setActionDifficulty(difficulty);
-	_game->setMemoryDifficulty(difficulty);
-	_game->setLogicDifficulty(difficulty);
+    for (int i = 0; i < kNumDifficultyCategories; ++i) {
+        _game->setDifficulty(static_cast<DifficultyCategory>(i), difficulty);
+    }
 	setupButtons();
 }
 
 void DifficultyMenu::setupButtons() {
 	for (int i = 0; i < 3; ++i) {
-		_scene.getButton(kFirstWordsDifficultyButton + i).setGraphics(i == _game->getWordsDifficulty() ? 1 : 0);
-		_scene.getButton(kFirstShapesDifficultyButton + i).setGraphics(i == _game->getShapesDifficulty() ? 1 : 0);
-		_scene.getButton(kFirstActionDifficultyButton + i).setGraphics(i == _game->getActionDifficulty() ? 1 : 0);
-		_scene.getButton(kFirstMemoryDifficultyButton + i).setGraphics(i == _game->getMemoryDifficulty() ? 1 : 0);
-		_scene.getButton(kFirstLogicDifficultyButton + i).setGraphics(i == _game->getLogicDifficulty() ? 1 : 0);
+        for (int j = 0; j < kNumDifficultyCategories; ++j) {
+            _scene.getButton(kFirstDifficultyButton + 3 * j + i).setGraphics(i == _game->getDifficulty(static_cast<DifficultyCategory>(j)) ? 1 : 0);
+        }
 	}
 
 	_scene.getButton(kPlayButton).setGraphics(isReadyToPlay() ? 1 : 0);

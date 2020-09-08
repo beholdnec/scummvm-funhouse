@@ -59,7 +59,7 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltId difficultyId;
 	uint16 numPieces = 0;
-	switch (_game->getLogicDifficulty()) { // FIXME: is this logic or shapes?
+	switch (_game->getDifficulty(kLogicDifficulty)) { // FIXME: is this logic or shapes?
 	case 0: difficultyId = slidingPuzzleInfo.difficulty1; numPieces = slidingPuzzleInfo.numPieces1; break;
 	case 1: difficultyId = slidingPuzzleInfo.difficulty2; numPieces = slidingPuzzleInfo.numPieces2; break;
 	case 2: difficultyId = slidingPuzzleInfo.difficulty3; numPieces = slidingPuzzleInfo.numPieces3; break;

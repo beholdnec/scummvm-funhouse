@@ -112,7 +112,7 @@ void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &bo
 
 	loadBltResourceArray(difficultyIds, boltlib, puzzle.difficultiesId);
 	
-	BltId difficultyId = BltShortId(difficultyIds[_game->getLogicDifficulty()].value);
+	BltId difficultyId = BltShortId(difficultyIds[_game->getDifficulty(kLogicDifficulty)].value);
 	loadBltResource(difficulty, boltlib, difficultyId);
 	_numIngredients = difficulty.numIngredients;
 

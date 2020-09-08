@@ -99,7 +99,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     BltMemoryPuzzleInfos infos;
     loadBltResourceArray(infos, boltlib, infosId);
-    _finalGoal = infos[_game->getMemoryDifficulty()].finalGoal;
+    _finalGoal = infos[_game->getDifficulty(kMemoryDifficulty)].finalGoal;
     _goal = 3;
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);

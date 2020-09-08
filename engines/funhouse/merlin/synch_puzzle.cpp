@@ -52,7 +52,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     BltU16Values difficultiesList;
     loadBltResourceArray(difficultiesList, boltlib, difficultiesId);
-    BltId difficultyId = BltShortId(difficultiesList[_game->getLogicDifficulty()].value); // Ex: 7A72
+    BltId difficultyId = BltShortId(difficultiesList[_game->getDifficulty(kLogicDifficulty)].value); // Ex: 7A72
 
     BltSynchPuzzleInfo info;
     loadBltResource(info, boltlib, infoId);

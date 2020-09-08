@@ -31,6 +31,15 @@ namespace Funhouse {
 class MerlinGame;
 struct PuzzleEntry;
 
+enum DifficultyCategory {
+    kWordsDifficulty,
+    kShapesDifficulty,
+    kActionDifficulty,
+    kMemoryDifficulty,
+    kLogicDifficulty,
+    kNumDifficultyCategories,
+};
+
 struct HubEntry {
 	uint16 hubId;
 	int numPuzzles;
@@ -72,16 +81,8 @@ public:
     BltId getPopupResId(PopupType type);
 	bool isPuzzleSolved(int num) const;
 
-	int getWordsDifficulty() const;
-	void setWordsDifficulty(int difficulty);
-	int getShapesDifficulty() const;
-	void setShapesDifficulty(int difficulty);
-	int getActionDifficulty() const;
-	void setActionDifficulty(int difficulty);
-	int getMemoryDifficulty() const;
-	void setMemoryDifficulty(int difficulty);
-	int getLogicDifficulty() const;
-	void setLogicDifficulty(int difficulty);
+    int getDifficulty(DifficultyCategory category) const;
+    void setDifficulty(DifficultyCategory category, int level);
 
 	static const int kNumFiles = 12;
 
@@ -148,12 +149,8 @@ private:
 	int _fileNum;
 
 	// Difficulty levels:
-	// 0: beginner; 1: advanced; 2: expert
-	int _wordsDifficulty;
-	int _shapesDifficulty;
-	int _actionDifficulty;
-	int _memoryDifficulty;
-	int _logicDifficulty;
+	// 0: beginner; 1: advanced; 2: expert; -1: not set
+    int _difficulties[kNumDifficultyCategories];
 
 	int _sequenceCursor;
 	const HubEntry *_currentHub;

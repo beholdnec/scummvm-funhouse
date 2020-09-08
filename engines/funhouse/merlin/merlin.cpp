@@ -63,11 +63,9 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 	_mixer = mixer;
 	_eventLoop = _engine;
 	_fileNum = -1;
-	_wordsDifficulty = -1;
-	_shapesDifficulty = -1;
-	_actionDifficulty = -1;
-	_memoryDifficulty = -1;
-	_logicDifficulty = -1;
+    for (int i = 0; i < kNumDifficultyCategories; ++i) {
+        _difficulties[i] = -1;
+    }
 
 	_boltlib.load("BOLTLIB.BLT");
 
@@ -341,49 +339,14 @@ bool MerlinGame::isPuzzleSolved(int num) const {
 	return _puzzlesSolved[num];
 }
 
-int MerlinGame::getWordsDifficulty() const {
-	return _wordsDifficulty;
+int MerlinGame::getDifficulty(DifficultyCategory category) const {
+    assert(category >= 0 && category < kNumDifficultyCategories);
+    return _difficulties[category];
 }
 
-void MerlinGame::setWordsDifficulty(int difficulty) {
-	assert(difficulty >= 0 && difficulty < 3);
-	_wordsDifficulty = difficulty;
-}
-
-int MerlinGame::getShapesDifficulty() const {
-	return _shapesDifficulty;
-}
-
-void MerlinGame::setShapesDifficulty(int difficulty) {
-	assert(difficulty >= 0 && difficulty < 3);
-	_shapesDifficulty = difficulty;
-}
-
-int MerlinGame::getActionDifficulty() const {
-	return _actionDifficulty;
-}
-
-void MerlinGame::setActionDifficulty(int difficulty) {
-	assert(difficulty >= 0 && difficulty < 3);
-	_actionDifficulty = difficulty;
-}
-
-int MerlinGame::getMemoryDifficulty() const {
-	return _memoryDifficulty;
-}
-
-void MerlinGame::setMemoryDifficulty(int difficulty) {
-	assert(difficulty >= 0 && difficulty < 3);
-	_memoryDifficulty = difficulty;
-}
-
-int MerlinGame::getLogicDifficulty() const {
-	return _logicDifficulty;
-}
-
-void MerlinGame::setLogicDifficulty(int difficulty) {
-	assert(difficulty >= 0 && difficulty < 3);
-	_logicDifficulty = difficulty;
+void MerlinGame::setDifficulty(DifficultyCategory category, int level) {
+    assert(level >= 0 && level < 3);
+    _difficulties[category] = level;
 }
 
 void MerlinGame::redraw() {
