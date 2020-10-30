@@ -41,7 +41,7 @@ public:
 
 private:
     const uint32 kFrameDelayMs = 50;
-    const uint32 kMinAnimTimeMs = 400;
+    const uint32 kMinAnimPlayTimeMs = 400;
 
 	struct ItemFrame {
 		Common::Point pos;
@@ -87,16 +87,19 @@ private:
     int _playbackStep;
 
     enum AnimationStatus {
-        kStopped,
+        kIdle,
         kPlaying,
         kWindingDown,
+        kStopping,
     };
 
     AnimationStatus _animStatus;
     int _animItem;
     int _animFrame;
+    int _animSubFrame;
     uint32 _animStartTime;
-    uint32 _animTotalTime;
+    uint32 _animPlayTime;
+    uint32 _animSoundTime; // in ms
     uint32 _frameTime;
 };
 

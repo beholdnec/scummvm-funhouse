@@ -86,7 +86,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
 	_graphics = _game->getGraphics();
     _eventLoop = _game->getEventLoop();
-    _animStatus = kStopped;
+    _animStatus = kIdle;
     _playbackActive = false;
     _matches = 0;
 
@@ -241,15 +241,17 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     _animStatus = kPlaying;
     _animItem = itemNum;
     _animFrame = 0;
+    _animSubFrame = 0;
     _animStartTime = _eventLoop->getEventTime();
-    _animTotalTime = sound.getNumSamples() / 22;
+    _animSoundTime = sound.getNumSamples() / 22; // This approximation is used by the original engine.
+    _animPlayTime = _animSoundTime;
     if (_foo == 0x4d) {
         warning("Overriding animation time for foo 0x4d");
         // Triggered in pots-n-pans-n-vials puzzle
-        _animTotalTime = 400;
+        _animPlayTime = 400;
     }
-    else if (_animTotalTime < kMinAnimTimeMs) {
-        _animTotalTime = kMinAnimTimeMs;
+    else if (_animPlayTime < kMinAnimPlayTimeMs) {
+        _animPlayTime = kMinAnimPlayTimeMs;
     }
     _frameTime = _animStartTime;
 
@@ -272,39 +274,50 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
 BoltRsp MemoryPuzzle::handleAnimation() {
     switch (_animStatus) {
 
-    case kStopped:
+    case kIdle:
         return BoltRsp::kPass;
 
     case kPlaying: {
         const Item& item = _itemList[_animItem];
         const ItemFrame& frame = item.frames[_animFrame];
 
-        // FIXME: improve timing by:
-        // - force a frame to elapse before checking total time
+        uint32 frameElapsed = _eventLoop->getEventTime() - _frameTime;
+        if (frameElapsed >= kFrameDelayMs) {
+            _frameTime += kFrameDelayMs;
 
-        uint32 totalElapsed = _eventLoop->getEventTime() - _animStartTime;
-        if (totalElapsed >= _animTotalTime) {
-            if (frame.delayFrames == -1) {
-                _animFrame++;
-                drawItemFrame(_animItem, _animFrame);
-                _frameTime = _animStartTime + _animTotalTime;
-                _animStatus = kWindingDown;
+            uint32 totalElapsed = _eventLoop->getEventTime() - _animStartTime;
+            if (totalElapsed >= _animPlayTime) {
+                if (frame.delayFrames == -1) {
+                    _animFrame++;
+                    _animSubFrame = 0;
+                    _frameTime = _eventLoop->getEventTime();
+                    drawItemFrame(_animItem, _animFrame);
+                    _animStatus = kWindingDown;
+                    debug("winding down animation...");
+                }
+                else {
+                    _animStatus = kStopping;
+                }
+
+                _eventLoop->setMsg(BoltMsg::kDrive);
+                return BoltRsp::kDone;
             }
             else {
-                drawItemFrame(_animItem, -1);
-                _animStatus = kStopped;
+                if (frame.delayFrames == -1) {
+                    // Do not advance frames
+                }
+                else {
+                    ++_animSubFrame;
+                    if (_animSubFrame >= frame.delayFrames) {
+                        ++_animFrame;
+                        if (_animFrame >= item.frames.size()) {
+                            _animFrame = 0;
+                        }
+                        _animSubFrame = 0;
+                        drawItemFrame(_animItem, _animFrame);
+                    }
+                }
             }
-            _eventLoop->setMsg(BoltMsg::kDrive);
-            return BoltRsp::kDone;
-        }
-
-        uint32 frameElapsed = _eventLoop->getEventTime() - _frameTime;
-        if (frame.delayFrames != -1 && frameElapsed >= kFrameDelayMs * frame.delayFrames) {
-            _frameTime += kFrameDelayMs * frame.delayFrames;
-            _animFrame = (_animFrame + 1) % _itemList[_animItem].frames.size();
-            drawItemFrame(_animItem, _animFrame);
-            _eventLoop->setMsg(BoltMsg::kDrive);
-            return BoltRsp::kDone;
         }
 
         return BoltRsp::kDone;
@@ -314,7 +327,7 @@ BoltRsp MemoryPuzzle::handleAnimation() {
         const Item& item = _itemList[_animItem];
 
         if (_animFrame >= item.frames.size()) {
-            _animStatus = kStopped;
+            _animStatus = kStopping;
             _eventLoop->setMsg(BoltMsg::kDrive);
             return BoltRsp::kDone;
         }
@@ -322,29 +335,40 @@ BoltRsp MemoryPuzzle::handleAnimation() {
         const ItemFrame& frame = item.frames[_animFrame];
 
         uint32 frameElapsed = _eventLoop->getEventTime() - _frameTime;
-        if (frame.delayFrames != -1 && frameElapsed >= kFrameDelayMs * frame.delayFrames) {
-            _frameTime += kFrameDelayMs * frame.delayFrames;
-            _animFrame++;
-            drawItemFrame(_animItem, _animFrame);
-            if (_animFrame >= item.frames.size()) {
-                _animStatus = kStopped;
+        if (frameElapsed >= kFrameDelayMs) {
+            _frameTime += kFrameDelayMs;
+
+            if (frame.delayFrames != -1) {
+                ++_animSubFrame;
+                if (_animSubFrame >= frame.delayFrames) {
+                    ++_animFrame;
+                    _animSubFrame = 0;
+                    drawItemFrame(_animItem, _animFrame);
+                }
             }
-            _eventLoop->setMsg(BoltMsg::kDrive);
-            return BoltRsp::kDone;
-        }
-        else if (frame.delayFrames == -1) {
-            _animFrame++;
-            drawItemFrame(_animItem, _animFrame);
-            _eventLoop->setMsg(BoltMsg::kDrive);
-            return BoltRsp::kDone;
+            else {
+                _animFrame++;
+                _animSubFrame = 0;
+                drawItemFrame(_animItem, _animFrame);
+            }
         }
 
         return BoltRsp::kDone;
     }
 
+    case kStopping: {
+        uint32 totalElapsed = _eventLoop->getEventTime() - _animStartTime;
+        if (totalElapsed >= _animSoundTime) {
+            drawItemFrame(_animItem, -1);
+            _animStatus = kIdle;
+            _eventLoop->setMsg(BoltMsg::kDrive);
+        }
+        return BoltRsp::kDone;
+    }
+
     default:
         assert(false && "Invalid state");
-        _animStatus = kStopped;
+        _animStatus = kIdle;
         return BoltRsp::kPass;
     }
 }
