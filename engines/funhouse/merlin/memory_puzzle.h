@@ -40,20 +40,13 @@ public:
 	BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
-    // TODO: this value probably comes from boltlib.blt somewhere
-    const uint32 kAnimPeriod = 50;
-    const uint32 kSelectionDelay = 800;
-    const uint32 kAnimEndingDelay = 400;
-
-    enum FrameType {
-        kProceed = 1,
-        kWaitForEnd = -1,
-    };
+    const uint32 kFrameDelayMs = 50;
+    const uint32 kMinAnimTimeMs = 400;
 
 	struct ItemFrame {
 		Common::Point pos;
 		BltImage image;
-        FrameType type;
+        int16 delayFrames; // In units of 50ms; -1 triggers pause and wind-down
 	};
 
 	typedef ScopedArray<ItemFrame> ItemFrameList;
@@ -71,7 +64,7 @@ private:
 	BoltRsp handleButtonClick(int num);
     void startPlayback();
     BoltRsp handlePlayback();
-    void startAnimation(int itemNum, bool playSound = true);
+    void startAnimation(int itemNum, BltSound& sound);
     BoltRsp handleAnimation();
     void drawItemFrame(int itemNum, int frameNum);
 
@@ -82,6 +75,7 @@ private:
     PopupMenu _popup;
 	ItemList _itemList;
     int _finalGoal;
+    uint16 _foo; // Parameter used to determine puzzle variant? Also used to override animation timing!
 	BltSoundList _failSound;
 
     Common::RandomSource _random;
@@ -92,13 +86,18 @@ private:
     bool _playbackActive;
     int _playbackStep;
 
-    bool _animationActive;
-    bool _animationEnding;
-    int _itemToAnimate;
+    enum AnimationStatus {
+        kStopped,
+        kPlaying,
+        kWindingDown,
+    };
+
+    AnimationStatus _animStatus;
+    int _animItem;
+    int _animFrame;
     uint32 _animStartTime;
+    uint32 _animTotalTime;
     uint32 _frameTime;
-    uint32 _frameDelay;
-    int _frameNum;
 };
 
 } // End of namespace Funhouse

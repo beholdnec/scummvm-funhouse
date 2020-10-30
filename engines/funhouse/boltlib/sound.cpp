@@ -57,6 +57,10 @@ void BltSound::play(Audio::Mixer *mixer) {
 	mixer->playStream(Audio::Mixer::kSFXSoundType, &_audioHandle, _audioStream, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO);
 }
 
+uint32 BltSound::getNumSamples() const {
+    return _resource.size();
+}
+
 BltSoundList::BltSoundList() : _random("SoundRandomSource")
 { }
 
@@ -70,8 +74,12 @@ void BltSoundList::load(Boltlib &boltlib, BltId id) {
 }
 
 void BltSoundList::play(Audio::Mixer *mixer) {
-	int num = _random.getRandomNumber(_sounds.size() - 1);
-	_sounds[num].play(mixer);
+	pickSound().play(mixer);
+}
+
+BltSound& BltSoundList::pickSound() {
+    int num = _random.getRandomNumber(_sounds.size() - 1);
+    return _sounds[num];
 }
 
 } // End of namespace Funhouse

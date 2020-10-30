@@ -54,7 +54,6 @@ BoltRsp DifficultyMenu::handleButtonClick(int num) {
     if (num >= kFirstDifficultyButton && num < kFirstDifficultyButton + 3 * kNumDifficultyCategories) {
         DifficultyCategory category = static_cast<DifficultyCategory>((num - kFirstDifficultyButton) / 3);
         int level = (num - kFirstDifficultyButton) % 3;
-        warning("setting difficulty category %d to level %d", category, level);
         _game->setDifficulty(category, level);
         setupButtons();
         return BoltRsp::kDone;

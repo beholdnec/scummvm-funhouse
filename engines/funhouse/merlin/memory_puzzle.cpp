@@ -32,9 +32,11 @@ struct BltMemoryPuzzleInfo {
     void load(Common::Span<const byte> src, Boltlib &boltlib) {
         finalGoal = src.getUint16BEAt(2);
         // TODO: the rest of the fields appear to be timing parameters
+        foo = src.getUint16BEAt(8);
     }
 
     uint16 finalGoal; // Number of matches to win
+    uint16 foo;
 };
 
 typedef ScopedArray<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
@@ -67,12 +69,12 @@ struct BltMemoryPuzzleItemFrame {
 		pos.x = src.getInt16BEAt(0);
 		pos.y = src.getInt16BEAt(2);
 		imageId = BltId(src.getUint32BEAt(4)); // 8640
-        type = src.getInt16BEAt(8);
+        delayFrames = src.getInt16BEAt(8);
 	}
 
 	Common::Point pos;
 	BltId imageId;
-    int16 type;
+    int16 delayFrames;
 };
 
 typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
@@ -84,7 +86,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
 	_graphics = _game->getGraphics();
     _eventLoop = _game->getEventLoop();
-    _animationActive = false;
+    _animStatus = kStopped;
     _playbackActive = false;
     _matches = 0;
 
@@ -99,7 +101,9 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
     BltMemoryPuzzleInfos infos;
     loadBltResourceArray(infos, boltlib, infosId);
-    _finalGoal = infos[_game->getDifficulty(kMemoryDifficulty)].finalGoal;
+    const BltMemoryPuzzleInfo& info = infos[_game->getDifficulty(kMemoryDifficulty)];
+    _finalGoal = info.finalGoal;
+    _foo = info.foo;
     _goal = 3;
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
@@ -117,7 +121,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
             ItemFrame& frame = _itemList[i].frames[j];
             frame.pos = frames[j].pos;
 			frame.image.load(boltlib, frames[j].imageId);
-            frame.type = (FrameType)frames[j].type;
+            frame.delayFrames = frames[j].delayFrames;
 		}
 
 		_itemList[i].palette.load(boltlib, itemList[i].paletteId);
@@ -196,12 +200,12 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
         if (_solution[_matches] == num) {
             // Earn a new match
             ++_matches;
-            startAnimation(num);
+            startAnimation(num, _itemList[num].sound);
         } else {
             // Mismatch
             _matches = 0;
 			_failSound.play(_game->getEngine()->_mixer);
-            startAnimation(num, false);
+            startAnimation(num, _failSound.pickSound());
             startPlayback();
         }
     }
@@ -220,7 +224,7 @@ BoltRsp MemoryPuzzle::handlePlayback() {
     }
 
     if (_playbackStep < _goal) {
-        startAnimation(_solution[_playbackStep]);
+        startAnimation(_solution[_playbackStep], _itemList[_solution[_playbackStep]].sound);
         ++_playbackStep;
         _game->getEngine()->setMsg(BoltMsg::kDrive);
         return BoltRsp::kDone;
@@ -231,20 +235,27 @@ BoltRsp MemoryPuzzle::handlePlayback() {
     return BoltRsp::kDone;
 }
 
-void MemoryPuzzle::startAnimation(int itemNum, bool playSound) {
+void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     debug(3, "Starting animation for item %d", itemNum);
 
-    _animationActive = true;
-    _animationEnding = false;
-    _itemToAnimate = itemNum;
-    _frameNum = 0;
+    _animStatus = kPlaying;
+    _animItem = itemNum;
+    _animFrame = 0;
     _animStartTime = _eventLoop->getEventTime();
-    _frameTime = _eventLoop->getEventTime();
-    _frameDelay = kAnimPeriod;
+    _animTotalTime = sound.getNumSamples() / 22;
+    if (_foo == 0x4d) {
+        warning("Overriding animation time for foo 0x4d");
+        // Triggered in pots-n-pans-n-vials puzzle
+        _animTotalTime = 400;
+    }
+    else if (_animTotalTime < kMinAnimTimeMs) {
+        _animTotalTime = kMinAnimTimeMs;
+    }
+    _frameTime = _animStartTime;
 
-    drawItemFrame(_itemToAnimate, _frameNum);
+    drawItemFrame(_animItem, _animFrame);
 
-    Item &item = _itemList[_itemToAnimate];
+    Item &item = _itemList[_animItem];
     //applyPalette(_graphics, kFore, item.palette);
     // XXX: applyPalette doesn't work correctly. Manually apply palette.
     _graphics->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
@@ -254,76 +265,100 @@ void MemoryPuzzle::startAnimation(int itemNum, bool playSound) {
     } else {
         _graphics->resetColorCycles();
     }
-
-	if (playSound) {
-		item.sound.play(_game->getEngine()->_mixer);
-	}
+    
+    sound.play(_game->getEngine()->_mixer);
 }
 
 BoltRsp MemoryPuzzle::handleAnimation() {
-    if (!_animationActive) {
-        return BoltRsp::kPass;
-    }
+    switch (_animStatus) {
 
-    // 1. Check selection delay
-    if (!_animationEnding) {
-        uint32 animTime = _eventLoop->getEventTime() - _animStartTime;
-        if (animTime >= kSelectionDelay) {
-            _animationActive = false;
-            enter(); // Redraw the scene
-            _game->getEngine()->setMsg(BoltMsg::kDrive);
+    case kStopped:
+        return BoltRsp::kPass;
+
+    case kPlaying: {
+        const Item& item = _itemList[_animItem];
+        const ItemFrame& frame = item.frames[_animFrame];
+
+        // FIXME: improve timing by:
+        // - force a frame to elapse before checking total time
+
+        uint32 totalElapsed = _eventLoop->getEventTime() - _animStartTime;
+        if (totalElapsed >= _animTotalTime) {
+            if (frame.delayFrames == -1) {
+                _animFrame++;
+                drawItemFrame(_animItem, _animFrame);
+                _frameTime = _animStartTime + _animTotalTime;
+                _animStatus = kWindingDown;
+            }
+            else {
+                drawItemFrame(_animItem, -1);
+                _animStatus = kStopped;
+            }
+            _eventLoop->setMsg(BoltMsg::kDrive);
             return BoltRsp::kDone;
         }
-    }
 
-    uint32 frameDelta = _eventLoop->getEventTime() - _frameTime;
-    if (frameDelta >= _frameDelay) {
-        _frameTime += _frameDelay;
-        ++_frameNum;
-
-        if (!_animationEnding) {
-            if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
-                _frameNum = 0;
-            }
-
-            drawItemFrame(_itemToAnimate, _frameNum);
-
-            FrameType frameType = _itemList[_itemToAnimate].frames[_frameNum].type;
-            switch (frameType) {
-            case kProceed:
-                _frameDelay = kAnimPeriod;
-                break;
-            case kWaitForEnd:
-                _frameDelay = kAnimEndingDelay;
-                _animationEnding = true;
-                break;
-            default:
-                warning("Unknown frame type %d\n", (int)frameType);
-                break;
-            }
-        } else { // _animationEnding
-            if (_frameNum >= _itemList[_itemToAnimate].frames.size()) {
-                _animationActive = false;
-                enter(); // Redraw the scene
-                _game->getEngine()->setMsg(BoltMsg::kDrive);
-                return BoltRsp::kDone;
-            } else {
-                drawItemFrame(_itemToAnimate, _frameNum);
-            }
+        uint32 frameElapsed = _eventLoop->getEventTime() - _frameTime;
+        if (frame.delayFrames != -1 && frameElapsed >= kFrameDelayMs * frame.delayFrames) {
+            _frameTime += kFrameDelayMs * frame.delayFrames;
+            _animFrame = (_animFrame + 1) % _itemList[_animItem].frames.size();
+            drawItemFrame(_animItem, _animFrame);
+            _eventLoop->setMsg(BoltMsg::kDrive);
+            return BoltRsp::kDone;
         }
+
+        return BoltRsp::kDone;
     }
 
-    return BoltRsp::kDone;
+    case kWindingDown: {
+        const Item& item = _itemList[_animItem];
+
+        if (_animFrame >= item.frames.size()) {
+            _animStatus = kStopped;
+            _eventLoop->setMsg(BoltMsg::kDrive);
+            return BoltRsp::kDone;
+        }
+
+        const ItemFrame& frame = item.frames[_animFrame];
+
+        uint32 frameElapsed = _eventLoop->getEventTime() - _frameTime;
+        if (frame.delayFrames != -1 && frameElapsed >= kFrameDelayMs * frame.delayFrames) {
+            _frameTime += kFrameDelayMs * frame.delayFrames;
+            _animFrame++;
+            drawItemFrame(_animItem, _animFrame);
+            if (_animFrame >= item.frames.size()) {
+                _animStatus = kStopped;
+            }
+            _eventLoop->setMsg(BoltMsg::kDrive);
+            return BoltRsp::kDone;
+        }
+        else if (frame.delayFrames == -1) {
+            _animFrame++;
+            drawItemFrame(_animItem, _animFrame);
+            _eventLoop->setMsg(BoltMsg::kDrive);
+            return BoltRsp::kDone;
+        }
+
+        return BoltRsp::kDone;
+    }
+
+    default:
+        assert(false && "Invalid state");
+        _animStatus = kStopped;
+        return BoltRsp::kPass;
+    }
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {
-    // Draw frame corresponding to item
-    // TODO: implement animation
-    const Item &item = _itemList[itemNum];
-    const ItemFrame &frame = item.frames[frameNum];
-    const Common::Point &origin = _scene.getOrigin();
     _graphics->clearPlane(kFore);
-    frame.image.drawAt(_graphics->getPlaneSurface(kFore), frame.pos.x - origin.x, frame.pos.y - origin.y, true);
+
+    const Item &item = _itemList[itemNum];
+    if (frameNum >= 0 && frameNum < item.frames.size()) {
+        const ItemFrame &frame = item.frames[frameNum];
+        const Common::Point &origin = _scene.getOrigin();
+        frame.image.drawAt(_graphics->getPlaneSurface(kFore), frame.pos.x - origin.x, frame.pos.y - origin.y, true);
+    }
+
     _graphics->markDirty();
 }
 

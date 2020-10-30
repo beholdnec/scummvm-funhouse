@@ -50,14 +50,12 @@ void applyColorCycles(Graphics *graphics, int plane, const BltColorCycles *cycle
 struct BltPaletteHeader {
 	static const uint32 kSize = 6;
 	BltPaletteHeader(Common::Span<const byte> src) {
-		target = src.getUint16BEAt(0);
-		bottom = src.getUint16BEAt(2);
-		top = src.getUint16BEAt(4);
+		first = src.getUint16BEAt(2);
+		last = src.getUint16BEAt(4);
 	}
 
-	uint16 target; // plane specifier (usually 2, meaning auto or user-specified?)
-	uint16 bottom; // first color index (usually 0)
-	uint16 top; // last color index (usually 127)
+	uint16 first; // first color index (usually 0)
+	uint16 last; // last color index (usually 127)
 };
 
 void BltPalette::load(Boltlib &boltlib, BltId id) {
@@ -67,27 +65,22 @@ void BltPalette::load(Boltlib &boltlib, BltId id) {
 void applyPalette(Graphics *graphics, int plane, const BltPalette &palette) {
 	if (palette.data) {
 		BltPaletteHeader header(palette.data.span());
-		if (header.target == 0) {
-			// Both fore and back planes
-			if (header.bottom != 0) {
-				warning("palette target 0 bottom color is not 0");
-			}
-			if (header.top != 255) {
-				warning("palette target 0 top color is not 255");
-			}
 
-			graphics->setPlanePalette(kBack, &palette.data[BltPaletteHeader::kSize], 0, 128);
-			graphics->setPlanePalette(kFore, &palette.data[BltPaletteHeader::kSize + 128 * 3], 0, 128);
-		}
-		else if (header.target == 2) {
-			// Auto? Back or fore not specified in palette resource.
-			uint num = header.top - header.bottom + 1;
-			graphics->setPlanePalette(plane, &palette.data[BltPaletteHeader::kSize],
-				header.bottom, num);
-		}
-		else {
-			warning("Unknown palette target %d", (int)header.target);
-		}
+        int count = header.last - header.first + 1;
+        if (count > 128) {
+            count = 128;
+        }
+        else if (count < 0) {
+            count = 0;
+        }
+
+        // FIXME: are the planes backwards?
+        if (plane == 0) {
+            graphics->setPlanePalette(kFore, &palette.data[BltPaletteHeader::kSize + header.first * 3], header.first, count);
+        }
+        else { // plane == 1
+            graphics->setPlanePalette(kBack, &palette.data[BltPaletteHeader::kSize + header.first * 3], header.first, count);
+        }
 	}
 }
 
