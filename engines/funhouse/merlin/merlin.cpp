@@ -63,6 +63,7 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 	_mixer = mixer;
 	_eventLoop = _engine;
 	_fileNum = -1;
+    _cheatMode = false;
     for (int i = 0; i < kNumDifficultyCategories; ++i) {
         _difficulties[i] = -1;
     }
@@ -347,6 +348,14 @@ int MerlinGame::getDifficulty(DifficultyCategory category) const {
 void MerlinGame::setDifficulty(DifficultyCategory category, int level) {
     assert(level >= 0 && level < 3);
     _difficulties[category] = level;
+}
+
+bool MerlinGame::getCheatMode() const {
+    return _cheatMode;
+}
+
+void MerlinGame::setCheatMode(bool enable) {
+    _cheatMode = enable;
 }
 
 void MerlinGame::redraw() {

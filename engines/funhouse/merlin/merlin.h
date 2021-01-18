@@ -84,6 +84,9 @@ public:
     int getDifficulty(DifficultyCategory category) const;
     void setDifficulty(DifficultyCategory category, int level);
 
+    bool getCheatMode() const;
+    void setCheatMode(bool enable);
+
 	static const int kNumFiles = 12;
 
 private:
@@ -147,6 +150,7 @@ private:
 
 	// Number of current file. -1 if no file is selected.
 	int _fileNum;
+    bool _cheatMode;
 
 	// Difficulty levels:
 	// 0: beginner; 1: advanced; 2: expert; -1: not set

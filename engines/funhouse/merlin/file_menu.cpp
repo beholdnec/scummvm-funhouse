@@ -30,9 +30,13 @@ struct BltFileMenu {
 	static const uint kSize = 0xA6;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		sceneId = BltId(src.getUint32BEAt(0));
+        cheatCodeId = BltId(src.getUint32BEAt(0xa0));
+        cheatSoundId = BltShortId(src.getUint16BEAt(0xa4));
 	}
 	
 	BltId sceneId;
+    BltId cheatCodeId;
+    BltId cheatSoundId;
 };
 
 void FileMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
@@ -42,6 +46,16 @@ void FileMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	loadBltResource(fileMenu, boltlib, resId);
 
 	loadScene(_scene, _game->getEngine(), boltlib, fileMenu.sceneId);
+
+    // Resource 0275 contains the cheat code, which is entered by selecting
+    // file icons in a special sequence.
+    // If a mistake is made while entering the code, the player must start over
+    // by leaving and re-entering the file menu.
+    // The cheat code is (starting from 1 at the top left):
+    // 11, 12, 4, 3, 8, 6, 12, 3, 6, 9, 5, 2, 10, 1, 7
+    loadBltResourceArray(_cheatCode, boltlib, fileMenu.cheatCodeId);
+    _cheatIndex = 0;
+    _cheatSound.load(boltlib, fileMenu.cheatSoundId);
 }
 
 void FileMenu::enter() {
@@ -58,11 +72,24 @@ BoltRsp FileMenu::handleMsg(const BoltMsg &msg) {
 }
 
 static const int kFirstFileButton = 4;
-static const int kNumFiles = 12;
 
 BoltRsp FileMenu::handleButtonClick(int num) {
-	
-	if (num >= kFirstFileButton && num < kFirstFileButton + kNumFiles) {
+    if (!_game->getCheatMode() && _cheatIndex != -1) {
+        if (num == _cheatCode[_cheatIndex].value) {
+            ++_cheatIndex;
+            if (_cheatCode[_cheatIndex].value == 0) {
+                warning("Cheat mode activated");
+                _game->setCheatMode(true);
+                _cheatIndex = -1;
+                _cheatSound.play(_game->getEngine()->_mixer);
+            }
+        }
+        else {
+            _cheatIndex = -1;
+        }
+    }
+
+	if (num >= kFirstFileButton && num < kFirstFileButton + MerlinGame::kNumFiles) {
 		_game->setFile(num - kFirstFileButton);
 		setButtons();
 		return BoltRsp::kDone;
@@ -85,7 +112,7 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 }
 
 void FileMenu::setButtons() {
-	for (int i = 0; i < kNumFiles; ++i) {
+	for (int i = 0; i < MerlinGame::kNumFiles; ++i) {
 		_scene.getButton(kFirstFileButton + i).setGraphics(i == _game->getFile() ? 1 : 0);
 	}
 

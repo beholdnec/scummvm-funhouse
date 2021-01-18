@@ -25,6 +25,7 @@
 
 #include "funhouse/bolt.h"
 #include "funhouse/scene.h"
+#include "funhouse/boltlib/sound.h"
 
 namespace Funhouse {
 
@@ -40,7 +41,12 @@ private:
 	void setButtons();
 
     MerlinGame *_game;
+
     Scene _scene;
+    BltU8Values _cheatCode;
+    BltSound _cheatSound;
+
+    int _cheatIndex;
 };
 
 } // End of namespace Funhouse
