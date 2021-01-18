@@ -894,15 +894,15 @@ document.body.addEventListener('click', function(event: MouseEvent) {
 })
 
 document.getElementById('open-file').addEventListener('click', function (event: MouseEvent) {
-  dialog.showOpenDialog({
+  dialog.showOpenDialog(null, {
     filters: [
       {name: 'BLT Files', extensions: ['BLT']},
       {name: 'All Files', extensions: ['*']}
     ],
     properties: ['openFile']
-  }, function (files) {
+  }).then(function (files) {
     if (files) {
-      openBltFile(files[0])
+      openBltFile(files.filePaths[0])
       openResource(0x9901)
     }
   })

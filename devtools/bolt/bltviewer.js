@@ -783,15 +783,15 @@ document.body.addEventListener('click', function (event) {
     onClick(event.target);
 });
 document.getElementById('open-file').addEventListener('click', function (event) {
-    dialog.showOpenDialog({
+    dialog.showOpenDialog(null, {
         filters: [
             { name: 'BLT Files', extensions: ['BLT'] },
             { name: 'All Files', extensions: ['*'] }
         ],
         properties: ['openFile']
-    }, function (files) {
+    }).then(function (files) {
         if (files) {
-            openBltFile(files[0]);
+            openBltFile(files.filePaths[0]);
             openResource(0x9901);
         }
     });

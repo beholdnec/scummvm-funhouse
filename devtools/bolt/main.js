@@ -5,7 +5,14 @@ const path = require("path");
 const url = require("url");
 let mainWindow;
 function createWindow() {
-    mainWindow = new electron_1.BrowserWindow({ width: 1024, height: 768 });
+    mainWindow = new electron_1.BrowserWindow({
+        width: 1024,
+        height: 768,
+        webPreferences: {
+            nodeIntegration: true,
+            enableRemoteModule: true,
+        },
+    });
     mainWindow.loadURL(url.format({
         pathname: path.join(__dirname, 'index.html'),
         protocol: 'file:',
