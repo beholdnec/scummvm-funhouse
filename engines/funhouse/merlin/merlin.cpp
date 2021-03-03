@@ -429,7 +429,7 @@ void MerlinGame::difficultyMenu(const void *param) {
 void MerlinGame::hub(const void *param) {
 	_currentCard.reset();
 
-	int newHubNum = reinterpret_cast<int>(param);
+	int newHubNum = reinterpret_cast<intptr_t>(param);
 	const HubEntry *entry = kHubEntries[newHubNum];
 
 	if (newHubNum != _currentHubNum) {

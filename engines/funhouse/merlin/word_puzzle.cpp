@@ -160,7 +160,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 
 	int clickedRune = -1;
 	if (num >= kNumLetters) {
-		clickedRune = reinterpret_cast<int>(_scene.getButton(num).getUserData());
+		clickedRune = reinterpret_cast<intptr_t>(_scene.getButton(num).getUserData());
 	}
 
 	// TODO: implement unselecting
@@ -175,7 +175,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 			// Select rune
 			// Note that a rune will be selected even if the player clicks on a rune that has been
 			// assigned to a letter.
-			_selectedGlyph = runeToGlyph(reinterpret_cast<int>(_scene.getButton(num).getUserData()));
+			_selectedGlyph = runeToGlyph(reinterpret_cast<intptr_t>(_scene.getButton(num).getUserData()));
 		}
 	}
 	else if (selectedLetter != -1) {
