@@ -466,6 +466,71 @@ void MerlinGame::potionPuzzle(const void *param) {
 	setCurrentCard(card);
 }
 
+int MerlinGame::scriptPlotMovie(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptPostBumper(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptMenu(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptHub(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptFreeplay(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptActionPuzzle(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptColorPuzzle(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptMemoryPuzzle(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptPotionPuzzle(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptSlidingPuzzle(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptSynchPuzzle(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptTangramPuzzle(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
+int MerlinGame::scriptWordPuzzle(const ScriptEntry* entry) {
+	// TODO
+	return 0;
+}
+
 // Hardcoded values from MERLIN.EXE:
 //
 // Action puzzles:
@@ -632,6 +697,106 @@ MerlinGame::kSequence[] = {
 const int MerlinGame::kSequenceSize =
 	sizeof(MerlinGame::kSequence) /
 	sizeof(MerlinGame::Callback);
+
+const MerlinGame::ScriptEntry
+MerlinGame::kScript[] = {
+	/* 0 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 1 */ { &MerlinGame::scriptPostBumper, 0, 0 },
+	/* 2 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 3 */ { &MerlinGame::scriptMenu, 0, 0 },
+	/* 4 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 5 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 6 */ { &MerlinGame::scriptMenu, 0, 0 },
+	/* 7 */ { &MerlinGame::scriptMenu, 0, 0 },
+	/* 8 */ { &MerlinGame::scriptFreeplay, 0, 0 },
+	/* 9 */ { &MerlinGame::scriptFreeplay, 0, 0 },
+	/* 10 */ { &MerlinGame::scriptFreeplay, 0, 0 },
+	/* 11 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+
+
+	/* 12 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 13 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 14 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 15 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 16 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 17 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 18 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 19 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 20 */ { &MerlinGame::scriptHub, 0, 0 },
+	/* 21 */ { &MerlinGame::scriptHub, 0, 0 },
+	/* 22 */ { &MerlinGame::scriptHub, 0, 0 },
+
+	/* 23 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 24 */ { &MerlinGame::scriptWordPuzzle, 0, 0 },
+	/* 25 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 26 */ { &MerlinGame::scriptMemoryPuzzle, 0, 0 },
+	/* 27 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 28 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 29 */ { &MerlinGame::scriptPotionPuzzle, 0, 0 },
+
+	/* 30 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 31 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 32 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 33 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 34 */ { &MerlinGame::scriptWordPuzzle, 0, 0 },
+	/* 35 */ { &MerlinGame::scriptSynchPuzzle, 0, 0 },
+	/* 36 */ { &MerlinGame::scriptTangramPuzzle, 0, 0 },
+	/* 37 */ { &MerlinGame::scriptMemoryPuzzle, 0, 0 },
+	/* 38 */ { &MerlinGame::scriptTangramPuzzle, 0, 0 },
+	/* 39 */ { &MerlinGame::scriptPotionPuzzle, 0, 0 },
+
+	/* 40 */ { &MerlinGame::scriptSynchPuzzle, 0, 0 },
+	/* 41 */ { &MerlinGame::scriptTangramPuzzle, 0, 0 },
+	/* 42 */ { &MerlinGame::scriptColorPuzzle, 0, 0 },
+	/* 43 */ { &MerlinGame::scriptColorPuzzle, 0, 0 },
+	/* 44 */ { &MerlinGame::scriptSynchPuzzle, 0, 0 },
+	/* 45 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 46 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 47 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 48 */ { &MerlinGame::scriptTangramPuzzle, 0, 0 },
+	/* 49 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 50 */ { &MerlinGame::scriptWordPuzzle, 0, 0 },
+	/* 51 */ { &MerlinGame::scriptMemoryPuzzle, 0, 0 },
+	/* 52 */ { &MerlinGame::scriptPotionPuzzle, 0, 0 },
+
+	/* 53 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 54 */ { &MerlinGame::scriptWordPuzzle, 0, 0 },
+	/* 55 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 56 */ { &MerlinGame::scriptMemoryPuzzle, 0, 0 },
+	/* 57 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 58 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 59 */ { &MerlinGame::scriptPotionPuzzle, 0, 0 },
+
+	/* 60 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 61 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 62 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 63 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 64 */ { &MerlinGame::scriptWordPuzzle, 0, 0 },
+	/* 65 */ { &MerlinGame::scriptSynchPuzzle, 0, 0 },
+	/* 66 */ { &MerlinGame::scriptTangramPuzzle, 0, 0 },
+	/* 67 */ { &MerlinGame::scriptMemoryPuzzle, 0, 0 },
+	/* 68 */ { &MerlinGame::scriptTangramPuzzle, 0, 0 },
+	/* 69 */ { &MerlinGame::scriptPotionPuzzle, 0, 0 },
+
+	/* 70 */ { &MerlinGame::scriptSynchPuzzle, 0, 0 },
+	/* 71 */ { &MerlinGame::scriptTangramPuzzle, 0, 0 },
+	/* 72 */ { &MerlinGame::scriptColorPuzzle, 0, 0 },
+	/* 73 */ { &MerlinGame::scriptColorPuzzle, 0, 0 },
+	/* 74 */ { &MerlinGame::scriptSynchPuzzle, 0, 0 },
+	/* 75 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 76 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 77 */ { &MerlinGame::scriptActionPuzzle, 0, 0 },
+	/* 78 */ { &MerlinGame::scriptTangramPuzzle, 0, 0 },
+	/* 79 */ { &MerlinGame::scriptSlidingPuzzle, 0, 0 },
+	/* 80 */ { &MerlinGame::scriptWordPuzzle, 0, 0 },
+	/* 81 */ { &MerlinGame::scriptMemoryPuzzle, 0, 0 },
+	/* 82 */ { &MerlinGame::scriptPotionPuzzle, 0, 0 },
+
+	/* 83 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+	/* 84 */ { &MerlinGame::scriptPlotMovie, 0, 0 },
+};
+
+const int MerlinGame::kScriptLength = sizeof(MerlinGame::kScript) / sizeof(MerlinGame::ScriptEntry);
 
 const uint32 MerlinGame::kPotionMovies[] = {
 	MKTAG('E','L','E','C'), MKTAG('E','X','P','L'), MKTAG('F','L','A','M'),

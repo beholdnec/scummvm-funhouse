@@ -96,6 +96,29 @@ private:
         const void *param;
     };
 
+	struct ScriptEntry;
+	typedef int (MerlinGame::*ScriptFunc)(const ScriptEntry *entry);
+	struct ScriptEntry {
+		ScriptFunc func;
+		int param;
+		uint32 helpId;
+	};
+
+	int scriptPlotMovie(const ScriptEntry *entry);
+	int scriptPostBumper(const ScriptEntry* entry);
+	int scriptMenu(const ScriptEntry* entry);
+	int scriptHub(const ScriptEntry* entry);
+	int scriptFreeplay(const ScriptEntry* entry);
+
+	int scriptActionPuzzle(const ScriptEntry* entry);
+	int scriptColorPuzzle(const ScriptEntry* entry);
+	int scriptMemoryPuzzle(const ScriptEntry* entry);
+	int scriptPotionPuzzle(const ScriptEntry* entry);
+	int scriptSlidingPuzzle(const ScriptEntry* entry);
+	int scriptSynchPuzzle(const ScriptEntry* entry);
+	int scriptTangramPuzzle(const ScriptEntry* entry);
+	int scriptWordPuzzle(const ScriptEntry* entry);
+
     static const int kNumPopupTypes = 3;
 
     static const HubEntry kStage1;
@@ -108,6 +131,10 @@ private:
 
     static const Callback kSequence[];
     static const int kSequenceSize;
+
+	// TODO: remove kSequence and use kScript instead
+	static const ScriptEntry kScript[];
+	static const int kScriptLength;
 
     static const uint32 kPotionMovies[];
 
