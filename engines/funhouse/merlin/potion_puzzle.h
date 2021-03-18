@@ -52,9 +52,9 @@ typedef ScopedArray<BltPotionPuzzleComboTableElement> BltPotionPuzzleComboTable;
 class PotionPuzzle : public Card {
 public:
 	// From Card
-	void init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
 	void enter();
-    BoltRsp handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
 	static const int kNoIngredient = -1; // NOTE: original game uses 0xFE for this value...
@@ -62,14 +62,14 @@ private:
 	static const uint32 kPlacing1Time = 500;
 	static const uint32 kPlacing2Time = 500;
 
-    BoltRsp handleIdle(const BoltMsg &msg);
-    BoltRsp handleTimeout(const BoltMsg &msg);
-    BoltRsp handleTransition(const BoltMsg &msg);
+	BoltRsp handleIdle(const BoltMsg &msg);
+	BoltRsp handleTimeout(const BoltMsg &msg);
+	BoltRsp handleTransition(const BoltMsg &msg);
 
-    BoltRsp handleClick(Common::Point point);
-    BoltRsp requestIngredient(int ingredient);
-    BoltRsp requestUndo();
-    BoltRsp performReaction();
+	BoltRsp handleClick(Common::Point point);
+	BoltRsp requestIngredient(int ingredient);
+	BoltRsp requestUndo();
+	BoltRsp performReaction();
 	void reset();
 
 	bool isValidIngredient(int ingredient) const;
@@ -83,7 +83,7 @@ private:
 	MerlinGame *_game;
 	IBoltEventLoop *_eventLoop;
 	Graphics *_graphics;
-    PopupMenu _popup;
+	PopupMenu _popup;
 	BltImage _bgImage;
 	BltPalette _bgPalette;
 	Common::Point _origin;
@@ -98,7 +98,7 @@ private:
 	int _bowlSlots[kNumBowlSlots]; // Ingredients in bowl
 	int _requestedIngredient;
 	
-    bool _timeout;
+	bool _timeout;
 	uint32 _timeoutStart;
 	uint32 _timeoutLength;
 };

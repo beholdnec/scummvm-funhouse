@@ -89,13 +89,13 @@ struct BltPotionPuzzleComboTableListElement {
 
 typedef ScopedArray<BltPotionPuzzleComboTableListElement> BltPotionPuzzleComboTableList;
 
-void PotionPuzzle::init(MerlinGame *game, IBoltEventLoop *eventLoop, Boltlib &boltlib, BltId resId) {
+void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_game = game;
-	_eventLoop = eventLoop;
+	_eventLoop = game->getEventLoop();
 	_graphics = _game->getGraphics();
-    _timeout = false;
+	_timeout = false;
 
-    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
+	_popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
 
 	BltPotionPuzzleInfo puzzle;
 	BltU16Values difficultyIds;
@@ -154,46 +154,46 @@ void PotionPuzzle::enter() {
 }
 
 BoltRsp PotionPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltRsp cmd;
+	BoltRsp cmd;
 
-    if ((cmd = handleTimeout(msg)) != BoltRsp::kPass) {
-        return cmd;
-    }
+	if ((cmd = handleTimeout(msg)) != BoltRsp::kPass) {
+		return cmd;
+	}
 
-    if ((cmd = handleTransition(msg)) != BoltRsp::kPass) {
-        return cmd;
-    }
+	if ((cmd = handleTransition(msg)) != BoltRsp::kPass) {
+		return cmd;
+	}
 
-    return handleIdle(msg);
+	return handleIdle(msg);
 }
 
 BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
-    BoltRsp cmd;
+	BoltRsp cmd;
 
-    if ((cmd = _popup.handleMsg(msg)) != BoltRsp::kPass) {
-        return cmd;
-    }
+	if ((cmd = _popup.handleMsg(msg)) != BoltRsp::kPass) {
+		return cmd;
+	}
 
-    if (msg.type == BoltMsg::kClick) {
-        return handleClick(msg.point);
-    }
+	if (msg.type == BoltMsg::kClick) {
+		return handleClick(msg.point);
+	}
 
-    return BoltRsp::kDone;
+	return BoltRsp::kDone;
 }
 
 BoltRsp PotionPuzzle::handleTimeout(const BoltMsg &msg) {
-    if (!_timeout) {
-        return BoltRsp::kPass;
-    }
+	if (!_timeout) {
+		return BoltRsp::kPass;
+	}
 
-    uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
-    if (delta >= _timeoutLength) {
-        _timeout = false;
-        _game->getEngine()->setMsg(BoltMsg::kDrive);
-        return BoltRsp::kDone;
-    }
+	uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
+	if (delta >= _timeoutLength) {
+		_timeout = false;
+		_game->getEngine()->setMsg(BoltMsg::kDrive);
+		return BoltRsp::kDone;
+	}
 
-    return BoltRsp::kDone;
+	return BoltRsp::kDone;
 }
 
 BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
@@ -225,7 +225,7 @@ BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
 
 		// TODO: Play "plunk" sound
 		setTimeout(kPlacing2Time);
-        _game->getEngine()->setMsg(BoltMsg::kDrive);
+		_game->getEngine()->setMsg(BoltMsg::kDrive);
 		return BoltRsp::kDone;
 	}
 
@@ -237,7 +237,7 @@ BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
 		reset();
 		draw();
 		// TODO: Play "reset" sound
-        _game->getEngine()->setMsg(BoltMsg::kDrive);
+		_game->getEngine()->setMsg(BoltMsg::kDrive);
 		return BoltRsp::kDone;
 	}
 
@@ -286,7 +286,7 @@ BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
 	setTimeout(kPlacing1Time);
-    _game->getEngine()->setMsg(BoltMsg::kDrive);
+	_game->getEngine()->setMsg(BoltMsg::kDrive);
 	return BoltRsp::kDone;
 }
 
@@ -355,7 +355,7 @@ BoltRsp PotionPuzzle::performReaction() {
 
 	if (reactionInfo->c == -1) {
 		// FIXME: Does the original program check if all ingredients are used?
-        _game->getEngine()->setMsg(kWin);
+		_game->getEngine()->setMsg(kWin);
 		return BoltRsp::kDone;
 	}
 	else {
@@ -475,7 +475,7 @@ int PotionPuzzle::getNumRemainingIngredients() const {
 void PotionPuzzle::setTimeout(uint32 length) {
 	_timeoutStart = _eventLoop->getEventTime();
 	_timeoutLength = length;
-    _timeout = true;
+	_timeout = true;
 }
 
 } // End of namespace Funhouse
