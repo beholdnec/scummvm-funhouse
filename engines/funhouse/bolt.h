@@ -93,8 +93,8 @@ struct Rect {
 struct BoltMsg {
 	enum Type {
 		// System messages (>= 0)
-		kDrive = 0, // Run message handlers with no particular message
-		kYield,
+		kYield = 0, // Present a new frame and gather more input
+		kDrive, // Run message handlers with no particular event
 		kHover,
 		kClick,
 		kRightClick,
@@ -106,7 +106,7 @@ struct BoltMsg {
         kSceneMsgs = 200,
 	};
 
-	BoltMsg(int type_ = kDrive) : type(type_), num(0) { }
+	BoltMsg(int type_ = kYield) : type(type_), num(0) { }
 
 	int type;
 	int num;
@@ -165,6 +165,7 @@ public:
 	uint32 getEventTime() const;
 	void setNextMsg(const BoltMsg &msg);
 	void requestSmoothAnimation();
+	void requestHover();
 	void setTimer(uint32 delay, int id);
 
 	Graphics* getGraphics();
@@ -174,6 +175,7 @@ protected:
 	virtual Common::Error run();
 
 private:
+	BoltMsg getNextMsg();
 	void topLevelHandleMsg(const BoltMsg &msg);
 	
     Common::ScopedPtr<FunhouseConsole> _console;
@@ -191,7 +193,8 @@ private:
 	};
 	Common::List<Timer> _timers;
 
-	bool _smoothAnimationRequested;
+	bool _smoothAnimationRequested = false;
+	bool _hoverRequested = false;
 };
 
 } // End of namespace Funhouse

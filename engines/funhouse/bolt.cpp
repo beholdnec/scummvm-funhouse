@@ -58,64 +58,90 @@ Common::Error FunhouseEngine::run() {
 	_game->init(_system, this, _mixer);
 	
 	while (!shouldQuit()) {
-		_eventTime = getTotalPlayTime();
-
-		// Find next timer to handle
-		Common::List<Timer>::iterator nextTimer = _timers.end();
-		uint32 nextTimerDelta = 0xFFFFFFFF;
-		for (Common::List<Timer>::iterator it = _timers.begin(); it != _timers.end(); ++it) {
-			uint32 delta = _eventTime - it->start;
-			if (delta >= it->delay && delta < nextTimerDelta) {
-				nextTimer = it;
-				nextTimerDelta = delta;
-			}
+		BoltMsg msg = getNextMsg();
+		_graphics.handleMsg(msg);
+		if (msg.type != BoltMsg::kYield) {
+			_game->handleMsg(msg);
 		}
-
-		if (nextTimer != _timers.end()) {
-			_eventTime = nextTimer->start + nextTimer->delay;
-			int id = nextTimer->id;
-			_timers.erase(nextTimer);
-
-			BoltMsg msg(BoltMsg::kTimer);
-			msg.num = id;
-			topLevelHandleMsg(msg);
-		} else {
-			Common::Event event;
-			if (!_eventMan->pollEvent(event)) {
-				event.type = Common::EVENT_INVALID;
-			}
-
-            if (event.type == Common::EVENT_KEYDOWN &&
-                event.kbd.keycode == Common::KEYCODE_d &&
-                (event.kbd.flags & Common::KBD_CTRL)) {
-                _console->attach();
-                _console->onFrame();
-            } else if (event.type == Common::EVENT_MOUSEMOVE) {
-				BoltMsg msg(BoltMsg::kHover);
-				msg.point = event.mouse;
-				topLevelHandleMsg(msg);
-			} else if (event.type == Common::EVENT_LBUTTONDOWN) {
-				BoltMsg msg(BoltMsg::kClick);
-				msg.point = event.mouse;
-				topLevelHandleMsg(msg);
-			} else if (event.type == Common::EVENT_RBUTTONDOWN) {
-				BoltMsg msg(BoltMsg::kRightClick);
-				msg.point = event.mouse;
-				topLevelHandleMsg(msg);
-			} else if (_smoothAnimationRequested) {
-				// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
-				// Change this so smooth animation events are handled at a reasonable rate.
-				_smoothAnimationRequested = false;
-				topLevelHandleMsg(BoltMsg::kSmoothAnimation);
-			} else {
-				// Emit Drive event to drive the game.
-				// TODO: Don't do this. The engine should idle until more messages are available.
-				topLevelHandleMsg(BoltMsg::kDrive);
-			}
+		else {
+			_graphics.presentIfDirty();
+			_eventTime = getTotalPlayTime();
 		}
 	}
 
 	return Common::kNoError;
+}
+
+BoltMsg FunhouseEngine::getNextMsg()
+{
+	if (_nextMsg.type != BoltMsg::kYield) {
+		BoltMsg msg = _nextMsg;
+		_nextMsg = BoltMsg::kYield;
+		return msg;
+	}
+
+	// Find next timer to handle
+	Common::List<Timer>::iterator nextTimer = _timers.end();
+	uint32 nextTimerDelta = 0xFFFFFFFF;
+	for (Common::List<Timer>::iterator it = _timers.begin(); it != _timers.end(); ++it) {
+		uint32 delta = _eventTime - it->start;
+		if (delta >= it->delay && delta < nextTimerDelta) {
+			nextTimer = it;
+			nextTimerDelta = delta;
+		}
+	}
+
+	if (nextTimer != _timers.end()) {
+		// TODO: don't modify _eventTime. If a timer event arrives late then so be it.
+		_eventTime = nextTimer->start + nextTimer->delay;
+		int id = nextTimer->id;
+		_timers.erase(nextTimer);
+
+		BoltMsg msg(BoltMsg::kTimer);
+		msg.num = id;
+		return msg;
+	}
+
+	Common::Event event;
+	if (!_eventMan->pollEvent(event)) {
+		event.type = Common::EVENT_INVALID;
+	}
+
+	if (event.type == Common::EVENT_KEYDOWN &&
+		event.kbd.keycode == Common::KEYCODE_d &&
+		(event.kbd.flags & Common::KBD_CTRL)) {
+		_console->attach();
+		_console->onFrame();
+	}
+	else if (event.type == Common::EVENT_MOUSEMOVE) {
+		BoltMsg msg(BoltMsg::kHover);
+		msg.point = event.mouse;
+		return msg;
+	}
+	else if (event.type == Common::EVENT_LBUTTONDOWN) {
+		BoltMsg msg(BoltMsg::kClick);
+		msg.point = event.mouse;
+		return msg;
+	}
+	else if (event.type == Common::EVENT_RBUTTONDOWN) {
+		BoltMsg msg(BoltMsg::kRightClick);
+		msg.point = event.mouse;
+		return msg;
+	}
+	else if (_smoothAnimationRequested) {
+		// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
+		// Change this so smooth animation events are handled at a reasonable rate.
+		_smoothAnimationRequested = false;
+		return BoltMsg::kSmoothAnimation;
+	}
+	else if (_hoverRequested) {
+		_hoverRequested = false;
+		BoltMsg msg(BoltMsg::kHover);
+		msg.point = event.mouse;
+		return msg;
+	}
+
+	return BoltMsg::kYield;
 }
 
 void FunhouseEngine::win() {
@@ -134,6 +160,10 @@ void FunhouseEngine::requestSmoothAnimation() {
 	_smoothAnimationRequested = true;
 }
 
+void FunhouseEngine::requestHover() {
+	_hoverRequested = true;
+}
+
 void FunhouseEngine::setTimer(uint32 delay, int id) {
 	Timer newTimer;
 	newTimer.start = _eventTime;
@@ -144,19 +174,6 @@ void FunhouseEngine::setTimer(uint32 delay, int id) {
 
 Graphics* FunhouseEngine::getGraphics() {
 	return &_graphics;
-}
-
-void FunhouseEngine::topLevelHandleMsg(const BoltMsg &msg) {
-	_nextMsg = BoltMsg::kYield;
-
-	_graphics.handleMsg(msg);
-
-	while (_nextMsg.type != BoltMsg::kYield) {
-		_nextMsg = BoltMsg::kYield;
-		_game->handleMsg(msg);
-	}
-
-	_graphics.presentIfDirty();
 }
 
 } // End of namespace Funhouse

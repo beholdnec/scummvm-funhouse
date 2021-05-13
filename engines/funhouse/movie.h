@@ -70,8 +70,8 @@ private:
 	typedef ScopedArray<byte> ScopedBuffer;
 	typedef ScopedArrayQueue<byte> ScopedBufferQueue;
 
-	bool _parserActive; // Set to false when final packet is found
-	bool _timelineActive; // Set to false when timeline is finished
+	bool _parserActive = false; // Set to false when final packet is found
+	bool _timelineActive = false; // Set to false when timeline is finished
 
 	// PACKET STREAMING
 

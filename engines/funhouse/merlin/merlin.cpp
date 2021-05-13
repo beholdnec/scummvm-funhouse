@@ -308,9 +308,7 @@ void MerlinGame::enterActiveCard(bool cursorActive) {
 	_engine->getGraphics()->resetColorCycles();
 	_activeCard->enter();
 	if (cursorActive) {
-		BoltMsg hoverMsg(BoltMsg::kHover);
-		hoverMsg.point = _system->getEventManager()->getMousePos();
-		_engine->setNextMsg(hoverMsg);
+		_engine->requestHover();
 	}
 }
 
