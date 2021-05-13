@@ -63,11 +63,9 @@ static const uint16 kPopupCatalogId = 0x0A04;
 void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mixer) {
 	_system = system;
 	_engine = engine;
-	_graphics = _engine->getGraphics();
-	_mixer = mixer;
-	_eventLoop = _engine;
 	_fileNum = -1;
 	_cheatMode = false;
+	_saveMan.init();
 	for (int i = 0; i < kNumDifficultyCategories; ++i) {
 		// FIXME: Set all difficulties to -1: not set
 		// _difficulties[i] = -1;
@@ -97,22 +95,43 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 
 	// Load cursor
 	initCursor();
+
+	runScript();
 }
 
 BoltRsp MerlinGame::handleMsg(const BoltMsg &msg) {
-	// Play movie over anything else
-	if (_movie.isRunning()) {
-		return handleMsgInMovie(msg);
+	BoltRsp rsp = kDone;
+
+	if (isInMovie()) {
+		rsp = handleMsgInMovie(msg);
+	} else {
+		rsp = handleMsgInCard(msg);
 	}
 
-	_nextScriptCursor = _scriptCursor;
+	return rsp;
+}
 
-	const ScriptEntry& entry = kScript[_scriptCursor];
-	BoltRsp rsp = CALL_MEMBER_FN(*this, entry.func)(&entry, msg);
+BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
+	BoltRsp rsp = kDone;
 
-	_scriptCursor = _nextScriptCursor;
+	if (_activeCard) {
+		rsp = _activeCard->handleMsg(msg);
+	}
+
+	if (rsp == kDone) {
+		// Handle card transitions
+		if (_nextScriptCursor != _scriptCursor) {
+			_scriptCursor = _nextScriptCursor;
+			runScript();
+		}
+	}
 
 	return rsp;
+}
+
+void MerlinGame::runScript() {
+	const ScriptEntry& entry = kScript[_scriptCursor];
+	CALL_MEMBER_FN(*this, entry.func)(&entry);
 }
 
 void MerlinGame::win() {
@@ -128,11 +147,7 @@ FunhouseEngine* MerlinGame::getEngine() {
 }
 
 Graphics* MerlinGame::getGraphics() {
-	return _graphics;
-}
-
-IBoltEventLoop* MerlinGame::getEventLoop() {
-	return _eventLoop;
+	return _engine->getGraphics();
 }
 
 bool MerlinGame::isInMovie() const {
@@ -199,7 +214,7 @@ public:
 	BoltRsp handleMsg(const BoltMsg &msg) {
 		if (msg.type == Scene::kClickButton) {
 			warning("Unhandled button %d", msg.num);
-			_game->getEngine()->setMsg(Card::kEnd);
+			_game->getEngine()->setNextMsg(Card::kEnd);
 			return BoltRsp::kDone;
 		}
 
@@ -212,24 +227,24 @@ private:
 };
 
 void MerlinGame::startMenu(BltId id) {
-	_currentCard.reset();
+	_activeCard.reset();
 	GenericMenuCard* menuCard = new GenericMenuCard;
 	menuCard->init(this, _boltlib, id);
-	setCurrentCard(menuCard);
+	setActiveCard(menuCard);
 }
 
 void MerlinGame::startMovie(PfFile &pfFile, uint32 name) {
 	// Color cycles do NOT stop when a movie starts.
 	_movie.stop();
-	_movie.start(_graphics, _mixer, _eventLoop, pfFile, name);
+	_movie.start(_engine, pfFile, name);
 }
 
 void MerlinGame::movieTrigger(void *param, uint16 triggerType) {
 	MerlinGame *self = reinterpret_cast<MerlinGame*>(param);
 	if (triggerType == 0x8002) {
 		// Enter next card; used during win movies to transition back to hub card
-		if (self->_currentCard) {
-			self->enterCurrentCard(false);
+		if (self->_activeCard) {
+			self->enterActiveCard(false);
 		}
 	}
 	else {
@@ -247,9 +262,9 @@ BoltRsp MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
 
 	if (!_movie.isRunning()) {
 		// If movie has stopped...
-		_graphics->setFade(1);
-		if (_currentCard) {
-			enterCurrentCard(true);
+		_engine->getGraphics()->setFade(1);
+		if (_activeCard) {
+			enterActiveCard(true);
 		}
 	}
 
@@ -276,87 +291,62 @@ void MerlinGame::setCheatMode(bool enable) {
 
 void MerlinGame::redraw() {
 	if (!isInMovie()) {
-		assert(_currentCard);
-		_currentCard->redraw();
+		assert(_activeCard);
+		_activeCard->redraw();
 	}
 }
 
-void MerlinGame::setCurrentCard(Card *card) {
-	_currentCard.reset(card);
-	if (!_movie.isRunning() && _currentCard) {
-		// If there is no movie playing, enter new card now
-		enterCurrentCard(true);
+void MerlinGame::setActiveCard(Card *card) {
+	_activeCard.reset(card);
+	if (_activeCard) {
+		enterActiveCard(true);
 	}
 }
 
-void MerlinGame::enterCurrentCard(bool cursorActive) {
-	assert(_currentCard);
-	_graphics->resetColorCycles();
-	_currentCard->enter();
+void MerlinGame::enterActiveCard(bool cursorActive) {
+	assert(_activeCard);
+	_engine->getGraphics()->resetColorCycles();
+	_activeCard->enter();
 	if (cursorActive) {
 		BoltMsg hoverMsg(BoltMsg::kHover);
 		hoverMsg.point = _system->getEventManager()->getMousePos();
-		_engine->setMsg(hoverMsg);
+		_engine->setNextMsg(hoverMsg);
 	}
 }
 
-BoltRsp MerlinGame::scriptPlotMovie(const ScriptEntry* entry, const BoltMsg& msg) {
+void MerlinGame::scriptPlotMovie(const ScriptEntry* entry) {
 	// TODO
-	return kDone;
 }
 
-BoltRsp MerlinGame::scriptPostBumper(const ScriptEntry* entry, const BoltMsg& msg) {
+void MerlinGame::scriptPostBumper(const ScriptEntry* entry) {
 	// TODO
-	return kDone;
 }
 
-BoltRsp MerlinGame::scriptMenu(const ScriptEntry* entry, const BoltMsg& msg) {
+void MerlinGame::scriptMenu(const ScriptEntry* entry) {
 	// TODO
-	return kDone;
 }
 
-BoltRsp MerlinGame::scriptHub(const ScriptEntry* entry, const BoltMsg& msg) {
+void MerlinGame::scriptHub(const ScriptEntry* entry) {
 	// TODO
-	return kDone;
 }
 
-BoltRsp MerlinGame::scriptFreeplay(const ScriptEntry* entry, const BoltMsg& msg) {
-	if (!_currentCard) {
-		uint16 sceneId = entry->param;
-		GenericMenuCard* card = new GenericMenuCard;
-		card->init(this, _boltlib, BltShortId(sceneId));
-		setCurrentCard(card);
-		return kDone;
-	}
+void MerlinGame::scriptFreeplay(const ScriptEntry* entry) {
+	_activeCard.reset();
 
-	if (msg.type == Scene::kClickButton && msg.num >= 0) {
-		_nextScriptCursor = entry->branchTable[msg.num];
-		_currentCard.reset();
-		_engine->setMsg(BoltMsg::kDrive);
-		return kDone;
-	}
-
-	return _currentCard->handleMsg(msg);
+	uint16 sceneId = entry->param;
+	GenericMenuCard* card = new GenericMenuCard;
+	card->init(this, _boltlib, BltShortId(sceneId));
+	setActiveCard(card);
 }
 
 template<class T>
-BoltRsp MerlinGame::scriptPuzzle(const ScriptEntry* entry, const BoltMsg& msg) {
-	if (!_currentCard) {
-		uint16 sceneId = entry->param;
-		T* card = new T();
-		card->init(this, _boltlib, BltShortId(sceneId));
-		setCurrentCard(card);
-		return kDone;
-	}
+void MerlinGame::scriptPuzzle(const ScriptEntry* entry) {
+	_activeCard.reset();
 
-	if (msg.type == Card::kEnd || msg.type == Card::kReturn || msg.type == Card::kWin) {
-		_nextScriptCursor = entry->branchTable[0];
-		_currentCard.reset();
-		_engine->setMsg(BoltMsg::kDrive);
-		return kDone;
-	}
-
-	return _currentCard->handleMsg(msg);
+	uint16 sceneId = entry->param;
+	T* card = new T();
+	card->init(this, _boltlib, BltShortId(sceneId));
+	setActiveCard(card);
 }
 
 // Hardcoded values from MERLIN.EXE:
@@ -475,7 +465,8 @@ static const uint16 kPotionPuzzle1 = 0x940C;
 static const uint16 kPotionPuzzle2 = 0x980C;
 static const uint16 kPotionPuzzle3 = 0x9C0E;
 
-const int MerlinGame::kInitialScriptCursor = 8; // XXX: start at freeplay hub
+const int MerlinGame::kInitialScriptCursor = 8; // XXX: start in freeplay mode; TODO: should be 0
+static const int kNewGameScriptCursor = 11;
 
 const MerlinGame::ScriptEntry
 MerlinGame::kScript[] = {
@@ -490,8 +481,8 @@ MerlinGame::kScript[] = {
 	/* 8 */  { &MerlinGame::scriptFreeplay,   0x0337, 0, {53, 54, 55, 56, 57, 58, 59, 10, 9 } }, // branch index 19
 	/* 9 */  { &MerlinGame::scriptFreeplay,   0x0446, 0, {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 8, 10} }, // branch index 28
 	/* 10 */ { &MerlinGame::scriptFreeplay,   0x0555, 0, {70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 9, 8}  }, // branch index 40
-	/* 11 */ { &MerlinGame::scriptPlotMovie,  0, 0, {20, 20} }, // branch index 55
 
+	/* 11 */ { &MerlinGame::scriptPlotMovie, 0, 0, {20, 20} }, // branch index 55
 	/* 12 */ { &MerlinGame::scriptPlotMovie, 0, 0, {21, 21} }, // branch index 57
 	/* 13 */ { &MerlinGame::scriptPlotMovie, 0, 0, {8, 8} }, // branch index 59
 	/* 14 */ { &MerlinGame::scriptPlotMovie, 0, 0, {22, 22} }, // branch index 61

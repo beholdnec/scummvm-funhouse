@@ -105,13 +105,11 @@ Common::Error FunhouseEngine::run() {
 			} else if (_smoothAnimationRequested) {
 				// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
 				// Change this so smooth animation events are handled at a reasonable rate.
-				// FIXME: Prevent smooth animation from starving out other events such as kDrive!
 				_smoothAnimationRequested = false;
 				topLevelHandleMsg(BoltMsg::kSmoothAnimation);
 			} else {
-				// Emit Drive event
-				// TODO: Eliminate Drive events in favor of Timers, SmoothAnimation and AudioEnded.
-				// Generally, events signify things that are reacted to instead of polled.
+				// Emit Drive event to drive the game.
+				// TODO: Don't do this. The engine should idle until more messages are available.
 				topLevelHandleMsg(BoltMsg::kDrive);
 			}
 		}
@@ -128,12 +126,8 @@ uint32 FunhouseEngine::getEventTime() const {
 	return _eventTime;
 }
 
-BoltMsg FunhouseEngine::getMsg() const {
-    return _curMsg;
-}
-
-void FunhouseEngine::setMsg(const BoltMsg &msg) {
-	_curMsg = msg;
+void FunhouseEngine::setNextMsg(const BoltMsg &msg) {
+	_nextMsg = msg;
 }
 
 void FunhouseEngine::requestSmoothAnimation() {
@@ -153,19 +147,13 @@ Graphics* FunhouseEngine::getGraphics() {
 }
 
 void FunhouseEngine::topLevelHandleMsg(const BoltMsg &msg) {
-	_curMsg = msg;
+	_nextMsg = BoltMsg::kYield;
 
-	_graphics.handleMsg(_curMsg);
+	_graphics.handleMsg(msg);
 
-	bool yield = false;
-	while (!yield) {
-		BoltMsg msgCopy = _curMsg;
-        setMsg(BoltMsg::kYield);
-		_game->handleMsg(msgCopy);
-
-        if (_curMsg.type == BoltMsg::kYield) {
-            yield = true;
-        }
+	while (_nextMsg.type != BoltMsg::kYield) {
+		_nextMsg = BoltMsg::kYield;
+		_game->handleMsg(msg);
 	}
 
 	_graphics.presentIfDirty();

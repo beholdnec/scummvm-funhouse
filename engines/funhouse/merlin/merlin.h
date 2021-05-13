@@ -25,6 +25,7 @@
 
 #include "funhouse/bolt.h"
 #include "funhouse/movie.h"
+#include "funhouse/merlin/save.h"
 
 namespace Funhouse {
 	
@@ -72,7 +73,6 @@ public:
 	OSystem* getSystem();
 	FunhouseEngine* getEngine();
 	Graphics* getGraphics();
-	IBoltEventLoop* getEventLoop();
 	bool isInMovie() const;
 	void startMAMovie(uint32 name);
 	void startPotionMovie(int num);
@@ -91,7 +91,7 @@ public:
 
 private:
 	struct ScriptEntry;
-	typedef BoltRsp (MerlinGame::*ScriptFunc)(const ScriptEntry *entry, const BoltMsg& msg);
+	typedef void (MerlinGame::*ScriptFunc)(const ScriptEntry *entry);
 	struct ScriptEntry {
 		ScriptFunc func;
 		int param;
@@ -99,18 +99,16 @@ private:
 		int branchTable[16];
 	};
 
-	BoltRsp scriptPlotMovie(const ScriptEntry *entry, const BoltMsg& msg);
-	BoltRsp scriptPostBumper(const ScriptEntry* entry, const BoltMsg& msg);
-	BoltRsp scriptMenu(const ScriptEntry* entry, const BoltMsg& msg);
-	BoltRsp scriptHub(const ScriptEntry* entry, const BoltMsg& msg);
-	BoltRsp scriptFreeplay(const ScriptEntry* entry, const BoltMsg& msg);
+	void scriptPlotMovie(const ScriptEntry *entry);
+	void scriptPostBumper(const ScriptEntry* entry);
+	void scriptMenu(const ScriptEntry* entry);
+	void scriptHub(const ScriptEntry* entry);
+	void scriptFreeplay(const ScriptEntry* entry);
 	template<class T>
-	BoltRsp scriptPuzzle(const ScriptEntry* entry, const BoltMsg& msg);
+	void scriptPuzzle(const ScriptEntry* entry);
 
 	static const int kNumPopupTypes = 3;
 
-	// TODO: remove kSequence and use kScript instead
-	static const int kInitialScriptCursor;
 	static const ScriptEntry kScript[];
 
 	static const uint32 kPotionMovies[];
@@ -122,12 +120,11 @@ private:
 	static void movieTrigger(void *param, uint16 triggerType);
 
 	BoltRsp handleMsgInMovie(const BoltMsg &msg);
+	BoltRsp handleMsgInCard(const BoltMsg &msg);
 
 	OSystem *_system;
 	FunhouseEngine *_engine;
-	Graphics *_graphics;
-	Audio::Mixer *_mixer;
-	IBoltEventLoop *_eventLoop;
+	SaveManager _saveMan;
 
 	Boltlib _boltlib;
 	PfFile _maPf;
@@ -137,11 +134,11 @@ private:
 
 	BltImage _cursorImage;
 
-	Common::ScopedPtr<Card> _currentCard;
+	Common::ScopedPtr<Card> _activeCard;
 	Movie _movie;
 
-	void setCurrentCard(Card *card);
-	void enterCurrentCard(bool cursorActive);
+	void setActiveCard(Card *card);
+	void enterActiveCard(bool cursorActive);
 
 	// Number of current file. -1 if no file is selected.
 	int _fileNum;
@@ -151,6 +148,9 @@ private:
 	// 0: beginner; 1: advanced; 2: expert; -1: not set
 	int _difficulties[kNumDifficultyCategories];
 
+	void runScript();
+	
+	static const int kInitialScriptCursor;
 	int _scriptCursor;
 	int _nextScriptCursor;
 

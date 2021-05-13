@@ -37,8 +37,6 @@ struct BltSynchPuzzleInfo { // type 52
 
 void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
-    _graphics = _game->getGraphics();
-    _eventLoop = _game->getEventLoop();
     _timeoutActive = false;
     _transitionActive = false;
 
@@ -163,7 +161,7 @@ BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
 
             // TODO: hide cursor during transition
             _transitionActive = true;
-            _eventLoop->setMsg(BoltMsg::kDrive);
+            _game->getEngine()->setNextMsg(BoltMsg::kDrive);
             return BoltRsp::kDone;
         }
     }
@@ -176,7 +174,7 @@ BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp SynchPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setMsg(Card::kReturn);
+        _game->getEngine()->setNextMsg(Card::kReturn);
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -191,19 +189,19 @@ BoltRsp SynchPuzzle::handleButtonClick(int num) {
 
 void SynchPuzzle::setTimeout(uint32 delay) {
     _timeoutActive = true;
-    _timeoutStart = _eventLoop->getEventTime();
+    _timeoutStart = _game->getEngine()->getEventTime();
     _timeoutDelay = delay;
 }
 
 BoltRsp SynchPuzzle::driveTimeout() {
     assert(_timeoutActive);
 
-    uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
+    uint32 delta = _game->getEngine()->getEventTime() - _timeoutStart;
     if (delta < _timeoutDelay) {
         return BoltRsp::kDone;
     } else {
         _timeoutActive = false;
-        _game->getEngine()->setMsg(BoltMsg::kDrive);
+        _game->getEngine()->setNextMsg(BoltMsg::kDrive);
         return BoltRsp::kDone;
     }
 }
@@ -232,19 +230,19 @@ BoltRsp SynchPuzzle::driveTransition() {
             enter(); // Redraw the scene
 
             setTimeout(kTimeoutDelay);
-            _game->getEngine()->setMsg(BoltMsg::kDrive);
+            _game->getEngine()->setNextMsg(BoltMsg::kDrive);
             return BoltRsp::kDone;
         }
     }
 
     // Agenda is empty; check win condition and return to idle state
     if (isSolved()) {
-        _game->getEngine()->setMsg(kWin);
+        _game->getEngine()->setNextMsg(kWin);
         return BoltRsp::kDone;
     }
 
     _transitionActive = false;
-    _game->getEngine()->setMsg(BoltMsg::kDrive);
+    _game->getEngine()->setNextMsg(BoltMsg::kDrive);
     return BoltRsp::kDone;
 }
 

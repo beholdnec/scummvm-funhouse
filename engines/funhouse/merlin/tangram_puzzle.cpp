@@ -185,7 +185,7 @@ BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
             drawPieces();
 
 			if (checkWin()) {
-                _game->getEngine()->setMsg(kWin);
+                _game->getEngine()->setNextMsg(kWin);
 				return BoltRsp::kDone;
 			}
         } else {
@@ -226,7 +226,7 @@ BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp TangramPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setMsg(Card::kReturn);
+        _game->getEngine()->setNextMsg(Card::kReturn);
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);

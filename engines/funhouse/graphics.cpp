@@ -343,9 +343,9 @@ Graphics::Graphics()
 	_dirty(false)
 { }
 
-void Graphics::init(OSystem *system, IBoltEventLoop *eventLoop) {
+void Graphics::init(OSystem *system, FunhouseEngine *engine) {
 	_system = system;
-	_eventLoop = eventLoop;
+	_engine = engine;
 
 	_fade = Common::Rational(1);
 	_dirty = true;
@@ -421,7 +421,7 @@ void Graphics::handleMsg(const BoltMsg &msg) {
 		// Drive color cycles
 		for (int i = 0; i < kNumColorCycles; ++i) {
 			if (_colorCycles[i].delay > 0) {
-				uint32 diff = _eventLoop->getEventTime() - _colorCycles[i].curTime;
+				uint32 diff = _engine->getEventTime() - _colorCycles[i].curTime;
 				if (diff >= (uint32)_colorCycles[i].delay) {
 					bool backwards = _colorCycles[i].end < _colorCycles[i].start;
 
@@ -473,7 +473,7 @@ void Graphics::setColorCycle(int slot, int plane, uint16 start, uint16 end, int 
         _colorCycles[slot].plane = plane;
 		_colorCycles[slot].delay = delay;
 		// Start cycling now
-		_colorCycles[slot].curTime = _eventLoop->getEventTime();
+		_colorCycles[slot].curTime = _engine->getEventTime();
 	}
 	else {
 		warning("Invalid color cycle start %d, end %d", (int)start, (int)end);

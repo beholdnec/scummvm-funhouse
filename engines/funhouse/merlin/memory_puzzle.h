@@ -69,8 +69,6 @@ private:
     void drawItemFrame(int itemNum, int frameNum);
 
     MerlinGame *_game;
-	Graphics *_graphics;
-    IBoltEventLoop *_eventLoop;
 	Scene _scene;
     PopupMenu _popup;
 	ItemList _itemList;

@@ -113,12 +113,12 @@ BoltRsp HubCard::handleMsg(const BoltMsg &msg) {
 BoltRsp HubCard::handleButtonClick(int num) {
 	if (num == -1) {
 		// If no button was clicked, complete stage and transition to next hub.
-        _game->getEngine()->setMsg(Card::kEnd);
+        _game->getEngine()->setNextMsg(Card::kEnd);
 		return BoltRsp::kDone;
 	} else {
 		BoltMsg cmd(Card::kEnterPuzzle);
 		cmd.num = num;
-        _game->getEngine()->setMsg(cmd);
+        _game->getEngine()->setNextMsg(cmd);
 		return BoltRsp::kDone;
 	}
 }

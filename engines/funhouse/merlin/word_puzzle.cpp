@@ -125,7 +125,7 @@ BoltRsp WordPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp WordPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setMsg(Card::kReturn);
+        _game->getEngine()->setNextMsg(Card::kReturn);
         return BoltRsp::kDone;
 	case 3: // Reset
 		return handleReset();
@@ -214,7 +214,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 	setupButtons();
 
 	if (isSolved()) {
-        _game->getEngine()->setMsg(kWin);
+        _game->getEngine()->setNextMsg(kWin);
 	}
 
 	return BoltRsp::kDone;

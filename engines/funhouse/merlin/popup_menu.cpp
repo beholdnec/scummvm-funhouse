@@ -58,8 +58,6 @@ struct BltPopup {
 
 void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
     _game = game;
-    _eventLoop = _game->getEventLoop();
-    _graphics = _game->getGraphics();
     _active = false;
 
     BltPopup popup;
@@ -130,7 +128,7 @@ BoltRsp PopupMenu::handleMsg(const BoltMsg &msg) {
 BoltRsp PopupMenu::handleButtonClick(int num) {
 	BoltMsg msg(BoltMsg::kPopupButtonClick);
 	msg.num = num;
-	_game->getEngine()->setMsg(msg);
+	_game->getEngine()->setNextMsg(msg);
     return BoltRsp::kDone;
 }
 

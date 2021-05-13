@@ -38,9 +38,7 @@
 namespace Funhouse {
 
 Movie::Movie()
-	: _graphics(nullptr),
-	_mixer(nullptr),
-	_audioStream(nullptr),
+	: _audioStream(nullptr),
 	_audioStarted(false),
 	_triggerCallback(nullptr),
 	_triggerCallbackParam(nullptr)
@@ -50,13 +48,11 @@ Movie::~Movie() {
 	stopAudio();
 }
 
-void Movie::start(Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop, PfFile &pfFile, uint32 name) {
+void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 	debug(3, "loading movie %c%c%c%c ...",
 		(name >> 24) & 0xff, (name >> 16) & 0xff, (name >> 8) & 0xff, name & 0xff);
 
-	_graphics = graphics;
-	_mixer = mixer;
-	_eventLoop = eventLoop;
+	_engine = engine;
 
 	stop();
 
@@ -72,10 +68,10 @@ void Movie::start(Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *event
 	loadAudio();
 
 	// Timeline should be the first packet
-	startTimeline(fetchBuffer(_timelineQueue), _eventLoop->getEventTime());
+	startTimeline(fetchBuffer(_timelineQueue), _engine->getEventTime());
 
 	// Kick-off the movie timer
-	_eventLoop->setTimer(_framePeriod, kMovieTimer);
+	_engine->setTimer(_framePeriod, kMovieTimer);
 }
 
 void Movie::stop() {
@@ -109,7 +105,7 @@ void Movie::stop() {
 void Movie::stopAudio() {
 	if (_audioStream) {
 		if (_audioStarted) {
-			_mixer->stopHandle(_audioHandle); // Mixer deletes audio stream
+			_engine->_mixer->stopHandle(_audioHandle); // Mixer deletes audio stream
 		}
 		else {
 			delete _audioStream;
@@ -123,11 +119,11 @@ void Movie::stopAudio() {
 
 bool Movie::isAudioRunning() const {
 	return _audioStarted && _audioStream &&
-		_mixer->isSoundHandleActive(_audioHandle);
+		_engine->_mixer->isSoundHandleActive(_audioHandle);
 }
 
 bool Movie::isRunning() const {
-	return _graphics && (_timelineActive || isAudioRunning());
+	return _engine->getGraphics() && (_timelineActive || isAudioRunning());
 }
 
 BoltRsp Movie::handleMsg(const BoltMsg &msg) {
@@ -135,18 +131,18 @@ BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 	switch (msg.type) {
 	case BoltMsg::kSmoothAnimation:
 		// Fades have smooth animation; they have a higher frame rate than movie cels.
-		driveFade(_eventLoop->getEventTime());
+		driveFade(_engine->getEventTime());
 		handled = true;
 		break;
 
 	case BoltMsg::kTimer:
 		if (msg.num == kMovieTimer) {
 			driveAudio();
-			driveFade(_eventLoop->getEventTime());
-			driveTimeline(_eventLoop->getEventTime());
+			driveFade(_engine->getEventTime());
+			driveTimeline(_engine->getEventTime());
 			if (isRunning()) {
 				// Set up movie timer to send a message for the next frame
-				_eventLoop->setTimer(_framePeriod, kMovieTimer);
+				_engine->setTimer(_framePeriod, kMovieTimer);
 			}
 			handled = true;
 		}
@@ -155,7 +151,7 @@ BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 
 	if (handled && _fadeDirection != 0) {
 		// Request smooth animation when fading
-		_eventLoop->requestSmoothAnimation();
+		_engine->requestSmoothAnimation();
 	}
 
 	return BoltRsp::kDone;
@@ -182,7 +178,7 @@ void Movie::playAudio() {
 		// PF audio is premixed; speech and music volumes cannot be controlled
 		// independently.
 		// TODO: Make start of audio coincide exactly with the first frame of video.
-		_mixer->playStream(Audio::Mixer::kPlainSoundType, &_audioHandle,
+		_engine->_mixer->playStream(Audio::Mixer::kPlainSoundType, &_audioHandle,
 			_audioStream);
 		_audioStarted = true;
 	}
@@ -296,7 +292,7 @@ void Movie::stepTimeline() {
 		}
 	}
 
-	_graphics->markDirty();
+	_engine->getGraphics()->markDirty();
 	playAudio();
 }
 
@@ -341,7 +337,7 @@ void Movie::runTimelineCommand() {
 	case TimelineOpcodes::kDrawBack: // param size: 0
 	{
 		// Clear fore, fetch background from queue 1
-		_graphics->clearPlane(kFore);
+		_engine->getGraphics()->clearPlane(kFore);
 		ScopedBuffer buf(fetchBuffer(_videoQueues[1]));
 		applyQueue0or1Palette(kBack, buf);
 		drawQueue0or1(kBack, buf, 0, 0);
@@ -364,18 +360,18 @@ void Movie::runTimelineCommand() {
 		}
 		if (delay < 0) {
 			// Cycle backwards
-			_graphics->setColorCycle(_numColorCycles, kBack, startC + num - 1, startC, -delay);
+			_engine->getGraphics()->setColorCycle(_numColorCycles, kBack, startC + num - 1, startC, -delay);
 		}
 		else {
 			// Cycle forwards
-			_graphics->setColorCycle(_numColorCycles, kBack, startC, startC + num - 1, delay);
+			_engine->getGraphics()->setColorCycle(_numColorCycles, kBack, startC, startC + num - 1, delay);
 		}
 		++_numColorCycles;
 		break;
 	}
 	case TimelineOpcodes::kStopColorCycles: // stop palette cycling (param size: 0)
 		debug(3, "stop color cycles");
-		_graphics->resetColorCycles();
+		_engine->getGraphics()->resetColorCycles();
 		_numColorCycles = 0;
 		break;
 	case TimelineOpcodes::kStartCelSequence: // param size: 0
@@ -538,7 +534,7 @@ void Movie::stepCelCommands() {
 				byte firstColor = params.getUint8At(1);
 				debug(3, "cel command: load fore palette num %d first %d",
 					(int)numColors, (int)firstColor);
-				_graphics->setPlanePalette(kFore, &_cels[paramsOffset + 2], // TODO: utilize dataview here
+				_engine->getGraphics()->setPlanePalette(kFore, &_cels[paramsOffset + 2], // TODO: utilize dataview here
 					firstColor, numColors);
 
 				_celControlCursor += CelCommand::kSize + 2 + numColors * 3;
@@ -639,7 +635,7 @@ void Movie::drawCel(const ScopedBuffer &src, uint16 frameNum) {
     uint32 rl7Offset = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8);
     uint32 rl7Size = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8 + 4);
 
-	decodeRL7(_graphics->getPlaneSurface(kFore), 0, 0, header.width, header.height,
+	decodeRL7(_engine->getGraphics()->getPlaneSurface(kFore), 0, 0, header.width, header.height,
 		&src[rl7Offset], rl7Size, false);
 }
 
@@ -791,22 +787,22 @@ void Movie::driveFade(uint32 curTime) {
 		// Fade in
 		uint32 fadeProgress = curTime - _fadeStartTime;
 		if (fadeProgress >= _fadeDuration) {
-			_graphics->setFade(1);
+			_engine->getGraphics()->setFade(1);
 			_fadeDirection = 0;
 		}
 		else {
-			_graphics->setFade(Common::Rational(fadeProgress, _fadeDuration));
+			_engine->getGraphics()->setFade(Common::Rational(fadeProgress, _fadeDuration));
 		}
 	}
 	else if (_fadeDirection == -1) {
 		// Fade out
 		uint32 fadeProgress = curTime - _fadeStartTime;
 		if (fadeProgress >= _fadeDuration) {
-			_graphics->setFade(0);
+			_engine->getGraphics()->setFade(0);
 			_fadeDirection = 0;
 		}
 		else {
-			_graphics->setFade(Common::Rational(_fadeDuration - fadeProgress, _fadeDuration));
+			_engine->getGraphics()->setFade(Common::Rational(_fadeDuration - fadeProgress, _fadeDuration));
 		}
 	}
 	else if (_fadeDirection == 0) {
@@ -844,7 +840,7 @@ void Movie::applyQueue0or1Palette(int plane, const ScopedBuffer &src) {
 	Queue01ImageHeader header(src.span());
 	assert(header.queueNum == 0 || header.queueNum == 1);
 
-	_graphics->setPlanePalette(plane, &src[Queue01ImageHeader::kSize], 0, 128);
+	_engine->getGraphics()->setPlanePalette(plane, &src[Queue01ImageHeader::kSize], 0, 128);
 }
 
 void Movie::drawQueue0or1(int plane, const ScopedBuffer &src, int x, int y) {
@@ -857,11 +853,11 @@ void Movie::drawQueue0or1(int plane, const ScopedBuffer &src, int x, int y) {
 	int imageDataLen = src.size() - 128 * 3 - Queue01ImageHeader::kSize;
 
 	if (header.compression) {
-		decodeRL7(_graphics->getPlaneSurface(plane), x, y, header.width, header.height,
+		decodeRL7(_engine->getGraphics()->getPlaneSurface(plane), x, y, header.width, header.height,
 			imageSrc, imageDataLen, false);
 	}
 	else {
-		decodeCLUT7(_graphics->getPlaneSurface(plane), x, y, header.width, header.height,
+		decodeCLUT7(_engine->getGraphics()->getPlaneSurface(plane), x, y, header.width, header.height,
 			imageSrc, imageDataLen, false);
 	}
 }

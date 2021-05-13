@@ -65,7 +65,7 @@ BoltRsp MainMenu::handleButtonClick(int num) {
 	case -1: // No button
 		return BoltRsp::kDone;
 	case 0: // Play
-        _game->getEngine()->setMsg(Card::kEnd);
+        _game->getEngine()->setNextMsg(Card::kEnd);
 		return BoltRsp::kDone;
 	case 1: // Credits
 		_game->startMAMovie(MKTAG('C', 'R', 'D', 'T'));

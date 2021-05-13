@@ -20,48 +20,22 @@
  *
  */
 
-#ifndef FUNHOUSE_MERLIN_POPUP_MENU_H
-#define FUNHOUSE_MERLIN_POPUP_MENU_H
-
-#include "funhouse/bolt.h"
-#include "funhouse/graphics.h"
-#include "funhouse/boltlib/palette.h"
-#include "funhouse/boltlib/sprites.h"
+#include "funhouse/merlin/save.h"
 
 namespace Funhouse {
 
-class Boltlib;
-struct BltId;
-class MerlinGame;
+void SaveManager::init()
+{
+}
 
-class PopupMenu {
-public:
-    void init(MerlinGame *game, Boltlib &boltlib, BltId id);
+void SaveManager::loadProfile(int idx)
+{
+	gProfileIdx = idx;
+}
 
-	void dismiss();
-    BoltRsp handleMsg(const BoltMsg &msg);
+void SaveManager::save()
+{
+	// TODO
+}
 
-private:
-    struct Button {
-        Rect hotspot;
-        BltSprites hovered;
-        BltSprites unhovered;
-    };
-    typedef ScopedArray<Button> ButtonList;
-
-    void activate();
-    int getButtonAt(const Common::Point &pt) const;
-    BoltRsp handleButtonClick(int num);
-
-    MerlinGame *_game;
-    Graphics *_graphics;
-
-    bool _active;
-    BltImage _bgImage;
-    BltPalette _palette;
-    ButtonList _buttons;
-};
-
-} // End of namespace Funhouse
-
-#endif
+} // end of namespace Funhouse

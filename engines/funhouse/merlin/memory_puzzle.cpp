@@ -84,8 +84,6 @@ MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
 
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
-	_graphics = _game->getGraphics();
-    _eventLoop = _game->getEventLoop();
     _animStatus = kIdle;
     _playbackActive = false;
     _matches = 0;
@@ -159,7 +157,7 @@ BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
     }
     
     if (_matches >= _finalGoal) {
-        _game->getEngine()->setMsg(kWin);
+        _game->getEngine()->setNextMsg(kWin);
         return BoltRsp::kDone;
     } else if (_matches >= _goal) {
         _matches = 0;
@@ -185,7 +183,7 @@ BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp MemoryPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setMsg(Card::kReturn);
+        _game->getEngine()->setNextMsg(Card::kReturn);
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -226,12 +224,12 @@ BoltRsp MemoryPuzzle::handlePlayback() {
     if (_playbackStep < _goal) {
         startAnimation(_solution[_playbackStep], _itemList[_solution[_playbackStep]].sound);
         ++_playbackStep;
-        _game->getEngine()->setMsg(BoltMsg::kDrive);
+        _game->getEngine()->setNextMsg(BoltMsg::kDrive);
         return BoltRsp::kDone;
     }
 
     _playbackActive = false;
-    _game->getEngine()->setMsg(BoltMsg::kDrive);
+    _game->getEngine()->setNextMsg(BoltMsg::kDrive);
     return BoltRsp::kDone;
 }
 
@@ -242,7 +240,7 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     _animItem = itemNum;
     _animFrame = 0;
     _animSubFrame = 0;
-    _animStartTime = _eventLoop->getEventTime();
+    _animStartTime = _game->getEngine()->getEventTime();
     _animSoundTime = sound.getNumSamples() / 22; // This approximation is used by the original engine.
     _animPlayTime = _animSoundTime;
     if (_foo == 0x4d) {
@@ -260,12 +258,12 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     Item &item = _itemList[_animItem];
     //applyPalette(_graphics, kFore, item.palette);
     // XXX: applyPalette doesn't work correctly. Manually apply palette.
-    _graphics->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
+    _game->getGraphics()->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
         0, 128);
     if (item.colorCycles) {
-        applyColorCycles(_graphics, kFore, item.colorCycles.get());
+        applyColorCycles(_game->getGraphics(), kFore, item.colorCycles.get());
     } else {
-        _graphics->resetColorCycles();
+        _game->getGraphics()->resetColorCycles();
     }
     
     sound.play(_game->getEngine()->_mixer);
@@ -281,16 +279,16 @@ BoltRsp MemoryPuzzle::handleAnimation() {
         const Item& item = _itemList[_animItem];
         const ItemFrame& frame = item.frames[_animFrame];
 
-        uint32 frameElapsed = _eventLoop->getEventTime() - _frameTime;
+        uint32 frameElapsed = _game->getEngine()->getEventTime() - _frameTime;
         if (frameElapsed >= kFrameDelayMs) {
             _frameTime += kFrameDelayMs;
 
-            uint32 totalElapsed = _eventLoop->getEventTime() - _animStartTime;
+            uint32 totalElapsed = _game->getEngine()->getEventTime() - _animStartTime;
             if (totalElapsed >= _animPlayTime) {
                 if (frame.delayFrames == -1) {
                     _animFrame++;
                     _animSubFrame = 0;
-                    _frameTime = _eventLoop->getEventTime();
+                    _frameTime = _game->getEngine()->getEventTime();
                     drawItemFrame(_animItem, _animFrame);
                     _animStatus = kWindingDown;
                     debug("winding down animation...");
@@ -299,7 +297,7 @@ BoltRsp MemoryPuzzle::handleAnimation() {
                     _animStatus = kStopping;
                 }
 
-                _eventLoop->setMsg(BoltMsg::kDrive);
+                _game->getEngine()->setNextMsg(BoltMsg::kDrive);
                 return BoltRsp::kDone;
             }
             else {
@@ -328,13 +326,13 @@ BoltRsp MemoryPuzzle::handleAnimation() {
 
         if (_animFrame >= item.frames.size()) {
             _animStatus = kStopping;
-            _eventLoop->setMsg(BoltMsg::kDrive);
+            _game->getEngine()->setNextMsg(BoltMsg::kDrive);
             return BoltRsp::kDone;
         }
 
         const ItemFrame& frame = item.frames[_animFrame];
 
-        uint32 frameElapsed = _eventLoop->getEventTime() - _frameTime;
+        uint32 frameElapsed = _game->getEngine()->getEventTime() - _frameTime;
         if (frameElapsed >= kFrameDelayMs) {
             _frameTime += kFrameDelayMs;
 
@@ -357,11 +355,11 @@ BoltRsp MemoryPuzzle::handleAnimation() {
     }
 
     case kStopping: {
-        uint32 totalElapsed = _eventLoop->getEventTime() - _animStartTime;
+        uint32 totalElapsed = _game->getEngine()->getEventTime() - _animStartTime;
         if (totalElapsed >= _animSoundTime) {
             drawItemFrame(_animItem, -1);
             _animStatus = kIdle;
-            _eventLoop->setMsg(BoltMsg::kDrive);
+            _game->getEngine()->setNextMsg(BoltMsg::kDrive);
         }
         return BoltRsp::kDone;
     }
@@ -374,16 +372,16 @@ BoltRsp MemoryPuzzle::handleAnimation() {
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {
-    _graphics->clearPlane(kFore);
+    _game->getGraphics()->clearPlane(kFore);
 
     const Item &item = _itemList[itemNum];
     if (frameNum >= 0 && frameNum < item.frames.size()) {
         const ItemFrame &frame = item.frames[frameNum];
         const Common::Point &origin = _scene.getOrigin();
-        frame.image.drawAt(_graphics->getPlaneSurface(kFore), frame.pos.x - origin.x, frame.pos.y - origin.y, true);
+        frame.image.drawAt(_game->getGraphics()->getPlaneSurface(kFore), frame.pos.x - origin.x, frame.pos.y - origin.y, true);
     }
 
-    _graphics->markDirty();
+    _game->getGraphics()->markDirty();
 }
 
 } // End of namespace Funhouse

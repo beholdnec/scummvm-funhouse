@@ -55,8 +55,6 @@ struct BltParticles { // type 46
 
 void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
-	_graphics = _game->getGraphics();
-	_eventLoop = _game->getEventLoop();
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
@@ -143,16 +141,16 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 }
 
 void ActionPuzzle::enter() {
-	_curTime = _eventLoop->getEventTime();
+	_curTime = _game->getEngine()->getEventTime();
 	_tickNum = 0;
 	// TODO: Load progress from save data
 	// (check original to see if action puzzles are saved)
 	// (and what happens when you change difficulty mid-puzzle?)
 	_goalNum = 0;
 
-	applyPalette(_graphics, kBack, _backPalette);
-	applyColorCycles(_graphics, kBack, &_backColorCycles);
-	applyPalette(_graphics, kFore, _forePalette);
+	applyPalette(_game->getGraphics(), kBack, _backPalette);
+	applyColorCycles(_game->getGraphics(), kBack, &_backColorCycles);
+	applyPalette(_game->getGraphics(), kFore, _forePalette);
 	// TODO: fore color cycles
 
 	drawBack();
@@ -164,7 +162,7 @@ void ActionPuzzle::enter() {
 
 	drawFore();
 
-	_graphics->markDirty();
+	_game->getGraphics()->markDirty();
 }
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
@@ -184,7 +182,7 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 		return win();
 	case BoltMsg::kDrive: {
 		// TODO: eliminate Drive events in favor of Timers
-		uint32 diff = _eventLoop->getEventTime() - _curTime;
+		uint32 diff = _game->getEngine()->getEventTime() - _curTime;
 		if (diff >= kTickPeriod) {
 			_curTime += kTickPeriod;
 			tick();
@@ -203,7 +201,7 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp ActionPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setMsg(Card::kReturn);
+        _game->getEngine()->setNextMsg(Card::kReturn);
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -257,26 +255,26 @@ void ActionPuzzle::spawnParticle(int imageNum, int pathNum) {
 }
 
 void ActionPuzzle::drawBack() {
-	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
+	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 	for (uint i = 0; i < _goals.size(); ++i) {
 		if (i < _goalNum) {
 			const Common::Point &pt = _goals[i];
 			// TODO: there may be multiple sets of goals
 			// (player has to complete one set and then the next)
-			_goalImages[0].drawAt(_graphics->getPlaneSurface(kBack), pt.x, pt.y, true);
+			_goalImages[0].drawAt(_game->getGraphics()->getPlaneSurface(kBack), pt.x, pt.y, true);
 		}
 	}
 }
 
 void ActionPuzzle::drawFore() {
-	_graphics->clearPlane(kFore);
+	_game->getGraphics()->clearPlane(kFore);
 
 	for (ParticleList::const_iterator it = _particles.begin(); it != _particles.end(); ++it) {
 		const Particle &p = *it;
 		const BltImage &image = getParticleImage(p);
 		Common::Point pt = getParticlePos(p);
 		// FIXME: positions of particles in death sequence are wrong
-		image.drawAt(_graphics->getPlaneSurface(kFore), pt.x, pt.y, true);
+		image.drawAt(_game->getGraphics()->getPlaneSurface(kFore), pt.x, pt.y, true);
 	}
 }
 
@@ -323,14 +321,14 @@ void ActionPuzzle::tick() {
 	}
 
 	drawFore();
-	_graphics->markDirty();
+	_game->getGraphics()->markDirty();
 }
 
 BoltRsp ActionPuzzle::win() {
 	// Redraw background before starting win movie
-	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
-	_graphics->clearPlane(kFore);
-    _game->getEngine()->setMsg(Card::kWin);
+	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
+	_game->getGraphics()->clearPlane(kFore);
+    _game->getEngine()->setNextMsg(Card::kWin);
 	return BoltRsp::kDone;
 }
 

@@ -41,7 +41,6 @@ class File;
 namespace Funhouse {
 
 struct BoltMsg;
-class IBoltEventLoop;
 class BoltEngine;
 class Graphics;
 class PfFile;
@@ -52,7 +51,7 @@ public:
 	Movie();
 	~Movie();
 
-	void start(Graphics *graphics, Audio::Mixer *mixer, IBoltEventLoop *eventLoop, PfFile &pfFile, uint32 name);
+	void start(FunhouseEngine *engine, PfFile &pfFile, uint32 name);
 	void stop();
 
 	bool isRunning() const;
@@ -65,9 +64,7 @@ private:
 	void stopAudio();
 	bool isAudioRunning() const;
 
-	Graphics *_graphics;
-	Audio::Mixer *_mixer;
-	IBoltEventLoop *_eventLoop;
+	FunhouseEngine *_engine;
 	Common::File *_file;
 
 	typedef ScopedArray<byte> ScopedBuffer;

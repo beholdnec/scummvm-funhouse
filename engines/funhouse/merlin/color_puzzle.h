@@ -79,8 +79,6 @@ private:
     bool isSolved() const;
 
     MerlinGame *_game;
-	Graphics *_graphics;
-	IBoltEventLoop *_eventLoop;
     PopupMenu _popup;
 	Scene _scene;
 	ScopedArray<BltSoundList> _soundLists;

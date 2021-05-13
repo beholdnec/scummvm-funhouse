@@ -93,9 +93,8 @@ struct Rect {
 struct BoltMsg {
 	enum Type {
 		// System messages (>= 0)
-		kNone = 0,
-        kYield, // Break out of the message loop. Present a frame and gather more input.
-        kDrive, // Continue processing messages.
+		kDrive = 0, // Run message handlers with no particular message
+		kYield,
 		kHover,
 		kClick,
 		kRightClick,
@@ -107,7 +106,7 @@ struct BoltMsg {
         kSceneMsgs = 200,
 	};
 
-	BoltMsg(int type_ = kNone) : type(type_), num(0) { }
+	BoltMsg(int type_ = kDrive) : type(type_), num(0) { }
 
 	int type;
 	int num;
@@ -144,15 +143,6 @@ enum TimerId {
 	kCardTimer
 };
 
-class IBoltEventLoop {
-public:
-	virtual ~IBoltEventLoop() { }
-	virtual uint32 getEventTime() const = 0;
-	virtual void setMsg(const BoltMsg &msg) = 0;
-	virtual void requestSmoothAnimation() = 0;
-	virtual void setTimer(uint32 delay, int id) = 0;
-};
-
 class FunhouseEngine;
 
 class FunhouseGame {
@@ -163,7 +153,7 @@ public:
     virtual void win() = 0;
 };
 
-class FunhouseEngine : public Engine, public IBoltEventLoop {
+class FunhouseEngine : public Engine {
 public:
 	FunhouseEngine(OSystem *syst, const ADGameDescription *gd);
 
@@ -172,12 +162,10 @@ public:
 	// From Engine
 	virtual bool hasFeature(EngineFeature f) const;
 
-	// From IBoltEventLoop (for internal game use)
-	virtual uint32 getEventTime() const;
-    virtual BoltMsg getMsg() const;
-	virtual void setMsg(const BoltMsg &msg);
-	virtual void requestSmoothAnimation();
-	virtual void setTimer(uint32 delay, int id);
+	uint32 getEventTime() const;
+	void setNextMsg(const BoltMsg &msg);
+	void requestSmoothAnimation();
+	void setTimer(uint32 delay, int id);
 
 	Graphics* getGraphics();
 
@@ -193,7 +181,7 @@ private:
 
     Common::ScopedPtr<FunhouseGame> _game;
 
-	BoltMsg _curMsg;
+	BoltMsg _nextMsg;
 	uint32 _eventTime;
 
 	struct Timer {

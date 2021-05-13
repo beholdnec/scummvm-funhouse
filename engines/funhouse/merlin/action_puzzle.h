@@ -62,8 +62,6 @@ protected:
 	BoltRsp win();
 
     MerlinGame *_game;
-	Graphics *_graphics;
-	IBoltEventLoop *_eventLoop;
     PopupMenu _popup;
 	BltImage _bgImage;
 	BltPalette _backPalette;

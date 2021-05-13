@@ -91,8 +91,6 @@ typedef ScopedArray<BltPotionPuzzleComboTableListElement> BltPotionPuzzleComboTa
 
 void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_game = game;
-	_eventLoop = game->getEventLoop();
-	_graphics = _game->getGraphics();
 	_timeout = false;
 
 	_popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
@@ -186,10 +184,10 @@ BoltRsp PotionPuzzle::handleTimeout(const BoltMsg &msg) {
 		return BoltRsp::kPass;
 	}
 
-	uint32 delta = _eventLoop->getEventTime() - _timeoutStart;
+	uint32 delta = _game->getEngine()->getEventTime() - _timeoutStart;
 	if (delta >= _timeoutLength) {
 		_timeout = false;
-		_game->getEngine()->setMsg(BoltMsg::kDrive);
+		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return BoltRsp::kDone;
 	}
 
@@ -225,7 +223,7 @@ BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
 
 		// TODO: Play "plunk" sound
 		setTimeout(kPlacing2Time);
-		_game->getEngine()->setMsg(BoltMsg::kDrive);
+		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return BoltRsp::kDone;
 	}
 
@@ -237,7 +235,7 @@ BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
 		reset();
 		draw();
 		// TODO: Play "reset" sound
-		_game->getEngine()->setMsg(BoltMsg::kDrive);
+		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return BoltRsp::kDone;
 	}
 
@@ -247,7 +245,7 @@ BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
 
 BoltRsp PotionPuzzle::handleClick(Common::Point point) {
 	// Eat the click event
-	_eventLoop->setMsg(BoltMsg::kDrive);
+	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 
 	// Check if middle bowl piece was clicked. If it was clicked, undo the last action.
 	if (isValidIngredient(_bowlSlots[1])) {
@@ -286,7 +284,7 @@ BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
 	setTimeout(kPlacing1Time);
-	_game->getEngine()->setMsg(BoltMsg::kDrive);
+	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 	return BoltRsp::kDone;
 }
 
@@ -355,7 +353,7 @@ BoltRsp PotionPuzzle::performReaction() {
 
 	if (reactionInfo->c == -1) {
 		// FIXME: Does the original program check if all ingredients are used?
-		_game->getEngine()->setMsg(kWin);
+		_game->getEngine()->setNextMsg(kWin);
 		return BoltRsp::kDone;
 	}
 	else {
@@ -410,12 +408,12 @@ void PotionPuzzle::reset() {
 }
 
 void PotionPuzzle::draw() {
-	applyPalette(_graphics, kBack, _bgPalette);
-	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
+	applyPalette(_game->getGraphics(), kBack, _bgPalette);
+	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 
 	if (!_game->isInMovie()) {
 		// Clear the foreground, unless we're playing a movie.
-		_graphics->clearPlane(kFore);
+		_game->getGraphics()->clearPlane(kFore);
 	}
 
 	for (uint i = 0; i < _shelfPoints.size(); ++i) {
@@ -427,7 +425,7 @@ void PotionPuzzle::draw() {
 			Common::Point pos = _shelfPoints[i] -
 				Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
 			// FIXME: is image-specified anchor point ignored here?
-			image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+			image.drawAt(_game->getGraphics()->getPlaneSurface(kBack), pos.x, pos.y, true);
 		}
 	}
 
@@ -436,7 +434,7 @@ void PotionPuzzle::draw() {
 		const BltImage &image = _ingredientImages[_bowlSlots[0]];
 		Common::Point pos = _bowlPoints[0] -
 			Common::Point(image.getWidth(), image.getHeight()) - _origin;
-		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+		image.drawAt(_game->getGraphics()->getPlaneSurface(kBack), pos.x, pos.y, true);
 	}
 
 	if (isValidIngredient(_bowlSlots[1])) {
@@ -444,7 +442,7 @@ void PotionPuzzle::draw() {
 		const BltImage &image = _ingredientImages[_bowlSlots[1]];
 		Common::Point pos = _bowlPoints[1] -
 			Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
-		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+		image.drawAt(_game->getGraphics()->getPlaneSurface(kBack), pos.x, pos.y, true);
 	}
 
 	if (isValidIngredient(_bowlSlots[2])) {
@@ -452,10 +450,10 @@ void PotionPuzzle::draw() {
 		const BltImage &image = _ingredientImages[_bowlSlots[2]];
 		Common::Point pos = _bowlPoints[2] -
 			Common::Point(0, image.getHeight()) - _origin;
-		image.drawAt(_graphics->getPlaneSurface(kBack), pos.x, pos.y, true);
+		image.drawAt(_game->getGraphics()->getPlaneSurface(kBack), pos.x, pos.y, true);
 	}
 
-	_graphics->markDirty();
+	_game->getGraphics()->markDirty();
 }
 
 bool PotionPuzzle::isValidIngredient(int ingredient) const {
@@ -473,7 +471,7 @@ int PotionPuzzle::getNumRemainingIngredients() const {
 }
 
 void PotionPuzzle::setTimeout(uint32 length) {
-	_timeoutStart = _eventLoop->getEventTime();
+	_timeoutStart = _game->getEngine()->getEventTime();
 	_timeoutLength = length;
 	_timeout = true;
 }

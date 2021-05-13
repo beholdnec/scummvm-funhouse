@@ -171,7 +171,7 @@ BoltRsp Scene::handleMsg(const BoltMsg &msg) {
 	case BoltMsg::kClick: {
 		BoltMsg newMsg(kClickButton);
 		newMsg.num = getButtonAtPoint(msg.point);
-		_engine->setMsg(newMsg);
+		_engine->setNextMsg(newMsg);
         break;
 	}
 	}

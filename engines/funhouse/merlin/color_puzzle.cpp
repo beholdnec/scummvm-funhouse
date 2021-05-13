@@ -27,8 +27,6 @@ namespace Funhouse {
 
 void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
-	_graphics = _game->getGraphics();
-	_eventLoop = _game->getEventLoop();
 	_morphPaletteMods = nullptr;
     _transitionActive = false;
     _morphActive = false;
@@ -127,7 +125,7 @@ BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp ColorPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setMsg(Card::kReturn);
+        _game->getEngine()->setNextMsg(Card::kReturn);
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -141,12 +139,12 @@ BoltRsp ColorPuzzle::handleButtonClick(int num) {
 	if (num >= 0 && num < kNumPieces) {
 		selectPiece(num);
 
-		_eventLoop->setMsg(BoltMsg::kDrive);
+		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return BoltRsp::kDone;
 	}
 
 	// TODO: clicking outside of pieces should show the solution
-    _game->getEngine()->setMsg(Card::kWin);
+    _game->getEngine()->setNextMsg(Card::kWin);
 	return BoltRsp::kDone;
 }
 
@@ -161,7 +159,7 @@ BoltRsp ColorPuzzle::driveTransition() {
         if (pieceNum >= 0) {
             // FIXME: This isn't how it should work...
             morphPiece(pieceNum, (_pieces[pieceNum].state + count) % _pieces[pieceNum].numStates);
-            _game->getEngine()->setMsg(BoltMsg::kDrive);
+            _game->getEngine()->setNextMsg(BoltMsg::kDrive);
             return BoltRsp::kDone;
         }
 
@@ -169,33 +167,33 @@ BoltRsp ColorPuzzle::driveTransition() {
     }
 
     if (isSolved()) {
-        _game->getEngine()->setMsg(kWin);
+        _game->getEngine()->setNextMsg(kWin);
         return BoltRsp::kDone;
     }
 
     _transitionActive = false;
-    _game->getEngine()->setMsg(BoltMsg::kDrive);
+    _game->getEngine()->setNextMsg(BoltMsg::kDrive);
     return BoltRsp::kDone;
 }
 
 BoltRsp ColorPuzzle::driveMorph() {
     assert(_morphActive);
 
-    const uint32 delta = _eventLoop->getEventTime() - _morphStartTime;
+    const uint32 delta = _game->getEngine()->getEventTime() - _morphStartTime;
     if (delta < kMorphDuration) {
-        applyPaletteModBlended(_graphics, kFore, *_morphPaletteMods,
+        applyPaletteModBlended(_game->getGraphics(), kFore, *_morphPaletteMods,
             _morphStartState, _morphEndState,
             Common::Rational(delta, kMorphDuration));
 
-        _graphics->markDirty();
+        _game->getGraphics()->markDirty();
         return BoltRsp::kDone;
     }
 
-    applyPaletteMod(_graphics, kFore, *_morphPaletteMods, _morphEndState);
-    _graphics->markDirty();
+    applyPaletteMod(_game->getGraphics(), kFore, *_morphPaletteMods, _morphEndState);
+    _game->getGraphics()->markDirty();
     _morphPaletteMods = nullptr;
     _morphActive = false;
-    _game->getEngine()->setMsg(BoltMsg::kDrive);
+    _game->getEngine()->setNextMsg(BoltMsg::kDrive);
     return BoltRsp::kDone;
 }
 
@@ -207,8 +205,8 @@ void ColorPuzzle::selectPiece(int piece) {
 
 void ColorPuzzle::setPieceState(int piece, int state) {
 	_pieces[piece].state = state;
-	applyPaletteMod(_graphics, kFore, _pieces[piece].palettes, state);
-	_graphics->markDirty();
+	applyPaletteMod(_game->getGraphics(), kFore, _pieces[piece].palettes, state);
+	_game->getGraphics()->markDirty();
 }
 
 void ColorPuzzle::morphPiece(int piece, int state) {
@@ -220,7 +218,7 @@ void ColorPuzzle::morphPiece(int piece, int state) {
 }
 
 void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int endState) {
-	_morphStartTime = _eventLoop->getEventTime();
+	_morphStartTime = _game->getEngine()->getEventTime();
 	_morphPaletteMods = paletteMods;
 	_morphStartState = startState;
 	_morphEndState = endState;
