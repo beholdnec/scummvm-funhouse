@@ -54,7 +54,6 @@ private:
     BoltRsp handleButtonClick(int num);
 
     MerlinGame *_game;
-    Graphics *_graphics;
 
     bool _active;
     BltImage _bgImage;

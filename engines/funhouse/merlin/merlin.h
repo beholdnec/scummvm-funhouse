@@ -80,6 +80,8 @@ public:
 	void setFile(int num);
 	BltId getPopupResId(PopupType type);
 	bool isPuzzleSolved(int num) const;
+	void branchScript(int idx, bool absolute = false);
+	void loadProfile(int idx);
 
 	int getDifficulty(DifficultyCategory category) const;
 	void setDifficulty(DifficultyCategory category, int level);
@@ -90,6 +92,8 @@ public:
 	static const int kNumFiles = 12;
 
 private:
+	friend class MovieCard;
+
 	struct ScriptEntry;
 	typedef void (MerlinGame::*ScriptFunc)(const ScriptEntry *entry);
 	struct ScriptEntry {
@@ -151,6 +155,7 @@ private:
 	void runScript();
 	
 	static const int kInitialScriptCursor;
+	static const int kNewGameScriptCursor;
 	int _scriptCursor;
 	int _nextScriptCursor;
 

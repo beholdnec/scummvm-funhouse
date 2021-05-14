@@ -60,12 +60,11 @@ Common::Error FunhouseEngine::run() {
 	while (!shouldQuit()) {
 		BoltMsg msg = getNextMsg();
 		_graphics.handleMsg(msg);
-		if (msg.type != BoltMsg::kYield) {
-			_game->handleMsg(msg);
+		if (msg.type == BoltMsg::kYield) {
+			yield();
 		}
 		else {
-			_graphics.presentIfDirty();
-			_eventTime = getTotalPlayTime();
+			_game->handleMsg(msg);
 		}
 	}
 
@@ -128,10 +127,11 @@ BoltMsg FunhouseEngine::getNextMsg()
 		msg.point = event.mouse;
 		return msg;
 	}
-	else if (_smoothAnimationRequested) {
+	else if (_smoothAnimationRequested && !_smoothAnimationSent) {
 		// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
 		// Change this so smooth animation events are handled at a reasonable rate.
 		_smoothAnimationRequested = false;
+		_smoothAnimationSent = true;
 		return BoltMsg::kSmoothAnimation;
 	}
 	else if (_hoverRequested) {
@@ -142,6 +142,12 @@ BoltMsg FunhouseEngine::getNextMsg()
 	}
 
 	return BoltMsg::kYield;
+}
+
+void FunhouseEngine::yield() {
+	_graphics.presentIfDirty();
+	_eventTime = getTotalPlayTime();
+	_smoothAnimationSent = false;
 }
 
 void FunhouseEngine::win() {

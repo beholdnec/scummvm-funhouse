@@ -113,7 +113,7 @@ BoltRsp PopupMenu::handleMsg(const BoltMsg &msg) {
 				const BltSprites &sprites = (i == num) ? _buttons[i].hovered : _buttons[i].unhovered;
 				const Common::Point &spritePos = sprites.getSpritePosition(0);
 				const BltImage *spriteImage = sprites.getSpriteImage(0);
-                spriteImage->drawAt(_graphics->getPlaneSurface(kBack), spritePos.x, spritePos.y, true);
+                spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kBack), spritePos.x, spritePos.y, true);
             }
 
             if (msg.type == BoltMsg::kClick) {
@@ -138,13 +138,13 @@ void PopupMenu::activate() {
     // The original engine does something hacky here: Only colors 121-127 are applied.
     static const int kFirstPopupColor = 121;
     static const int kNumPopupColors = 7;
-    _graphics->setPlanePalette(kBack, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
+    _game->getGraphics()->setPlanePalette(kBack, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
 
     static const int kPopupX = -32;
     static const int kPopupY = 168;
-    _bgImage.drawAt(_graphics->getPlaneSurface(kBack), kPopupX, kPopupY, true);
+    _bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), kPopupX, kPopupY, true);
 
-    _graphics->markDirty();
+    _game->getGraphics()->markDirty();
 }
 
 int PopupMenu::getButtonAt(const Common::Point &pt) const {

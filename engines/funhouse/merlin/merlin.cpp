@@ -213,8 +213,8 @@ public:
 
 	BoltRsp handleMsg(const BoltMsg &msg) {
 		if (msg.type == Scene::kClickButton) {
-			warning("Unhandled button %d", msg.num);
-			_game->getEngine()->setNextMsg(Card::kEnd);
+			_game->getEngine()->setNextMsg(BoltMsg::kDrive);
+			_game->branchScript(msg.num);
 			return BoltRsp::kDone;
 		}
 
@@ -312,16 +312,79 @@ void MerlinGame::enterActiveCard(bool cursorActive) {
 	}
 }
 
+void MerlinGame::branchScript(int idx, bool absolute) {
+	if (absolute) {
+		_nextScriptCursor = idx;
+	} else {
+		_nextScriptCursor = kScript[_scriptCursor].branchTable[idx];
+	}
+	_engine->setNextMsg(BoltMsg::kDrive);
+}
+
+void MerlinGame::loadProfile(int idx) {
+	// TODO: load profile from file
+	_nextScriptCursor = kNewGameScriptCursor;
+	_engine->setNextMsg(BoltMsg::kDrive);
+}
+
+class MovieCard : public Card
+{
+public:
+	MovieCard(MerlinGame *game) : _game(game) { }
+
+	void enter() override {
+	}
+
+	BoltRsp handleMsg(const BoltMsg &msg) override {
+		// Movie is finished. Go to the next script line.
+		_game->branchScript(0);
+		return kDone;
+	}
+
+private:
+	MerlinGame *_game;
+};
+
 void MerlinGame::scriptPlotMovie(const ScriptEntry* entry) {
-	// TODO
+	_activeCard.reset();
+
+	MovieCard* card = new MovieCard(this);
+	setActiveCard(card);
+
+	uint32 movie = entry->param;
+	startMAMovie(movie);
 }
 
 void MerlinGame::scriptPostBumper(const ScriptEntry* entry) {
-	// TODO
+	// TODO: what does this script command actually do?
+	branchScript(0);
 }
 
 void MerlinGame::scriptMenu(const ScriptEntry* entry) {
-	// TODO
+	_activeCard.reset();
+
+	switch (entry->param) {
+	case 0: {
+		MainMenu *card = new MainMenu();
+		card->init(this, _boltlib, BltShortId(0x0118));
+		setActiveCard(card);
+		break;
+	}
+	case 1: {
+		FileMenu *card = new FileMenu();
+		card->init(this, _boltlib, BltShortId(0x02A0));
+		setActiveCard(card);
+		break;
+	}
+	case 2: {
+		DifficultyMenu *card = new DifficultyMenu();
+		card->init(this, _boltlib, BltShortId(0x006B));
+		setActiveCard(card);
+		break;
+	}
+	default:
+		assert(false);
+	}
 }
 
 void MerlinGame::scriptHub(const ScriptEntry* entry) {
@@ -463,24 +526,24 @@ static const uint16 kPotionPuzzle1 = 0x940C;
 static const uint16 kPotionPuzzle2 = 0x980C;
 static const uint16 kPotionPuzzle3 = 0x9C0E;
 
-const int MerlinGame::kInitialScriptCursor = 8; // XXX: start in freeplay mode; TODO: should be 0
-static const int kNewGameScriptCursor = 11;
+const int MerlinGame::kInitialScriptCursor = 0; // XXX: start in freeplay mode; TODO: should be 0
+const int MerlinGame::kNewGameScriptCursor = 11;
 
 const MerlinGame::ScriptEntry
 MerlinGame::kScript[] = {
-	/* 0 */  { &MerlinGame::scriptPlotMovie,  0, 0, {1, 1} }, // branch index 0
+	/* 0 */  { &MerlinGame::scriptPlotMovie,  MKTAG('B','M','P','R'), 0, {1, 1} }, // branch index 0
 	/* 1 */  { &MerlinGame::scriptPostBumper, 0, 0, {2} }, // branch index 2
-	/* 2 */  { &MerlinGame::scriptPlotMovie,  0, 0, {3, 3} }, // branch index 3
+	/* 2 */  { &MerlinGame::scriptPlotMovie,  MKTAG('I','N','T','R'), 0, {3, 3} }, // branch index 3
 	/* 3 */  { &MerlinGame::scriptMenu,       0, 0, {6, 4, 83, 5} }, // branch index 5
 	/* 4 */  { &MerlinGame::scriptPlotMovie,  0, 0, {3, 3} }, // branch index 9
 	/* 5 */  { &MerlinGame::scriptPlotMovie,  0, 0, {3, 3} }, // branch index 11
-	/* 6 */  { &MerlinGame::scriptMenu,       0, 0, {3, -1, 7} }, // branch index 13
-	/* 7 */  { &MerlinGame::scriptMenu,       0, 0, {3, 6, -1} }, // branch index 16
+	/* 6 */  { &MerlinGame::scriptMenu,       1, 0, {3, -1, 7} }, // branch index 13
+	/* 7 */  { &MerlinGame::scriptMenu,       2, 0, {3, 6, -1} }, // branch index 16
 	/* 8 */  { &MerlinGame::scriptFreeplay,   0x0337, 0, {53, 54, 55, 56, 57, 58, 59, 10, 9 } }, // branch index 19
 	/* 9 */  { &MerlinGame::scriptFreeplay,   0x0446, 0, {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 8, 10} }, // branch index 28
 	/* 10 */ { &MerlinGame::scriptFreeplay,   0x0555, 0, {70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 9, 8}  }, // branch index 40
 
-	/* 11 */ { &MerlinGame::scriptPlotMovie, 0, 0, {20, 20} }, // branch index 55
+	/* 11 */ { &MerlinGame::scriptPlotMovie, MKTAG('P','L','O','G'), 0, {20, 20} }, // branch index 55
 	/* 12 */ { &MerlinGame::scriptPlotMovie, 0, 0, {21, 21} }, // branch index 57
 	/* 13 */ { &MerlinGame::scriptPlotMovie, 0, 0, {8, 8} }, // branch index 59
 	/* 14 */ { &MerlinGame::scriptPlotMovie, 0, 0, {22, 22} }, // branch index 61

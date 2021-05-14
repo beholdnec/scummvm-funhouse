@@ -64,7 +64,7 @@ BoltRsp DifficultyMenu::handleButtonClick(int num) {
 		return BoltRsp::kDone;
 	case kPlayButton: // Play
 		if (isReadyToPlay()) {
-            _game->getEngine()->setNextMsg(Card::kEnd);
+			_game->branchScript(0);
 			return BoltRsp::kDone;
 		}
 		return BoltRsp::kDone;

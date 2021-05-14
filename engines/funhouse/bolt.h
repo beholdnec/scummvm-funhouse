@@ -176,7 +176,7 @@ protected:
 
 private:
 	BoltMsg getNextMsg();
-	void topLevelHandleMsg(const BoltMsg &msg);
+	void yield();
 	
     Common::ScopedPtr<FunhouseConsole> _console;
 	Graphics _graphics;
@@ -193,7 +193,13 @@ private:
 	};
 	Common::List<Timer> _timers;
 
+	// True if a kSmoothAnimation message has been requested.
 	bool _smoothAnimationRequested = false;
+	// True if a kSmoothAnimation message has been sent this frame.
+	// The engine allows one kSmoothAnimation message per frame.
+	bool _smoothAnimationSent = false;
+	// True if a kHover message has been requested this frame.
+	// This forces a kHover message to be sent even if the mouse has not moved.
 	bool _hoverRequested = false;
 };
 

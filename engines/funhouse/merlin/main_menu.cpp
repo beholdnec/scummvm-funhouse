@@ -65,13 +65,17 @@ BoltRsp MainMenu::handleButtonClick(int num) {
 	case -1: // No button
 		return BoltRsp::kDone;
 	case 0: // Play
-        _game->getEngine()->setNextMsg(Card::kEnd);
+        _game->branchScript(0);
 		return BoltRsp::kDone;
 	case 1: // Credits
 		_game->startMAMovie(MKTAG('C', 'R', 'D', 'T'));
 		return BoltRsp::kDone;
 	case 4: // Tour
 		_game->startMAMovie(MKTAG('T', 'O', 'U', 'R'));
+		return BoltRsp::kDone;
+	case 5: // Flower
+		// XXX: go to freeplay mode. TODO: original game shows colorbars when cheat mode is active.
+		_game->branchScript(8, true);
 		return BoltRsp::kDone;
 	default:
 		warning("unknown main menu button %d", num);

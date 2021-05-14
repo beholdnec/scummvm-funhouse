@@ -133,6 +133,7 @@ void Scene::enter() {
 	applyPalette(_graphics, kBack, _backPlane.palette);
 	applyPalette(_graphics, kFore, _forePlane.palette);
 	applyColorCycles(_graphics, kBack, _colorCycles.get());
+	_engine->requestHover();
 	redraw();
 }
 

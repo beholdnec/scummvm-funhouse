@@ -99,7 +99,7 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 			return BoltRsp::kDone;
 		case 1: // Play
 			if (_game->getFile() != -1) {
-                _game->getEngine()->setNextMsg(Card::kEnd);
+				_game->loadProfile(0);
 				return BoltRsp::kDone;
 			} else {
 				return BoltRsp::kDone;
