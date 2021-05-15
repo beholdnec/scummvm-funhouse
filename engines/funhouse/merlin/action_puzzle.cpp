@@ -163,6 +163,9 @@ void ActionPuzzle::enter() {
 	drawFore();
 
 	_game->getGraphics()->markDirty();
+
+	// FIXME: use timers to drive animation
+	_game->getEngine()->requestSmoothAnimation();
 }
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
@@ -180,13 +183,16 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 		// Right-click to win instantly
 		// TODO: remove
 		return win();
-	case BoltMsg::kDrive: {
+	case BoltMsg::kSmoothAnimation: {
 		// TODO: eliminate Drive events in favor of Timers
 		uint32 diff = _game->getEngine()->getEventTime() - _curTime;
 		if (diff >= kTickPeriod) {
 			_curTime += kTickPeriod;
 			tick();
 		}
+
+		// FIXME: use timers to drive animation
+		_game->getEngine()->requestSmoothAnimation();
 
 		if (_goalNum >= _goals.size()) {
 			return win();

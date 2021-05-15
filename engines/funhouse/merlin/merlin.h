@@ -76,12 +76,15 @@ public:
 	bool isInMovie() const;
 	void startMAMovie(uint32 name);
 	void startPotionMovie(int num);
-	int getFile() const;
-	void setFile(int num);
 	BltId getPopupResId(PopupType type);
 	bool isPuzzleSolved(int num) const;
+
 	void branchScript(int idx, bool absolute = false);
-	void loadProfile(int idx);
+	void branchLoadProfile();
+
+	bool doesProfileExist(int idx) const;
+	int getProfile() const;
+	void selectProfile(int idx);
 
 	int getDifficulty(DifficultyCategory category) const;
 	void setDifficulty(DifficultyCategory category, int level);
@@ -145,8 +148,8 @@ private:
 	void enterActiveCard(bool cursorActive);
 
 	// Number of current file. -1 if no file is selected.
-	int _fileNum;
-	bool _cheatMode;
+	int _fileNum = -1;
+	bool _cheatMode = false;
 
 	// Difficulty levels:
 	// 0: beginner; 1: advanced; 2: expert; -1: not set

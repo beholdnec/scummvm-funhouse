@@ -90,7 +90,7 @@ BoltRsp FileMenu::handleButtonClick(int num) {
     }
 
 	if (num >= kFirstFileButton && num < kFirstFileButton + MerlinGame::kNumFiles) {
-		_game->setFile(num - kFirstFileButton);
+		_game->selectProfile(num - kFirstFileButton);
 		setButtons();
 		return BoltRsp::kDone;
 	} else {
@@ -98,12 +98,15 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 		case -1: // No button
 			return BoltRsp::kDone;
 		case 1: // Play
-			if (_game->getFile() != -1) {
-				_game->loadProfile(0);
-				return BoltRsp::kDone;
-			} else {
-				return BoltRsp::kDone;
+			if (_game->getProfile() != -1) {
+				if (_game->doesProfileExist(_game->getProfile())) {
+					_game->branchLoadProfile();
+				}
+				else {
+					_game->branchScript(2); // Difficulty menu
+				}
 			}
+			return BoltRsp::kDone;
 		default:
 			warning("unknown main menu button %d", num);
 			return BoltRsp::kDone;
@@ -113,11 +116,11 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 
 void FileMenu::setButtons() {
 	for (int i = 0; i < MerlinGame::kNumFiles; ++i) {
-		_scene.getButton(kFirstFileButton + i).setGraphics(i == _game->getFile() ? 1 : 0);
+		_scene.getButton(kFirstFileButton + i).setGraphics(i == _game->getProfile() ? 1 : 0);
 	}
 
 	static const int kPlayButton = 1;
-	if (_game->getFile() != -1) {
+	if (_game->getProfile() != -1) {
 		_scene.getButton(kPlayButton).setGraphics(1);
 	}
 

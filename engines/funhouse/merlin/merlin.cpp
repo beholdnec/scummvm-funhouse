@@ -167,13 +167,16 @@ void MerlinGame::startPotionMovie(int num) {
 	startMovie(_potionPf, kPotionMovies[num]);
 }
 
-int MerlinGame::getFile() const {
+bool MerlinGame::doesProfileExist(int idx) const {
+	return false; // TODO: load from save file
+}
+
+int MerlinGame::getProfile() const {
 	return _fileNum;
 }
 
-void MerlinGame::setFile(int num) {
-	assert(num >= 0 && num < kNumFiles);
-	_fileNum = num;
+void MerlinGame::selectProfile(int idx) {
+	_fileNum = idx;
 }
 
 BltId MerlinGame::getPopupResId(PopupType type) {
@@ -321,7 +324,7 @@ void MerlinGame::branchScript(int idx, bool absolute) {
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
-void MerlinGame::loadProfile(int idx) {
+void MerlinGame::branchLoadProfile() {
 	// TODO: load profile from file
 	_nextScriptCursor = kNewGameScriptCursor;
 	_engine->setNextMsg(BoltMsg::kDrive);
@@ -387,8 +390,17 @@ void MerlinGame::scriptMenu(const ScriptEntry* entry) {
 	}
 }
 
+bool MerlinGame::isPuzzleSolved(int idx) const {
+	return false; // TODO
+}
+
 void MerlinGame::scriptHub(const ScriptEntry* entry) {
-	// TODO
+	_activeCard.reset();
+
+	uint16 sceneId = entry->param;
+	HubCard *card = new HubCard;
+	card->init(this, _boltlib, BltShortId(sceneId));
+	setActiveCard(card);
 }
 
 void MerlinGame::scriptFreeplay(const ScriptEntry* entry) {
@@ -552,9 +564,9 @@ MerlinGame::kScript[] = {
 	/* 17 */ { &MerlinGame::scriptPlotMovie, 0, 0, {9, 9} }, // branch index 67
 	/* 18 */ { &MerlinGame::scriptPlotMovie, 0, 0, {4, 4} }, // branch index 69
 	/* 19 */ { &MerlinGame::scriptPlotMovie, 0, 0, {10, 10} }, // branch index 71
-	/* 20 */ { &MerlinGame::scriptHub,       0, 0, {23, 24, 25, 26, 27, 28, 29} }, // branch index 73
-	/* 21 */ { &MerlinGame::scriptHub,       0, 0, {30, 31, 32, 33, 34, 35, 36, 37, 38, 39} }, // branch index 80
-	/* 22 */ { &MerlinGame::scriptHub,       0, 0, {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52} }, // branch index 90
+	/* 20 */ { &MerlinGame::scriptHub,       0x0C0B, 0, {23, 24, 25, 26, 27, 28, 29} }, // branch index 73
+	/* 21 */ { &MerlinGame::scriptHub,       0x0D34, 0, {30, 31, 32, 33, 34, 35, 36, 37, 38, 39} }, // branch index 80
+	/* 22 */ { &MerlinGame::scriptHub,       0x0E4F, 0, {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52} }, // branch index 90
 	
 	// Hub 1
 	/* 23 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x4921, 0, {20} }, // branch index 103

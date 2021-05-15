@@ -116,9 +116,7 @@ BoltRsp HubCard::handleButtonClick(int num) {
         _game->getEngine()->setNextMsg(Card::kEnd);
 		return BoltRsp::kDone;
 	} else {
-		BoltMsg cmd(Card::kEnterPuzzle);
-		cmd.num = num;
-        _game->getEngine()->setNextMsg(cmd);
+		_game->branchScript(num);
 		return BoltRsp::kDone;
 	}
 }

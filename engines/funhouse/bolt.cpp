@@ -137,7 +137,7 @@ BoltMsg FunhouseEngine::getNextMsg()
 	else if (_hoverRequested) {
 		_hoverRequested = false;
 		BoltMsg msg(BoltMsg::kHover);
-		msg.point = event.mouse;
+		msg.point = getEventManager()->getMousePos();
 		return msg;
 	}
 
