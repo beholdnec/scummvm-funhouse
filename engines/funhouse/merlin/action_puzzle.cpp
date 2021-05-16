@@ -207,7 +207,7 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp ActionPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setNextMsg(Card::kReturn);
+        _game->branchReturn();
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -334,7 +334,7 @@ BoltRsp ActionPuzzle::win() {
 	// Redraw background before starting win movie
 	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 	_game->getGraphics()->clearPlane(kFore);
-    _game->getEngine()->setNextMsg(Card::kWin);
+    _game->branchWin();
 	return BoltRsp::kDone;
 }
 

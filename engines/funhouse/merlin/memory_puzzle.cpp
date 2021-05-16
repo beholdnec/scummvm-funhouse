@@ -157,7 +157,7 @@ BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
     }
     
     if (_matches >= _finalGoal) {
-        _game->getEngine()->setNextMsg(kWin);
+        _game->branchWin();
         return BoltRsp::kDone;
     } else if (_matches >= _goal) {
         _matches = 0;
@@ -183,7 +183,7 @@ BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp MemoryPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setNextMsg(Card::kReturn);
+        _game->branchReturn();
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);

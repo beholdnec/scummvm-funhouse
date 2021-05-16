@@ -174,7 +174,7 @@ BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp SynchPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setNextMsg(Card::kReturn);
+        _game->branchReturn();
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -237,7 +237,7 @@ BoltRsp SynchPuzzle::driveTransition() {
 
     // Agenda is empty; check win condition and return to idle state
     if (isSolved()) {
-        _game->getEngine()->setNextMsg(kWin);
+        _game->branchWin();
         return BoltRsp::kDone;
     }
 

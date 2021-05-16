@@ -80,6 +80,8 @@ public:
 	bool isPuzzleSolved(int num) const;
 
 	void branchScript(int idx, bool absolute = false);
+	void branchReturn();
+	void branchWin();
 	void branchLoadProfile();
 
 	bool doesProfileExist(int idx) const;
@@ -159,8 +161,10 @@ private:
 	
 	static const int kInitialScriptCursor;
 	static const int kNewGameScriptCursor;
-	int _scriptCursor;
-	int _nextScriptCursor;
+	int _scriptCursor = 0;
+	int _nextScriptCursor = 0;
+	int _prevScriptCursor = 0;
+	int _returnScriptCursor = 0;
 
 	BltId _popupResIds[kNumPopupTypes];
 };

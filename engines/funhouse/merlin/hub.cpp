@@ -112,8 +112,8 @@ BoltRsp HubCard::handleMsg(const BoltMsg &msg) {
 
 BoltRsp HubCard::handleButtonClick(int num) {
 	if (num == -1) {
-		// If no button was clicked, complete stage and transition to next hub.
-        _game->getEngine()->setNextMsg(Card::kEnd);
+		// XXX: If no button was clicked, go to potion puzzle
+        _game->branchScript(_itemImages.size());
 		return BoltRsp::kDone;
 	} else {
 		_game->branchScript(num);

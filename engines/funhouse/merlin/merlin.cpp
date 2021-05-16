@@ -92,6 +92,7 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 
 	_scriptCursor = kInitialScriptCursor;
 	_nextScriptCursor = kInitialScriptCursor;
+	_prevScriptCursor = kInitialScriptCursor;
 
 	// Load cursor
 	initCursor();
@@ -121,6 +122,7 @@ BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	if (rsp == kDone) {
 		// Handle card transitions
 		if (_nextScriptCursor != _scriptCursor) {
+			_prevScriptCursor = _scriptCursor;
 			_scriptCursor = _nextScriptCursor;
 			runScript();
 		}
@@ -324,6 +326,16 @@ void MerlinGame::branchScript(int idx, bool absolute) {
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
+void MerlinGame::branchReturn() {
+	_nextScriptCursor = _returnScriptCursor;
+	_engine->setNextMsg(BoltMsg::kDrive);
+}
+
+void MerlinGame::branchWin() {
+	// TODO: play win movie
+	branchReturn();
+}
+
 void MerlinGame::branchLoadProfile() {
 	// TODO: load profile from file
 	_nextScriptCursor = kNewGameScriptCursor;
@@ -414,6 +426,7 @@ void MerlinGame::scriptFreeplay(const ScriptEntry* entry) {
 
 template<class T>
 void MerlinGame::scriptPuzzle(const ScriptEntry* entry) {
+	_returnScriptCursor = _prevScriptCursor;
 	_activeCard.reset();
 
 	uint16 sceneId = entry->param;
@@ -556,13 +569,13 @@ MerlinGame::kScript[] = {
 	/* 10 */ { &MerlinGame::scriptFreeplay,   0x0555, 0, {70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 9, 8}  }, // branch index 40
 
 	/* 11 */ { &MerlinGame::scriptPlotMovie, MKTAG('P','L','O','G'), 0, {20, 20} }, // branch index 55
-	/* 12 */ { &MerlinGame::scriptPlotMovie, 0, 0, {21, 21} }, // branch index 57
-	/* 13 */ { &MerlinGame::scriptPlotMovie, 0, 0, {8, 8} }, // branch index 59
-	/* 14 */ { &MerlinGame::scriptPlotMovie, 0, 0, {22, 22} }, // branch index 61
+	/* 12 */ { &MerlinGame::scriptPlotMovie, MKTAG('L','A','B','T'), 0, {21, 21} }, // branch index 57
+	/* 13 */ { &MerlinGame::scriptPlotMovie, 0, 0, {8, 8} }, // branch index 59 
+	/* 14 */ { &MerlinGame::scriptPlotMovie, MKTAG('C','A','V','1'), 0, {22, 22} }, // branch index 61 (FIXME: CAV2 is played under some conditions)
 	/* 15 */ { &MerlinGame::scriptPlotMovie, 0, 0, {22, 22} }, // branch index 63
 	/* 16 */ { &MerlinGame::scriptPlotMovie, 0, 0, {9, 9} }, // branch index 65
 	/* 17 */ { &MerlinGame::scriptPlotMovie, 0, 0, {9, 9} }, // branch index 67
-	/* 18 */ { &MerlinGame::scriptPlotMovie, 0, 0, {4, 4} }, // branch index 69
+	/* 18 */ { &MerlinGame::scriptPlotMovie, /*MKTAG('F','N','L','E')*/ 0, 0, {4, 4} }, // branch index 69 (XXX: Finale movie is hidden until the game is fully implemented)
 	/* 19 */ { &MerlinGame::scriptPlotMovie, 0, 0, {10, 10} }, // branch index 71
 	/* 20 */ { &MerlinGame::scriptHub,       0x0C0B, 0, {23, 24, 25, 26, 27, 28, 29} }, // branch index 73
 	/* 21 */ { &MerlinGame::scriptHub,       0x0D34, 0, {30, 31, 32, 33, 34, 35, 36, 37, 38, 39} }, // branch index 80

@@ -124,7 +124,7 @@ void SlidingPuzzle::setSprites() {
 BoltRsp SlidingPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setNextMsg(Card::kReturn);
+        _game->branchReturn();
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -150,7 +150,7 @@ BoltRsp SlidingPuzzle::handleButtonClick(int num) {
         }
 
         if (win) {
-            _game->getEngine()->setNextMsg(kWin);
+            _game->branchWin();
             return BoltRsp::kDone;
         }
     } else if (num != -1) {

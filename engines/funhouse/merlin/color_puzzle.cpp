@@ -125,7 +125,7 @@ BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
 BoltRsp ColorPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->getEngine()->setNextMsg(Card::kReturn);
+        _game->branchReturn();
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -144,7 +144,7 @@ BoltRsp ColorPuzzle::handleButtonClick(int num) {
 	}
 
 	// TODO: clicking outside of pieces should show the solution
-    _game->getEngine()->setNextMsg(Card::kWin);
+    _game->branchWin();
 	return BoltRsp::kDone;
 }
 
@@ -167,7 +167,7 @@ BoltRsp ColorPuzzle::driveTransition() {
     }
 
     if (isSolved()) {
-        _game->getEngine()->setNextMsg(kWin);
+        _game->branchWin();
         return BoltRsp::kDone;
     }
 

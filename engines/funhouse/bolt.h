@@ -102,8 +102,7 @@ struct BoltMsg {
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
 		kPopupButtonClick,
-		kCardMsgs = 100,
-        kSceneMsgs = 200,
+        kSceneMsgs = 100,
 	};
 
 	BoltMsg(int type_ = kYield) : type(type_), num(0) { }
@@ -121,15 +120,6 @@ enum BoltRsp {
 
 class Card {
 public:
-	// Card-specific messages
-	enum CardMsg {
-		kEnd = BoltMsg::kCardMsgs, // Advance to the next card in sequence.
-        kReturn, // Pause and leave the card.
-		kWin, // Win the current puzzle.
-		kEnterPuzzle, // Enter a puzzle
-		kMaxCardCmd = BoltMsg::kCardMsgs + 100,
-	};
-
 	virtual ~Card() { }
 	virtual void enter() = 0;
     virtual void redraw() {

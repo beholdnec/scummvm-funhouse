@@ -353,7 +353,7 @@ BoltRsp PotionPuzzle::performReaction() {
 
 	if (reactionInfo->c == -1) {
 		// FIXME: Does the original program check if all ingredients are used?
-		_game->getEngine()->setNextMsg(kWin);
+		_game->branchScript(0);
 		return BoltRsp::kDone;
 	}
 	else {
