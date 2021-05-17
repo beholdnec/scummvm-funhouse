@@ -40,6 +40,12 @@ enum DifficultyCategory {
 	kNumDifficultyCategories,
 };
 
+enum ChallengeStatus {
+	kNotWon = 0,
+	kWon = 1,
+	kPlayWinMovie = 3,
+};
+
 class MerlinGame : public FunhouseGame {
 public:
 	static const int kNumPotionMovies;
@@ -76,6 +82,11 @@ public:
 
 	int getDifficulty(DifficultyCategory category) const;
 	void setDifficulty(DifficultyCategory category, int level);
+
+	ChallengeStatus getChallengeStatus(int idx) const;
+	void setChallengeStatus(int idx, ChallengeStatus status);
+
+	void playWinMovie(int idx);
 
 	bool getCheatMode() const;
 	void setCheatMode(bool enable);
@@ -142,6 +153,9 @@ private:
 	// Difficulty levels:
 	// 0: beginner; 1: advanced; 2: expert; -1: not set
 	int _difficulties[kNumDifficultyCategories];
+
+	static const int kChallengeCount = 30;
+	ChallengeStatus _challengeStatuses[kChallengeCount] = { };
 
 	void runScript();
 	

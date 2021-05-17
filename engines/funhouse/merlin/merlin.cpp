@@ -287,6 +287,20 @@ void MerlinGame::setDifficulty(DifficultyCategory category, int level) {
 	_difficulties[category] = level;
 }
 
+ChallengeStatus MerlinGame::getChallengeStatus(int idx) const {
+	assert(idx >= 0 && idx < kChallengeCount);
+	return _challengeStatuses[idx];
+}
+
+void MerlinGame::setChallengeStatus(int idx, ChallengeStatus status) {
+	assert(idx >= 0 && idx < kChallengeCount);
+	_challengeStatuses[idx] = status;
+}
+
+void MerlinGame::playWinMovie(int idx) {
+	startMovie(_challdirPf, kWinMovies[idx]);
+}
+
 bool MerlinGame::getCheatMode() const {
 	return _cheatMode;
 }
@@ -334,7 +348,7 @@ void MerlinGame::branchReturn() {
 
 void MerlinGame::branchWin() {
 	int challengeIdx = kScript[_scriptCursor].param;
-	startMovie(_challdirPf, kWinMovies[challengeIdx]);
+	_challengeStatuses[challengeIdx] = kPlayWinMovie;
 	branchReturn();
 }
 
@@ -713,6 +727,7 @@ MerlinGame::kScript[] = {
 */
 
 const uint32 MerlinGame::kWinMovies[] = {
+	0,
 	MKTAG('G','R','A','V'), MKTAG('L','E','A','V'), MKTAG('O','A','K','L'),
 	MKTAG('P','O','N','D'), MKTAG('R','A','V','N'), MKTAG('S','E','E','D'),
 	MKTAG('B','B','L','E'), MKTAG('F','L','S','K'), MKTAG('M','I','R','R'),

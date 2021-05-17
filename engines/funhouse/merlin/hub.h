@@ -33,7 +33,21 @@ struct CardCmd;
 class MerlinEngine;
 class MerlinGame;
 struct HubEntry;
-	
+
+struct BltHubItem { // type 41
+	static const uint32 kType = kBltHubItem;
+	static const uint kSize = 0x10;
+	void load(Common::Span<const byte> src, Boltlib& boltlib) {
+		challengeIdx = src.getInt8At(0x0);
+		winMovie = src.getInt8At(0x3);
+		imageId = BltId(src.getUint32BEAt(0x4));
+	}
+
+	int8 challengeIdx;
+	int8 winMovie;
+	BltId imageId;
+};
+
 class HubCard : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
@@ -47,6 +61,7 @@ private:
 	Graphics *_graphics;
 	Scene _scene;
     PopupMenu _popup;
+	ScopedArray<BltHubItem> _items;
 	ScopedArray<BltImage> _itemImages;
 };
 

@@ -44,17 +44,6 @@ struct BltHub { // type 40
 	BltId itemListId;
 };
 
-struct BltHubItem { // type 41
-	static const uint32 kType = kBltHubItem;
-	static const uint kSize = 0x10;
-	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		// FIXME: unknown fields
-		imageId = BltId(src.getUint32BEAt(4));
-	}
-
-	BltId imageId;
-};
-
 void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
 	_graphics = _game->getGraphics();
@@ -68,29 +57,43 @@ void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltResourceList hubItemsList;
 	loadBltResourceArray(hubItemsList, boltlib, hubInfo.itemListId);
+	_items.alloc(hubInfo.numItems);
 	_itemImages.alloc(hubInfo.numItems);
 	for (uint i = 0; i < hubInfo.numItems; ++i) {
-		BltHubItem hubItem;
-		loadBltResource(hubItem, boltlib, hubItemsList[i].value);
-		_itemImages[i].load(boltlib, hubItem.imageId);
+		loadBltResource(_items[i], boltlib, hubItemsList[i].value);
+		_itemImages[i].load(boltlib, _items[i].imageId);
 	}
 }
 
 void HubCard::enter() {
-	// Disable buttons for solved puzzles
-	// FIXME: avoid looping through this stuff twice
-	for (int i = 0; i < _itemImages.size(); ++i) {
-		if (_game->isPuzzleSolved(i)) {
-			_scene.getButton(i).setEnable(false);
+	if (!_game->isInMovie()) {
+		// Find win movie to play
+		for (int i = 0; i < _items.size(); i++) {
+			if (_game->getChallengeStatus(_items[i].challengeIdx) == kPlayWinMovie) {
+				_game->playWinMovie(_items[i].winMovie);
+				return;
+			}
 		}
+	}
+
+	// Set button enablements
+	for (int i = 0; i < _itemImages.size(); ++i) {
+		ChallengeStatus status = _game->getChallengeStatus(_items[i].challengeIdx);
+		_scene.getButton(i).setEnable(status != kWon);
 	}
 
 	_scene.enter();
 
-	// Draw item images to back plane
+	// Draw item images
 	for (int i = 0; i < _itemImages.size(); ++i) {
-		if (_game->isPuzzleSolved(i)) {
+		ChallengeStatus status = _game->getChallengeStatus(_items[i].challengeIdx);
+		if (status == kWon) {
 			_itemImages[i].drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true);
+		}
+		else if (status == kPlayWinMovie) {
+			// If we got here, the movie has sent the Redraw trigger.
+			// Mark the challenge as Won, but don't draw its image yet.
+			_game->setChallengeStatus(_items[i].challengeIdx, kWon);
 		}
 	}
 
