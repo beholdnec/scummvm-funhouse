@@ -89,9 +89,17 @@ struct BltPotionPuzzleComboTableListElement {
 
 typedef ScopedArray<BltPotionPuzzleComboTableListElement> BltPotionPuzzleComboTableList;
 
-void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
 	_timeout = false;
+
+	uint16 resId = 0;
+	switch (challengeIdx) {
+	case 6: resId = 0x940C; break;
+	case 16: resId = 0x980C; break;
+	case 29: resId = 0x9C0E; break;
+	default: assert(false); break;
+	}
 
 	_popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
 
@@ -103,7 +111,7 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	BltPotionPuzzleSpritePoints bowlPoints;
 	BltPotionPuzzleComboTableList comboTableList;
 
-	loadBltResource(puzzle, boltlib, resId);
+	loadBltResource(puzzle, boltlib, BltShortId(resId));
 	_origin = puzzle.origin;
 	_bgImage.load(boltlib, puzzle.bgImageId);
 	_bgPalette.load(boltlib, puzzle.bgPaletteId);

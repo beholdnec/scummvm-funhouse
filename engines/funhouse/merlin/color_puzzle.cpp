@@ -25,16 +25,23 @@
 
 namespace Funhouse {
 
-void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
 	_morphPaletteMods = nullptr;
     _transitionActive = false;
     _morphActive = false;
 
+    uint16 resId = 0;
+    switch (challengeIdx) {
+    case 18: resId = 0x8C13; break;
+    case 24: resId = 0x9014; break;
+    default: assert(false); break;
+    }
+
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
-	loadBltResourceArray(resourceList, boltlib, resId);
+	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
 	BltId difficultiesId = resourceList[0].value;
 	BltId sceneId        = resourceList[3].value;
 

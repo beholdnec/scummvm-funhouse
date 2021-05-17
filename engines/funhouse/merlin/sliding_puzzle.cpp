@@ -44,14 +44,25 @@ struct BltSlidingPuzzleInfo { // type 44
 	BltShortId difficulty3;
 };
 
-void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
     _graphics = _game->getGraphics();
+
+	uint16 resId = 0;
+	switch (challengeIdx) {
+	case 1: resId = 0x313F; break;
+	case 5: resId = 0x353F; break;
+	case 8: resId = 0x4140; break;
+	case 15: resId = 0x3D3F; break;
+	case 22: resId = 0x393F; break;
+	case 28: resId = 0x453F; break;
+	default: assert(false); break;
+	}
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
-	loadBltResourceArray(resourceList, boltlib, resId);
+	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
     BltId puzzleInfoId = resourceList[1].value;
 
 	BltSlidingPuzzleInfo slidingPuzzleInfo;

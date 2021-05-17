@@ -35,15 +35,23 @@ struct BltSynchPuzzleInfo { // type 52
     uint8 numItems;
 };
 
-void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
     _timeoutActive = false;
     _transitionActive = false;
 
+    uint16 resId = 0;
+    switch (challengeIdx) {
+    case 12: resId = 0x7D12; break;
+    case 19: resId = 0x8114; break;
+    case 25: resId = 0x8512; break;
+    default: assert(false); break;
+    }
+
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
-	loadBltResourceArray(resourceList, boltlib, resId);
+	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
     BltId difficultiesId = resourceList[0].value; // Ex: 7D00
     BltId infoId         = resourceList[1].value; // Ex: 7D01
     BltId sceneId        = resourceList[4].value; // Ex: 7D0B

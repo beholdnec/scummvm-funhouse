@@ -41,15 +41,24 @@ struct BltTangramPuzzleDifficultyInfo {
 	int8 offsetY;
 };
 
-void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
 	_graphics = _game->getGraphics();
     _pieceInHand = -1;
 
+	uint16 resId = 0;
+	switch (challengeIdx) {
+	case 10: resId = 0x7115; break;
+	case 13: resId = 0x6D15; break;
+	case 20: resId = 0x7515; break;
+	case 26: resId = 0x7915; break;
+	default: assert(false); break;
+	}
+
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
-	loadBltResourceArray(resourceList, boltlib, resId);
+	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
     BltId difficultiesId = resourceList[0].value; // Ex: 7100
 	BltId bgImageId      = resourceList[2].value;
 	BltId paletteId      = resourceList[3].value;

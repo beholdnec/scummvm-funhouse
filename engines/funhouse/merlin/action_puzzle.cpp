@@ -53,13 +53,24 @@ struct BltParticles { // type 46
 	uint16 numParticles;
 };
 
-void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
+
+	uint16 resId = 0;
+	switch (challengeIdx) {
+	case 2: resId = 0x4921; break;
+	case 4: resId = 0x4D19; break;
+	case 9: resId = 0x5113; break;
+	case 14: resId = 0x551C; break;
+	case 21: resId = 0x5918; break;
+	case 27: resId = 0x5D17; break;
+	default: assert(false); break;
+	}
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
-	loadBltResourceArray(resourceList, boltlib, resId);
+	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
 	BltId difficultiesId = resourceList[0].value;
 	BltId particlesId = resourceList[1].value;
 	BltId bgImageId = resourceList[2].value;

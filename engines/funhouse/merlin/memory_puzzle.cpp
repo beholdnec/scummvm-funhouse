@@ -82,16 +82,24 @@ typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
 {}
 
-void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
     _animStatus = kIdle;
     _playbackActive = false;
     _matches = 0;
 
+    uint16 resId = 0;
+    switch (challengeIdx) {
+    case 3: resId = 0x865E; break;
+    case 11: resId = 0x8797; break;
+    case 23: resId = 0x887B; break;
+    default: assert(false); break;
+    }
+
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
-	loadBltResourceArray(resourceList, boltlib, resId);
+	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
     BltId infosId     = resourceList[0].value; // Ex: 8600
 	BltId sceneId     = resourceList[1].value; // Ex: 8606
     BltId failSoundId = resourceList[2].value; // Ex: 8608

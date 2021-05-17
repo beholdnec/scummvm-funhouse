@@ -52,7 +52,7 @@ typedef ScopedArray<BltPotionPuzzleComboTableElement> BltPotionPuzzleComboTable;
 class PotionPuzzle : public Card {
 public:
 	// From Card
-	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
 	BoltRsp handleMsg(const BoltMsg &msg);
 

@@ -35,7 +35,7 @@ class MemoryPuzzle : public Card {
 public:
     MemoryPuzzle();
 
-	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
 	BoltRsp handleMsg(const BoltMsg &msg);
 

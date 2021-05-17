@@ -30,7 +30,6 @@
 namespace Funhouse {
 	
 class MerlinGame;
-struct PuzzleEntry;
 
 enum DifficultyCategory {
 	kWordsDifficulty,
@@ -39,19 +38,6 @@ enum DifficultyCategory {
 	kMemoryDifficulty,
 	kLogicDifficulty,
 	kNumDifficultyCategories,
-};
-
-struct HubEntry {
-	uint16 hubId;
-	int numPuzzles;
-	const PuzzleEntry *puzzles;
-};
-
-struct PuzzleEntry {
-	typedef Card* (*PuzzleFunc)(MerlinGame *game, Boltlib &boltlib, BltId resId);
-	PuzzleFunc puzzle;
-	uint16 resId;
-	uint32 winMovie;
 };
 
 class MerlinGame : public FunhouseGame {
@@ -119,7 +105,7 @@ private:
 	static const int kNumPopupTypes = 3;
 
 	static const ScriptEntry kScript[];
-
+	static const uint32 kWinMovies[];
 	static const uint32 kPotionMovies[];
 
 	void initCursor();

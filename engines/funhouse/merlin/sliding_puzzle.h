@@ -31,7 +31,7 @@ namespace Funhouse {
 
 class SlidingPuzzle : public Card {
 public:
-	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
     BoltRsp handleMsg(const BoltMsg &msg);
     void setSprites();

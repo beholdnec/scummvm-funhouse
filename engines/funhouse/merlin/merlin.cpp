@@ -137,7 +137,8 @@ void MerlinGame::runScript() {
 }
 
 void MerlinGame::win() {
-	// TODO
+	// TODO: only call branchWin in puzzles
+	branchWin();
 }
 
 OSystem* MerlinGame::getSystem() {
@@ -332,7 +333,8 @@ void MerlinGame::branchReturn() {
 }
 
 void MerlinGame::branchWin() {
-	// TODO: play win movie
+	int challengeIdx = kScript[_scriptCursor].param;
+	startMovie(_challdirPf, kWinMovies[challengeIdx]);
 	branchReturn();
 }
 
@@ -429,9 +431,9 @@ void MerlinGame::scriptPuzzle(const ScriptEntry* entry) {
 	_returnScriptCursor = _prevScriptCursor;
 	_activeCard.reset();
 
-	uint16 sceneId = entry->param;
+	int challengeIdx = entry->param;
 	T* card = new T();
-	card->init(this, _boltlib, BltShortId(sceneId));
+	card->init(this, _boltlib, challengeIdx);
 	setActiveCard(card);
 }
 
@@ -582,76 +584,76 @@ MerlinGame::kScript[] = {
 	/* 22 */ { &MerlinGame::scriptHub,       0x0E4F, 0, {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52} }, // branch index 90
 	
 	// Hub 1
-	/* 23 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x4921, 0, {20} }, // branch index 103
-	/* 24 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x61E3, 0, {20} }, // branch index 104
-	/* 25 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x313F, 0, {20} }, // branch index 105
-	/* 26 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x865E, 0, {20} }, // branch index 106
-	/* 27 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x4D19, 0, {20} }, // branch index 107
-	/* 28 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x353F, 0, {20} }, // branch index 108
-	/* 29 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x940C, 0, {12} }, // branch index 109
+	/* 23 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x2, 0, {20} }, // branch index 103
+	/* 24 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x0, 0, {20} }, // branch index 104
+	/* 25 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x1, 0, {20} }, // branch index 105
+	/* 26 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x3, 0, {20} }, // branch index 106
+	/* 27 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x4, 0, {20} }, // branch index 107
+	/* 28 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x5, 0, {20} }, // branch index 108
+	/* 29 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x6, 0, {12} }, // branch index 109
 
 	// Hub 2
-	/* 30 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x4140, 0, {21} }, // branch index 110
-	/* 31 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x551C, 0, {21} }, // branch index 111
-	/* 32 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x3D3F, 0, {21} }, // branch index 112
-	/* 33 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x5113, 0, {21} }, // branch index 113
-	/* 34 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x69E1, 0, {21} }, // branch index 114
-	/* 35 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x7D12, 0, {21} }, // branch index 115
-	/* 36 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x6D15, 0, {21} }, // branch index 116
-	/* 37 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x8797, 0, {21} }, // branch index 117
-	/* 38 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x7115, 0, {21} }, // branch index 118
-	/* 39 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x980C, 0, {14, 15} }, // branch index 119
+	/* 30 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x8, 0, {21} }, // branch index 110
+	/* 31 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0xe, 0, {21} }, // branch index 111
+	/* 32 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0xf, 0, {21} }, // branch index 112
+	/* 33 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x9, 0, {21} }, // branch index 113
+	/* 34 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x7, 0, {21} }, // branch index 114
+	/* 35 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0xc, 0, {21} }, // branch index 115
+	/* 36 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0xd, 0, {21} }, // branch index 116
+	/* 37 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0xb, 0, {21} }, // branch index 117
+	/* 38 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0xa, 0, {21} }, // branch index 118
+	/* 39 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x10, 0, {14, 15} }, // branch index 119
 	
 	// Hub 3
-	/* 40 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x8114, 0, {22} }, // branch index 121
-	/* 41 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x7515, 0, {22} }, // branch index 122
-	/* 42 */ { &MerlinGame::scriptPuzzle<ColorPuzzle>,   0x8C13, 0, {22} }, // branch index 123
-	/* 43 */ { &MerlinGame::scriptPuzzle<ColorPuzzle>,   0x9014, 0, {22} }, // branch index 124
-	/* 44 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x8512, 0, {22} }, // branch index 125
-	/* 45 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x393F, 0, {22} }, // branch index 126
-	/* 46 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x5918, 0, {22} }, // branch index 127
-	/* 47 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x5D17, 0, {22} }, // branch index 128
-	/* 48 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x7915, 0, {22} }, // branch index 129
-	/* 49 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x453F, 0, {22} }, // branch index 130
-	/* 50 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x65E1, 0, {22} }, // branch index 131
-	/* 51 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x887B, 0, {22} }, // branch index 132
-	/* 52 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x9C0E, 0, {18} }, // branch index 133
+	/* 40 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x13, 0, {22} }, // branch index 121
+	/* 41 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x14, 0, {22} }, // branch index 122
+	/* 42 */ { &MerlinGame::scriptPuzzle<ColorPuzzle>,   0x12, 0, {22} }, // branch index 123
+	/* 43 */ { &MerlinGame::scriptPuzzle<ColorPuzzle>,   0x18, 0, {22} }, // branch index 124
+	/* 44 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x19, 0, {22} }, // branch index 125
+	/* 45 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x16, 0, {22} }, // branch index 126
+	/* 46 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x15, 0, {22} }, // branch index 127
+	/* 47 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x1b, 0, {22} }, // branch index 128
+	/* 48 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x1a, 0, {22} }, // branch index 129
+	/* 49 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x1c, 0, {22} }, // branch index 130
+	/* 50 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x11, 0, {22} }, // branch index 131
+	/* 51 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x17, 0, {22} }, // branch index 132
+	/* 52 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x1d, 0, {18} }, // branch index 133
 
 	// Freeplay Hub 1
-	/* 53 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x4921, 0, {8} }, // branch index 134
-	/* 54 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x61E3, 0, {8} }, // branch index 135
-	/* 55 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x313F, 0, {8} }, // branch index 136
-	/* 56 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x865E, 0, {8} }, // branch index 137
-	/* 57 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x4D19, 0, {8} }, // branch index 138
-	/* 58 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x353F, 0, {8} }, // branch index 139
-	/* 59 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x940C, 0, {13} }, // branch index 140
+	/* 53 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x2, 0, {8} }, // branch index 134
+	/* 54 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x0, 0, {8} }, // branch index 135
+	/* 55 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x1, 0, {8} }, // branch index 136
+	/* 56 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x3, 0, {8} }, // branch index 137
+	/* 57 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x4, 0, {8} }, // branch index 138
+	/* 58 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x5, 0, {8} }, // branch index 139
+	/* 59 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x6, 0, {13} }, // branch index 140
 
 	// Freeplay Hub 2
-	/* 60 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x4140, 0, {9} }, // branch index 141
-	/* 61 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x551C, 0, {9} }, // branch index 142
-	/* 62 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x3D3F, 0, {9} }, // branch index 143
-	/* 63 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x5113, 0, {9} }, // branch index 144
-	/* 64 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x69E1, 0, {9} }, // branch index 145
-	/* 65 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x7D12, 0, {9} }, // branch index 146
-	/* 66 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x6D15, 0, {9} }, // branch index 147
-	/* 67 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x8797, 0, {9} }, // branch index 148
-	/* 68 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x7115, 0, {9} }, // branch index 149
-	/* 69 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x980C, 0, {16, 17} }, // branch index 150
+	/* 60 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x8, 0, {9} }, // branch index 141
+	/* 61 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0xe, 0, {9} }, // branch index 142
+	/* 62 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0xf, 0, {9} }, // branch index 143
+	/* 63 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x9, 0, {9} }, // branch index 144
+	/* 64 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x7, 0, {9} }, // branch index 145
+	/* 65 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0xc, 0, {9} }, // branch index 146
+	/* 66 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0xd, 0, {9} }, // branch index 147
+	/* 67 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0xb, 0, {9} }, // branch index 148
+	/* 68 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0xa, 0, {9} }, // branch index 149
+	/* 69 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x10, 0, {16, 17} }, // branch index 150
 
 	// Freeplay Hub 3
-	/* 70 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x8114, 0, {10} }, // branch index 152
-	/* 71 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x7515, 0, {10} }, // branch index 153
-	/* 72 */ { &MerlinGame::scriptPuzzle<ColorPuzzle>,   0x8C13, 0, {10} }, // branch index 154
-	/* 73 */ { &MerlinGame::scriptPuzzle<ColorPuzzle>,   0x9014, 0, {10} }, // branch index 155
-	/* 74 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x8512, 0, {10} }, // branch index 156
-	/* 75 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x393F, 0, {10} }, // branch index 157
-	/* 76 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x5918, 0, {10} }, // branch index 158
-	/* 77 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x5D17, 0, {10} }, // branch index 159
-	/* 78 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x7915, 0, {10} }, // branch index 160
-	/* 79 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x453F, 0, {10} }, // branch index 161
-	/* 80 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x65E1, 0, {10} }, // branch index 162
-	/* 81 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x887B, 0, {10} }, // branch index 163
-	/* 82 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x9C0E, 0, {19} }, // branch index 164
+	/* 70 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x13, 0, {10} }, // branch index 152
+	/* 71 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x14, 0, {10} }, // branch index 153
+	/* 72 */ { &MerlinGame::scriptPuzzle<ColorPuzzle>,   0x12, 0, {10} }, // branch index 154
+	/* 73 */ { &MerlinGame::scriptPuzzle<ColorPuzzle>,   0x18, 0, {10} }, // branch index 155
+	/* 74 */ { &MerlinGame::scriptPuzzle<SynchPuzzle>,   0x19, 0, {10} }, // branch index 156
+	/* 75 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x16, 0, {10} }, // branch index 157
+	/* 76 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x15, 0, {10} }, // branch index 158
+	/* 77 */ { &MerlinGame::scriptPuzzle<ActionPuzzle>,  0x1b, 0, {10} }, // branch index 159
+	/* 78 */ { &MerlinGame::scriptPuzzle<TangramPuzzle>, 0x1a, 0, {10} }, // branch index 160
+	/* 79 */ { &MerlinGame::scriptPuzzle<SlidingPuzzle>, 0x1c, 0, {10} }, // branch index 161
+	/* 80 */ { &MerlinGame::scriptPuzzle<WordPuzzle>,    0x11, 0, {10} }, // branch index 162
+	/* 81 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  0x17, 0, {10} }, // branch index 163
+	/* 82 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  0x1d, 0, {19} }, // branch index 164
 
 	/* 83 */ { &MerlinGame::scriptPlotMovie, 0, 0, {85, 84} }, // branch index 165
 	/* 84 */ { &MerlinGame::scriptPlotMovie, 0, 0, {85, 85} }, // branch index 167
@@ -709,6 +711,18 @@ MerlinGame::kScript[] = {
 		   00013830 [168]                   55h
 
 */
+
+const uint32 MerlinGame::kWinMovies[] = {
+	MKTAG('G','R','A','V'), MKTAG('L','E','A','V'), MKTAG('O','A','K','L'),
+	MKTAG('P','O','N','D'), MKTAG('R','A','V','N'), MKTAG('S','E','E','D'),
+	MKTAG('B','B','L','E'), MKTAG('F','L','S','K'), MKTAG('M','I','R','R'),
+	MKTAG('P','R','C','H'), MKTAG('P','L','N','T'), MKTAG('P','L','A','Q'),
+	MKTAG('S','K','L','T'), MKTAG('R','T','T','L'), MKTAG('S','N','O','W'),
+	MKTAG('C','S','T','L'), MKTAG('D','E','M','N'), MKTAG('D','O','O','R'),
+	MKTAG('G','E','M','S'), MKTAG('O','C','T','A'), MKTAG('S','P','I','D'),
+	MKTAG('S','P','R','T'), MKTAG('S','T','L','C'), MKTAG('S','T','A','R'),
+	MKTAG('T','B','L','T'), MKTAG('T','I','L','E'), MKTAG('W','N','D','W'),
+};
 
 const uint32 MerlinGame::kPotionMovies[] = {
 	MKTAG('E','L','E','C'), MKTAG('E','X','P','L'), MKTAG('F','L','A','M'),

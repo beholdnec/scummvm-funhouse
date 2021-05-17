@@ -35,7 +35,7 @@ namespace Funhouse {
 class ActionPuzzle : public Card {
 public:
 	ActionPuzzle();
-	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
+	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
 	BoltRsp handleMsg(const BoltMsg &msg);
 

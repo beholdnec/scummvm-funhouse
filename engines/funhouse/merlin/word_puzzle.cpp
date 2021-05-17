@@ -47,13 +47,21 @@ struct BltWordPuzzleVariantInfo {
 	uint8 numLines;
 };
 
-void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
+void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
+
+	uint16 resId = 0;
+	switch (challengeIdx) {
+	case 0: resId = 0x61E3; break;
+	case 7: resId = 0x69E1; break;
+	case 17: resId = 0x65E1; break;
+	default: assert(false); break;
+	}
 
     _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
 
 	BltResourceList resourceList;
-	loadBltResourceArray(resourceList, boltlib, resId);
+	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
     BltId difficultiesId          = resourceList[0].value;  // Ex: 6100
 	BltId infoId                  = resourceList[1].value;  // Ex: 6101
 	BltId normalSpriteListId      = resourceList[2].value;  // Ex: 61B4
