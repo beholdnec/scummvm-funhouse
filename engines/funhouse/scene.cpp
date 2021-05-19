@@ -118,47 +118,46 @@ struct BltButtonElement { // type 31
 
 typedef ScopedArray<BltButtonElement> BltButtonList;
 
-Scene::Scene() : _engine(nullptr), _graphics(nullptr)
+Scene::Scene() : _engine(nullptr)
 { }
 
 void Scene::init(FunhouseEngine *engine, int numButtons, int numSprites)
 {
 	_engine = engine;
-	_graphics = _engine->getGraphics();
 
 	_buttons.alloc(numButtons);
 }
 
 void Scene::enter() {
-	applyPalette(_graphics, kBack, _backPlane.palette);
-	applyPalette(_graphics, kFore, _forePlane.palette);
-	applyColorCycles(_graphics, kBack, _colorCycles.get());
+	applyPalette(_engine->getGraphics(), kBack, _backPlane.palette);
+	applyPalette(_engine->getGraphics(), kFore, _forePlane.palette);
+	applyColorCycles(_engine->getGraphics(), kBack, _colorCycles.get());
 	_engine->requestHover();
 	redraw();
 }
 
 void Scene::redraw() {
 	if (_backPlane.image) {
-		_backPlane.image.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
+		_backPlane.image.drawAt(_engine->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 	} else {
-		_graphics->clearPlane(kBack);
+		_engine->getGraphics()->clearPlane(kBack);
 	}
 
 	if (_forePlane.image) {
-		_forePlane.image.drawAt(_graphics->getPlaneSurface(kFore), 0, 0, false);
+		_forePlane.image.drawAt(_engine->getGraphics()->getPlaneSurface(kFore), 0, 0, false);
 	} else {
-		_graphics->clearPlane(kFore);
+		_engine->getGraphics()->clearPlane(kFore);
 	}
 
     for (int i = 0; i < _sprites.getSpriteCount(); ++i) {
 		Common::Point position = _sprites.getSpritePosition(i) - _origin;
 		// FIXME: Are sprites drawn to back or fore plane? Is it selectable?
-		_sprites.getSpriteImage(i)->drawAt(_graphics->getPlaneSurface(kFore), position.x, position.y, true);
+		_sprites.getSpriteImage(i)->drawAt(_engine->getGraphics()->getPlaneSurface(kFore), position.x, position.y, true);
     }
 
 	drawButtons(getButtonAtPoint(_engine->getEventManager()->getMousePos()));
 
-    _graphics->markDirty();
+	_engine->getGraphics()->markDirty();
 }
 
 BoltRsp Scene::handleMsg(const BoltMsg &msg) {
@@ -313,12 +312,12 @@ void Scene::drawButton(const Button &button, bool hovered) {
 	if (button._overrideGraphics) {
 		BltImage* image = hovered ? button._overrideHoveredImage : button._overrideIdleImage;
 		Common::Point position = button._overridePosition - _origin;
-		image->drawAt(_graphics->getPlaneSurface(button._plane), position.x, position.y, true);
+		image->drawAt(_engine->getGraphics()->getPlaneSurface(button._plane), position.x, position.y, true);
 	} else if (button._graphicsSet) {
 		const ButtonGraphics& graphicsSet = button._graphicsSet[button._graphicsNum];
 		if (graphicsSet.graphicsType == kPaletteMods) {
 			const BltPaletteMods &paletteMod = hovered ? graphicsSet.hoveredPaletteMods : graphicsSet.idlePaletteMods;
-			applyPaletteMod(_graphics, button._plane, paletteMod, 0);
+			applyPaletteMod(_engine->getGraphics(), button._plane, paletteMod, 0);
 		}
 		else if (graphicsSet.graphicsType == kSprites) {
 			const BltSprites &spriteList = hovered ? graphicsSet.hoveredSprites : graphicsSet.idleSprites;
@@ -326,7 +325,7 @@ void Scene::drawButton(const Button &button, bool hovered) {
 				Common::Point pos = spriteList.getSpritePosition(0) - _origin;
 				const BltImage* spriteImage = spriteList.getSpriteImage(0);
 				if (spriteImage) {
-					spriteImage->drawAt(_graphics->getPlaneSurface(button._plane), pos.x, pos.y, true);
+					spriteImage->drawAt(_engine->getGraphics()->getPlaneSurface(button._plane), pos.x, pos.y, true);
 				}
 			}
 		}
@@ -337,7 +336,7 @@ void Scene::drawButtons(int hoveredButton) {
 	for (int i = 0; i < _buttons.size(); ++i) {
 		drawButton(_buttons[i], (int)i == hoveredButton);
 	}
-	_graphics->markDirty();
+	_engine->getGraphics()->markDirty();
 }
 
 void Scene::loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId) {

@@ -145,6 +145,8 @@ void PopupMenu::activate() {
     _bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), kPopupX, kPopupY, true);
 
     _game->getGraphics()->markDirty();
+
+    _game->getEngine()->requestHover();
 }
 
 int PopupMenu::getButtonAt(const Common::Point &pt) const {

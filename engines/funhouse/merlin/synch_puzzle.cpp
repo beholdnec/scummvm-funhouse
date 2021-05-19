@@ -133,7 +133,7 @@ void SynchPuzzle::enter() {
 		const Common::Point &spritePos = item.sprites.getSpritePosition(item.state);
 		const BltImage *spriteImage = item.sprites.getSpriteImage(item.state);
         const Common::Point &origin = _scene.getOrigin();
-        spriteImage->drawAt(_graphics->getPlaneSurface(kFore), spritePos.x - origin.x, spritePos.y - origin.y, true);
+        spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kFore), spritePos.x - origin.x, spritePos.y - origin.y, true);
     }
 }
 

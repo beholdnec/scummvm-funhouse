@@ -130,7 +130,6 @@ private:
 	void drawButtons(int hoveredButton);
 
 	FunhouseEngine *_engine;
-	Graphics *_graphics;
 
 	Common::Point _origin;
     Plane _forePlane;

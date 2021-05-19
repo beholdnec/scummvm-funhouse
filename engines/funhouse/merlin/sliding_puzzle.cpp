@@ -46,7 +46,6 @@ struct BltSlidingPuzzleInfo { // type 44
 
 void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
-    _graphics = _game->getGraphics();
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -129,7 +128,7 @@ void SlidingPuzzle::setSprites() {
     }
 
     _scene.redraw();
-    _graphics->markDirty();
+	_game->getGraphics()->markDirty();
 }
 
 BoltRsp SlidingPuzzle::handlePopupButtonClick(int num) {

@@ -72,6 +72,8 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 
 	// Kick-off the movie timer
 	_engine->setTimer(_framePeriod, kMovieTimer);
+
+	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
 void Movie::stop() {

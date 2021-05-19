@@ -43,7 +43,6 @@ struct BltTangramPuzzleDifficultyInfo {
 
 void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
-	_graphics = _game->getGraphics();
     _pieceInHand = -1;
 
 	uint16 resId = 0;
@@ -120,13 +119,13 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 }
 
 void TangramPuzzle::enter() {
-	applyPalette(_graphics, kBack, _palette);
-    applyPalette(_graphics, kFore, _forePalette);
-	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
-	applyColorCycles(_graphics, kBack, &_colorCycles);
+	applyPalette(_game->getGraphics(), kBack, _palette);
+    applyPalette(_game->getGraphics(), kFore, _forePalette);
+	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
+	applyColorCycles(_game->getGraphics(), kBack, &_colorCycles);
     drawPieces();
 
-	_graphics->markDirty();
+	_game->getGraphics()->markDirty();
 }
 
 static int16 snap(int16 x, int spacing) {
@@ -309,20 +308,20 @@ bool TangramPuzzle::checkWin() {
 }
 
 void TangramPuzzle::drawPieces() {
-	_graphics->clearPlane(kBack);
-    _graphics->clearPlane(kFore);
+	_game->getGraphics()->clearPlane(kBack);
+	_game->getGraphics()->clearPlane(kFore);
 
-	_bgImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, false);
+	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 
     for (int i = 0; i < _pieces.size(); ++i) {
         if (i != _pieceInHand) {
             const Piece& piece = _pieces[i];
 			if (piece.placed) {
 				Common::Point imagePos = piece.pos - piece.placedImage.getOffset();
-				piece.placedImage.drawAt(_graphics->getPlaneSurface(kBack),
+				piece.placedImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack),
 					imagePos.x, imagePos.y, true);
 			} else {
-				piece.unplacedImage.drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true);
+				piece.unplacedImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, true);
 			}
         }
     }
@@ -332,10 +331,10 @@ void TangramPuzzle::drawPieces() {
 		// The piece in hand is drawn on the foreground plane; thus, it has
 		// different colors than placed pieces, which are drawn on the background plane.
 		Common::Point imagePos = pieceInHand.pos - pieceInHand.placedImage.getOffset();
-        pieceInHand.placedImage.drawAt(_graphics->getPlaneSurface(kFore), imagePos.x, imagePos.y, true);
+        pieceInHand.placedImage.drawAt(_game->getGraphics()->getPlaneSurface(kFore), imagePos.x, imagePos.y, true);
     }
 
-    _graphics->markDirty();
+	_game->getGraphics()->markDirty();
 }
 
 } // End of namespace Funhouse

@@ -58,7 +58,6 @@ protected:
 
 private:
     MerlinGame *_game;
-	Graphics *_graphics;
 	Scene _scene;
     PopupMenu _popup;
 	ScopedArray<BltHubItem> _items;

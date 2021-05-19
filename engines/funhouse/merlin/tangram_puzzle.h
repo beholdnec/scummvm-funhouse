@@ -59,7 +59,6 @@ private:
     void drawPieces();
 
     MerlinGame *_game;
-	Graphics *_graphics;
 
     PopupMenu _popup;
 

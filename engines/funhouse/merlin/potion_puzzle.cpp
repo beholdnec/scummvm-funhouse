@@ -199,6 +199,7 @@ BoltRsp PotionPuzzle::handleTimeout(const BoltMsg &msg) {
 		return BoltRsp::kDone;
 	}
 
+	_game->getEngine()->requestSmoothAnimation(); // TODO: Use timers instead
 	return BoltRsp::kDone;
 }
 
@@ -299,6 +300,8 @@ BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
 BoltRsp PotionPuzzle::requestUndo() {
 	// TODO
 	warning("Undo not implemented");
+	// XXX: win.
+	_game->branchScript(0);
 	return BoltRsp::kDone;
 }
 

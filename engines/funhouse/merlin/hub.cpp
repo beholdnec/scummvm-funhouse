@@ -46,7 +46,6 @@ struct BltHub { // type 40
 
 void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
     _game = game;
-	_graphics = _game->getGraphics();
 
 	BltHub hubInfo;
 	loadBltResource(hubInfo, boltlib, resId);
@@ -88,7 +87,7 @@ void HubCard::enter() {
 	for (int i = 0; i < _itemImages.size(); ++i) {
 		ChallengeStatus status = _game->getChallengeStatus(_items[i].challengeIdx);
 		if (status == kWon) {
-			_itemImages[i].drawAt(_graphics->getPlaneSurface(kBack), 0, 0, true);
+			_itemImages[i].drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, true);
 		}
 		else if (status == kPlayWinMovie) {
 			// If we got here, the movie has sent the Redraw trigger.
@@ -97,7 +96,7 @@ void HubCard::enter() {
 		}
 	}
 
-    _graphics->markDirty();
+	_game->getGraphics()->markDirty();
 }
 
 BoltRsp HubCard::handleMsg(const BoltMsg &msg) {

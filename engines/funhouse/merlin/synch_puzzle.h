@@ -76,7 +76,6 @@ private:
     bool isSolved() const;
 
     MerlinGame *_game;
-    Graphics *_graphics;
 
     PopupMenu _popup;
 	Scene _scene;
