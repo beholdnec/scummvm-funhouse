@@ -68,10 +68,11 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 	loadAudio();
 
 	// Timeline should be the first packet
-	startTimeline(fetchBuffer(_timelineQueue), _engine->getEventTime());
+	startTimeline(fetchBuffer(_timelineQueue));
 
-	// Kick-off the movie timer. TODO: Use getNowTime to compensate for the time taken to load data.
-	_engine->setTimer(_engine->getEventTime(), _framePeriod, kMovieTimer);
+	// Kick-off the movie timer. Use getNowTime to compensate for the time taken to load data.
+	_currFrameTime = _engine->getNowTime();
+	_engine->setTimer(_currFrameTime, _framePeriod, kMovieTimer);
 
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
@@ -139,9 +140,10 @@ BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 
 	case BoltMsg::kTimer:
 		if (msg.num == kMovieTimer) {
+			_currFrameTime = msg.timerTime;
 			driveAudio();
 			driveFade(msg.timerTime);
-			driveTimeline(msg.timerTime);
+			stepTimeline();
 			if (isRunning()) {
 				// Set up movie timer to send a message for the next frame
 				// FIXME: prevent frame skipping. If multiple frames have elapsed since
@@ -210,10 +212,9 @@ struct TimelineHeader {
 	uint16 framePeriod;
 };
 
-void Movie::startTimeline(ScopedBuffer::Movable buf, uint32 curTime) {
+void Movie::startTimeline(ScopedBuffer::Movable buf) {
 	_timeline.reset(buf);
 
-	_curFrameTime = curTime;
 	_curFrameNum = 0;
 
 	TimelineHeader header(_timeline.span());
@@ -225,17 +226,6 @@ void Movie::startTimeline(ScopedBuffer::Movable buf, uint32 curTime) {
 	loadTimelineCommand();
 
 	stepTimeline();
-}
-
-void Movie::driveTimeline(uint32 curTime) {
-	if (_timelineActive) {
-		uint32 timeDelta = curTime - _curFrameTime;
-		if (timeDelta >= _framePeriod) {
-			_curFrameTime += _framePeriod;
-			++_curFrameNum;
-			stepTimeline();
-		}
-	}
 }
 
 struct TimelineCommand {
@@ -267,8 +257,13 @@ namespace TimelineOpcodes {
 }
 
 void Movie::stepTimeline() {
-	assert(_timelineActive);
 	assert(_timeline);
+
+	if (!_timelineActive) {
+		return;
+	}
+
+	++_curFrameNum;
 
 	// There may be one or more timeline commands with 0 delay. Run them all in this step.
 	bool done = false;
@@ -776,7 +771,7 @@ Movie::ScopedBuffer::Movable Movie::fetchBuffer(ScopedBufferQueue &queue) {
 }
 
 void Movie::startFade(uint16 duration, int16 direction) {
-	_fadeStartTime = _curFrameTime;
+	_fadeStartTime = _currFrameTime;
 	_fadeDuration = duration;
 	if (direction == 1 || direction == -1) {
 		_fadeDirection = direction;

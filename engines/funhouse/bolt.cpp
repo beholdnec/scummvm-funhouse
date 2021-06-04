@@ -89,9 +89,9 @@ BoltMsg FunhouseEngine::getNextMsg()
 
 	// Find next timer to handle
 	Common::List<Timer>::iterator timer = _timers.end();
-	uint32 timerDelta = 0xFFFFFFFF;
+	int32 timerDelta = 0x7FFFFFFF;
 	for (Common::List<Timer>::iterator it = _timers.begin(); it != _timers.end(); ++it) {
-		uint32 delta = _eventTime - it->start;
+		int32 delta = _eventTime - it->start;
 		if (delta >= it->delay && delta < timerDelta) {
 			timer = it;
 			timerDelta = delta;
@@ -180,7 +180,7 @@ void FunhouseEngine::requestHover() {
 	_hoverRequested = true;
 }
 
-void FunhouseEngine::setTimer(uint32 start, uint32 delay, int id) {
+void FunhouseEngine::setTimer(uint32 start, int32 delay, int id) {
 	Timer newTimer;
 	newTimer.start = start;
 	newTimer.delay = delay;

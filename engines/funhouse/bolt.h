@@ -161,7 +161,7 @@ public:
 	void setNextMsg(const BoltMsg &msg);
 	void requestSmoothAnimation();
 	void requestHover();
-	void setTimer(uint32 start, uint32 delay, int id);
+	void setTimer(uint32 start, int32 delay, int id);
 
 	Graphics* getGraphics();
 
@@ -186,7 +186,7 @@ private:
 
 	struct Timer {
 		uint32 start;
-		uint32 delay;
+		int32 delay;
 		int id;
 	};
 	Common::List<Timer> _timers;

@@ -116,8 +116,7 @@ private:
 
 	// TIMELINE
 
-	void startTimeline(ScopedBuffer::Movable buf, uint32 curTime);
-	void driveTimeline(uint32 curTime);
+	void startTimeline(ScopedBuffer::Movable buf);
 
 	void stepTimeline();
 	int getTimelineCmdParamSize(uint16 opcode);
@@ -125,7 +124,7 @@ private:
 	void runTimelineCommand(); // From _timelineCursor
 
 	ScopedBuffer _timeline;
-	uint32 _curFrameTime; // Time of current frame in milliseconds
+	uint32 _currFrameTime = 0; // Time of current frame in milliseconds
 	int _curFrameNum; // Number of currently-displayed frame
 	int _curTimelineCmdNum;
 	uint16 _framePeriod; // In milliseconds
