@@ -53,7 +53,7 @@ Common::Error FunhouseEngine::run() {
 
     _console.reset(new FunhouseConsole(this));
 
-	_eventTime = getTotalPlayTime();
+	_eventTime = getNowTime();
 	_graphics.init(_system, this);
 	_game->init(_system, this, _mixer);
 	
@@ -73,6 +73,14 @@ Common::Error FunhouseEngine::run() {
 
 BoltMsg FunhouseEngine::getNextMsg()
 {
+	if (_eventsSinceYield >= kMaxEventsSinceYield) {
+		// Basic sanity measure. This should never happen.
+		warning("Too many events occurred since last yield! Yielding now");
+		return BoltMsg::kYield;
+	}
+
+	++_eventsSinceYield;
+
 	if (_nextMsg.type != BoltMsg::kYield) {
 		BoltMsg msg = _nextMsg;
 		_nextMsg = BoltMsg::kYield;
@@ -80,24 +88,21 @@ BoltMsg FunhouseEngine::getNextMsg()
 	}
 
 	// Find next timer to handle
-	Common::List<Timer>::iterator nextTimer = _timers.end();
-	uint32 nextTimerDelta = 0xFFFFFFFF;
+	Common::List<Timer>::iterator timer = _timers.end();
+	uint32 timerDelta = 0xFFFFFFFF;
 	for (Common::List<Timer>::iterator it = _timers.begin(); it != _timers.end(); ++it) {
 		uint32 delta = _eventTime - it->start;
-		if (delta >= it->delay && delta < nextTimerDelta) {
-			nextTimer = it;
-			nextTimerDelta = delta;
+		if (delta >= it->delay && delta < timerDelta) {
+			timer = it;
+			timerDelta = delta;
 		}
 	}
 
-	if (nextTimer != _timers.end()) {
-		// TODO: don't modify _eventTime. If a timer event arrives late then so be it.
-		_eventTime = nextTimer->start + nextTimer->delay;
-		int id = nextTimer->id;
-		_timers.erase(nextTimer);
-
+	if (timer != _timers.end()) {
 		BoltMsg msg(BoltMsg::kTimer);
-		msg.num = id;
+		msg.num = timer->id;
+		msg.timerTime = timer->start + timer->delay;
+		_timers.erase(timer);
 		return msg;
 	}
 
@@ -147,6 +152,7 @@ BoltMsg FunhouseEngine::getNextMsg()
 void FunhouseEngine::yield() {
 	_graphics.presentIfDirty();
 	_eventTime = getTotalPlayTime();
+	_eventsSinceYield = 0;
 	_smoothAnimationSent = false;
 }
 
@@ -156,6 +162,10 @@ void FunhouseEngine::win() {
 
 uint32 FunhouseEngine::getEventTime() const {
 	return _eventTime;
+}
+
+uint32 FunhouseEngine::getNowTime() const {
+	return getTotalPlayTime();
 }
 
 void FunhouseEngine::setNextMsg(const BoltMsg &msg) {
@@ -170,9 +180,9 @@ void FunhouseEngine::requestHover() {
 	_hoverRequested = true;
 }
 
-void FunhouseEngine::setTimer(uint32 delay, int id) {
+void FunhouseEngine::setTimer(uint32 start, uint32 delay, int id) {
 	Timer newTimer;
-	newTimer.start = _eventTime;
+	newTimer.start = start;
 	newTimer.delay = delay;
 	newTimer.id = id;
 	_timers.push_back(newTimer);

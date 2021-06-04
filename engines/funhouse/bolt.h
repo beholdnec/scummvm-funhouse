@@ -105,10 +105,14 @@ struct BoltMsg {
         kSceneMsgs = 100,
 	};
 
-	BoltMsg(int type_ = kYield) : type(type_), num(0) { }
+	BoltMsg(int type_ = kYield) : type(type_) { }
 
 	int type;
-	int num;
+	// The exact time at which a timer elapsed. Only meaningful for kTimer messages.
+	// Use getEventTime() to get the time at which the event was sent, which may be
+	// slightly later than the timer.
+	uint32 timerTime = 0;
+	int num = 0;
 	Common::Point point;
 };
 
@@ -153,10 +157,11 @@ public:
 	virtual bool hasFeature(EngineFeature f) const;
 
 	uint32 getEventTime() const;
+	uint32 getNowTime() const; // NOTE: getEventTime should be used in most cases.
 	void setNextMsg(const BoltMsg &msg);
 	void requestSmoothAnimation();
 	void requestHover();
-	void setTimer(uint32 delay, int id);
+	void setTimer(uint32 start, uint32 delay, int id);
 
 	Graphics* getGraphics();
 
@@ -175,6 +180,9 @@ private:
 
 	BoltMsg _nextMsg;
 	uint32 _eventTime;
+
+	static const int kMaxEventsSinceYield = 1024;
+	int _eventsSinceYield = 0;
 
 	struct Timer {
 		uint32 start;

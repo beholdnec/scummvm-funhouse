@@ -70,8 +70,8 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 	// Timeline should be the first packet
 	startTimeline(fetchBuffer(_timelineQueue), _engine->getEventTime());
 
-	// Kick-off the movie timer
-	_engine->setTimer(_framePeriod, kMovieTimer);
+	// Kick-off the movie timer. TODO: Use getNowTime to compensate for the time taken to load data.
+	_engine->setTimer(_engine->getEventTime(), _framePeriod, kMovieTimer);
 
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
@@ -140,11 +140,14 @@ BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 	case BoltMsg::kTimer:
 		if (msg.num == kMovieTimer) {
 			driveAudio();
-			driveFade(_engine->getEventTime());
-			driveTimeline(_engine->getEventTime());
+			driveFade(msg.timerTime);
+			driveTimeline(msg.timerTime);
 			if (isRunning()) {
 				// Set up movie timer to send a message for the next frame
-				_engine->setTimer(_framePeriod, kMovieTimer);
+				// FIXME: prevent frame skipping. If multiple frames have elapsed since
+				// the last kTimer event (perhaps due to excessive load times), the
+				// timers will pile up and prevent yielding.
+				_engine->setTimer(msg.timerTime, _framePeriod, kMovieTimer);
 			}
 			handled = true;
 		}
