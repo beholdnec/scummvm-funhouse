@@ -152,7 +152,6 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 }
 
 void ActionPuzzle::enter() {
-	_curTime = _game->getEngine()->getEventTime();
 	_tickNum = 0;
 	// TODO: Load progress from save data
 	// (check original to see if action puzzles are saved)
@@ -175,8 +174,8 @@ void ActionPuzzle::enter() {
 
 	_game->getGraphics()->markDirty();
 
-	// FIXME: use timers to drive animation
-	_game->getEngine()->requestSmoothAnimation();
+	// Kick-off the timer.
+	_game->getEngine()->setTimer(_game->getEngine()->getEventTime(), 0, kCardTimer);
 }
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
@@ -194,20 +193,17 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 		// Right-click to win instantly
 		// TODO: remove
 		return win();
-	case BoltMsg::kSmoothAnimation: {
-		// TODO: eliminate Drive events in favor of Timers
-		uint32 diff = _game->getEngine()->getEventTime() - _curTime;
-		if (diff >= kTickPeriod) {
-			_curTime += kTickPeriod;
-			tick();
+	case BoltMsg::kTimer: {
+		if (msg.num != kCardTimer) {
+			return kPass;
 		}
 
-		// FIXME: use timers to drive animation
-		_game->getEngine()->requestSmoothAnimation();
-
+		tick();
 		if (_goalNum >= _goals.size()) {
 			return win();
 		}
+
+		_game->getEngine()->setTimer(msg.timerTime, kTickPeriod, kCardTimer);
 		break;
 	}
 	}

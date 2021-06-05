@@ -134,7 +134,9 @@ public:
 
 enum TimerId {
 	kMovieTimer,
-	kCardTimer
+	kCardTimer,
+
+	kTimerCount,
 };
 
 class FunhouseEngine;
@@ -185,11 +187,11 @@ private:
 	int _eventsSinceYield = 0;
 
 	struct Timer {
-		uint32 start;
-		int32 delay;
-		int id;
+		bool enable = false;
+		uint32 start = 0;
+		int32 delay = 0;
 	};
-	Common::List<Timer> _timers;
+	Timer _timers[kTimerCount];
 
 	// True if a kSmoothAnimation message has been requested.
 	bool _smoothAnimationRequested = false;

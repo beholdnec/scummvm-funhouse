@@ -78,8 +78,6 @@ protected:
 	static const int kNumDeathSequences = 3;
 	ImageArray _deathSequences[kNumDeathSequences];
 
-	uint32 _curTime;
-
 	ParticleList _particles;
 
 	static const int kTickPeriod = 50;

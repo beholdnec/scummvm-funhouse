@@ -88,21 +88,24 @@ BoltMsg FunhouseEngine::getNextMsg()
 	}
 
 	// Find next timer to handle
-	Common::List<Timer>::iterator timer = _timers.end();
+	int timerId = kTimerCount;
 	int32 timerDelta = 0x7FFFFFFF;
-	for (Common::List<Timer>::iterator it = _timers.begin(); it != _timers.end(); ++it) {
-		int32 delta = _eventTime - it->start;
-		if (delta >= it->delay && delta < timerDelta) {
-			timer = it;
-			timerDelta = delta;
+	for (int i = 0; i < kTimerCount; ++i) {
+		if (_timers[i].enable) {
+			int32 delta = _eventTime - _timers[i].start;
+			if (delta >= _timers[i].delay && delta < timerDelta) {
+				timerId = i;
+				timerDelta = delta;
+			}
 		}
 	}
 
-	if (timer != _timers.end()) {
+	if (timerId != kTimerCount) {
+		debug(4, "timer %d, %u, %d elapsed", timerId, _timers[timerId].start, _timers[timerId].delay);
 		BoltMsg msg(BoltMsg::kTimer);
-		msg.num = timer->id;
-		msg.timerTime = timer->start + timer->delay;
-		_timers.erase(timer);
+		msg.num = timerId;
+		msg.timerTime = _timers[timerId].start + _timers[timerId].delay;
+		_timers[timerId].enable = false;
 		return msg;
 	}
 
@@ -181,11 +184,12 @@ void FunhouseEngine::requestHover() {
 }
 
 void FunhouseEngine::setTimer(uint32 start, int32 delay, int id) {
+	debug(4, "setting timer %d, %u, %d", id, start, delay);
 	Timer newTimer;
+	newTimer.enable = true;
 	newTimer.start = start;
 	newTimer.delay = delay;
-	newTimer.id = id;
-	_timers.push_back(newTimer);
+	_timers[id] = newTimer;
 }
 
 Graphics* FunhouseEngine::getGraphics() {
