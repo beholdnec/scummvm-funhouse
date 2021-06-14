@@ -37,6 +37,7 @@ public:
 	ActionPuzzle();
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
+	void redraw() override;
 	BoltRsp handleMsg(const BoltMsg &msg);
 
 protected:

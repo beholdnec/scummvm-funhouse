@@ -54,6 +54,8 @@ Common::Error FunhouseEngine::run() {
     _console.reset(new FunhouseConsole(this));
 
 	_eventTime = getNowTime();
+	_lastTicksTime = _eventTime;
+
 	_graphics.init(_system, this);
 	_game->init(_system, this, _mixer);
 	
@@ -87,24 +89,30 @@ BoltMsg FunhouseEngine::getNextMsg()
 		return msg;
 	}
 
+	if (!_ticksSent) {
+		int32 ticks = getEventTime() - _lastTicksTime;
+		_lastTicksTime = getEventTime();
+		_ticksSent = true;
+		BoltMsg msg(BoltMsg::kAddTicks);
+		msg.num = ticks;
+		return msg;
+	}
+
 	// Find next timer to handle
 	int timerId = kTimerCount;
-	int32 timerDelta = 0x7FFFFFFF;
 	for (int i = 0; i < kTimerCount; ++i) {
 		if (_timers[i].enable) {
-			int32 delta = _eventTime - _timers[i].start;
-			if (delta >= _timers[i].delay && delta < timerDelta) {
+			if (_timers[i].ticks >= _timers[i].elapse) {
 				timerId = i;
-				timerDelta = delta;
+				break;
 			}
 		}
 	}
 
 	if (timerId != kTimerCount) {
-		debug(4, "timer %d, %u, %d elapsed", timerId, _timers[timerId].start, _timers[timerId].delay);
+		debug(4, "timer %d, %d elapsed", timerId, _timers[timerId].elapse);
 		BoltMsg msg(BoltMsg::kTimer);
 		msg.num = timerId;
-		msg.timerTime = _timers[timerId].start + _timers[timerId].delay;
 		_timers[timerId].enable = false;
 		return msg;
 	}
@@ -136,8 +144,6 @@ BoltMsg FunhouseEngine::getNextMsg()
 		return msg;
 	}
 	else if (_smoothAnimationRequested && !_smoothAnimationSent) {
-		// FIXME: smooth animation events are handled rapidly and use 100% of the cpu.
-		// Change this so smooth animation events are handled at a reasonable rate.
 		_smoothAnimationRequested = false;
 		_smoothAnimationSent = true;
 		return BoltMsg::kSmoothAnimation;
@@ -156,6 +162,7 @@ void FunhouseEngine::yield() {
 	_graphics.presentIfDirty();
 	_eventTime = getTotalPlayTime();
 	_eventsSinceYield = 0;
+	_ticksSent = false;
 	_smoothAnimationSent = false;
 }
 
@@ -183,13 +190,25 @@ void FunhouseEngine::requestHover() {
 	_hoverRequested = true;
 }
 
-void FunhouseEngine::setTimer(uint32 start, int32 delay, int id) {
-	debug(4, "setting timer %d, %u, %d", id, start, delay);
+void FunhouseEngine::startTimer(int id, int32 elapse) {
+	debug(4, "start timer %d, %d", id, elapse);
 	Timer newTimer;
 	newTimer.enable = true;
-	newTimer.start = start;
-	newTimer.delay = delay;
+	newTimer.ticks = 0;
+	newTimer.elapse = elapse;
 	_timers[id] = newTimer;
+}
+
+void FunhouseEngine::armTimer(int id) {
+	_timers[id].enable = true;
+}
+
+void FunhouseEngine::addTicks(int id, int32 ticks) {
+	_timers[id].ticks += ticks;
+}
+
+void FunhouseEngine::removeTicks(int id, int32 ticks) {
+	_timers[id].ticks -= ticks;
 }
 
 Graphics* FunhouseEngine::getGraphics() {

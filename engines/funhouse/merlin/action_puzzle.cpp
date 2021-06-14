@@ -158,24 +158,28 @@ void ActionPuzzle::enter() {
 	// (and what happens when you change difficulty mid-puzzle?)
 	_goalNum = 0;
 
+	// XXX: spawn particles on all paths
+	// TODO: don't.
+	for (uint i = 0; i < _paths.size(); ++i) {
+		spawnParticle(i % _particleImages.size(), i);
+	}
+
+	redraw();
+
+	// Kick-off the timer.
+	_game->getEngine()->startTimer(kCardTimer, kTickPeriod);
+}
+
+void ActionPuzzle::redraw() {
 	applyPalette(_game->getGraphics(), kBack, _backPalette);
 	applyColorCycles(_game->getGraphics(), kBack, &_backColorCycles);
 	applyPalette(_game->getGraphics(), kFore, _forePalette);
 	// TODO: fore color cycles
 
 	drawBack();
-
-	// XXX: spawn particles on all paths
-	for (uint i = 0; i < _paths.size(); ++i) {
-		spawnParticle(i % _particleImages.size(), i);
-	}
-
 	drawFore();
 
 	_game->getGraphics()->markDirty();
-
-	// Kick-off the timer.
-	_game->getEngine()->setTimer(_game->getEngine()->getEventTime(), 0, kCardTimer);
 }
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
@@ -189,10 +193,9 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 		return handlePopupButtonClick(msg.num);
 	case BoltMsg::kClick:
 		return handleClick(msg.point);
-	case BoltMsg::kRightClick:
-		// Right-click to win instantly
-		// TODO: remove
-		return win();
+	case BoltMsg::kAddTicks:
+		_game->getEngine()->addTicks(kCardTimer, msg.num);
+		break;
 	case BoltMsg::kTimer: {
 		if (msg.num != kCardTimer) {
 			return kPass;
@@ -203,7 +206,8 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 			return win();
 		}
 
-		_game->getEngine()->setTimer(msg.timerTime, kTickPeriod, kCardTimer);
+		_game->getEngine()->armTimer(kCardTimer);
+		_game->getEngine()->removeTicks(kCardTimer, kTickPeriod);
 		break;
 	}
 	}

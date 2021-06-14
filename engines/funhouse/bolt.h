@@ -98,6 +98,7 @@ struct BoltMsg {
 		kHover,
 		kClick,
 		kRightClick,
+		kAddTicks,
 		kTimer,
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
@@ -108,10 +109,6 @@ struct BoltMsg {
 	BoltMsg(int type_ = kYield) : type(type_) { }
 
 	int type;
-	// The exact time at which a timer elapsed. Only meaningful for kTimer messages.
-	// Use getEventTime() to get the time at which the event was sent, which may be
-	// slightly later than the timer.
-	uint32 timerTime = 0;
 	int num = 0;
 	Common::Point point;
 };
@@ -163,7 +160,10 @@ public:
 	void setNextMsg(const BoltMsg &msg);
 	void requestSmoothAnimation();
 	void requestHover();
-	void setTimer(uint32 start, int32 delay, int id);
+	void startTimer(int id, int32 elapse);
+	void armTimer(int id);
+	void addTicks(int id, int32 ticks);
+	void removeTicks(int id, int32 ticks);
 
 	Graphics* getGraphics();
 
@@ -188,11 +188,14 @@ private:
 
 	struct Timer {
 		bool enable = false;
-		uint32 start = 0;
-		int32 delay = 0;
+		int32 ticks = 0;
+		int32 elapse = 0;
 	};
 	Timer _timers[kTimerCount];
 
+	// True if kAddTicks has been sent since the last yield.
+	uint32 _lastTicksTime = 0;
+	bool _ticksSent = false;
 	// True if a kSmoothAnimation message has been requested.
 	bool _smoothAnimationRequested = false;
 	// True if a kSmoothAnimation message has been sent this frame.
