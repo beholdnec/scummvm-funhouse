@@ -132,6 +132,9 @@ public:
 enum TimerId {
 	kMovieTimer,
 	kCardTimer,
+	kCardTimer1,
+	kColorCycle0,
+	kMaxColorCycle = kColorCycle0 + 4,
 
 	kTimerCount,
 };
@@ -155,15 +158,16 @@ public:
 	// From Engine
 	virtual bool hasFeature(EngineFeature f) const;
 
-	uint32 getEventTime() const;
-	uint32 getNowTime() const; // NOTE: getEventTime should be used in most cases.
+	//uint32 getEventTime() const;
+	//uint32 getNowTime() const; // NOTE: getEventTime should be used in most cases.
 	void setNextMsg(const BoltMsg &msg);
 	void requestSmoothAnimation();
 	void requestHover();
 	void startTimer(int id, int32 elapse);
-	void armTimer(int id);
+	void armTimer(int id, int32 elapse);
 	void addTicks(int id, int32 ticks);
 	void removeTicks(int id, int32 ticks);
+	int32 getTicks(int id) const;
 
 	Graphics* getGraphics();
 
@@ -187,7 +191,7 @@ private:
 	int _eventsSinceYield = 0;
 
 	struct Timer {
-		bool enable = false;
+		bool armed = false;
 		int32 ticks = 0;
 		int32 elapse = 0;
 	};

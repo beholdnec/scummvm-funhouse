@@ -65,7 +65,7 @@ private:
     void startPlayback();
     BoltRsp handlePlayback();
     void startAnimation(int itemNum, BltSound& sound);
-    BoltRsp handleAnimation();
+    BoltRsp handleAnimation(const BoltMsg &msg);
     void drawItemFrame(int itemNum, int frameNum);
 
     MerlinGame *_game;
@@ -95,10 +95,8 @@ private:
     int _animItem;
     int _animFrame;
     int _animSubFrame;
-    uint32 _animStartTime;
     uint32 _animPlayTime;
     uint32 _animSoundTime; // in ms
-    uint32 _frameTime;
 };
 
 } // End of namespace Funhouse

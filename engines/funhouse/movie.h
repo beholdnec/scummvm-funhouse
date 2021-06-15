@@ -124,7 +124,6 @@ private:
 	void runTimelineCommand(); // From _timelineCursor
 
 	ScopedBuffer _timeline;
-	uint32 _currFrameTime = 0; // Time of current frame in milliseconds
 	int _curFrameNum; // Number of currently-displayed frame
 	int _curTimelineCmdNum;
 	uint16 _framePeriod; // In milliseconds
@@ -172,10 +171,10 @@ private:
 	// FADING
 
 	void startFade(uint16 duration, int16 direction);
-	void driveFade(uint32 curTime);
+	void driveFade();
 
-	uint32 _fadeStartTime;
-	uint16 _fadeDuration;
+	int32 _fadeTimer = 0;
+	uint16 _fadeDuration = 0;
 	int16 _fadeDirection;
 
 	// DRAWING

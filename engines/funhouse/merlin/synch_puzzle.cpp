@@ -118,16 +118,6 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 void SynchPuzzle::enter() {
 	_scene.enter();
 
-    // XXX: Draw all items in all states for testing
-    //for (uint i = 0; i < _items.size(); ++i) {
-    //    const Item &item = _items[i];
-    //    for (uint j = 0; j < item.sprites.getNumSprites(); ++j) {
-    //        const Sprite &sprite = item.sprites.getSprite(j);
-    //        const Common::Point &origin = _scene.getOrigin();
-    //        sprite.image.drawAt(_graphics->getPlaneSurface(kFore), sprite.pos.x - origin.x, sprite.pos.y - origin.y, true);
-    //    }
-    //}
-
     for (uint i = 0; i < _items.size(); ++i) {
         const Item &item = _items[i];
 		const Common::Point &spritePos = item.sprites.getSpritePosition(item.state);
@@ -139,7 +129,7 @@ void SynchPuzzle::enter() {
 
 BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
     if (_timeoutActive) {
-        return driveTimeout();
+        return handleTimeout(msg);
     } else if (_transitionActive) {
         return driveTransition();
     }
@@ -195,21 +185,27 @@ BoltRsp SynchPuzzle::handleButtonClick(int num) {
     return BoltRsp::kDone;
 }
 
-void SynchPuzzle::setTimeout(uint32 delay) {
+void SynchPuzzle::setTimeout(int32 delay) {
     _timeoutActive = true;
-    _timeoutStart = _game->getEngine()->getEventTime();
-    _timeoutDelay = delay;
+    _game->getEngine()->startTimer(kCardTimer, delay);
 }
 
-BoltRsp SynchPuzzle::driveTimeout() {
+BoltRsp SynchPuzzle::handleTimeout(const BoltMsg &msg) {
     assert(_timeoutActive);
 
-    uint32 delta = _game->getEngine()->getEventTime() - _timeoutStart;
-    if (delta < _timeoutDelay) {
+    switch (msg.type) {
+    case BoltMsg::kAddTicks:
+        _game->getEngine()->addTicks(kCardTimer, msg.num);
         return BoltRsp::kDone;
-    } else {
+    case BoltMsg::kTimer:
+        if (msg.num != kCardTimer) {
+            return kPass;
+        }
+
         _timeoutActive = false;
         _game->getEngine()->setNextMsg(BoltMsg::kDrive);
+        return BoltRsp::kDone;
+    default:
         return BoltRsp::kDone;
     }
 }

@@ -71,8 +71,7 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 	startTimeline(fetchBuffer(_timelineQueue));
 
 	// Kick-off the movie timer.
-	// TODO: Compensate for the time taken to load data.
-	_currFrameTime = _engine->getEventTime();
+	// TODO: Compensate for the time taken to initialize & load movie data.
 	_engine->startTimer(kMovieTimer, _framePeriod);
 
 	_engine->setNextMsg(BoltMsg::kDrive);
@@ -135,7 +134,7 @@ BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 	switch (msg.type) {
 	case BoltMsg::kSmoothAnimation:
 		// Fades have smooth animation; they have a higher frame rate than movie cels.
-		driveFade(_engine->getEventTime());
+		driveFade();
 		handled = true;
 		break;
 
@@ -146,16 +145,15 @@ BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 
 	case BoltMsg::kTimer:
 		if (msg.num == kMovieTimer) {
-			_currFrameTime += _framePeriod;
 			driveAudio();
-			driveFade(_engine->getEventTime()); // TODO: use accurate time
+			driveFade(); // TODO: use accurate time
 			stepTimeline();
 			if (isRunning()) {
 				// Set up movie timer to send a message for the next frame
 				// FIXME: prevent frame skipping. If multiple frames have elapsed since
 				// the last kTimer event (perhaps due to excessive load times), the
 				// timers will pile up and prevent yielding.
-				_engine->armTimer(kMovieTimer);
+				_engine->armTimer(kMovieTimer, _framePeriod);
 				_engine->removeTicks(kMovieTimer, _framePeriod);
 			}
 			handled = true;
@@ -778,7 +776,7 @@ Movie::ScopedBuffer::Movable Movie::fetchBuffer(ScopedBufferQueue &queue) {
 }
 
 void Movie::startFade(uint16 duration, int16 direction) {
-	_fadeStartTime = _currFrameTime;
+	_fadeTimer = 0;
 	_fadeDuration = duration;
 	if (direction == 1 || direction == -1) {
 		_fadeDirection = direction;
@@ -789,27 +787,25 @@ void Movie::startFade(uint16 duration, int16 direction) {
 	}
 }
 
-void Movie::driveFade(uint32 curTime) {
+void Movie::driveFade() {
 	if (_fadeDirection == 1) {
 		// Fade in
-		uint32 fadeProgress = curTime - _fadeStartTime;
-		if (fadeProgress >= _fadeDuration) {
+		if (_fadeTimer >= _fadeDuration) {
 			_engine->getGraphics()->setFade(1);
 			_fadeDirection = 0;
 		}
 		else {
-			_engine->getGraphics()->setFade(Common::Rational(fadeProgress, _fadeDuration));
+			_engine->getGraphics()->setFade(Common::Rational(_fadeTimer, _fadeDuration));
 		}
 	}
 	else if (_fadeDirection == -1) {
 		// Fade out
-		uint32 fadeProgress = curTime - _fadeStartTime;
-		if (fadeProgress >= _fadeDuration) {
+		if (_fadeTimer >= _fadeDuration) {
 			_engine->getGraphics()->setFade(0);
 			_fadeDirection = 0;
 		}
 		else {
-			_engine->getGraphics()->setFade(Common::Rational(_fadeDuration - fadeProgress, _fadeDuration));
+			_engine->getGraphics()->setFade(Common::Rational(_fadeDuration - _fadeTimer, _fadeDuration));
 		}
 	}
 	else if (_fadeDirection == 0) {

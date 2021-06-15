@@ -112,7 +112,6 @@ private:
 		uint16 end;
         int plane;
 		int delay; // 0 means this cycle is inactive
-		uint32 curTime; // Time of last color rotation
 	};
 
 	static const int kNumColorCycles = 4;

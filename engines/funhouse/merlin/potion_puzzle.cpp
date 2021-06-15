@@ -192,15 +192,21 @@ BoltRsp PotionPuzzle::handleTimeout(const BoltMsg &msg) {
 		return BoltRsp::kPass;
 	}
 
-	uint32 delta = _game->getEngine()->getEventTime() - _timeoutStart;
-	if (delta >= _timeoutLength) {
+	switch (msg.type) {
+	case BoltMsg::kAddTicks:
+		_game->getEngine()->addTicks(kCardTimer, msg.num);
+		return BoltRsp::kDone;
+	case BoltMsg::kTimer:
+		if (msg.num != kCardTimer) {
+			return kPass;
+		}
+
 		_timeout = false;
 		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return BoltRsp::kDone;
+	default:
+		return BoltRsp::kDone;
 	}
-
-	_game->getEngine()->requestSmoothAnimation(); // TODO: Use timers instead
-	return BoltRsp::kDone;
 }
 
 BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
@@ -481,10 +487,9 @@ int PotionPuzzle::getNumRemainingIngredients() const {
 	return num;
 }
 
-void PotionPuzzle::setTimeout(uint32 length) {
-	_timeoutStart = _game->getEngine()->getEventTime();
-	_timeoutLength = length;
+void PotionPuzzle::setTimeout(int32 length) {
 	_timeout = true;
+	_game->getEngine()->startTimer(kCardTimer, length);
 }
 
 } // End of namespace Funhouse

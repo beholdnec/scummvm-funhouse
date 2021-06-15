@@ -156,7 +156,7 @@ void MemoryPuzzle::enter() {
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
     BoltRsp cmd;
 
-    if ((cmd = handleAnimation()) != BoltRsp::kPass) {
+    if ((cmd = handleAnimation(msg)) != BoltRsp::kPass) {
         return cmd;
     }
 
@@ -248,18 +248,19 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     _animItem = itemNum;
     _animFrame = 0;
     _animSubFrame = 0;
-    _animStartTime = _game->getEngine()->getEventTime();
     _animSoundTime = sound.getNumSamples() / 22; // This approximation is used by the original engine.
     _animPlayTime = _animSoundTime;
     if (_foo == 0x4d) {
         warning("Overriding animation time for foo 0x4d");
-        // Triggered in pots-n-pans-n-vials puzzle
+        // Special case for Vials puzzle
         _animPlayTime = 400;
     }
     else if (_animPlayTime < kMinAnimPlayTimeMs) {
         _animPlayTime = kMinAnimPlayTimeMs;
     }
-    _frameTime = _animStartTime;
+
+    _game->getEngine()->startTimer(kCardTimer, kFrameDelayMs); // FIXME: Use 0?
+    _game->getEngine()->startTimer(kCardTimer1, _animSoundTime);
 
     drawItemFrame(_animItem, _animFrame);
 
@@ -277,7 +278,7 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     sound.play(_game->getEngine()->_mixer);
 }
 
-BoltRsp MemoryPuzzle::handleAnimation() {
+BoltRsp MemoryPuzzle::handleAnimation(const BoltMsg &msg) {
     switch (_animStatus) {
 
     case kIdle:
@@ -287,43 +288,50 @@ BoltRsp MemoryPuzzle::handleAnimation() {
         const Item& item = _itemList[_animItem];
         const ItemFrame& frame = item.frames[_animFrame];
 
-        uint32 frameElapsed = _game->getEngine()->getEventTime() - _frameTime;
-        if (frameElapsed >= kFrameDelayMs) {
-            _frameTime += kFrameDelayMs;
+        switch (msg.type) {
+        case BoltMsg::kAddTicks:
+            _game->getEngine()->addTicks(kCardTimer, msg.num); // frame timer
+            _game->getEngine()->addTicks(kCardTimer1, msg.num); // anim timer
+            return BoltRsp::kDone;
+        case BoltMsg::kTimer:
+            if (msg.num == kCardTimer) { // frame timer
+                _game->getEngine()->armTimer(kCardTimer, kFrameDelayMs);
+                _game->getEngine()->removeTicks(kCardTimer, kFrameDelayMs);
 
-            uint32 totalElapsed = _game->getEngine()->getEventTime() - _animStartTime;
-            if (totalElapsed >= _animPlayTime) {
-                if (frame.delayFrames == -1) {
-                    _animFrame++;
-                    _animSubFrame = 0;
-                    _frameTime = _game->getEngine()->getEventTime();
-                    drawItemFrame(_animItem, _animFrame);
-                    _animStatus = kWindingDown;
-                    debug("winding down animation...");
-                }
-                else {
-                    _animStatus = kStopping;
-                }
-
-                _game->getEngine()->setNextMsg(BoltMsg::kDrive);
-                return BoltRsp::kDone;
-            }
-            else {
-                if (frame.delayFrames == -1) {
-                    // Do not advance frames
-                }
-                else {
-                    ++_animSubFrame;
-                    if (_animSubFrame >= frame.delayFrames) {
-                        ++_animFrame;
-                        if (_animFrame >= item.frames.size()) {
-                            _animFrame = 0;
-                        }
+                if (_game->getEngine()->getTicks(kCardTimer1) >= _animPlayTime) {
+                    if (frame.delayFrames == -1) {
+                        _animFrame++;
                         _animSubFrame = 0;
                         drawItemFrame(_animItem, _animFrame);
+                        _animStatus = kWindingDown;
+                        debug("winding down animation...");
+                    }
+                    else {
+                        _animStatus = kStopping;
+                    }
+
+                    _game->getEngine()->setNextMsg(BoltMsg::kDrive);
+                    return BoltRsp::kDone;
+                }
+                else {
+                    if (frame.delayFrames == -1) {
+                        // Do not advance frames
+                    }
+                    else {
+                        ++_animSubFrame;
+                        if (_animSubFrame >= frame.delayFrames) {
+                            ++_animFrame;
+                            if (_animFrame >= item.frames.size()) {
+                                _animFrame = 0;
+                            }
+                            _animSubFrame = 0;
+                            drawItemFrame(_animItem, _animFrame);
+                        }
                     }
                 }
             }
+
+            return BoltRsp::kDone;
         }
 
         return BoltRsp::kDone;
@@ -340,35 +348,55 @@ BoltRsp MemoryPuzzle::handleAnimation() {
 
         const ItemFrame& frame = item.frames[_animFrame];
 
-        uint32 frameElapsed = _game->getEngine()->getEventTime() - _frameTime;
-        if (frameElapsed >= kFrameDelayMs) {
-            _frameTime += kFrameDelayMs;
+        switch (msg.type) {
+        case BoltMsg::kAddTicks:
+            _game->getEngine()->addTicks(kCardTimer, msg.num); // frame timer
+            _game->getEngine()->addTicks(kCardTimer1, msg.num); // anim timer
+            return BoltRsp::kDone;
+        case BoltMsg::kTimer:
+            if (msg.num == kCardTimer) { // frame timer
+                _game->getEngine()->armTimer(kCardTimer, kFrameDelayMs);
+                _game->getEngine()->removeTicks(kCardTimer, kFrameDelayMs);
 
-            if (frame.delayFrames != -1) {
-                ++_animSubFrame;
-                if (_animSubFrame >= frame.delayFrames) {
-                    ++_animFrame;
+                if (frame.delayFrames != -1) {
+                    ++_animSubFrame;
+                    if (_animSubFrame >= frame.delayFrames) {
+                        ++_animFrame;
+                        _animSubFrame = 0;
+                        drawItemFrame(_animItem, _animFrame);
+                    }
+                }
+                else {
+                    _animFrame++;
                     _animSubFrame = 0;
                     drawItemFrame(_animItem, _animFrame);
                 }
             }
-            else {
-                _animFrame++;
-                _animSubFrame = 0;
-                drawItemFrame(_animItem, _animFrame);
-            }
+
+            return BoltRsp::kDone;
         }
 
         return BoltRsp::kDone;
     }
 
     case kStopping: {
-        uint32 totalElapsed = _game->getEngine()->getEventTime() - _animStartTime;
-        if (totalElapsed >= _animSoundTime) {
-            drawItemFrame(_animItem, -1);
-            _animStatus = kIdle;
-            _game->getEngine()->setNextMsg(BoltMsg::kDrive);
+        // Arm the anim timer NOW
+        _game->getEngine()->armTimer(kCardTimer1, _animSoundTime);
+
+        switch (msg.type) {
+        case BoltMsg::kAddTicks:
+            _game->getEngine()->addTicks(kCardTimer1, msg.num); // anim timer
+            return BoltRsp::kDone;
+        case BoltMsg::kTimer:
+            if (msg.num == kCardTimer1) {
+                drawItemFrame(_animItem, -1);
+                _animStatus = kIdle;
+                _game->getEngine()->setNextMsg(BoltMsg::kDrive);
+            }
+            
+            return BoltRsp::kDone;
         }
+
         return BoltRsp::kDone;
     }
 

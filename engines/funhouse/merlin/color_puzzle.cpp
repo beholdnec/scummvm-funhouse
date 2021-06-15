@@ -186,11 +186,10 @@ BoltRsp ColorPuzzle::driveTransition() {
 BoltRsp ColorPuzzle::driveMorph() {
     assert(_morphActive);
 
-    const uint32 delta = _game->getEngine()->getEventTime() - _morphStartTime;
-    if (delta < kMorphDuration) {
+    if (_morphTimer < kMorphDuration) {
         applyPaletteModBlended(_game->getGraphics(), kFore, *_morphPaletteMods,
             _morphStartState, _morphEndState,
-            Common::Rational(delta, kMorphDuration));
+            Common::Rational(_morphTimer, kMorphDuration));
 
         _game->getGraphics()->markDirty();
         return BoltRsp::kDone;
@@ -225,7 +224,6 @@ void ColorPuzzle::morphPiece(int piece, int state) {
 }
 
 void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int endState) {
-	_morphStartTime = _game->getEngine()->getEventTime();
 	_morphPaletteMods = paletteMods;
 	_morphStartState = startState;
 	_morphEndState = endState;

@@ -206,7 +206,7 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 			return win();
 		}
 
-		_game->getEngine()->armTimer(kCardTimer);
+		_game->getEngine()->armTimer(kCardTimer, kTickPeriod);
 		_game->getEngine()->removeTicks(kCardTimer, kTickPeriod);
 		break;
 	}

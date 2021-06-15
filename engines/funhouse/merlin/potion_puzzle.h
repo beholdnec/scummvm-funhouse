@@ -74,7 +74,7 @@ private:
 
 	bool isValidIngredient(int ingredient) const;
 	int getNumRemainingIngredients() const;
-	void setTimeout(uint32 length);
+	void setTimeout(int32 length);
 
 	void draw();
 

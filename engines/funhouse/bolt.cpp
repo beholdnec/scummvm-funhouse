@@ -53,7 +53,7 @@ Common::Error FunhouseEngine::run() {
 
     _console.reset(new FunhouseConsole(this));
 
-	_eventTime = getNowTime();
+	_eventTime = getTotalPlayTime();
 	_lastTicksTime = _eventTime;
 
 	_graphics.init(_system, this);
@@ -90,8 +90,8 @@ BoltMsg FunhouseEngine::getNextMsg()
 	}
 
 	if (!_ticksSent) {
-		int32 ticks = getEventTime() - _lastTicksTime;
-		_lastTicksTime = getEventTime();
+		int32 ticks = _eventTime - _lastTicksTime;
+		_lastTicksTime = _eventTime;
 		_ticksSent = true;
 		BoltMsg msg(BoltMsg::kAddTicks);
 		msg.num = ticks;
@@ -101,11 +101,9 @@ BoltMsg FunhouseEngine::getNextMsg()
 	// Find next timer to handle
 	int timerId = kTimerCount;
 	for (int i = 0; i < kTimerCount; ++i) {
-		if (_timers[i].enable) {
-			if (_timers[i].ticks >= _timers[i].elapse) {
-				timerId = i;
-				break;
-			}
+		if (_timers[i].armed && _timers[i].ticks >= _timers[i].elapse) {
+			timerId = i;
+			break;
 		}
 	}
 
@@ -113,7 +111,7 @@ BoltMsg FunhouseEngine::getNextMsg()
 		debug(4, "timer %d, %d elapsed", timerId, _timers[timerId].elapse);
 		BoltMsg msg(BoltMsg::kTimer);
 		msg.num = timerId;
-		_timers[timerId].enable = false;
+		_timers[timerId].armed = false;
 		return msg;
 	}
 
@@ -170,14 +168,6 @@ void FunhouseEngine::win() {
     _game->win();
 }
 
-uint32 FunhouseEngine::getEventTime() const {
-	return _eventTime;
-}
-
-uint32 FunhouseEngine::getNowTime() const {
-	return getTotalPlayTime();
-}
-
 void FunhouseEngine::setNextMsg(const BoltMsg &msg) {
 	_nextMsg = msg;
 }
@@ -193,14 +183,15 @@ void FunhouseEngine::requestHover() {
 void FunhouseEngine::startTimer(int id, int32 elapse) {
 	debug(4, "start timer %d, %d", id, elapse);
 	Timer newTimer;
-	newTimer.enable = true;
+	newTimer.armed = true;
 	newTimer.ticks = 0;
 	newTimer.elapse = elapse;
 	_timers[id] = newTimer;
 }
 
-void FunhouseEngine::armTimer(int id) {
-	_timers[id].enable = true;
+void FunhouseEngine::armTimer(int id, int32 elapse) {
+	_timers[id].armed = true;
+	_timers[id].elapse = elapse;
 }
 
 void FunhouseEngine::addTicks(int id, int32 ticks) {
@@ -209,6 +200,10 @@ void FunhouseEngine::addTicks(int id, int32 ticks) {
 
 void FunhouseEngine::removeTicks(int id, int32 ticks) {
 	_timers[id].ticks -= ticks;
+}
+
+int32 FunhouseEngine::getTicks(int id) const {
+	return _timers[id].ticks;
 }
 
 Graphics* FunhouseEngine::getGraphics() {

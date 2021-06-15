@@ -69,8 +69,8 @@ private:
 
     BoltRsp handlePopupButtonClick(int num);
     BoltRsp handleButtonClick(int num);
-    void setTimeout(uint32 delay);
-    BoltRsp driveTimeout();
+    void setTimeout(int32 delay);
+    BoltRsp handleTimeout(const BoltMsg &msg);
     BoltRsp driveTransition();
     int getItemAtPosition(const Common::Point& pt);
     bool isSolved() const;
@@ -82,12 +82,10 @@ private:
 
     ItemArray _items;
 
-    bool _transitionActive;
+    bool _transitionActive = false;
     ScopedArray<Move> _moveAgenda;
 
-    bool _timeoutActive;
-    uint32 _timeoutStart;
-    uint32 _timeoutDelay;
+    bool _timeoutActive = false;
 };
 
 } // End of namespace Funhouse
