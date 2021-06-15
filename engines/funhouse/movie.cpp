@@ -140,6 +140,9 @@ BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 
 	case BoltMsg::kAddTicks:
 		_engine->addTicks(kMovieTimer, msg.num);
+		if (_fadeDirection != 0) {
+			_fadeTimer += msg.num;
+		}
 		handled = true;
 		break;
 
