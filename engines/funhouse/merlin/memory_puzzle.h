@@ -44,13 +44,14 @@ struct Timer {
     int id = -1;
     int32 ticks = 0;
     int32 elapse = 0;
+    std::function<void()> fn;
 };
 
 class Mode {
 public:
     void onEnter(std::function<void()> fn);
     void onMsg(std::function<void(const BoltMsg &msg)> fn);
-    void onTimer(std::function<void(int id)> fn);
+    void onTimer(int id, std::function<void()> fn);
     int32 getTimerTicks(int id) const;
     void setTimer(int id, int32 ticks, int32 elapse, bool arm);
 
@@ -59,7 +60,6 @@ private:
 
     std::function<void()> _onEnter;
     std::function<void(const BoltMsg &msg)> _onMsg;
-    std::function<void(int id)> _onTimer;
 
     bool _active = false;
     Timer _timers[kMPTimerCount];

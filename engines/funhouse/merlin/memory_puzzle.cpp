@@ -261,8 +261,8 @@ void Mode::setTimer(int id, int32 ticks, int32 elapse, bool arm) {
     _timers[id].elapse = elapse;
 }
 
-void Mode::onTimer(std::function<void(int id)> fn) {
-    _onTimer = fn;
+void Mode::onTimer(int id, std::function<void()> fn) {
+    _timers[id].fn = fn;
 }
 
 void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
@@ -310,45 +310,43 @@ void MemoryPuzzle::animPlaying() {
         });
     _animMode.setTimer(kFrameTimer, 0, kFrameDelayMs, true);
     _animMode.setTimer(kAnimTimer, 0, _animSoundTime, false);
-    _animMode.onTimer([this](int timerId) {
+    _animMode.onTimer(kFrameTimer, [this]() {
         const Item& item = _itemList[_animItem];
         const ItemFrame& frame = item.frames[_animFrame];
 
-        if (timerId == kFrameTimer) {
-            _animMode._timers[kFrameTimer].ticks -= kFrameDelayMs;
+        _animMode._timers[kFrameTimer].ticks -= kFrameDelayMs;
 
-            if (_animMode._timers[kAnimTimer].ticks >= _animPlayTime) {
-                if (frame.delayFrames == -1) {
-                    _animFrame++;
-                    _animSubFrame = 0;
-                    drawItemFrame(_animItem, _animFrame);
-                    animWindingDown();
-                    debug("winding down animation...");
-                }
-                else {
-                    animStopping();
-                }
-
-                return;
+        if (_animMode._timers[kAnimTimer].ticks >= _animPlayTime) {
+            if (frame.delayFrames == -1) {
+                _animFrame++;
+                _animSubFrame = 0;
+                drawItemFrame(_animItem, _animFrame);
+                animWindingDown();
+                debug("winding down animation...");
             }
             else {
-                if (frame.delayFrames == -1) {
-                    // Do not advance frames
-                }
-                else {
-                    ++_animSubFrame;
-                    if (_animSubFrame >= frame.delayFrames) {
-                        ++_animFrame;
-                        if (_animFrame >= item.frames.size()) {
-                            _animFrame = 0;
-                        }
-                        _animSubFrame = 0;
-                        drawItemFrame(_animItem, _animFrame);
+                animStopping();
+            }
+
+            return;
+        }
+        else {
+            if (frame.delayFrames == -1) {
+                // Do not advance frames
+            }
+            else {
+                ++_animSubFrame;
+                if (_animSubFrame >= frame.delayFrames) {
+                    ++_animFrame;
+                    if (_animFrame >= item.frames.size()) {
+                        _animFrame = 0;
                     }
+                    _animSubFrame = 0;
+                    drawItemFrame(_animItem, _animFrame);
                 }
             }
         }
-        });
+    });
 }
 
 void MemoryPuzzle::animWindingDown() {
@@ -362,32 +360,30 @@ void MemoryPuzzle::animWindingDown() {
         });
     _animMode.setTimer(kFrameTimer, frameTicks, kFrameDelayMs, true);
     _animMode.setTimer(kAnimTimer, animTicks, _animSoundTime, false);
-    _animMode.onTimer([this](int timerId) {
-        if (timerId == kFrameTimer) {
-            _animMode._timers[kFrameTimer].ticks -= kFrameDelayMs;
+    _animMode.onTimer(kFrameTimer, [this]() {
+        _animMode._timers[kFrameTimer].ticks -= kFrameDelayMs;
 
-            const Item& item = _itemList[_animItem];
+        const Item& item = _itemList[_animItem];
 
-            if (_animFrame >= item.frames.size()) {
-                animStopping();
-                return;
-            }
+        if (_animFrame >= item.frames.size()) {
+            animStopping();
+            return;
+        }
 
-            const ItemFrame& frame = item.frames[_animFrame];
+        const ItemFrame& frame = item.frames[_animFrame];
 
-            if (frame.delayFrames != -1) {
-                ++_animSubFrame;
-                if (_animSubFrame >= frame.delayFrames) {
-                    ++_animFrame;
-                    _animSubFrame = 0;
-                    drawItemFrame(_animItem, _animFrame);
-                }
-            }
-            else {
-                _animFrame++;
+        if (frame.delayFrames != -1) {
+            ++_animSubFrame;
+            if (_animSubFrame >= frame.delayFrames) {
+                ++_animFrame;
                 _animSubFrame = 0;
                 drawItemFrame(_animItem, _animFrame);
             }
+        }
+        else {
+            _animFrame++;
+            _animSubFrame = 0;
+            drawItemFrame(_animItem, _animFrame);
         }
     });
 }
@@ -401,13 +397,11 @@ void MemoryPuzzle::animStopping() {
     _animMode.onMsg([](const BoltMsg& msg) {
         });
     _animMode.setTimer(kAnimTimer, animTicks, _animSoundTime, true);
-    _animMode.onTimer([this](int timerId) {
-        if (timerId == kAnimTimer) {
-            _animMode._timers[kAnimTimer].armed = false;
-            drawItemFrame(_animItem, -1);
-            _animActive = false;
-            _game->getEngine()->setNextMsg(BoltMsg::kDrive);
-        }
+    _animMode.onTimer(kAnimTimer, [this]() {
+        _animMode._timers[kAnimTimer].armed = false;
+        drawItemFrame(_animItem, -1);
+        _animActive = false;
+        _game->getEngine()->setNextMsg(BoltMsg::kDrive);
     });
 }
 
@@ -437,7 +431,7 @@ BoltRsp MemoryPuzzle::handleAnimation(const BoltMsg &msg) {
                 for (const auto& timer : _animMode._timers) {
                     if (timer.armed && timer.ticks >= timer.elapse) {
                         done = false;
-                        _animMode._onTimer(timer.id);
+                        timer.fn();
                         break;
                     }
                 }
