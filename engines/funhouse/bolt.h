@@ -163,6 +163,7 @@ public:
 	void setNextMsg(const BoltMsg &msg);
 	void requestSmoothAnimation();
 	void requestHover();
+	void requestWakeup(int32 ticks);
 	void startTimer(int id, int32 elapse);
 	void armTimer(int id, int32 elapse);
 	void addTicks(int id, int32 ticks);

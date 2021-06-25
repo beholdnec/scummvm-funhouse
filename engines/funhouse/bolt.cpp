@@ -180,6 +180,10 @@ void FunhouseEngine::requestHover() {
 	_hoverRequested = true;
 }
 
+void FunhouseEngine::requestWakeup(int32 ticks) {
+	// TODO: implement wakeup time; for now, the game wakes up on every frame
+}
+
 void FunhouseEngine::startTimer(int id, int32 elapse) {
 	debug(4, "start timer %d, %d", id, elapse);
 	Timer newTimer;

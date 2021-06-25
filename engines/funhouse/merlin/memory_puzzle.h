@@ -23,6 +23,8 @@
 #ifndef FUNHOUSE_MERLIN_MEMORY_PUZZLE_H
 #define FUNHOUSE_MERLIN_MEMORY_PUZZLE_H
 
+#include <functional>
+
 #include "funhouse/boltlib/sound.h"
 #include "funhouse/merlin/merlin.h"
 #include "funhouse/merlin/popup_menu.h"
@@ -30,6 +32,38 @@
 #include "common/random.h"
 
 namespace Funhouse {
+
+enum {
+    kFrameTimer = 0,
+    kAnimTimer = 1,
+    kMPTimerCount,
+};
+
+struct Timer {
+    bool armed = false;
+    int id = -1;
+    int32 ticks = 0;
+    int32 elapse = 0;
+};
+
+class Mode {
+public:
+    void onEnter(std::function<void()> fn);
+    void onMsg(std::function<void(const BoltMsg &msg)> fn);
+    void onTimer(std::function<void(int id)> fn);
+    int32 getTimerTicks(int id) const;
+    void setTimer(int id, int32 ticks, int32 elapse, bool arm);
+
+private:
+    friend class MemoryPuzzle;
+
+    std::function<void()> _onEnter;
+    std::function<void(const BoltMsg &msg)> _onMsg;
+    std::function<void(int id)> _onTimer;
+
+    bool _active = false;
+    Timer _timers[kMPTimerCount];
+};
 
 class MemoryPuzzle : public Card {
 public:
@@ -68,6 +102,10 @@ private:
     BoltRsp handleAnimation(const BoltMsg &msg);
     void drawItemFrame(int itemNum, int frameNum);
 
+    void animPlaying();
+    void animWindingDown();
+    void animStopping();
+
     MerlinGame *_game;
 	Scene _scene;
     PopupMenu _popup;
@@ -84,14 +122,16 @@ private:
     bool _playbackActive;
     int _playbackStep;
 
-    enum AnimationStatus {
+    /*enum AnimationStatus {
         kIdle,
         kPlaying,
         kWindingDown,
         kStopping,
-    };
+    };*/
 
-    AnimationStatus _animStatus;
+    //AnimationStatus _animStatus;
+    bool _animActive = false;
+    Mode _animMode;
     int _animItem;
     int _animFrame;
     int _animSubFrame;

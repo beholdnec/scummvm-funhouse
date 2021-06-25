@@ -23,6 +23,8 @@
 #ifndef FUNHOUSE_MERLIN_MERLIN_H
 #define FUNHOUSE_MERLIN_MERLIN_H
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
+
 #include "funhouse/bolt.h"
 #include "funhouse/movie.h"
 #include "funhouse/merlin/save.h"
