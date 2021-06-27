@@ -84,9 +84,7 @@ MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
 
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
-    _animMode = {};
-    //_animStatus = kIdle;
-    _playbackActive = false;
+    idle();
     _matches = 0;
 
     uint16 resId = 0;
@@ -157,32 +155,48 @@ void MemoryPuzzle::enter() {
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
     BoltRsp cmd;
 
-    if ((cmd = handlePlayback(msg)) != BoltRsp::kPass) {
-        return cmd;
-    }
-    
-    if (_matches >= _finalGoal) {
-        _game->branchWin();
-        return BoltRsp::kDone;
-    } else if (_matches >= _goal) {
-        _matches = 0;
-        _goal += 3;
-        startPlayback();
-        return BoltRsp::kDone;
+    bool done = false;
+    bool ticksAdded = false;
+
+    while (!done) {
+        done = true;
+
+        if (!_animMode._active) {
+            done = false;
+            _animMode._onEnter();
+            _animMode._active = true;
+        }
+        else if (msg.type == BoltMsg::kAddTicks) {
+            if (!ticksAdded) {
+                // Update all timers
+                for (auto& timer : _animMode._timers) {
+                    timer.ticks += msg.num;
+                }
+                ticksAdded = true;
+            }
+
+            // Continue processing timer handlers until no more timers are tripped
+            for (const auto& timer : _animMode._timers) {
+                if (timer.armed && timer.ticks >= timer.elapse) {
+                    done = false;
+                    timer.fn();
+                    break;
+                }
+            }
+        }
+        else {
+            _animMode._onMsg(msg);
+        }
     }
 
-    if ((cmd = _popup.handleMsg(msg)) != BoltRsp::kPass) {
-        return cmd;
+    // Request engine to wake up at the next timer
+    for (const auto& timer : _animMode._timers) {
+        if (timer.armed && timer.ticks < timer.elapse) {
+            _game->getEngine()->requestWakeup(timer.elapse - timer.ticks);
+        }
     }
 
-	switch (msg.type) {
-	case BoltMsg::kPopupButtonClick:
-		return handlePopupButtonClick(msg.num);
-	case Scene::kClickButton:
-		return handleButtonClick(msg.num);
-	}
-
-    return _scene.handleMsg(msg);
+    return kDone;
 }
 
 BoltRsp MemoryPuzzle::handlePopupButtonClick(int num) {
@@ -205,7 +219,7 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
             ++_matches;
             startAnimation(num, _itemList[num].sound);
             _animThen = [this]() {
-                _playbackActive = false;
+                idle();
             };
         } else {
             // Mismatch
@@ -221,7 +235,6 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 }
 
 void MemoryPuzzle::startPlayback() {
-    _playbackActive = true;
     _playbackStep = 0;
     playbackNext();
 }
@@ -252,7 +265,6 @@ void Mode::onTimer(int id, std::function<void()> fn) {
 void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     debug(3, "Starting animation for item %d", itemNum);
 
-    _playbackActive = true;
     _animMode = {};
     _animItem = itemNum;
     _animFrame = 0;
@@ -295,9 +307,42 @@ void MemoryPuzzle::playbackNext() {
         ++_playbackStep;
     }
     else {
-        _playbackActive = false;
-        _game->getEngine()->setNextMsg(BoltMsg::kDrive);
+        idle();
     }
+}
+
+void MemoryPuzzle::idle() {
+    _animMode = {};
+    _animMode.onEnter([this]() {
+        _game->getEngine()->setNextMsg(BoltMsg::kDrive); // Check for win now
+    });
+    _animMode.onMsg([this](const BoltMsg& msg) {
+        BoltRsp cmd;
+
+        if (_matches >= _finalGoal) {
+            _game->branchWin();
+            return BoltRsp::kDone;
+        }
+        else if (_matches >= _goal) {
+            _matches = 0;
+            _goal += 3;
+            startPlayback();
+            return BoltRsp::kDone;
+        }
+
+        if ((cmd = _popup.handleMsg(msg)) != BoltRsp::kPass) {
+            return cmd;
+        }
+
+        switch (msg.type) {
+        case BoltMsg::kPopupButtonClick:
+            return handlePopupButtonClick(msg.num);
+        case Scene::kClickButton:
+            return handleButtonClick(msg.num);
+        }
+
+        return _scene.handleMsg(msg);
+    });
 }
 
 void MemoryPuzzle::animPlaying() {
@@ -400,55 +445,6 @@ void MemoryPuzzle::animStopping() {
         drawItemFrame(_animItem, -1);
         _animThen();
     });
-}
-
-BoltRsp MemoryPuzzle::handlePlayback(const BoltMsg &msg) {
-    if (_playbackActive) {
-        bool done = false;
-        bool ticksAdded = false;
-
-        while (!done) {
-            done = true;
-
-            if (!_animMode._active) {
-                done = false;
-                _animMode._onEnter();
-                _animMode._active = true;
-            }
-            else if (msg.type == BoltMsg::kAddTicks) {
-                if (!ticksAdded) {
-                    // Update all timers
-                    for (auto& timer : _animMode._timers) {
-                        timer.ticks += msg.num;
-                    }
-                    ticksAdded = true;
-                }
-                
-                // Continue processing timer handlers until no more timers are tripped
-                for (const auto& timer : _animMode._timers) {
-                    if (timer.armed && timer.ticks >= timer.elapse) {
-                        done = false;
-                        timer.fn();
-                        break;
-                    }
-                }
-            }
-            else {
-                _animMode._onMsg(msg);
-            }
-        }
-
-        // Request engine to wake up at the next timer
-        for (const auto &timer : _animMode._timers) {
-            if (timer.armed && timer.ticks < timer.elapse) {
-                _game->getEngine()->requestWakeup(timer.elapse - timer.ticks);
-            }
-        }
-
-        return kDone;
-    } else {
-        return kPass;
-    }
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {

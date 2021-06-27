@@ -97,10 +97,10 @@ private:
 	BoltRsp handlePopupButtonClick(int num);
 	BoltRsp handleButtonClick(int num);
     void startPlayback();
-    BoltRsp handlePlayback(const BoltMsg &msg);
     void startAnimation(int itemNum, BltSound& sound);
     void drawItemFrame(int itemNum, int frameNum);
 
+    void idle();
     void playbackNext();
     void animPlaying();
     void animWindingDown();
@@ -119,11 +119,9 @@ private:
     int _matches;
     ScopedArray<int> _solution;
 
-    bool _playbackActive = false;
-    int _playbackStep = 0;
-
     Mode _animMode;
     std::function<void()> _animThen; // Function to call when anim is finished
+    int _playbackStep = 0;
     int _animItem;
     int _animFrame;
     int _animSubFrame;
