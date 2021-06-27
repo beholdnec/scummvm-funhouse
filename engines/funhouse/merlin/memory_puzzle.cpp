@@ -157,11 +157,7 @@ void MemoryPuzzle::enter() {
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
     BoltRsp cmd;
 
-    if ((cmd = handleAnimation(msg)) != BoltRsp::kPass) {
-        return cmd;
-    }
-
-    if ((cmd = handlePlayback()) != BoltRsp::kPass) {
+    if ((cmd = handlePlayback(msg)) != BoltRsp::kPass) {
         return cmd;
     }
     
@@ -208,12 +204,16 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
             // Earn a new match
             ++_matches;
             startAnimation(num, _itemList[num].sound);
+            _animThen = [this]() {
+                _playbackActive = false;
+            };
         } else {
             // Mismatch
             _matches = 0;
-			_failSound.play(_game->getEngine()->_mixer);
             startAnimation(num, _failSound.pickSound());
-            startPlayback();
+            _animThen = [this]() {
+                startPlayback();
+            };
         }
     }
 
@@ -223,23 +223,7 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 void MemoryPuzzle::startPlayback() {
     _playbackActive = true;
     _playbackStep = 0;
-}
-
-BoltRsp MemoryPuzzle::handlePlayback() {
-    if (!_playbackActive) {
-        return BoltRsp::kPass;
-    }
-
-    if (_playbackStep < _goal) {
-        startAnimation(_solution[_playbackStep], _itemList[_solution[_playbackStep]].sound);
-        ++_playbackStep;
-        _game->getEngine()->setNextMsg(BoltMsg::kDrive);
-        return BoltRsp::kDone;
-    }
-
-    _playbackActive = false;
-    _game->getEngine()->setNextMsg(BoltMsg::kDrive);
-    return BoltRsp::kDone;
+    playbackNext();
 }
 
 void Mode::onEnter(std::function<void()> fn) {
@@ -268,7 +252,7 @@ void Mode::onTimer(int id, std::function<void()> fn) {
 void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     debug(3, "Starting animation for item %d", itemNum);
 
-    _animActive = true;
+    _playbackActive = true;
     _animMode = {};
     _animItem = itemNum;
     _animFrame = 0;
@@ -300,6 +284,20 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
     sound.play(_game->getEngine()->_mixer);
 
     animPlaying();
+}
+
+void MemoryPuzzle::playbackNext() {
+    if (_playbackStep < _goal) {
+        startAnimation(_solution[_playbackStep], _itemList[_solution[_playbackStep]].sound);
+        _animThen = [this]() {
+            playbackNext();
+        };
+        ++_playbackStep;
+    }
+    else {
+        _playbackActive = false;
+        _game->getEngine()->setNextMsg(BoltMsg::kDrive);
+    }
 }
 
 void MemoryPuzzle::animPlaying() {
@@ -400,13 +398,12 @@ void MemoryPuzzle::animStopping() {
     _animMode.onTimer(kAnimTimer, [this]() {
         _animMode._timers[kAnimTimer].armed = false;
         drawItemFrame(_animItem, -1);
-        _animActive = false;
-        _game->getEngine()->setNextMsg(BoltMsg::kDrive);
+        _animThen();
     });
 }
 
-BoltRsp MemoryPuzzle::handleAnimation(const BoltMsg &msg) {
-    if (_animActive) {
+BoltRsp MemoryPuzzle::handlePlayback(const BoltMsg &msg) {
+    if (_playbackActive) {
         bool done = false;
         bool ticksAdded = false;
 
