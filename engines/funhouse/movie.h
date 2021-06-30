@@ -23,6 +23,8 @@
 #ifndef FUNHOUSE_MOVIE_H
 #define FUNHOUSE_MOVIE_H
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
+
 #include "audio/mixer.h"
 
 #include "funhouse/bolt.h"

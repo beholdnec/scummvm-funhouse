@@ -84,6 +84,7 @@ MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
 
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
+    _animMode.init(_game->getEngine());
     idle();
     _matches = 0;
 
@@ -153,49 +154,7 @@ void MemoryPuzzle::enter() {
 }
 
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltRsp cmd;
-
-    bool done = false;
-    bool ticksAdded = false;
-
-    while (!done) {
-        done = true;
-
-        if (!_animMode._active) {
-            done = false;
-            _animMode._onEnter();
-            _animMode._active = true;
-        }
-        else if (msg.type == BoltMsg::kAddTicks) {
-            if (!ticksAdded) {
-                // Update all timers
-                for (auto& timer : _animMode._timers) {
-                    timer.ticks += msg.num;
-                }
-                ticksAdded = true;
-            }
-
-            // Continue processing timer handlers until no more timers are tripped
-            for (const auto& timer : _animMode._timers) {
-                if (timer.armed && timer.ticks >= timer.elapse) {
-                    done = false;
-                    timer.fn();
-                    break;
-                }
-            }
-        }
-        else {
-            _animMode._onMsg(msg);
-        }
-    }
-
-    // Request engine to wake up at the next timer
-    for (const auto& timer : _animMode._timers) {
-        if (timer.armed && timer.ticks < timer.elapse) {
-            _game->getEngine()->requestWakeup(timer.elapse - timer.ticks);
-        }
-    }
-
+    _animMode.react(msg);
     return kDone;
 }
 
@@ -237,29 +196,6 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 void MemoryPuzzle::startPlayback() {
     _playbackStep = 0;
     playbackNext();
-}
-
-void Mode::onEnter(std::function<void()> fn) {
-    _onEnter = fn;
-}
-
-void Mode::onMsg(std::function<void(const BoltMsg& msg)> fn) {
-    _onMsg = fn;
-}
-
-int32 Mode::getTimerTicks(int id) const {
-    return _timers[id].ticks;
-}
-
-void Mode::setTimer(int id, int32 ticks, int32 elapse, bool arm) {
-    _timers[id].armed = arm;
-    _timers[id].id = id;
-    _timers[id].ticks = ticks;
-    _timers[id].elapse = elapse;
-}
-
-void Mode::onTimer(int id, std::function<void()> fn) {
-    _timers[id].fn = fn;
 }
 
 void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
@@ -346,13 +282,13 @@ void MemoryPuzzle::idle() {
 }
 
 void MemoryPuzzle::animPlaying() {
-    _animMode = {};
-    _animMode.onEnter([]() {
-        });
+    _animMode.transition();
+    _animMode.onEnter([this]() {
+        _animMode.startTimer(kFrameTimer, kFrameDelayMs, true);
+        _animMode.startTimer(kAnimTimer, _animSoundTime, false);
+    });
     _animMode.onMsg([](const BoltMsg& msg) {
-        });
-    _animMode.setTimer(kFrameTimer, 0, kFrameDelayMs, true);
-    _animMode.setTimer(kAnimTimer, 0, _animSoundTime, false);
+    });
     _animMode.onTimer(kFrameTimer, [this]() {
         const Item& item = _itemList[_animItem];
         const ItemFrame& frame = item.frames[_animFrame];
@@ -393,16 +329,13 @@ void MemoryPuzzle::animPlaying() {
 }
 
 void MemoryPuzzle::animWindingDown() {
-    int32 frameTicks = _animMode.getTimerTicks(kFrameTimer);
-    int32 animTicks = _animMode.getTimerTicks(kAnimTimer);
-
-    _animMode = {};
-    _animMode.onEnter([]() {
-        });
+    _animMode.transition();
+    _animMode.onEnter([this]() {
+        _animMode.continueTimer(kFrameTimer, true);
+        _animMode.continueTimer(kAnimTimer, false);
+    });
     _animMode.onMsg([](const BoltMsg& msg) {
-        });
-    _animMode.setTimer(kFrameTimer, frameTicks, kFrameDelayMs, true);
-    _animMode.setTimer(kAnimTimer, animTicks, _animSoundTime, false);
+    });
     _animMode.onTimer(kFrameTimer, [this]() {
         _animMode._timers[kFrameTimer].ticks -= kFrameDelayMs;
 
@@ -432,14 +365,12 @@ void MemoryPuzzle::animWindingDown() {
 }
 
 void MemoryPuzzle::animStopping() {
-    int32 animTicks = _animMode.getTimerTicks(kAnimTimer);
-
-    _animMode = {};
-    _animMode.onEnter([]() {
-        });
+    _animMode.transition();
+    _animMode.onEnter([this]() {
+        _animMode.continueTimer(kAnimTimer, true);
+    });
     _animMode.onMsg([](const BoltMsg& msg) {
-        });
-    _animMode.setTimer(kAnimTimer, animTicks, _animSoundTime, true);
+    });
     _animMode.onTimer(kAnimTimer, [this]() {
         _animMode._timers[kAnimTimer].armed = false;
         drawItemFrame(_animItem, -1);

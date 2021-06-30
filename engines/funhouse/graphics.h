@@ -23,6 +23,8 @@
 #ifndef FUNHOUSE_GRAPHICS_H
 #define FUNHOUSE_GRAPHICS_H
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
+
 #include "common/rect.h"
 #include "common/scummsys.h"
 #include "common/rational.h"

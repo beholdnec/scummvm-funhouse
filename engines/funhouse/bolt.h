@@ -23,6 +23,9 @@
 #ifndef FUNHOUSE_BOLT_H
 #define FUNHOUSE_BOLT_H
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
+#include <functional>
+
 #include "common/rect.h"
 
 #include "engines/engine.h"
@@ -129,6 +132,46 @@ public:
 	virtual BoltRsp handleMsg(const BoltMsg &msg) = 0;
 };
 
+class FunhouseEngine;
+
+class Mode {
+public:
+	virtual ~Mode() { }
+	virtual void react(const BoltMsg &msg) = 0;
+};
+
+class DynamicMode : public Mode {
+public:
+	static const int kMaxTimers = 4;
+
+	struct Timer {
+		bool active = false;
+		bool armed = false;
+		int32 ticks = 0;
+		int32 elapse = 0;
+		std::function<void()> fn;
+	};
+
+	void init(FunhouseEngine* engine);
+
+	void react(const BoltMsg &msg) override;
+
+	void transition();
+	void onEnter(std::function<void()> fn);
+	void onMsg(std::function<void(const BoltMsg &msg)> fn);
+	void onTimer(int timerId, std::function<void()> fn);
+	void startTimer(int timerId, int32 elapse, bool arm);
+	void continueTimer(int timerId, bool arm);
+
+	bool _entered = false;
+	Timer _timers[kMaxTimers];
+
+private:
+	FunhouseEngine *_engine;
+	std::function<void()> _enterFn;
+	std::function<void(const BoltMsg &msg)> _msgFn;
+};
+
 enum TimerId {
 	kMovieTimer,
 	kCardTimer,
@@ -138,8 +181,6 @@ enum TimerId {
 
 	kTimerCount,
 };
-
-class FunhouseEngine;
 
 class FunhouseGame {
 public:
@@ -158,8 +199,6 @@ public:
 	// From Engine
 	virtual bool hasFeature(EngineFeature f) const;
 
-	//uint32 getEventTime() const;
-	//uint32 getNowTime() const; // NOTE: getEventTime should be used in most cases.
 	void setNextMsg(const BoltMsg &msg);
 	void requestSmoothAnimation();
 	void requestHover();

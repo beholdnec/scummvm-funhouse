@@ -23,7 +23,7 @@
 #ifndef FUNHOUSE_MERLIN_MEMORY_PUZZLE_H
 #define FUNHOUSE_MERLIN_MEMORY_PUZZLE_H
 
-#include <functional>
+#define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
 
 #include "funhouse/boltlib/sound.h"
 #include "funhouse/merlin/merlin.h"
@@ -36,33 +36,6 @@ namespace Funhouse {
 enum {
     kFrameTimer = 0,
     kAnimTimer = 1,
-    kMPTimerCount,
-};
-
-struct Timer {
-    bool armed = false;
-    int id = -1;
-    int32 ticks = 0;
-    int32 elapse = 0;
-    std::function<void()> fn;
-};
-
-class Mode {
-public:
-    void onEnter(std::function<void()> fn);
-    void onMsg(std::function<void(const BoltMsg &msg)> fn);
-    void onTimer(int id, std::function<void()> fn);
-    int32 getTimerTicks(int id) const;
-    void setTimer(int id, int32 ticks, int32 elapse, bool arm);
-
-private:
-    friend class MemoryPuzzle;
-
-    std::function<void()> _onEnter;
-    std::function<void(const BoltMsg &msg)> _onMsg;
-
-    bool _active = false;
-    Timer _timers[kMPTimerCount];
 };
 
 class MemoryPuzzle : public Card {
@@ -119,7 +92,7 @@ private:
     int _matches;
     ScopedArray<int> _solution;
 
-    Mode _animMode;
+    DynamicMode _animMode;
     std::function<void()> _animThen; // Function to call when anim is finished
     int _playbackStep = 0;
     int _animItem;

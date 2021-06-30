@@ -23,6 +23,8 @@
 #ifndef FUNHOUSE_CONSOLE_H
 #define FUNHOUSE_CONSOLE_H
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
+
 #include "gui/debugger.h"
 
 namespace Funhouse {

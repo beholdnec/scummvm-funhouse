@@ -214,4 +214,85 @@ Graphics* FunhouseEngine::getGraphics() {
 	return &_graphics;
 }
 
+void DynamicMode::init(FunhouseEngine* engine) {
+	_engine = engine;
+}
+
+void DynamicMode::react(const BoltMsg& msg) {
+	bool done = false;
+	bool ticksAdded = false;
+
+	while (!done) {
+		done = true;
+
+		if (!_entered) {
+			done = false;
+			_enterFn();
+			_entered = true;
+		}
+		else if (msg.type == BoltMsg::kAddTicks) {
+			if (!ticksAdded) {
+				// Update all timers
+				for (auto& timer : _timers) {
+					if (timer.active) {
+						timer.ticks += msg.num;
+					}
+				}
+				ticksAdded = true;
+			}
+
+			// Continue processing timer handlers until no more timers are tripped
+			for (const auto& timer : _timers) {
+				if (timer.active && timer.armed && timer.ticks >= timer.elapse) {
+					done = false;
+					timer.fn();
+					break;
+				}
+			}
+		}
+		else {
+			_msgFn(msg);
+		}
+	}
+
+	// Request engine to wake up at the next timer
+	for (const auto& timer : _timers) {
+		if (timer.active && timer.armed && timer.ticks < timer.elapse) {
+			_engine->requestWakeup(timer.elapse - timer.ticks);
+		}
+	}
+}
+
+void DynamicMode::transition() {
+	_entered = false;
+	for (auto& t : _timers) {
+		t.active = false;
+		t.armed = false;
+	}
+}
+
+void DynamicMode::onEnter(std::function<void()> fn) {
+	_enterFn = fn;
+}
+
+void DynamicMode::onMsg(std::function<void(const BoltMsg& msg)> fn) {
+	_msgFn = fn;
+}
+
+void DynamicMode::onTimer(int timerId, std::function<void()> fn) {
+	_timers[timerId].fn = fn;
+}
+
+void DynamicMode::startTimer(int timerId, int32 elapse, bool arm) {
+	_timers[timerId].active = true;
+	_timers[timerId].armed = arm;
+	_timers[timerId].ticks = 0;
+	_timers[timerId].elapse = elapse;
+}
+
+void DynamicMode::continueTimer(int timerId, bool arm) {
+	_timers[timerId].active = true;
+	_timers[timerId].armed = arm;
+}
+
 } // End of namespace Funhouse

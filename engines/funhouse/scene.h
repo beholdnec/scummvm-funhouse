@@ -23,6 +23,8 @@
 #ifndef BOLT_SCENE_H
 #define BOLT_SCENE_H
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
+
 #include "common/array.h"
 #include "common/rect.h"
 
