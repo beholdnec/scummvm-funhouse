@@ -248,7 +248,7 @@ void MemoryPuzzle::playbackNext() {
 }
 
 void MemoryPuzzle::idle() {
-    _animMode = {};
+    _animMode.transition();
     _animMode.onEnter([this]() {
         _game->getEngine()->setNextMsg(BoltMsg::kDrive); // Check for win now
     });

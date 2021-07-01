@@ -221,13 +221,16 @@ void DynamicMode::init(FunhouseEngine* engine) {
 void DynamicMode::react(const BoltMsg& msg) {
 	bool done = false;
 	bool ticksAdded = false;
+	bool msgSent = false;
 
 	while (!done) {
 		done = true;
 
 		if (!_entered) {
 			done = false;
-			_enterFn();
+			if (_enterFn) {
+				_enterFn();
+			}
 			_entered = true;
 		}
 		else if (msg.type == BoltMsg::kAddTicks) {
@@ -243,15 +246,17 @@ void DynamicMode::react(const BoltMsg& msg) {
 
 			// Continue processing timer handlers until no more timers are tripped
 			for (const auto& timer : _timers) {
-				if (timer.active && timer.armed && timer.ticks >= timer.elapse) {
+				if (timer.active && timer.armed && timer.ticks >= timer.elapse && timer.fn) {
 					done = false;
 					timer.fn();
 					break;
 				}
 			}
 		}
-		else {
+		else if (_msgFn && !msgSent) {
+			done = false;
 			_msgFn(msg);
+			msgSent = true;
 		}
 	}
 
@@ -265,9 +270,12 @@ void DynamicMode::react(const BoltMsg& msg) {
 
 void DynamicMode::transition() {
 	_entered = false;
+	_enterFn = {};
+	_msgFn = {};
 	for (auto& t : _timers) {
 		t.active = false;
 		t.armed = false;
+		t.fn = {};
 	}
 }
 

@@ -62,9 +62,9 @@ private:
 	static const uint32 kPlacing1Time = 500;
 	static const uint32 kPlacing2Time = 500;
 
+	void idle();
 	BoltRsp handleIdle(const BoltMsg &msg);
-	BoltRsp handleTimeout(const BoltMsg &msg);
-	BoltRsp handleTransition(const BoltMsg &msg);
+	void evaluate();
 
 	BoltRsp handleClick(Common::Point point);
 	BoltRsp requestIngredient(int ingredient);
@@ -74,7 +74,7 @@ private:
 
 	bool isValidIngredient(int ingredient) const;
 	int getNumRemainingIngredients() const;
-	void setTimeout(int32 length);
+	void setTimeout(int32 delay, std::function<void()> then);
 
 	void draw();
 
@@ -82,6 +82,7 @@ private:
 
 	MerlinGame *_game;
 	PopupMenu _popup;
+	DynamicMode _mode;
 	BltImage _bgImage;
 	BltPalette _bgPalette;
 	Common::Point _origin;
@@ -95,10 +96,6 @@ private:
 	static const int kNumBowlSlots = 3;
 	int _bowlSlots[kNumBowlSlots]; // Ingredients in bowl
 	int _requestedIngredient;
-	
-	bool _timeout;
-	uint32 _timeoutStart;
-	uint32 _timeoutLength;
 };
 
 } // End of namespace Funhouse

@@ -91,7 +91,7 @@ typedef ScopedArray<BltPotionPuzzleComboTableListElement> BltPotionPuzzleComboTa
 
 void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_timeout = false;
+	_mode.init(_game->getEngine());
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -157,20 +157,19 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 void PotionPuzzle::enter() {
 	draw();
+	evaluate();
 }
 
 BoltRsp PotionPuzzle::handleMsg(const BoltMsg &msg) {
-	BoltRsp cmd;
+	_mode.react(msg);
+	return kDone;
+}
 
-	if ((cmd = handleTimeout(msg)) != BoltRsp::kPass) {
-		return cmd;
-	}
-
-	if ((cmd = handleTransition(msg)) != BoltRsp::kPass) {
-		return cmd;
-	}
-
-	return handleIdle(msg);
+void PotionPuzzle::idle() {
+	_mode.transition();
+	_mode.onMsg([this](const BoltMsg& msg) {
+		handleIdle(msg);
+	});
 }
 
 BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
@@ -187,33 +186,12 @@ BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
 	return BoltRsp::kDone;
 }
 
-BoltRsp PotionPuzzle::handleTimeout(const BoltMsg &msg) {
-	if (!_timeout) {
-		return BoltRsp::kPass;
-	}
-
-	switch (msg.type) {
-	case BoltMsg::kAddTicks:
-		_game->getEngine()->addTicks(kCardTimer, msg.num);
-		return BoltRsp::kDone;
-	case BoltMsg::kTimer:
-		if (msg.num != kCardTimer) {
-			return kPass;
-		}
-
-		_timeout = false;
-		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-		return BoltRsp::kDone;
-	default:
-		return BoltRsp::kDone;
-	}
-}
-
-BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
+void PotionPuzzle::evaluate() {
 	// Examine bowl to decide what action to take
 	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[2])) {
 		// Left and right bowl slots occupied; perform reaction
-		return performReaction();
+		performReaction();
+		return;
 	}
 	
 	if (isValidIngredient(_requestedIngredient)) {
@@ -237,9 +215,9 @@ BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
 		draw();
 
 		// TODO: Play "plunk" sound
-		setTimeout(kPlacing2Time);
+		setTimeout(kPlacing2Time, [this]() { evaluate(); });
 		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-		return BoltRsp::kDone;
+		return;
 	}
 
 	int numRemainingIngredients = getNumRemainingIngredients();
@@ -250,12 +228,13 @@ BoltRsp PotionPuzzle::handleTransition(const BoltMsg &msg) {
 		reset();
 		draw();
 		// TODO: Play "reset" sound
+		idle();
 		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-		return BoltRsp::kDone;
+		return;
 	}
 
 	// No action taken
-	return BoltRsp::kPass;
+	idle();
 }
 
 BoltRsp PotionPuzzle::handleClick(Common::Point point) {
@@ -298,7 +277,10 @@ BoltRsp PotionPuzzle::handleClick(Common::Point point) {
 BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
-	setTimeout(kPlacing1Time);
+	debug(3, "requested ingredient %d", ingredient);
+	setTimeout(kPlacing1Time, [this]() {
+		evaluate();
+	});
 	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 	return BoltRsp::kDone;
 }
@@ -362,6 +344,7 @@ BoltRsp PotionPuzzle::performReaction() {
 		_bowlSlots[1] = kNoIngredient;
 		_bowlSlots[2] = kNoIngredient;
 		draw();
+		idle();
 		return BoltRsp::kDone;
 	}
 
@@ -408,7 +391,7 @@ BoltRsp PotionPuzzle::performReaction() {
 		_game->startPotionMovie(reactionInfo->movie);
 	}
 
-
+	idle();
 	return BoltRsp::kDone;
 }
 
@@ -487,9 +470,14 @@ int PotionPuzzle::getNumRemainingIngredients() const {
 	return num;
 }
 
-void PotionPuzzle::setTimeout(int32 length) {
-	_timeout = true;
-	_game->getEngine()->startTimer(kCardTimer, length);
+void PotionPuzzle::setTimeout(int32 delay, std::function<void()> then) {
+	_mode.transition();
+	_mode.onEnter([this, delay]() {
+		_mode.startTimer(0, delay, true);
+	});
+	_mode.onTimer(0, [=]() {
+		then();
+	});
 }
 
 } // End of namespace Funhouse
