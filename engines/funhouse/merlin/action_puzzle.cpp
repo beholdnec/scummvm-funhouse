@@ -193,6 +193,11 @@ void ActionPuzzle::playMode() {
 		_mode.startTimer(0, kTickPeriod, true);
 	});
 	_mode.onMsg([this](const BoltMsg &msg) {
+		if (msg.type == BoltMsg::kPopupButtonClick) {
+			handlePopupButtonClick(msg.num);
+			return;
+		}
+
 		_popup.handleMsg(msg);
 		if (_popup.isActive()) {
 			_mode._timers[0].active = false;
@@ -203,8 +208,6 @@ void ActionPuzzle::playMode() {
 		}
 
 		switch (msg.type) {
-		case BoltMsg::kPopupButtonClick:
-			handlePopupButtonClick(msg.num);
 		case BoltMsg::kClick:
 			handleClick(msg.point);
 		}
