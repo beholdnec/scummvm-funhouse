@@ -51,6 +51,7 @@ protected:
 
 	typedef Common::List<Particle> ParticleList;
 
+	void playMode();
     BoltRsp handlePopupButtonClick(int num);
 	const BltImage& getParticleImage(const Particle &particle);
 	Common::Point getParticlePos(const Particle &particle);
@@ -64,6 +65,7 @@ protected:
 
     MerlinGame *_game;
     PopupMenu _popup;
+	DynamicMode _mode;
 	BltImage _bgImage;
 	BltPalette _backPalette;
 	BltPalette _forePalette;

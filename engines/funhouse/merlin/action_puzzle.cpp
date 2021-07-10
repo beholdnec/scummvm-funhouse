@@ -55,6 +55,7 @@ struct BltParticles { // type 46
 
 void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
+	_mode.init(_game->getEngine());
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -166,8 +167,7 @@ void ActionPuzzle::enter() {
 
 	redraw();
 
-	// Kick-off the timer.
-	_game->getEngine()->startTimer(kCardTimer, kTickPeriod);
+	playMode();
 }
 
 void ActionPuzzle::redraw() {
@@ -183,36 +183,40 @@ void ActionPuzzle::redraw() {
 }
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltRsp cmd = _popup.handleMsg(msg);
-    if (cmd != BoltRsp::kPass) {
-        return cmd;
-    }
+	_mode.react(msg);
+	return kDone;
+}
 
-	switch (msg.type){
-	case BoltMsg::kPopupButtonClick:
-		return handlePopupButtonClick(msg.num);
-	case BoltMsg::kClick:
-		return handleClick(msg.point);
-	case BoltMsg::kAddTicks:
-		_game->getEngine()->addTicks(kCardTimer, msg.num);
-		break;
-	case BoltMsg::kTimer: {
-		if (msg.num != kCardTimer) {
-			return kPass;
+void ActionPuzzle::playMode() {
+	_mode.transition();
+	_mode.onEnter([=]() {
+		_mode.startTimer(0, kTickPeriod, true);
+	});
+	_mode.onMsg([this](const BoltMsg &msg) {
+		_popup.handleMsg(msg);
+		if (_popup.isActive()) {
+			_mode._timers[0].active = false;
+			return;
 		}
+		else {
+			_mode._timers[0].active = true;
+		}
+
+		switch (msg.type) {
+		case BoltMsg::kPopupButtonClick:
+			handlePopupButtonClick(msg.num);
+		case BoltMsg::kClick:
+			handleClick(msg.point);
+		}
+	});
+	_mode.onTimer(0, [this]() {
+		_mode._timers[0].ticks -= kTickPeriod;
 
 		tick();
 		if (_goalNum >= _goals.size()) {
-			return win();
+			win();
 		}
-
-		_game->getEngine()->armTimer(kCardTimer, kTickPeriod);
-		_game->getEngine()->removeTicks(kCardTimer, kTickPeriod);
-		break;
-	}
-	}
-
-	return BoltRsp::kDone;
+	});
 }
 
 BoltRsp ActionPuzzle::handlePopupButtonClick(int num) {

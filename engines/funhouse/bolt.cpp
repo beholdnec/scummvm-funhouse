@@ -233,6 +233,12 @@ void DynamicMode::react(const BoltMsg& msg) {
 			}
 			_entered = true;
 		}
+		else if (msg.type == BoltMsg::kAddTicks && _msgFn && !msgSent) {
+			// Before processing timers, send kAddTicks to the card's message handler
+			done = false;
+			_msgFn(msg);
+			msgSent = true;
+		}
 		else if (msg.type == BoltMsg::kAddTicks) {
 			if (!ticksAdded) {
 				// Update all timers

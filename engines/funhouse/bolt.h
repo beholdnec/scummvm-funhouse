@@ -173,9 +173,6 @@ private:
 };
 
 enum TimerId {
-	kMovieTimer,
-	kCardTimer,
-	kCardTimer1,
 	kColorCycle0,
 	kMaxColorCycle = kColorCycle0 + 4,
 

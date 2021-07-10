@@ -70,6 +70,7 @@ private:
 	BoltRsp handlePopupButtonClick(int num);
 	BoltRsp handleButtonClick(int num);
 
+	void idleMode();
     BoltRsp driveTransition();
     BoltRsp driveMorph();
 	void selectPiece(int piece);
@@ -80,16 +81,15 @@ private:
 
     MerlinGame *_game;
     PopupMenu _popup;
+	DynamicMode _mode;
 	Scene _scene;
 	ScopedArray<BltSoundList> _soundLists;
 
 	Piece _pieces[kNumPieces];
 
-    bool _transitionActive;
     int _selectedPiece;
     int _transitionStep;
 
-    bool _morphActive = false;
 	int32 _morphTimer = 0;
 	BltPaletteMods *_morphPaletteMods;
 	int _morphStartState;

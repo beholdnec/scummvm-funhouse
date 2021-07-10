@@ -63,6 +63,7 @@ public:
 	void setTriggerCallback(TriggerCallback callback, void *param);
 
 private:
+	void playMode();
 	void stopAudio();
 	bool isAudioRunning() const;
 
@@ -74,6 +75,8 @@ private:
 
 	bool _parserActive = false; // Set to false when final packet is found
 	bool _timelineActive = false; // Set to false when timeline is finished
+
+	DynamicMode _mode;
 
 	// PACKET STREAMING
 

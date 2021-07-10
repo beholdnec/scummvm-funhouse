@@ -38,6 +38,7 @@ class PopupMenu {
 public:
     void init(MerlinGame *game, Boltlib &boltlib, BltId id);
 
+    bool isActive() const;
 	void dismiss();
     BoltRsp handleMsg(const BoltMsg &msg);
 
@@ -55,7 +56,7 @@ private:
 
     MerlinGame *_game;
 
-    bool _active;
+    bool _active = false;
     BltImage _bgImage;
     BltPalette _palette;
     ButtonList _buttons;

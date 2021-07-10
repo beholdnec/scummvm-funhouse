@@ -132,6 +132,10 @@ BoltRsp PopupMenu::handleButtonClick(int num) {
     return BoltRsp::kDone;
 }
 
+bool PopupMenu::isActive() const {
+    return _active;
+}
+
 void PopupMenu::activate() {
     _active = true;
 

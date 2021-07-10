@@ -27,9 +27,8 @@ namespace Funhouse {
 
 void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     _game = game;
+    _mode.init(_game->getEngine());
 	_morphPaletteMods = nullptr;
-    _transitionActive = false;
-    _morphActive = false;
 
     uint16 resId = 0;
     switch (challengeIdx) {
@@ -105,28 +104,13 @@ void ColorPuzzle::enter() {
 	for (int i = 0; i < kNumPieces; ++i) {
 		setPieceState(i, _pieces[i].state); // Update display
 	}
+
+    idleMode();
 }
 
 BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
-    if (_morphActive) {
-        return driveMorph();
-    } else if (_transitionActive) {
-        return driveTransition();
-    }
-
-    BoltRsp cmd = _popup.handleMsg(msg);
-    if (cmd != BoltRsp::kPass) {
-        return cmd;
-    }
-
-	switch (msg.type) {
-	case BoltMsg::kPopupButtonClick:
-		return handlePopupButtonClick(msg.num);
-	case Scene::kClickButton:
-		return handleButtonClick(msg.num);
-	default:
-		return _scene.handleMsg(msg);
-	}
+    _mode.react(msg);
+    return kDone;
 }
 
 BoltRsp ColorPuzzle::handlePopupButtonClick(int num) {
@@ -155,9 +139,26 @@ BoltRsp ColorPuzzle::handleButtonClick(int num) {
 	return BoltRsp::kDone;
 }
 
-BoltRsp ColorPuzzle::driveTransition() {
-    assert(_transitionActive);
+void ColorPuzzle::idleMode() {
+    _mode.transition();
+    _mode.onMsg([this](const BoltMsg& msg) {
+        BoltRsp cmd = _popup.handleMsg(msg);
+        if (cmd != BoltRsp::kPass) {
+            return cmd;
+        }
 
+        switch (msg.type) {
+        case BoltMsg::kPopupButtonClick:
+            return handlePopupButtonClick(msg.num);
+        case Scene::kClickButton:
+            return handleButtonClick(msg.num);
+        default:
+            return _scene.handleMsg(msg);
+        }
+    });
+}
+
+BoltRsp ColorPuzzle::driveTransition() {
     if (_transitionStep < kNumTransitionSteps) {
         int pieceNum = _pieces[_selectedPiece].transition.piece[_transitionStep];
         int count = _pieces[_selectedPiece].transition.count[_transitionStep];
@@ -178,14 +179,12 @@ BoltRsp ColorPuzzle::driveTransition() {
         return BoltRsp::kDone;
     }
 
-    _transitionActive = false;
+    idleMode();
     _game->getEngine()->setNextMsg(BoltMsg::kDrive);
     return BoltRsp::kDone;
 }
 
 BoltRsp ColorPuzzle::driveMorph() {
-    assert(_morphActive);
-
     if (_morphTimer < kMorphDuration) {
         applyPaletteModBlended(_game->getGraphics(), kFore, *_morphPaletteMods,
             _morphStartState, _morphEndState,
@@ -198,15 +197,15 @@ BoltRsp ColorPuzzle::driveMorph() {
     applyPaletteMod(_game->getGraphics(), kFore, *_morphPaletteMods, _morphEndState);
     _game->getGraphics()->markDirty();
     _morphPaletteMods = nullptr;
-    _morphActive = false;
-    _game->getEngine()->setNextMsg(BoltMsg::kDrive);
+    idleMode();
+    driveTransition();
     return BoltRsp::kDone;
 }
 
 void ColorPuzzle::selectPiece(int piece) {
     _selectedPiece = piece;
     _transitionStep = 0;
-    _transitionActive = true;
+    driveTransition();
 }
 
 void ColorPuzzle::setPieceState(int piece, int state) {
@@ -227,7 +226,22 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 	_morphPaletteMods = paletteMods;
 	_morphStartState = startState;
 	_morphEndState = endState;
-    _morphActive = true;
+
+    _mode.transition();
+    _mode.onEnter([this]() {
+        _mode.startTimer(0, 0, false);
+        _morphTimer = 0;
+        _game->getEngine()->requestSmoothAnimation();
+    });
+    _mode.onMsg([this](const BoltMsg& msg) {
+        switch (msg.type) {
+        case BoltMsg::kSmoothAnimation:
+            _morphTimer = _mode._timers[0].ticks;
+            driveMorph();
+            _game->getEngine()->requestSmoothAnimation();
+            break;
+        }
+    });
 }
 
 bool ColorPuzzle::isSolved() const {

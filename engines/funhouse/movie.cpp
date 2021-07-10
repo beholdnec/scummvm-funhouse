@@ -53,6 +53,7 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 		(name >> 24) & 0xff, (name >> 16) & 0xff, (name >> 8) & 0xff, name & 0xff);
 
 	_engine = engine;
+	_mode.init(_engine);
 
 	stop();
 
@@ -69,10 +70,6 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 
 	// Timeline should be the first packet
 	startTimeline(fetchBuffer(_timelineQueue));
-
-	// Kick-off the movie timer.
-	// TODO: Compensate for the time taken to initialize & load movie data.
-	_engine->startTimer(kMovieTimer, _framePeriod);
 
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
@@ -130,51 +127,54 @@ bool Movie::isRunning() const {
 }
 
 BoltRsp Movie::handleMsg(const BoltMsg &msg) {
-	bool handled = false;
-	switch (msg.type) {
-	case BoltMsg::kSmoothAnimation:
-		// Fades have smooth animation; they have a higher frame rate than movie cels.
-		driveFade();
-		handled = true;
-		break;
-
-	case BoltMsg::kAddTicks:
-		_engine->addTicks(kMovieTimer, msg.num);
-		if (_fadeDirection != 0) {
-			_fadeTimer += msg.num;
-		}
-		handled = true;
-		break;
-
-	case BoltMsg::kTimer:
-		if (msg.num == kMovieTimer) {
-			driveAudio();
-			driveFade(); // TODO: use accurate time
-			stepTimeline();
-			if (isRunning()) {
-				// Set up movie timer to send a message for the next frame
-				// FIXME: prevent frame skipping. If multiple frames have elapsed since
-				// the last kTimer event (perhaps due to excessive load times), the
-				// timers will pile up and prevent yielding.
-				_engine->armTimer(kMovieTimer, _framePeriod);
-				_engine->removeTicks(kMovieTimer, _framePeriod);
-			}
-			handled = true;
-		}
-		break;
-	}
-
-	if (handled && _fadeDirection != 0) {
-		// Request smooth animation when fading
-		_engine->requestSmoothAnimation();
-	}
-
-	return BoltRsp::kDone;
+	_mode.react(msg);
+	return kDone;
 }
 
 void Movie::setTriggerCallback(TriggerCallback callback, void *param) {
 	_triggerCallback = callback;
 	_triggerCallbackParam = param;
+}
+
+void Movie::playMode() {
+	_mode.transition();
+	_mode.onEnter([this]() {
+		_mode.startTimer(0, _framePeriod, true);
+	});
+	_mode.onMsg([this](const BoltMsg &msg) {
+		bool handled = false;
+		switch (msg.type) {
+		case BoltMsg::kSmoothAnimation:
+			// Fades have smooth animation; they have a higher frame rate than movie cels.
+			driveFade();
+			handled = true;
+			break;
+
+		case BoltMsg::kAddTicks:
+			if (_fadeDirection != 0) {
+				_fadeTimer += msg.num;
+			}
+			handled = true;
+			break;
+		}
+
+		if (handled && _fadeDirection != 0) {
+			// Request smooth animation when fading
+			_engine->requestSmoothAnimation();
+		}
+	});
+	_mode.onTimer(0, [this]() {
+		_mode._timers[0].ticks -= _framePeriod;
+
+		driveAudio();
+		driveFade(); // TODO: use accurate time
+		stepTimeline();
+
+		if (_fadeDirection != 0) {
+			// Request smooth animation when fading
+			_engine->requestSmoothAnimation();
+		}
+	});
 }
 
 void Movie::loadAudio() {
@@ -232,6 +232,8 @@ void Movie::startTimeline(ScopedBuffer::Movable buf) {
 	_curTimelineCmdNum = 0;
 	_lastTimelineCmdFrame = _curFrameNum;
 	loadTimelineCommand();
+
+	playMode();
 
 	stepTimeline();
 }

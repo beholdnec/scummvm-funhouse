@@ -157,7 +157,9 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 void PotionPuzzle::enter() {
 	draw();
-	evaluate();
+	if (!_game->isInMovie()) {
+		evaluate();
+	}
 }
 
 BoltRsp PotionPuzzle::handleMsg(const BoltMsg &msg) {
