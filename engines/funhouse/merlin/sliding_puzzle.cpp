@@ -136,6 +136,9 @@ BoltRsp SlidingPuzzle::handlePopupButtonClick(int num) {
 	case 0: // Return
         _game->branchReturn();
 		return BoltRsp::kDone;
+	case 1: // Difficulties
+		_game->branchDifficultyMenu();
+		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
 		return BoltRsp::kDone;

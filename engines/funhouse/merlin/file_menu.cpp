@@ -89,7 +89,7 @@ BoltRsp FileMenu::handleButtonClick(int num) {
         }
     }
 
-	if (num >= kFirstFileButton && num < kFirstFileButton + MerlinGame::kNumFiles) {
+	if (num >= kFirstFileButton && num < kFirstFileButton + kProfileCount) {
 		_game->selectProfile(num - kFirstFileButton);
 		setButtons();
 		return BoltRsp::kDone;
@@ -115,7 +115,7 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 }
 
 void FileMenu::setButtons() {
-	for (int i = 0; i < MerlinGame::kNumFiles; ++i) {
+	for (int i = 0; i < kProfileCount; ++i) {
 		_scene.getButton(kFirstFileButton + i).setGraphics(i == _game->getProfile() ? 1 : 0);
 	}
 

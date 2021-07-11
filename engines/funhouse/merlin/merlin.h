@@ -77,6 +77,8 @@ public:
 	void branchReturn();
 	void branchWin();
 	void branchLoadProfile();
+	void branchGamePieces();
+	void branchDifficultyMenu();
 
 	bool doesProfileExist(int idx) const;
 	int getProfile() const;
@@ -93,10 +95,14 @@ public:
 	bool getCheatMode() const;
 	void setCheatMode(bool enable);
 
-	static const int kNumFiles = 12;
+	static const int kInitialScriptCursor;
+	static const int kNewGameScriptCursor;
+	static const int kGamePiecesScriptCursor;
+	static const int kDifficultyScriptCursor;
 
 private:
 	friend class MovieCard;
+	friend class SaveManager;
 
 	struct ScriptEntry;
 	typedef void (MerlinGame::*ScriptFunc)(const ScriptEntry *entry);
@@ -148,8 +154,6 @@ private:
 	void setActiveCard(Card *card);
 	void enterActiveCard(bool cursorActive);
 
-	// Number of current file. -1 if no file is selected.
-	int _fileNum = -1;
 	bool _cheatMode = false;
 
 	// Difficulty levels:
@@ -161,12 +165,10 @@ private:
 
 	void runScript();
 	
-	static const int kInitialScriptCursor;
-	static const int kNewGameScriptCursor;
 	int _scriptCursor = 0;
+	int _scriptReturnCursor = 0;
 	int _nextScriptCursor = 0;
 	int _prevScriptCursor = 0;
-	int _returnScriptCursor = 0;
 
 	BltId _popupResIds[kNumPopupTypes];
 };

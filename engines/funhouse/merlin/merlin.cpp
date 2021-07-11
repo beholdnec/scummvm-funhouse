@@ -63,9 +63,8 @@ static const uint16 kPopupCatalogId = 0x0A04;
 void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mixer) {
 	_system = system;
 	_engine = engine;
-	_fileNum = -1;
 	_cheatMode = false;
-	_saveMan.init();
+	_saveMan.init(this);
 	for (int i = 0; i < kNumDifficultyCategories; ++i) {
 		// FIXME: Set all difficulties to -1: not set
 		// _difficulties[i] = -1;
@@ -171,15 +170,15 @@ void MerlinGame::startPotionMovie(int num) {
 }
 
 bool MerlinGame::doesProfileExist(int idx) const {
-	return false; // TODO: load from save file
+	return _saveMan.getProfileStatus(idx);
 }
 
 int MerlinGame::getProfile() const {
-	return _fileNum;
+	return _saveMan.getProfileIdx();
 }
 
 void MerlinGame::selectProfile(int idx) {
-	_fileNum = idx;
+	_saveMan.setProfileIdx(idx);
 }
 
 BltId MerlinGame::getPopupResId(PopupType type) {
@@ -342,7 +341,7 @@ void MerlinGame::branchScript(int idx, bool absolute) {
 }
 
 void MerlinGame::branchReturn() {
-	_nextScriptCursor = _returnScriptCursor;
+	_nextScriptCursor = _scriptReturnCursor;
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
@@ -353,8 +352,19 @@ void MerlinGame::branchWin() {
 }
 
 void MerlinGame::branchLoadProfile() {
-	// TODO: load profile from file
-	_nextScriptCursor = kNewGameScriptCursor;
+	const ProfileData &profile = _saveMan.getProfile();
+	_nextScriptCursor = profile.scriptCursor;
+	_scriptReturnCursor = profile.scriptReturnCursor;
+	_engine->setNextMsg(BoltMsg::kDrive);
+}
+
+void MerlinGame::branchGamePieces() {
+	_nextScriptCursor = kGamePiecesScriptCursor;
+	_engine->setNextMsg(BoltMsg::kDrive);
+}
+
+void MerlinGame::branchDifficultyMenu() {
+	_nextScriptCursor = kDifficultyScriptCursor;
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
@@ -423,6 +433,9 @@ bool MerlinGame::isPuzzleSolved(int idx) const {
 }
 
 void MerlinGame::scriptHub(const ScriptEntry* entry) {
+	_scriptReturnCursor = _scriptCursor;
+	_saveMan.save();
+
 	_activeCard.reset();
 
 	uint16 sceneId = entry->param;
@@ -442,7 +455,9 @@ void MerlinGame::scriptFreeplay(const ScriptEntry* entry) {
 
 template<class T>
 void MerlinGame::scriptPuzzle(const ScriptEntry* entry) {
-	_returnScriptCursor = _prevScriptCursor;
+	// FIXME: don't save in freeplay mode
+	_saveMan.save();
+
 	_activeCard.reset();
 
 	int challengeIdx = entry->param;
@@ -526,7 +541,9 @@ static const uint16 kPotionPuzzle1 = 0x940C;
 static const uint16 kPotionPuzzle2 = 0x980C;
 static const uint16 kPotionPuzzle3 = 0x9C0E;
 
-const int MerlinGame::kInitialScriptCursor = 0; // XXX: start in freeplay mode; TODO: should be 0
+const int MerlinGame::kInitialScriptCursor = 0;
+const int MerlinGame::kGamePiecesScriptCursor = 6;
+const int MerlinGame::kDifficultyScriptCursor = 7;
 const int MerlinGame::kNewGameScriptCursor = 11;
 
 const MerlinGame::ScriptEntry

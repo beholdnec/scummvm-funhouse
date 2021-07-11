@@ -21,21 +21,49 @@
  */
 
 #include "funhouse/merlin/save.h"
+#include "funhouse/merlin/merlin.h"
 
 namespace Funhouse {
 
-void SaveManager::init()
-{
+void SaveManager::init(MerlinGame *game) {
+    _game = game;
 }
 
-void SaveManager::loadProfile(int idx)
-{
-	gProfileIdx = idx;
+bool SaveManager::getProfileStatus(int idx) const {
+    return _profileStatus[idx];
 }
 
-void SaveManager::save()
-{
-	// TODO
+int SaveManager::getProfileIdx() const {
+    return _profileIdx;
+}
+
+void SaveManager::setProfileIdx(int idx) {
+    _profileIdx = idx;
+}
+
+ProfileData& SaveManager::getProfile() {
+    assert(_profileIdx >= 0 && _profileIdx < kProfileCount);
+
+    if (!_profileStatus[_profileIdx]) {
+        // Create a new profile
+        _profiles[_profileIdx] = {};
+        _profiles[_profileIdx].scriptCursor = MerlinGame::kNewGameScriptCursor;
+        _profiles[_profileIdx].scriptReturnCursor = MerlinGame::kNewGameScriptCursor;
+
+        _profileStatus[_profileIdx] = true;
+    }
+
+    return _profiles[_profileIdx];
+}
+
+void SaveManager::save() {
+    // TODO
+    assert(_profileIdx >= 0 && _profileIdx < kProfileCount);
+
+    getProfile().scriptCursor = _game->_scriptCursor;
+    getProfile().scriptReturnCursor = _game->_scriptReturnCursor;
+
+    warning("Save not implemented");
 }
 
 } // end of namespace Funhouse

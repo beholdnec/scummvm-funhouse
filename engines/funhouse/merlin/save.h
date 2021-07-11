@@ -23,27 +23,41 @@
 #ifndef FUNHOUSE_MERLIN_SAVE_H
 #define FUNHOUSE_MERLIN_SAVE_H
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
+
 #include "common/array.h"
 
 namespace Funhouse
 {
 
+class MerlinGame;
+
+static const int kProfileCount = 12;
+
+struct ProfileData
+{
+	int scriptCursor = 0;
+	int scriptReturnCursor = 0;
+	Common::Array<int> difficulties;
+	Common::Array<int> challengeStatuses;
+	Common::Array<int> puzzleVariants;
+};
+
 class SaveManager
 {
 public:
-	void init();
-	void loadProfile(int idx);
+	void init(MerlinGame *game);
+	bool getProfileStatus(int idx) const;
+	int getProfileIdx() const;
+	void setProfileIdx(int idx);
+	ProfileData &getProfile();
 	void save();
 
 private:
-	int gProfileIdx = -1; // -1: No profile loaded
-
-	// Data for current profile
-	int scriptCursor;
-	int scriptReturnCursor;
-	Common::Array<int> difficulties;
-	Common::Array<bool> challengeStatuses;
-	Common::Array<int> puzzleVariants;
+	MerlinGame *_game = nullptr;
+	int _profileIdx = -1; // -1: No profile loaded
+	bool _profileStatus[kProfileCount] = {};
+	ProfileData _profiles[kProfileCount];
 };
 
 } // end of namespace Funhouse

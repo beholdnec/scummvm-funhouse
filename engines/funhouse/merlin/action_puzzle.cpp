@@ -226,10 +226,13 @@ BoltRsp ActionPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
         _game->branchReturn();
-		return BoltRsp::kDone;
+		return kDone;
+	case 1: // Difficulty
+		_game->branchDifficultyMenu();
+		return kDone;
 	default:
 		warning("Unhandled popup button %d", num);
-		return BoltRsp::kDone;
+		return kDone;
 	}
 }
 

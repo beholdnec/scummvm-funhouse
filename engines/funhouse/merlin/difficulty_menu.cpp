@@ -62,6 +62,9 @@ BoltRsp DifficultyMenu::handleButtonClick(int num) {
 	switch (num) {
 	case -1: // No button
 		return BoltRsp::kDone;
+	case 1: // Game Pieces
+		_game->branchScript(1);
+		return BoltRsp::kDone;
 	case kPlayButton: // Play
 		if (isReadyToPlay()) {
 			_game->branchLoadProfile();
