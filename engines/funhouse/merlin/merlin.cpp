@@ -337,6 +337,11 @@ void MerlinGame::branchScript(int idx, bool absolute) {
 	} else {
 		_nextScriptCursor = kScript[_scriptCursor].branchTable[idx];
 	}
+
+	if (_nextScriptCursor == -1) {
+		branchLoadProfile();
+	}
+
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
@@ -428,10 +433,6 @@ void MerlinGame::scriptMenu(const ScriptEntry* entry) {
 	}
 }
 
-bool MerlinGame::isPuzzleSolved(int idx) const {
-	return false; // TODO
-}
-
 void MerlinGame::scriptHub(const ScriptEntry* entry) {
 	_scriptReturnCursor = _scriptCursor;
 	_saveMan.save();
@@ -445,6 +446,8 @@ void MerlinGame::scriptHub(const ScriptEntry* entry) {
 }
 
 void MerlinGame::scriptFreeplay(const ScriptEntry* entry) {
+	_scriptReturnCursor = _scriptCursor;
+
 	_activeCard.reset();
 
 	uint16 sceneId = entry->param;

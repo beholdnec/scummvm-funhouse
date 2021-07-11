@@ -57,7 +57,11 @@ ProfileData& SaveManager::getProfile() {
 }
 
 void SaveManager::save() {
-    // TODO
+    if (_profileIdx == -1) {
+        // No profile is active; abort
+        return;
+    }
+
     assert(_profileIdx >= 0 && _profileIdx < kProfileCount);
 
     getProfile().scriptCursor = _game->_scriptCursor;

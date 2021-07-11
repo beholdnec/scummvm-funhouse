@@ -100,7 +100,7 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 		case 1: // Play
 			if (_game->getProfile() != -1) {
 				if (_game->doesProfileExist(_game->getProfile())) {
-					_game->branchLoadProfile();
+					_game->branchScript(1);
 				}
 				else {
 					_game->branchScript(2); // Difficulty menu

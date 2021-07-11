@@ -71,12 +71,10 @@ public:
 	void startMAMovie(uint32 name);
 	void startPotionMovie(int num);
 	BltId getPopupResId(PopupType type);
-	bool isPuzzleSolved(int num) const;
 
 	void branchScript(int idx, bool absolute = false);
 	void branchReturn();
 	void branchWin();
-	void branchLoadProfile();
 	void branchGamePieces();
 	void branchDifficultyMenu();
 
@@ -135,6 +133,7 @@ private:
 
 	BoltRsp handleMsgInMovie(const BoltMsg &msg);
 	BoltRsp handleMsgInCard(const BoltMsg &msg);
+	void branchLoadProfile();
 
 	OSystem *_system;
 	FunhouseEngine *_engine;
