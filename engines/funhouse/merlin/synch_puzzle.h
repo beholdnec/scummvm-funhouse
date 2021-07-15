@@ -77,8 +77,6 @@ private:
     bool isSolved() const;
 
     MerlinGame *_game;
-
-    PopupMenu _popup;
 	Scene _scene;
     DynamicMode _mode;
     std::function<void()> _timeoutThen;

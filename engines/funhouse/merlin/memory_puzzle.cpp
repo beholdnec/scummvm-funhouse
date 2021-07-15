@@ -96,7 +96,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     default: assert(false); break;
     }
 
-    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
+    _game->setPopup(MerlinGame::kPuzzlePopup);
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
@@ -266,7 +266,7 @@ void MemoryPuzzle::idle() {
             return BoltRsp::kDone;
         }
 
-        if ((cmd = _popup.handleMsg(msg)) != BoltRsp::kPass) {
+        if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
             return cmd;
         }
 

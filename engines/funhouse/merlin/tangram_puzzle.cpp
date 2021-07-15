@@ -54,7 +54,7 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	default: assert(false); break;
 	}
 
-    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
+	_game->setPopup(MerlinGame::kPuzzlePopup);
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));

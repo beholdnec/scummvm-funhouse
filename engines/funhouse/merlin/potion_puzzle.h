@@ -81,7 +81,6 @@ private:
 	static const int kNumBowlPoints = 3;
 
 	MerlinGame *_game;
-	PopupMenu _popup;
 	DynamicMode _mode;
 	BltImage _bgImage;
 	BltPalette _bgPalette;

@@ -28,6 +28,7 @@
 #include "funhouse/bolt.h"
 #include "funhouse/movie.h"
 #include "funhouse/merlin/save.h"
+#include "funhouse/merlin/popup_menu.h"
 
 namespace Funhouse {
 	
@@ -70,7 +71,6 @@ public:
 	bool isInMovie() const;
 	void startMAMovie(uint32 name);
 	void startPotionMovie(int num);
-	BltId getPopupResId(PopupType type);
 
 	void branchScript(int idx, bool absolute = false);
 	void branchReturn();
@@ -81,6 +81,11 @@ public:
 	bool doesProfileExist(int idx) const;
 	int getProfile() const;
 	void selectProfile(int idx);
+
+	void setPopup(PopupType type);
+	PopupMenu &getPopup();
+	BoltRsp handlePopup(const BoltMsg &msg);
+	void dismissPopup();
 
 	int getDifficulty(DifficultyCategory category) const;
 	void setDifficulty(DifficultyCategory category, int level);
@@ -138,6 +143,7 @@ private:
 	OSystem *_system;
 	FunhouseEngine *_engine;
 	SaveManager _saveMan;
+	PopupMenu _popup;
 
 	Boltlib _boltlib;
 	PfFile _maPf;

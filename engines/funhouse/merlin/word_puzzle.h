@@ -53,7 +53,6 @@ private:
 	bool isSolved();
 
     MerlinGame *_game;
-    PopupMenu _popup;
 	Scene _scene;
 	BltSoundList _resetSound;
 

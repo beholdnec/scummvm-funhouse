@@ -101,7 +101,7 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	default: assert(false); break;
 	}
 
-	_popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPotionPuzzlePopup));
+	_game->setPopup(MerlinGame::kPotionPuzzlePopup);
 
 	BltPotionPuzzleInfo puzzle;
 	BltU16Values difficultyIds;
@@ -177,7 +177,7 @@ void PotionPuzzle::idle() {
 BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
 	BoltRsp cmd;
 
-	if ((cmd = _popup.handleMsg(msg)) != BoltRsp::kPass) {
+	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
 		return cmd;
 	}
 

@@ -81,7 +81,6 @@ private:
 
     MerlinGame *_game;
 	Scene _scene;
-    PopupMenu _popup;
 	ItemList _itemList;
     int _finalGoal;
     uint16 _foo; // Parameter used to determine puzzle variant? Also used to override animation timing!

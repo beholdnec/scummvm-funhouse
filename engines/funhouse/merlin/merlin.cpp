@@ -181,8 +181,20 @@ void MerlinGame::selectProfile(int idx) {
 	_saveMan.setProfileIdx(idx);
 }
 
-BltId MerlinGame::getPopupResId(PopupType type) {
-	return _popupResIds[type];
+void MerlinGame::setPopup(PopupType type) {
+	_popup.init(this, _boltlib, _popupResIds[type]);
+}
+
+PopupMenu& MerlinGame::getPopup() {
+	return _popup;
+}
+
+BoltRsp MerlinGame::handlePopup(const BoltMsg& msg) {
+	return _popup.handleMsg(msg);
+}
+
+void MerlinGame::dismissPopup() {
+	_popup.dismiss();
 }
 
 void MerlinGame::initCursor() {

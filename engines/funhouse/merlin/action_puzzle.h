@@ -64,7 +64,6 @@ protected:
 	BoltRsp win();
 
     MerlinGame *_game;
-    PopupMenu _popup;
 	DynamicMode _mode;
 	BltImage _bgImage;
 	BltPalette _backPalette;

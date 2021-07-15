@@ -47,7 +47,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
     default: assert(false); break;
     }
 
-    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
+    _game->setPopup(MerlinGame::kPuzzlePopup);
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
@@ -157,7 +157,7 @@ void SynchPuzzle::idle() {
     _mode.onEnter([]() {
     });
     _mode.onMsg([this](const BoltMsg& msg) {
-        BoltRsp cmd = _popup.handleMsg(msg);
+        BoltRsp cmd = _game->handlePopup(msg);
         if (cmd != BoltRsp::kPass) {
             return cmd;
         }

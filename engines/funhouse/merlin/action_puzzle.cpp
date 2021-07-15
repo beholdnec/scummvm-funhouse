@@ -68,7 +68,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	default: assert(false); break;
 	}
 
-    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
+	_game->setPopup(MerlinGame::kPuzzlePopup);
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
@@ -198,8 +198,8 @@ void ActionPuzzle::playMode() {
 			return;
 		}
 
-		_popup.handleMsg(msg);
-		if (_popup.isActive()) {
+		_game->handlePopup(msg);
+		if (_game->getPopup().isActive()) {
 			_mode._timers[0].active = false;
 			return;
 		}

@@ -58,7 +58,7 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	default: assert(false); break;
 	}
 
-    _popup.init(_game, boltlib, _game->getPopupResId(MerlinGame::kPuzzlePopup));
+	_game->setPopup(MerlinGame::kPuzzlePopup);
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
@@ -107,7 +107,7 @@ void SlidingPuzzle::enter() {
 }
 
 BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltRsp cmd = _popup.handleMsg(msg);
+    BoltRsp cmd = _game->handlePopup(msg);
     if (cmd != BoltRsp::kPass) {
         return cmd;
     }

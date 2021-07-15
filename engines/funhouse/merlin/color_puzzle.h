@@ -80,7 +80,6 @@ private:
     bool isSolved() const;
 
     MerlinGame *_game;
-    PopupMenu _popup;
 	DynamicMode _mode;
 	Scene _scene;
 	ScopedArray<BltSoundList> _soundLists;

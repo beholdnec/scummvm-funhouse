@@ -41,7 +41,6 @@ private:
     BoltRsp handleButtonClick(int num);
 
     MerlinGame *_game;
-    PopupMenu _popup;
 	Scene _scene;
 
     static const int kNumButtons = 4;
