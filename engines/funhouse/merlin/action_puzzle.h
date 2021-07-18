@@ -65,6 +65,7 @@ protected:
 
     MerlinGame *_game;
 	DynamicMode _mode;
+	Timer _timer;
 	BltImage _bgImage;
 	BltPalette _backPalette;
 	BltPalette _forePalette;

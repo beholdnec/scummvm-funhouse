@@ -196,9 +196,9 @@ void SynchPuzzle::idle() {
 void SynchPuzzle::setTimeout(int32 delay, std::function<void()> then) {
     _mode.transition();
     _mode.onEnter([this, delay]() {
-        _mode.startTimer(0, delay, true);
+        _timer.start(delay, true);
     });
-    _mode.onTimer(0, [this]() {
+    _mode.onTimer(&_timer, [this]() {
         _timeoutThen();
     });
     _timeoutThen = then;

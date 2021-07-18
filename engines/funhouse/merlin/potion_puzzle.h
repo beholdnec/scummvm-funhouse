@@ -82,6 +82,7 @@ private:
 
 	MerlinGame *_game;
 	DynamicMode _mode;
+	Timer _timer;
 	BltImage _bgImage;
 	BltPalette _bgPalette;
 	Common::Point _origin;

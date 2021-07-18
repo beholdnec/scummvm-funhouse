@@ -79,6 +79,7 @@ private:
     MerlinGame *_game;
 	Scene _scene;
     DynamicMode _mode;
+    Timer _timer;
     std::function<void()> _timeoutThen;
 
     ItemArray _items;

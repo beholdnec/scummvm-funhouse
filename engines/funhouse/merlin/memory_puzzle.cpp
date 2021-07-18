@@ -284,18 +284,18 @@ void MemoryPuzzle::idle() {
 void MemoryPuzzle::animPlaying() {
     _animMode.transition();
     _animMode.onEnter([this]() {
-        _animMode.startTimer(kFrameTimer, kFrameDelayMs, true);
-        _animMode.startTimer(kAnimTimer, _animSoundTime, false);
+        _frameTimer.start(kFrameDelayMs, true);
+        _animTimer.start(_animSoundTime, false);
     });
     _animMode.onMsg([](const BoltMsg& msg) {
     });
-    _animMode.onTimer(kFrameTimer, [this]() {
+    _animMode.onTimer(&_frameTimer, [this]() {
         const Item& item = _itemList[_animItem];
         const ItemFrame& frame = item.frames[_animFrame];
 
-        _animMode._timers[kFrameTimer].ticks -= kFrameDelayMs;
+        _frameTimer.ticks -= kFrameDelayMs;
 
-        if (_animMode._timers[kAnimTimer].ticks >= _animPlayTime) {
+        if (_animTimer.ticks >= _animPlayTime) {
             if (frame.delayFrames == -1) {
                 _animFrame++;
                 _animSubFrame = 0;
@@ -326,18 +326,17 @@ void MemoryPuzzle::animPlaying() {
             }
         }
     });
+    _animMode.onTimer(&_animTimer, nullptr);
 }
 
 void MemoryPuzzle::animWindingDown() {
     _animMode.transition();
     _animMode.onEnter([this]() {
-        _animMode.continueTimer(kFrameTimer, true);
-        _animMode.continueTimer(kAnimTimer, false);
     });
     _animMode.onMsg([](const BoltMsg& msg) {
     });
-    _animMode.onTimer(kFrameTimer, [this]() {
-        _animMode._timers[kFrameTimer].ticks -= kFrameDelayMs;
+    _animMode.onTimer(&_frameTimer, [this]() {
+        _frameTimer.ticks -= kFrameDelayMs;
 
         const Item& item = _itemList[_animItem];
 
@@ -362,17 +361,18 @@ void MemoryPuzzle::animWindingDown() {
             drawItemFrame(_animItem, _animFrame);
         }
     });
+    _animMode.onTimer(&_animTimer, nullptr);
 }
 
 void MemoryPuzzle::animStopping() {
     _animMode.transition();
     _animMode.onEnter([this]() {
-        _animMode.continueTimer(kAnimTimer, true);
+        _animTimer.armed = true;
     });
     _animMode.onMsg([](const BoltMsg& msg) {
     });
-    _animMode.onTimer(kAnimTimer, [this]() {
-        _animMode._timers[kAnimTimer].armed = false;
+    _animMode.onTimer(&_animTimer, [this]() {
+        _animTimer.armed = false;
         drawItemFrame(_animItem, -1);
         _animThen();
     });

@@ -89,7 +89,7 @@ private:
     int _selectedPiece;
     int _transitionStep;
 
-	int32 _morphTimer = 0;
+	Timer _morphTimer;
 	BltPaletteMods *_morphPaletteMods;
 	int _morphStartState;
 	int _morphEndState;

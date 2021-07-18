@@ -134,6 +134,15 @@ public:
 
 class FunhouseEngine;
 
+struct Timer {
+	bool active = false;
+	bool armed = false;
+	int32 ticks = 0;
+	int32 elapse = 0;
+
+	void start(int32 elapse, bool arm);
+};
+
 class Mode {
 public:
 	virtual ~Mode() { }
@@ -142,16 +151,6 @@ public:
 
 class DynamicMode : public Mode {
 public:
-	static const int kMaxTimers = 4;
-
-	struct Timer {
-		bool active = false;
-		bool armed = false;
-		int32 ticks = 0;
-		int32 elapse = 0;
-		std::function<void()> fn;
-	};
-
 	void init(FunhouseEngine* engine);
 
 	void react(const BoltMsg &msg) override;
@@ -159,17 +158,20 @@ public:
 	void transition();
 	void onEnter(std::function<void()> fn);
 	void onMsg(std::function<void(const BoltMsg &msg)> fn);
-	void onTimer(int timerId, std::function<void()> fn);
-	void startTimer(int timerId, int32 elapse, bool arm);
-	void continueTimer(int timerId, bool arm);
+	void onTimer(Timer *timer, std::function<void()> fn);
 
 	bool _entered = false;
-	Timer _timers[kMaxTimers];
 
 private:
+	struct TimerDefn {
+		Timer *timer;
+		std::function<void()> fn;
+	};
+
 	FunhouseEngine *_engine;
 	std::function<void()> _enterFn;
 	std::function<void(const BoltMsg &msg)> _msgFn;
+	Common::Array<TimerDefn> _timers;
 };
 
 enum TimerId {

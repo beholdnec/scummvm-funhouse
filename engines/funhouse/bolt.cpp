@@ -243,8 +243,8 @@ void DynamicMode::react(const BoltMsg& msg) {
 			if (!ticksAdded) {
 				// Update all timers
 				for (auto& timer : _timers) {
-					if (timer.active) {
-						timer.ticks += msg.num;
+					if (timer.timer->active) {
+						timer.timer->ticks += msg.num;
 					}
 				}
 				ticksAdded = true;
@@ -252,7 +252,7 @@ void DynamicMode::react(const BoltMsg& msg) {
 
 			// Continue processing timer handlers until no more timers are tripped
 			for (const auto& timer : _timers) {
-				if (timer.active && timer.armed && timer.ticks >= timer.elapse && timer.fn) {
+				if (timer.timer->active && timer.timer->armed && timer.timer->ticks >= timer.timer->elapse && timer.fn) {
 					done = false;
 					timer.fn();
 					break;
@@ -268,8 +268,8 @@ void DynamicMode::react(const BoltMsg& msg) {
 
 	// Request engine to wake up at the next timer
 	for (const auto& timer : _timers) {
-		if (timer.active && timer.armed && timer.ticks < timer.elapse) {
-			_engine->requestWakeup(timer.elapse - timer.ticks);
+		if (timer.timer->active && timer.timer->armed && timer.timer->ticks < timer.timer->elapse) {
+			_engine->requestWakeup(timer.timer->elapse - timer.timer->ticks);
 		}
 	}
 }
@@ -278,11 +278,7 @@ void DynamicMode::transition() {
 	_entered = false;
 	_enterFn = {};
 	_msgFn = {};
-	for (auto& t : _timers) {
-		t.active = false;
-		t.armed = false;
-		t.fn = {};
-	}
+	_timers = {};
 }
 
 void DynamicMode::onEnter(std::function<void()> fn) {
@@ -293,20 +289,15 @@ void DynamicMode::onMsg(std::function<void(const BoltMsg& msg)> fn) {
 	_msgFn = fn;
 }
 
-void DynamicMode::onTimer(int timerId, std::function<void()> fn) {
-	_timers[timerId].fn = fn;
+void DynamicMode::onTimer(Timer *timer, std::function<void()> fn) {
+	_timers.push_back({timer, fn});
 }
 
-void DynamicMode::startTimer(int timerId, int32 elapse, bool arm) {
-	_timers[timerId].active = true;
-	_timers[timerId].armed = arm;
-	_timers[timerId].ticks = 0;
-	_timers[timerId].elapse = elapse;
-}
-
-void DynamicMode::continueTimer(int timerId, bool arm) {
-	_timers[timerId].active = true;
-	_timers[timerId].armed = arm;
+void Timer::start(int32 elapse_, bool arm) {
+	active = true;
+	armed = arm;
+	ticks = 0;
+	elapse = elapse_;
 }
 
 } // End of namespace Funhouse

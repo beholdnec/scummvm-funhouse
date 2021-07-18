@@ -33,11 +33,6 @@
 
 namespace Funhouse {
 
-enum {
-    kFrameTimer = 0,
-    kAnimTimer = 1,
-};
-
 class MemoryPuzzle : public Card {
 public:
     MemoryPuzzle();
@@ -92,6 +87,8 @@ private:
     ScopedArray<int> _solution;
 
     DynamicMode _animMode;
+    Timer _frameTimer;
+    Timer _animTimer;
     std::function<void()> _animThen; // Function to call when anim is finished
     int _playbackStep = 0;
     int _animItem;

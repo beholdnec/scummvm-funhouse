@@ -77,6 +77,7 @@ private:
 	bool _timelineActive = false; // Set to false when timeline is finished
 
 	DynamicMode _mode;
+	Timer _frameTimer;
 
 	// PACKET STREAMING
 

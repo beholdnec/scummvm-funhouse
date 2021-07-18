@@ -190,7 +190,7 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 void ActionPuzzle::playMode() {
 	_mode.transition();
 	_mode.onEnter([=]() {
-		_mode.startTimer(0, kTickPeriod, true);
+		_timer.start(kTickPeriod, true);
 	});
 	_mode.onMsg([this](const BoltMsg &msg) {
 		if (msg.type == BoltMsg::kPopupButtonClick) {
@@ -200,11 +200,11 @@ void ActionPuzzle::playMode() {
 
 		_game->handlePopup(msg);
 		if (_game->getPopup().isActive()) {
-			_mode._timers[0].active = false;
+			_timer.active = false;
 			return;
 		}
 		else {
-			_mode._timers[0].active = true;
+			_timer.active = true;
 		}
 
 		switch (msg.type) {
@@ -212,8 +212,8 @@ void ActionPuzzle::playMode() {
 			handleClick(msg.point);
 		}
 	});
-	_mode.onTimer(0, [this]() {
-		_mode._timers[0].ticks -= kTickPeriod;
+	_mode.onTimer(&_timer, [this]() {
+		_timer.ticks -= kTickPeriod;
 
 		tick();
 		if (_goalNum >= _goals.size()) {

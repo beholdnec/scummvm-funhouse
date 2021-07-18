@@ -185,10 +185,10 @@ BoltRsp ColorPuzzle::driveTransition() {
 }
 
 BoltRsp ColorPuzzle::driveMorph() {
-    if (_morphTimer < kMorphDuration) {
+    if (_morphTimer.ticks < kMorphDuration) {
         applyPaletteModBlended(_game->getGraphics(), kFore, *_morphPaletteMods,
             _morphStartState, _morphEndState,
-            Common::Rational(_morphTimer, kMorphDuration));
+            Common::Rational(_morphTimer.ticks, kMorphDuration));
 
         _game->getGraphics()->markDirty();
         return BoltRsp::kDone;
@@ -229,19 +229,18 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 
     _mode.transition();
     _mode.onEnter([this]() {
-        _mode.startTimer(0, 0, false);
-        _morphTimer = 0;
+        _morphTimer.start(0, false);
         _game->getEngine()->requestSmoothAnimation();
     });
     _mode.onMsg([this](const BoltMsg& msg) {
         switch (msg.type) {
         case BoltMsg::kSmoothAnimation:
-            _morphTimer = _mode._timers[0].ticks;
             driveMorph();
             _game->getEngine()->requestSmoothAnimation();
             break;
         }
     });
+    _mode.onTimer(&_morphTimer, nullptr);
 }
 
 bool ColorPuzzle::isSolved() const {

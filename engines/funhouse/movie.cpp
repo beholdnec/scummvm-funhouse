@@ -139,7 +139,7 @@ void Movie::setTriggerCallback(TriggerCallback callback, void *param) {
 void Movie::playMode() {
 	_mode.transition();
 	_mode.onEnter([this]() {
-		_mode.startTimer(0, _framePeriod, true);
+		_frameTimer.start(_framePeriod, true);
 	});
 	_mode.onMsg([this](const BoltMsg &msg) {
 		bool handled = false;
@@ -163,8 +163,8 @@ void Movie::playMode() {
 			_engine->requestSmoothAnimation();
 		}
 	});
-	_mode.onTimer(0, [this]() {
-		_mode._timers[0].ticks -= _framePeriod;
+	_mode.onTimer(&_frameTimer, [this]() {
+		_frameTimer.ticks -= _framePeriod;
 
 		driveAudio();
 		driveFade(); // TODO: use accurate time
