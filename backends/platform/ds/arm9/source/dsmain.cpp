@@ -68,8 +68,9 @@
 // - Try discworld?
 
 
-#define FORBIDDEN_SYMBOL_ALLOW_ALL
-
+// Allow use of stuff in <nds.h>
+#define FORBIDDEN_SYMBOL_EXCEPTION_printf
+#define FORBIDDEN_SYMBOL_EXCEPTION_unistd_h
 
 
 #include <nds.h>
@@ -102,7 +103,7 @@
 #ifdef USE_PROFILER
 #include "profiler/cyg-profile.h"
 #endif
-#include "engine.h"
+#include "engines/engine.h"
 
 #include "backends/plugins/ds/ds-provider.h"
 #include "backends/fs/ds/ds-fs.h"
@@ -259,7 +260,8 @@ static SpriteEntry spritesMain[128];
 static int tweak;
 
 // Shake
-static int s_shakePos = 0;
+static int s_shakeXOffset = 0;
+static int s_shakeYOffset = 0;
 
 // Keyboard
 static bool keyboardEnable = false;
@@ -439,12 +441,12 @@ void playSound(const void *data, u32 length, bool loop, bool adpcm, int rate) {
 		soundControl.count = 0;
 	}
 
-	soundControl.data[soundControl.count].data = data;
-	soundControl.data[soundControl.count].len = length | (loop? 0x80000000: 0x00000000);
-	soundControl.data[soundControl.count].rate = rate;		// 367 samples per frame
-	soundControl.data[soundControl.count].pan = 64;
-	soundControl.data[soundControl.count].vol = 127;
-	soundControl.data[soundControl.count].format = adpcm? 2: 0;
+	soundControl.data[soundControl.count].data   = data;
+	soundControl.data[soundControl.count].len    = length | (loop ? 0x80000000 : 0x00000000);
+	soundControl.data[soundControl.count].rate   = rate; // 367 samples per frame
+	soundControl.data[soundControl.count].pan    = 64;
+	soundControl.data[soundControl.count].vol    = 127;
+	soundControl.data[soundControl.count].format = adpcm ? 2 : 0;
 
 	soundControl.count++;
 
@@ -573,7 +575,7 @@ void initGame() {
 		s_currentGame = &gameList[0];		// Default game
 
 		for (int r = 0; r < NUM_SUPPORTED_GAMES; r++) {
-			if (!stricmp(gameName, gameList[r].gameId)) {
+			if (!scumm_stricmp(gameName, gameList[r].gameId)) {
 				s_currentGame = &gameList[r];
 	//			consolePrintf("Game list num: %d\n", r);
 			}
@@ -640,7 +642,7 @@ void displayMode8Bit() {
 	displayModeIs8Bit = true;
 
 	if (isCpuScalerEnabled()) {
-		videoSetMode(MODE_5_2D | (consoleEnable? DISPLAY_BG0_ACTIVE: 0) | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D | DISPLAY_SPR_1D_BMP);
+		videoSetMode(MODE_5_2D | (consoleEnable ? DISPLAY_BG0_ACTIVE : 0) | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D | DISPLAY_SPR_1D_BMP);
 		videoSetModeSub(MODE_3_2D /*| DISPLAY_BG0_ACTIVE*/ | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D | DISPLAY_SPR_1D_BMP); //sub bg 0 will be used to print text
 
 		vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
@@ -659,7 +661,7 @@ void displayMode8Bit() {
 		BG3_YDY = (int) ((200.0f / 192.0f) * 256);
 
 	} else {
-		videoSetMode(MODE_5_2D | (consoleEnable? DISPLAY_BG0_ACTIVE: 0) | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D | DISPLAY_SPR_1D_BMP);
+		videoSetMode(MODE_5_2D | (consoleEnable ? DISPLAY_BG0_ACTIVE : 0) | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D | DISPLAY_SPR_1D_BMP);
 		videoSetModeSub(MODE_3_2D /*| DISPLAY_BG0_ACTIVE*/ | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D | DISPLAY_SPR_1D_BMP); //sub bg 0 will be used to print text
 
 		vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
@@ -690,7 +692,7 @@ void displayMode8Bit() {
 	consoleInit(NULL, 0, BgType_Text4bpp, BgSize_T_256x256, 2, 0, true, true);
 
 	// Set this again because consoleinit resets it
-	videoSetMode(MODE_5_2D | (consoleEnable? DISPLAY_BG0_ACTIVE: 0) | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D | DISPLAY_SPR_1D_BMP);
+	videoSetMode(MODE_5_2D | (consoleEnable ? DISPLAY_BG0_ACTIVE : 0) | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D | DISPLAY_SPR_1D_BMP);
 
 	// Move the cursor to the bottom of the screen using ANSI escape code
 	consolePrintf("\033[23;0f");
@@ -970,7 +972,7 @@ void displayMode16BitFlipBuffer() {
 		u16 *back = get16BitBackBuffer();
 
 //		highBuffer = !highBuffer;
-//		BG3_CR = BG_BMP16_512x256 |	BG_BMP_RAM(highBuffer? 1: 0);
+//		BG3_CR = BG_BMP16_512x256 |	BG_BMP_RAM(highBuffer ? 1 : 0);
 
 		if (isCpuScalerEnabled()) {
 			Rescale_320x256x1555_To_256x256x1555(BG_GFX, back, 512, 512);
@@ -1015,8 +1017,9 @@ void displayMode16BitFlipBuffer() {
 	#endif
 }
 
-void setShakePos(int shakePos) {
-	s_shakePos = shakePos;
+void setShakePos(int shakeXOffset, int shakeYOffset) {
+	s_shakeXOffset = shakeXOffset;
+	s_shakeYOffset = shakeYOffset;
 }
 
 
@@ -1805,13 +1808,13 @@ void triggerIcon(int imageNum) {
 
 
 void setIcon(int num, int x, int y, int imageNum, int flags, bool enable) {
-	sprites[num].attribute[0] = ATTR0_BMP | (enable? (y & 0xFF): 192) | (!enable? ATTR0_DISABLED: 0);
+	sprites[num].attribute[0] = ATTR0_BMP | (enable ? (y & 0xFF) : 192) | (!enable ? ATTR0_DISABLED : 0);
 	sprites[num].attribute[1] = ATTR1_SIZE_32 | (x & 0x1FF) | flags;
 	sprites[num].attribute[2] = ATTR2_ALPHA(1)| (imageNum * 16);
 }
 
 void setIconMain(int num, int x, int y, int imageNum, int flags, bool enable) {
-	spritesMain[num].attribute[0] = ATTR0_BMP | (y & 0xFF) | (!enable? ATTR0_DISABLED: 0);
+	spritesMain[num].attribute[0] = ATTR0_BMP | (y & 0xFF) | (!enable ? ATTR0_DISABLED : 0);
 	spritesMain[num].attribute[1] = ATTR1_SIZE_32 | (x & 0x1FF) | flags;
 	spritesMain[num].attribute[2] = ATTR2_ALPHA(1)| (imageNum * 16);
 }
@@ -1841,7 +1844,7 @@ void updateStatus() {
 		}
 
 		if (indyFightState) {
-			setIcon(1, (190 - 32), 150, 3, (indyFightRight? 0: ATTR1_FLIP_X), true);
+			setIcon(1, (190 - 32), 150, 3, (indyFightRight ? 0 : ATTR1_FLIP_X), true);
 //			consolePrintf("%d\n", indyFightRight);
 		} else {
 //			setIcon(1, 0, 0, 0, 0, false);
@@ -2094,8 +2097,9 @@ void VBlankHandler(void) {
 	} else {
 		SUB_BG3_CX = subScX + 64;
 	}
+	SUB_BG3_CX += (s_shakeXOffset << 8)
 
-	SUB_BG3_CY = subScY + (s_shakePos << 8);*/
+	SUB_BG3_CY = subScY + (s_shakeYOffset << 8);*/
 
 	/*SUB_BG3_XDX = (int) (subScreenWidth / 256.0f * 256);
 	SUB_BG3_XDY = 0;
@@ -2164,19 +2168,11 @@ void VBlankHandler(void) {
 	}
 
 
-	subScTargetX = xCenter - ((subScreenWidth >> 1) << 8);
+	subScTargetX = xCenter - ((subScreenWidth  >> 1) << 8);
 	subScTargetY = yCenter - ((subScreenHeight >> 1) << 8);
 
-
-
-
-	if (subScTargetX < 0) subScTargetX = 0;
-	if (subScTargetX > (gameWidth - subScreenWidth) << 8) subScTargetX = (gameWidth - subScreenWidth) << 8;
-
-	if (subScTargetY < 0) subScTargetY = 0;
-	if (subScTargetY > (gameHeight - subScreenHeight) << 8) subScTargetY = (gameHeight - subScreenHeight) << 8;
-
-
+	subScTargetX = CLIP(subScTargetX, 0, (gameWidth  - subScreenWidth)  << 8);
+	subScTargetY = CLIP(subScTargetY, 0, (gameHeight - subScreenHeight) << 8);
 
 	subScX += (subScTargetX - subScX) >> 2;
 	subScY += (subScTargetY - subScY) >> 2;
@@ -2235,7 +2231,7 @@ void VBlankHandler(void) {
 			setZoomedScreenScale(subScreenWidth, ((subScreenHeight * (256 << 8)) / 192) >> 8);
 
 
-			setMainScreenScroll(scX << 8, (scY << 8) + (s_shakePos << 8));
+			setMainScreenScroll((scX << 8) + (s_shakeXOffset << 8), (scY << 8) + (s_shakeYOffset << 8));
 			setMainScreenScale(256, 256);		// 1:1 scale
 
 		} else {
@@ -2251,7 +2247,7 @@ void VBlankHandler(void) {
 			setZoomedScreenScroll(subScX, subScY, (subScreenWidth != 256) && (subScreenWidth != 128));
 			setZoomedScreenScale(subScreenWidth, ((subScreenHeight * (256 << 8)) / 192) >> 8);
 
-			setMainScreenScroll(64, (scY << 8) + (s_shakePos << 8));
+			setMainScreenScroll(64 + (s_shakeXOffset << 8), (scY << 8) + (s_shakeYOffset << 8));
 			setMainScreenScale(320, 256);		// 1:1 scale
 
 		}
@@ -2499,7 +2495,7 @@ void penUpdate() {
 
 //	if (getKeysHeld() & KEY_L) consolePrintf("%d, %d   penX=%d, penY=%d tz=%d\n", IPC->touchXpx, IPC->touchYpx, penX, penY, IPC->touchZ1);
 
-	bool penDownThisFrame = (IPC->touchZ1 > 0) && (IPC->touchXpx > 0) && (IPC->touchYpx > 0);
+	bool penDownThisFrame = (!(IPC->buttons & 0x40)) && (IPC->touchXpx > 0) && (IPC->touchYpx > 0);
 	static bool moved = false;
 
 	if (( (tapScreenClicks) || getKeyboardEnable() ) && (getIsDisplayMode8Bit())) {
@@ -2626,7 +2622,7 @@ void penUpdate() {
 				penDownSaved = true;
 			}
 
-			if ((IPC->touchZ1 > 0) && (IPC->touchXpx > 0) && (IPC->touchYpx > 0)) {
+			if ((!(IPC->buttons & 0x40)) && (IPC->touchXpx > 0) && (IPC->touchYpx > 0)) {
 				penX = IPC->touchXpx + touchXOffset;
 				penY = IPC->touchYpx + touchYOffset;
 				moved = true;
@@ -2648,7 +2644,7 @@ void penUpdate() {
 
 
 
-	if ((IPC->touchZ1 > 0) || ((penDownFrames == 2)) ) {
+	if ((!(IPC->buttons & 0x40)) || ((penDownFrames == 2)) ) {
 		penDownLastFrame = true;
 		penDownFrames++;
 	} else {
@@ -3253,6 +3249,6 @@ extern "C" void consolePrintf(char * format, ...) __attribute__ ((no_instrument_
 extern "C" void consolePrintf(const char * format, ...) {
 	va_list args;
 	va_start(args, format);
-	viprintf(format, args);
+	vprintf(format, args);
 	va_end(args);
 }

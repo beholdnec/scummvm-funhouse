@@ -28,6 +28,33 @@
 
 namespace Common {
 
+class SeekableReadStream;
+
+/** The default Windows resources. */
+enum WinResourceType {
+	kWinCursor       = 0x01,
+	kWinBitmap       = 0x02,
+	kWinIcon         = 0x03,
+	kWinMenu         = 0x04,
+	kWinDialog       = 0x05,
+	kWinString       = 0x06,
+	kWinFontDir      = 0x07,
+	kWinFont         = 0x08,
+	kWinAccelerator  = 0x09,
+	kWinRCData       = 0x0A,
+	kWinMessageTable = 0x0B,
+	kWinGroupCursor  = 0x0C,
+	kWinGroupIcon    = 0x0E,
+	kWinVersion      = 0x10,
+	kWinDlgInclude   = 0x11,
+	kWinPlugPlay     = 0x13,
+	kWinVXD          = 0x14,
+	kWinAniCursor    = 0x15,
+	kWinAniIcon      = 0x16,
+	kWinHTML         = 0x17,
+	kWinManifest     = 0x18
+};
+
 class WinResourceID {
 public:
 	WinResourceID() { _idType = kIDTypeNull; }
@@ -63,6 +90,50 @@ struct WinResourceID_Hash {
 
 struct WinResourceID_EqualTo {
 	bool operator()(const WinResourceID &id1, const WinResourceID &id2) const { return id1 == id2; }
+};
+
+/**
+ * A class able to load resources from a Windows Executable, such
+ * as cursors, bitmaps, and sounds.
+ */
+class WinResources {
+public:
+	virtual ~WinResources() {};
+
+	/** Clear all information. */
+	virtual void clear() = 0;
+
+	/** Load from an EXE file. */
+	virtual bool loadFromEXE(const String &fileName);
+
+	/** Load from a Windows compressed EXE file. */
+	virtual bool loadFromCompressedEXE(const String &fileName);
+
+	/** Load from a stream. */
+	virtual bool loadFromEXE(SeekableReadStream *stream) = 0;
+
+	/** Return a list of IDs for a given type. */
+	virtual const Array<WinResourceID> getIDList(const WinResourceID &type) const = 0;
+
+	/** Return a list of languages for a given type and ID. */
+	virtual const Array<WinResourceID> getLangList(const WinResourceID &type, const WinResourceID &id) const {
+		Array<WinResourceID> array;
+		return array;
+	}
+
+	/** Return a stream to the specified resource, taking the first language found (or 0 if non-existent). */
+	virtual SeekableReadStream *getResource(const WinResourceID &type, const WinResourceID &id) = 0;
+
+	/** Return a stream to the specified resource (or 0 if non-existent). */
+	virtual SeekableReadStream *getResource(const WinResourceID &type, const WinResourceID &id, const WinResourceID &lang) {
+		return getResource(type, id);
+	}
+
+	static WinResources *createFromEXE(const String &fileName);
+
+	typedef Common::HashMap<Common::String, Common::U32String, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> VersionHash;
+
+	static VersionHash *parseVersionInfo(SeekableReadStream *stream);
 };
 
 } // End of namespace Common

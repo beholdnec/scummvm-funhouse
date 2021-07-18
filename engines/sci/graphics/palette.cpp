@@ -199,6 +199,8 @@ void GfxPalette::createFromData(const SciSpan<const byte> &data, Palette *palett
 				paletteOut->colors[colorNo].b = data[palOffset++];
 			}
 			break;
+		default:
+			break;
 	}
 }
 
@@ -304,16 +306,22 @@ void GfxPalette::setEGA() {
 	setOnScreen();
 }
 
-void GfxPalette::set(Palette *newPalette, bool force, bool forceRealMerge) {
+void GfxPalette::set(Palette *newPalette, bool force, bool forceRealMerge, bool includeFirstColor) {
 	uint32 systime = _sysPalette.timestamp;
 
 	if (force || newPalette->timestamp != systime) {
 		// SCI1.1+ doesn't do real merging anymore, but simply copying over the used colors from other palettes
 		//  There are some games with inbetween SCI1.1 interpreters, use real merging for them (e.g. laura bow 2 demo)
-		if ((forceRealMerge) || (_useMerging))
+		if (forceRealMerge || _useMerging) {
 			_sysPaletteChanged |= merge(newPalette, force, forceRealMerge);
-		else
-			_sysPaletteChanged |= insert(newPalette, &_sysPalette);
+		} else {
+			// SCI 1.1 has several functions which write to the system palette but
+			//  some include the first color and others don't. The first color is
+			//  always excluded when Pal-vary is active.
+			includeFirstColor &= (_palVaryResourceId == -1);
+
+			_sysPaletteChanged |= insert(newPalette, &_sysPalette, includeFirstColor);
+		}
 
 		// Adjust timestamp on newPalette, so it wont get merged/inserted w/o need
 		newPalette->timestamp = _sysPalette.timestamp;
@@ -334,10 +342,10 @@ void GfxPalette::set(Palette *newPalette, bool force, bool forceRealMerge) {
 	}
 }
 
-bool GfxPalette::insert(Palette *newPalette, Palette *destPalette) {
+bool GfxPalette::insert(Palette *newPalette, Palette *destPalette, bool includeFirstColor) {
 	bool paletteChanged = false;
 
-	for (int i = 1; i < 255; i++) {
+	for (int i = (includeFirstColor ? 0 : 1); i < 255; i++) {
 		if (newPalette->colors[i].used) {
 			if ((newPalette->colors[i].r != destPalette->colors[i].r) ||
 				(newPalette->colors[i].g != destPalette->colors[i].g) ||
@@ -656,7 +664,9 @@ void GfxPalette::kernelRestore(reg_t memoryHandle) {
 			restoredPalette.colors[colorNr].b = *memoryPtr++;
 		}
 
-		set(&restoredPalette, true);
+		// restoring excludes the first color, unlike most
+		//  operations on the system palette.
+		set(&restoredPalette, true, false, false);
 	}
 }
 
@@ -675,7 +685,7 @@ void GfxPalette::kernelSyncScreenPalette() {
 
 	// Get current palette, update it and put back
 	g_system->getPaletteManager()->grabPalette(bpal, 0, 256);
-	for (int16 i = 1; i < 255; i++) {
+	for (int16 i = 0; i < 255; i++) {
 		_sysPalette.colors[i].r = bpal[i * 3];
 		_sysPalette.colors[i].g = bpal[i * 3 + 1];
 		_sysPalette.colors[i].b = bpal[i * 3 + 2];
@@ -716,6 +726,7 @@ void GfxPalette::palVaryInit() {
 	_palVaryStepStop = 0;
 	_palVaryDirection = 0;
 	_palVaryTicks = 0;
+	_palVaryZeroTick = false;
 }
 
 bool GfxPalette::palVaryLoadTargetPalette(GuiResourceId resourceId) {
@@ -759,19 +770,13 @@ bool GfxPalette::kernelPalVaryInit(GuiResourceId resourceId, uint16 ticks, uint1
 		_palVaryStep = 1;
 		_palVaryStepStop = stepStop;
 		_palVaryDirection = direction;
+
 		// if no ticks are given, jump directly to destination
-		if (!_palVaryTicks) {
+		if (!_palVaryTicks)
 			_palVaryDirection = stepStop;
-			// sierra sci set the timer to 1 tick instead of calling it directly
-			//  we have to change this to prevent a race condition to happen in
-			//  at least freddy pharkas during nighttime. In that case kPalVary is
-			//  called right before a transition and because we load pictures much
-			//  faster, the 1 tick won't pass sometimes resulting in the palette
-			//  being daytime instead of nighttime during the transition.
-			palVaryProcess(1, true);
-		} else {
-			palVaryInstallTimer();
-		}
+		_palVaryZeroTick = (_palVaryTicks == 0); //see delayForPalVaryWorkaround()
+
+		palVaryInstallTimer();
 		return true;
 	}
 	return false;
@@ -788,14 +793,13 @@ int16 GfxPalette::kernelPalVaryReverse(int16 ticks, uint16 stepStop, int16 direc
 	_palVaryStepStop = stepStop;
 	_palVaryDirection = direction != -1 ? -direction : -_palVaryDirection;
 
-	if (!_palVaryTicks) {
+	// if no ticks are given, jump directly to destination
+	if (!_palVaryTicks)
 		_palVaryDirection = _palVaryStepStop - _palVaryStep;
-		// see palVaryInit above, we fix the code here as well
-		//  just in case
-		palVaryProcess(1, true);
-	} else {
-		palVaryInstallTimer();
-	}
+	_palVaryZeroTick = (_palVaryTicks == 0); // see delayForPalVaryWorkaround()
+
+	palVaryInstallTimer();
+
 	return kernelPalVaryGetCurrentStep();
 }
 
@@ -855,6 +859,7 @@ void GfxPalette::palVaryIncreaseSignal() {
 	// FIXME: increments from another thread aren't guaranteed to be atomic
 	if (!_palVaryPaused)
 		_palVarySignal++;
+	_palVaryZeroTick = false;
 }
 
 // Actually do the pal vary processing
@@ -862,6 +867,34 @@ void GfxPalette::palVaryUpdate() {
 	if (_palVarySignal) {
 		palVaryProcess(_palVarySignal, true);
 		_palVarySignal = 0;
+	}
+}
+
+void GfxPalette::delayForPalVaryWorkaround() {
+	if (_palVaryResourceId == -1)
+		return;
+	if (_palVaryPaused)
+		return;
+
+	// This gets called at the very beginning of kAnimate.
+	// If a zero-tick palVary is running, we delay briefly to give the
+	// palVary time to trigger. In theory there should be no reason for this
+	// to have to wait more than a tick, but we time-out after 4 ticks
+	// to be on the safe side.
+	//
+	// This prevents a race condition in Freddy Pharkas during nighttime,
+	// since we load pictures much faster than on original hardware (bug #5298).
+
+	if (_palVaryZeroTick) {
+		int i;
+		for (i = 0; i < 4; ++i) {
+			g_sci->sleep(17);
+			if (!_palVaryZeroTick)
+				break;
+		}
+		debugC(kDebugLevelGraphics, "Delayed kAnimate for kPalVary, %d times", i+1);
+		if (_palVaryZeroTick)
+			warning("Delayed kAnimate for kPalVary timed out");
 	}
 }
 
@@ -896,7 +929,7 @@ void GfxPalette::palVaryProcess(int signal, bool setPalette) {
 	// Calculate inbetween palette
 	Color inbetween;
 	int16 color;
-	for (int colorNr = 1; colorNr < 255; colorNr++) {
+	for (int colorNr = 0; colorNr < 256; colorNr++) {
 		inbetween.used = _sysPalette.colors[colorNr].used;
 		color = _palVaryTargetPalette.colors[colorNr].r - _palVaryOriginPalette.colors[colorNr].r;
 		inbetween.r = ((color * _palVaryStep) / 64) + _palVaryOriginPalette.colors[colorNr].r;

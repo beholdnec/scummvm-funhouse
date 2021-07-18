@@ -420,6 +420,16 @@ void ScummEngine_v5::o5_actorFromPos() {
 void ScummEngine_v5::o5_actorOps() {
 	static const byte convertTable[20] =
 		{ 1, 0, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20 };
+	// Fix for bug #2233 "MI2 FM-TOWNS: Elaine's mappiece directly flies to treehouse"
+	// There's extra code inserted in script 45 from room 45 that caused that behaviour,
+	// the code below just skips the extra script code.
+	if (_game.id == GID_MONKEY2 && _game.platform == Common::kPlatformFMTowns &&
+		vm.slot[_currentScript].number == 45 && _currentRoom == 45 &&
+		(_scriptPointer - _scriptOrgPointer == 0xA9)) {
+		_scriptPointer += 0xCF - 0xA1;
+		writeVar(32811, 0); // clear bit 43
+		return;
+	}
 	int act = getVarOrDirectByte(PARAM_1);
 	Actor *a = derefActor(act, "o5_actorOps");
 	int i, j;
@@ -585,6 +595,8 @@ void ScummEngine_v5::o5_add() {
 		case 564:
 			a -= 384;
 			break;
+		default:
+			break;
 		}
 	}
 
@@ -726,6 +738,8 @@ void ScummEngine_v5::o5_cursorCommand() {
 			for (i = 0; i < 16; i++)
 				_charsetColorMap[i] = _charsetData[_string[1]._default.charset][i] = (unsigned char)table[i];
 		}
+		break;
+	default:
 		break;
 	}
 
@@ -923,6 +937,8 @@ void ScummEngine_v5::o5_expression() {
 			_opcode = fetchScriptByte();
 			executeOpcode(_opcode);
 			push(_scummVars[0]);
+			break;
+		default:
 			break;
 		}
 	}
@@ -1371,6 +1387,8 @@ void ScummEngine_v5::o5_matrixOps() {
 	case 4:
 		createBoxMatrix();
 		break;
+	default:
+		break;
 	}
 }
 
@@ -1776,6 +1794,8 @@ void ScummEngine_v5::o5_roomOps() {
 				case 30:
 					_townsOverrideShadowColor = 3;
 					return;
+				default:
+					break;
 				}
 			}
 #endif // DISABLE_TOWNS_DUAL_LAYER_MODE
@@ -1897,6 +1917,7 @@ void ScummEngine_v5::o5_roomOps() {
 		break;
 	default:
 		error("o5_roomOps: unknown subopcode %d", _opcode & 0x1F);
+		break;
 	}
 }
 
@@ -2189,6 +2210,7 @@ void ScummEngine_v5::o5_stringOps() {
 	case 1:											/* loadstring */
 		loadPtrToResource(rtString, getVarOrDirectByte(PARAM_1), NULL);
 		break;
+
 	case 2:											/* copystring */
 		a = getVarOrDirectByte(PARAM_1);
 		b = getVarOrDirectByte(PARAM_2);
@@ -2198,6 +2220,7 @@ void ScummEngine_v5::o5_stringOps() {
 		if (ptr)
 			loadPtrToResource(rtString, a, ptr);
 		break;
+
 	case 3:											/* set string char */
 		a = getVarOrDirectByte(PARAM_1);
 		b = getVarOrDirectByte(PARAM_2);
@@ -2229,6 +2252,9 @@ void ScummEngine_v5::o5_stringOps() {
 					ptr[i] = 0;
 			}
 		}
+		break;
+
+	default:
 		break;
 	}
 }
@@ -2311,6 +2337,8 @@ void ScummEngine_v5::o5_verbOps() {
 					vs->curRect.left -= 54;
 					vs->curRect.top += 8;
 					break;
+				default:
+					break;
 				}
 			} else	if (_game.id == GID_LOOM && _game.version == 4) {
 			// FIXME: hack loom notes into right spot
@@ -2334,6 +2362,9 @@ void ScummEngine_v5::o5_verbOps() {
 						break;
 					case 97:
 						vs->curRect.top -= 5;
+						break;
+					default:
+						break;
 					}
 				}
 			}

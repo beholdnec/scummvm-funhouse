@@ -28,10 +28,8 @@
 #endif
 #include "common/util.h"                 // for ARRAYSIZE
 #include "common/system.h"               // for g_system
-#include "engine.h"                      // for Engine, g_engine
-#include "graphics/colormasks.h"         // for createPixelFormat
+#include "engines/engine.h"              // for Engine, g_engine
 #include "graphics/palette.h"            // for PaletteManager
-#include "graphics/transparent_surface.h" // for TransparentSurface
 #include "sci/console.h"                 // for Console
 #include "sci/engine/features.h"         // for GameFeatures
 #include "sci/engine/state.h"            // for EngineState
@@ -50,6 +48,7 @@
 #include "sci/video/seq_decoder.h"       // for SEQDecoder
 #include "video/avi_decoder.h"           // for AVIDecoder
 #include "video/coktel_decoder.h"        // for AdvancedVMDDecoder
+#include "video/qt_decoder.h"            // for QuickTimeDecoder
 #include "sci/graphics/video32.h"
 
 namespace Graphics { struct Surface; }
@@ -66,7 +65,7 @@ bool VideoPlayer::open(const Common::String &fileName) {
 	// KQ7 2.00b videos are compressed in 24bpp Cinepak, so cannot play on a
 	// system with no RGB support
 	if (_decoder->getPixelFormat().bytesPerPixel != 1) {
-		void showScummVMDialog(const Common::String &message);
+		void showScummVMDialog(const Common::String &message, const char* altButton = nullptr, bool alignCenter = true);
 		showScummVMDialog(Common::String::format(_("Cannot play back %dbpp video on a system with maximum color depth of 8bpp"), _decoder->getPixelFormat().bpp()));
 		_decoder->close();
 		return false;
@@ -81,19 +80,26 @@ bool VideoPlayer::startHQVideo() {
 	// Optimize rendering performance for unscaled videos, and allow
 	// better-than-NN interpolation for videos that are scaled
 	if (shouldStartHQVideo()) {
-		// TODO: Search for and use the best supported format (which may be
-		// lower than 32bpp) once the scaling code in Graphics supports
-		// 16bpp/24bpp, and once the SDL backend can correctly communicate
-		// supported pixel formats above whatever format is currently used by
-		// _hwsurface. Right now, this will either show an error dialog (OpenGL)
-		// or just crash entirely (SDL) if the backend does not support this
-		// 32bpp pixel format, which sucks since this code really ought to be
-		// able to fall back to NN scaling for games with 256-color videos
-		// without any error.
-		const Graphics::PixelFormat format(4, 8, 8, 8, 8, 24, 16, 8, 0);
-		g_sci->_gfxFrameout->setPixelFormat(format);
-		_hqVideoMode = (g_system->getScreenFormat() == format);
-		return _hqVideoMode;
+		const Common::List<Graphics::PixelFormat> outFormats = g_system->getSupportedFormats();
+		Graphics::PixelFormat bestFormat = outFormats.front();
+		if (bestFormat.bytesPerPixel != 2 && bestFormat.bytesPerPixel != 4) {
+			Common::List<Graphics::PixelFormat>::const_iterator it;
+			for (it = outFormats.begin(); it != outFormats.end(); ++it) {
+				if (it->bytesPerPixel == 2 || it->bytesPerPixel == 4) {
+					bestFormat = *it;
+					break;
+				}
+			}
+		}
+
+		if (bestFormat.bytesPerPixel != 2 && bestFormat.bytesPerPixel != 4) {
+			warning("Failed to find any valid output pixel format");
+			_hqVideoMode = false;
+		} else {
+			g_sci->_gfxFrameout->setPixelFormat(bestFormat);
+			_hqVideoMode = (g_system->getScreenFormat() != Graphics::PixelFormat::createFormatCLUT8());
+			return _hqVideoMode;
+		}
 	} else {
 		_hqVideoMode = false;
 	}
@@ -126,7 +132,9 @@ VideoPlayer::EventFlags VideoPlayer::playUntilEvent(const EventFlags flags, cons
 
 	EventFlags stopFlag = kEventFlagNone;
 	for (;;) {
-		g_sci->sleep(MIN(_decoder->getTimeToNextFrame(), maxSleepMs));
+		if (!_needsUpdate) {
+			g_sci->sleep(MIN(_decoder->getTimeToNextFrame(), maxSleepMs));
+		}
 
 		const Graphics::Surface *nextFrame = nullptr;
 		// If a decoder needs more than one update per loop, this means we are
@@ -140,9 +148,20 @@ VideoPlayer::EventFlags VideoPlayer::playUntilEvent(const EventFlags flags, cons
 		}
 
 		// Some frames may contain only audio and/or palette data; this occurs
-		// with Duck videos and is not an error
+		// with Duck videos and is not an error.
+		// If _needsUpdate has been set but it's not time to render the next frame
+		// then the current frame is rendered again. This reduces the delay between
+		// a script adding or removing censorship blobs and the screen reflecting
+		// this upon resuming playback.
 		if (nextFrame) {
 			renderFrame(*nextFrame);
+			_currentFrame = nextFrame;
+			_needsUpdate = false;
+		} else if (_needsUpdate) {
+			if (_currentFrame) {
+				renderFrame(*_currentFrame);
+			}
+			_needsUpdate = false;
 		}
 
 		// Event checks must only happen *after* the decoder is updated (1) and
@@ -229,20 +248,16 @@ void VideoPlayer::renderFrame(const Graphics::Surface &nextFrame) const {
 
 	if (_decoder->getWidth() != _drawRect.width() || _decoder->getHeight() != _drawRect.height()) {
 		Graphics::Surface *const unscaledFrame(convertedFrame);
-		// TODO: The only reason TransparentSurface is used here because it is
-		// where common scaler code is right now, which should just be part of
-		// Graphics::Surface (or some free functions).
-		const Graphics::TransparentSurface tsUnscaledFrame(*unscaledFrame);
 #ifdef USE_RGB_COLOR
 		if (_hqVideoMode) {
-			convertedFrame = tsUnscaledFrame.scaleT<Graphics::FILTER_BILINEAR>(_drawRect.width(), _drawRect.height());
+			convertedFrame = unscaledFrame->scale(_drawRect.width(), _drawRect.height(), true);
 		} else {
 #elif 1
 		{
 #else
 		}
 #endif
-			convertedFrame = tsUnscaledFrame.scaleT<Graphics::FILTER_NEAREST>(_drawRect.width(), _drawRect.height());
+			convertedFrame = unscaledFrame->scale(_drawRect.width(), _drawRect.height(), false);
 		}
 		assert(convertedFrame);
 		if (freeConvertedFrame) {
@@ -492,6 +507,41 @@ uint16 AVIPlayer::getDuration() const {
 }
 
 #pragma mark -
+#pragma mark QuickTimePlayer
+
+QuickTimePlayer::QuickTimePlayer(EventManager *eventMan) :
+	VideoPlayer(eventMan) {}
+
+void QuickTimePlayer::play(const Common::String& fileName) {
+	_decoder.reset(new Video::QuickTimeDecoder());
+
+	if (!VideoPlayer::open(fileName)) {
+		_decoder.reset();
+		return;
+	}
+
+	const int16 scriptWidth = g_sci->_gfxFrameout->getScriptWidth();
+	const int16 scriptHeight = g_sci->_gfxFrameout->getScriptHeight();
+	const int16 screenWidth = g_sci->_gfxFrameout->getScreenWidth();
+	const int16 screenHeight = g_sci->_gfxFrameout->getScreenHeight();
+
+	const int16 scaledWidth = (_decoder->getWidth() * Ratio(screenWidth, scriptWidth)).toInt();
+	const int16 scaledHeight = (_decoder->getHeight() * Ratio(screenHeight, scriptHeight)).toInt();
+
+	_drawRect.left = (screenWidth - scaledWidth) / 2;
+	_drawRect.top = (screenHeight - scaledHeight) / 2;
+	_drawRect.setWidth(scaledWidth);
+	_drawRect.setHeight(scaledHeight);
+
+	startHQVideo();
+	playUntilEvent(kEventFlagMouseDown | kEventFlagEscapeKey);
+	endHQVideo();
+
+	g_system->fillScreen(0);
+	_decoder.reset();
+}
+
+#pragma mark -
 #pragma mark VMDPlayer
 
 VMDPlayer::VMDPlayer(EventManager *eventMan, SegManager *segMan) :
@@ -570,11 +620,26 @@ VMDPlayer::IOStatus VMDPlayer::open(const Common::String &fileName, const OpenFl
 	return kIOError;
 }
 
-void VMDPlayer::init(int16 x, const int16 y, const PlayFlags flags, const int16 boostPercent, const int16 boostStartColor, const int16 boostEndColor) {
+void VMDPlayer::init(int16 x, int16 y, const PlayFlags flags, const int16 boostPercent, const int16 boostStartColor, const int16 boostEndColor) {
+	const int16 screenWidth = g_sci->_gfxFrameout->getScreenWidth();
+	const int16 screenHeight = g_sci->_gfxFrameout->getScreenHeight();
+	const bool upscaleVideos = ConfMan.hasKey("enable_video_upscale") ? ConfMan.getBool("enable_video_upscale") : false;
+
+	_doublePixels = (flags & kPlayFlagDoublePixels) || upscaleVideos;
+	_stretchVertical = flags & kPlayFlagStretchVertical;
+
+	const int16 width = _decoder->getWidth() << (_doublePixels ? 1 : 0);
+	const int16 height = _decoder->getHeight() << (_doublePixels || _stretchVertical ? 1 : 0);
+
 	if (getSciVersion() < SCI_VERSION_3) {
 		x &= ~1;
 	}
-	_doublePixels = flags & kPlayFlagDoublePixels;
+
+	if (upscaleVideos) {
+		x = (screenWidth - width) / 2;
+		y = (screenHeight - height) / 2;
+	}
+
 	_blackLines = ConfMan.getBool("enable_black_lined_video") && (flags & kPlayFlagBlackLines);
 	// If ScummVM has been configured to disable black lines on video playback,
 	// the boosts need to be ignored too or else the brightness of the video
@@ -587,11 +652,8 @@ void VMDPlayer::init(int16 x, const int16 y, const PlayFlags flags, const int16 
 #ifdef SCI_VMD_BLACK_PALETTE
 	_blackPalette = flags & kPlayFlagBlackPalette;
 #endif
-	_stretchVertical = flags & kPlayFlagStretchVertical;
 
-	setDrawRect(x, y,
-				(_decoder->getWidth() << _doublePixels),
-				(_decoder->getHeight() << (_doublePixels || _stretchVertical)));
+	setDrawRect(x, y, width, height);
 }
 
 VMDPlayer::IOStatus VMDPlayer::close() {
@@ -635,6 +697,9 @@ VMDPlayer::IOStatus VMDPlayer::close() {
 	_planeIsOwned = true;
 	_priority = 0;
 	_drawRect = Common::Rect();
+	_blobs.clear();
+	_needsUpdate = false;
+	_currentFrame = nullptr;
 	return kIOSuccess;
 }
 
@@ -659,7 +724,7 @@ VMDPlayer::EventFlags VMDPlayer::kernelPlayUntilEvent(const EventFlags flags, co
 
 	const int32 maxFrameNo = _decoder->getFrameCount() - 1;
 
-	if (flags & kEventFlagToFrame) {
+	if ((flags & kEventFlagToFrame) && lastFrameNo) {
 		_yieldFrame = MIN<int32>(lastFrameNo, maxFrameNo);
 	} else {
 		_yieldFrame = maxFrameNo;
@@ -719,7 +784,7 @@ VMDPlayer::EventFlags VMDPlayer::playUntilEvent(const EventFlags flags, const ui
 VMDPlayer::EventFlags VMDPlayer::checkForEvent(const EventFlags flags) {
 	const int currentFrameNo = _decoder->getCurFrame();
 
-	if (currentFrameNo == _yieldFrame) {
+	if (currentFrameNo >= _yieldFrame) {
 		return kEventFlagEnd;
 	}
 
@@ -742,6 +807,43 @@ VMDPlayer::EventFlags VMDPlayer::checkForEvent(const EventFlags flags) {
 	}
 
 	return kEventFlagNone;
+}
+
+int16 VMDPlayer::addBlob(int16 blockSize, int16 top, int16 left, int16 bottom, int16 right) {
+	if (_blobs.size() >= kMaxBlobs) {
+		return -1;
+	}
+
+	int16 blobNumber = 0;
+	Common::List<Blob>::iterator prevBlobIterator = _blobs.begin();
+	for (; prevBlobIterator != _blobs.end(); ++prevBlobIterator, ++blobNumber) {
+		if (blobNumber < prevBlobIterator->blobNumber) {
+			break;
+		}
+	}
+
+	Blob blob = { blobNumber, blockSize, top, left, bottom, right };
+	_blobs.insert(prevBlobIterator, blob);
+
+	_needsUpdate = true;
+	return blobNumber;
+}
+
+void VMDPlayer::deleteBlobs() {
+	if (!_blobs.empty()) {
+		_blobs.clear();
+		_needsUpdate = true;
+	}
+}
+
+void VMDPlayer::deleteBlob(int16 blobNumber) {
+	for (Common::List<Blob>::iterator b = _blobs.begin(); b != _blobs.end(); ++b) {
+		if (b->blobNumber == blobNumber) {
+			_blobs.erase(b);
+			_needsUpdate = true;
+			break;
+		}
+	}
 }
 
 void VMDPlayer::initOverlay() {
@@ -871,7 +973,9 @@ void VMDPlayer::closeOverlay() {
 	}
 #endif
 
-	g_sci->_gfxFrameout->frameOut(true, _drawRect);
+	if (!_leaveLastFrame && _leaveScreenBlack) {
+		g_sci->_gfxFrameout->frameOut(true, _drawRect);
+	}
 }
 
 void VMDPlayer::initComposited() {
@@ -965,7 +1069,28 @@ void VMDPlayer::renderFrame(const Graphics::Surface &nextFrame) const {
 	if (_isComposited) {
 		renderComposited();
 	} else {
-		renderOverlay(nextFrame);
+		if (_blobs.empty()) {
+			renderOverlay(nextFrame);
+		} else {
+			Graphics::Surface censoredFrame;
+			censoredFrame.create(nextFrame.w, nextFrame.h, nextFrame.format);
+			censoredFrame.copyFrom(nextFrame);
+			drawBlobs(censoredFrame);
+			renderOverlay(censoredFrame);
+			censoredFrame.free();
+		}
+	}
+}
+
+void VMDPlayer::drawBlobs(Graphics::Surface& frame) const {
+	for (Common::List<Blob>::const_iterator blob = _blobs.begin(); blob != _blobs.end(); ++blob) {
+		for (int16 blockLeft = blob->left; blockLeft < blob->right; blockLeft += blob->blockSize) {
+			for (int16 blockTop = blob->top; blockTop < blob->bottom; blockTop += blob->blockSize) {
+				byte color = *(byte *)frame.getBasePtr(blockLeft, blockTop);
+				Common::Rect block(blockLeft, blockTop, blockLeft + blob->blockSize, blockTop + blob->blockSize);
+				frame.fillRect(block, color);
+			}
+		}
 	}
 }
 
@@ -1040,8 +1165,8 @@ void DuckPlayer::open(const GuiResourceId resourceId, const int displayMode, con
 	// SSCI seems to incorrectly calculate the draw rect by scaling the origin
 	// in addition to the width/height for the BR point
 	setDrawRect(x, y,
-				(_decoder->getWidth() << _doublePixels),
-				(_decoder->getHeight() << _doublePixels));
+				(_decoder->getWidth() << (_doublePixels ? 1 : 0)),
+				(_decoder->getHeight() << (_doublePixels ? 1 : 0)));
 
 	g_sci->_gfxCursor32->hide();
 

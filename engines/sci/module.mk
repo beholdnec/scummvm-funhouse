@@ -7,6 +7,7 @@ MODULE_OBJS := \
 	event.o \
 	resource.o \
 	resource_audio.o \
+	resource_patcher.o \
 	sci.o \
 	util.o \
 	engine/features.o \
@@ -40,6 +41,7 @@ MODULE_OBJS := \
 	engine/state.o \
 	engine/static_selectors.o \
 	engine/vm.o \
+	engine/vm_hooks.o \
 	engine/vm_types.o \
 	engine/workarounds.o \
 	graphics/animate.o \
@@ -48,7 +50,6 @@ MODULE_OBJS := \
 	graphics/controls16.o \
 	graphics/coordadjuster.o \
 	graphics/cursor.o \
-	graphics/font.o \
 	graphics/fontsjis.o \
 	graphics/maciconbar.o \
 	graphics/menu.o \
@@ -58,6 +59,7 @@ MODULE_OBJS := \
 	graphics/portrait.o \
 	graphics/ports.o \
 	graphics/remap.o \
+	graphics/scifont.o \
 	graphics/screen.o \
 	graphics/text16.o \
 	graphics/transitions.o \
@@ -71,17 +73,20 @@ MODULE_OBJS := \
 	sound/soundcmd.o \
 	sound/sync.o \
 	sound/drivers/adlib.o \
-	sound/drivers/amigamac.o \
+	sound/drivers/amigamac0.o \
+	sound/drivers/amigamac1.o \
 	sound/drivers/cms.o \
 	sound/drivers/fb01.o \
 	sound/drivers/fmtowns.o \
 	sound/drivers/midi.o \
 	sound/drivers/pcjr.o \
+	sound/drivers/pc9801.o \
 	video/seq_decoder.o
 
 
 ifdef ENABLE_SCI32
 MODULE_OBJS += \
+	engine/hoyle5poker.o \
 	engine/kgraphics32.o \
 	graphics/celobj32.o \
 	graphics/controls32.o \
@@ -95,6 +100,7 @@ MODULE_OBJS += \
 	graphics/transitions32.o \
 	graphics/video32.o \
 	graphics/cursor32.o \
+	graphics/maccursor32.o \
 	sound/audio32.o \
 	sound/decoders/sol.o \
 	video/robot_decoder.o

@@ -54,20 +54,20 @@ public:
 	/** Return the cursor's hotspot's y coordinate. */
 	uint16 getHotspotY() const { return _hotspotY; }
 	/** Return the cursor's transparent key. */
-	byte getKeyColor() const { return 0xFF; }
+	virtual byte getKeyColor() const { return 0xFF; }
 
 	const byte *getSurface() const { return _surface; }
 
-	const byte *getPalette() const { return _palette; }
+	virtual const byte *getPalette() const { return _palette; }
 	byte getPaletteStartIndex() const { return 0; }
 	uint16 getPaletteCount() const { return 256; }
 
 	/** Read the cursor's data out of a stream. */
-	bool readFromStream(Common::SeekableReadStream &stream, bool forceMonochrome = false);
+	bool readFromStream(Common::SeekableReadStream &stream, bool forceMonochrome = false, byte monochromeInvertedPixelColor = 0xff);
 
-private:
-	bool readFromCURS(Common::SeekableReadStream &stream);
-	bool readFromCRSR(Common::SeekableReadStream &stream, bool forceMonochrome);
+protected:
+	bool readFromCURS(Common::SeekableReadStream &stream, byte monochromeInvertedPixelColor);
+	bool readFromCRSR(Common::SeekableReadStream &stream, bool forceMonochrome, byte monochromeInvertedPixelColor);
 
 	byte *_surface;
 	byte _palette[256 * 3];

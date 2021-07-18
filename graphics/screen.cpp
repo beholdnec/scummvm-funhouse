@@ -53,10 +53,14 @@ void Screen::update() {
 	}
 
 	// Signal the physical screen to update
-	g_system->updateScreen();
+	updateScreen();
 	_dirtyRects.clear();
 }
 
+void Screen::updateScreen() {
+	// Update the screen
+	g_system->updateScreen();
+}
 
 void Screen::addDirtyRect(const Common::Rect &r) {
 	Common::Rect bounds = r;
@@ -118,6 +122,7 @@ void Screen::setPalette(const byte palette[PALETTE_SIZE]) {
 void Screen::setPalette(const byte *palette, uint start, uint num) {
 	assert(format.bytesPerPixel == 1);
 	g_system->getPaletteManager()->setPalette(palette, start, num);
+	ManagedSurface::setPalette(palette, start, num);
 }
 
 void Screen::clearPalette() {

@@ -933,21 +933,21 @@ class MidiDriver_ADLIB : public MidiDriver {
 public:
 	MidiDriver_ADLIB();
 
-	int open();
-	void close();
-	void send(uint32 b);
-	void send(byte channel, uint32 b); // Supports higher than channel 15
-	uint32 property(int prop, uint32 param);
-	bool isOpen() const { return _isOpen; }
-	uint32 getBaseTempo() { return 1000000 / OPL::OPL::kDefaultCallbackFrequency; }
+	int open() override;
+	void close() override;
+	void send(uint32 b) override;
+	void send(int8 channel, uint32 b) override; // Supports higher than channel 15
+	uint32 property(int prop, uint32 param) override;
+	bool isOpen() const override { return _isOpen; }
+	uint32 getBaseTempo() override { return 1000000 / OPL::OPL::kDefaultCallbackFrequency; }
 
-	void setPitchBendRange(byte channel, uint range);
-	void sysEx_customInstrument(byte channel, uint32 type, const byte *instr);
+	void setPitchBendRange(byte channel, uint range) override;
+	void sysEx_customInstrument(byte channel, uint32 type, const byte *instr) override;
 
-	MidiChannel *allocateChannel();
-	MidiChannel *getPercussionChannel() { return &_percussion; } // Percussion partially supported
+	MidiChannel *allocateChannel() override;
+	MidiChannel *getPercussionChannel() override { return &_percussion; } // Percussion partially supported
 
-	virtual void setTimerCallback(void *timerParam, Common::TimerManager::TimerProc timerProc);
+	virtual void setTimerCallback(void *timerParam, Common::TimerManager::TimerProc timerProc) override;
 
 private:
 	bool _scummSmallHeader; // FIXME: This flag controls a special mode for SCUMM V3 games
@@ -1488,7 +1488,7 @@ void MidiDriver_ADLIB::send(uint32 b) {
 	send(b & 0xF, b & 0xFFFFFFF0);
 }
 
-void MidiDriver_ADLIB::send(byte chan, uint32 b) {
+void MidiDriver_ADLIB::send(int8 chan, uint32 b) {
 	//byte param3 = (byte) ((b >> 24) & 0xFF);
 	byte param2 = (byte)((b >> 16) & 0xFF);
 	byte param1 = (byte)((b >>  8) & 0xFF);
@@ -1549,6 +1549,9 @@ uint32 MidiDriver_ADLIB::property(int prop, uint32 param) {
 		_opl3Mode = (param > 0);
 #endif
 		return 1;
+
+	default:
+		break;
 	}
 
 	return 0;
@@ -1796,7 +1799,7 @@ void MidiDriver_ADLIB::adlibSetParam(int channel, byte param, int value, bool pr
 			value -= 15;
 		else
 			value -= 383;
-		value <<= 4;
+		value *= 16;
 		_channelTable2[channel] = value;
 		adlibPlayNote(channel, _curNotTable[channel] + value);
 		return;
@@ -2287,7 +2290,7 @@ void MidiDriver_ADLIB::adlibNoteOnEx(int chan, byte note, int mod) {
 class AdLibEmuMusicPlugin : public MusicPluginObject {
 public:
 	const char *getName() const {
-		return _s("AdLib Emulator");
+		return _s("AdLib emulator");
 	}
 
 	const char *getId() const {

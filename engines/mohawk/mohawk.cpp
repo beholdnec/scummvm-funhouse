@@ -35,23 +35,17 @@
 namespace Mohawk {
 
 MohawkEngine::MohawkEngine(OSystem *syst, const MohawkGameDescription *gamedesc) : Engine(syst), _gameDescription(gamedesc) {
-	if (!_mixer->isReady())
-		error ("Sound initialization failed");
-
 	// Setup mixer
 	syncSoundSettings();
 
-	_pauseDialog = 0;
-	_cursor = 0;
+	_pauseDialog = nullptr;
+	_cursor = nullptr;
 }
 
 MohawkEngine::~MohawkEngine() {
 	delete _pauseDialog;
 	delete _cursor;
-
-	for (uint32 i = 0; i < _mhk.size(); i++)
-		delete _mhk[i];
-	_mhk.clear();
+	closeAllArchives();
 }
 
 Common::Error MohawkEngine::run() {
@@ -70,7 +64,6 @@ Common::SeekableReadStream *MohawkEngine::getResource(uint32 tag, uint16 id) {
 			return _mhk[i]->getResource(tag, id);
 
 	error("Could not find a '%s' resource with ID %04x", tag2str(tag), id);
-	return NULL;
 }
 
 bool MohawkEngine::hasResource(uint32 tag, uint16 id) {
@@ -95,7 +88,6 @@ uint32 MohawkEngine::getResourceOffset(uint32 tag, uint16 id) {
 			return _mhk[i]->getOffset(tag, id);
 
 	error("Could not find a '%s' resource with ID %04x", tag2str(tag), id);
-	return 0;
 }
 
 uint16 MohawkEngine::findResourceID(uint32 tag, const Common::String &resName) {
@@ -104,7 +96,6 @@ uint16 MohawkEngine::findResourceID(uint32 tag, const Common::String &resName) {
 			return _mhk[i]->findResourceID(tag, resName);
 
 	error("Could not find a '%s' resource matching name '%s'", tag2str(tag), resName.c_str());
-	return 0xFFFF;
 }
 
 Common::String MohawkEngine::getResourceName(uint32 tag, uint16 id) {
@@ -114,7 +105,13 @@ Common::String MohawkEngine::getResourceName(uint32 tag, uint16 id) {
 		}
 
 	error("Could not find a \'%s\' resource with ID %04x", tag2str(tag), id);
-	return 0;
+}
+
+void MohawkEngine::closeAllArchives() {
+	for (uint32 i = 0; i < _mhk.size(); i++)
+		delete _mhk[i];
+
+	_mhk.clear();
 }
 
 } // End of namespace Mohawk

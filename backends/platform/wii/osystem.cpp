@@ -67,9 +67,9 @@ OSystem_Wii::OSystem_Wii() :
 	_configGraphicsMode(0),
 	_actualGraphicsMode(0),
 	_bilinearFilter(false),
-#ifdef USE_RGB_COLOR
 	_pfRGB565(Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0)),
 	_pfRGB3444(Graphics::PixelFormat(2, 4, 4, 4, 3, 8, 4, 0, 12)),
+#ifdef USE_RGB_COLOR
 	_pfGame(Graphics::PixelFormat::createFormatCLUT8()),
 	_pfGameTexture(Graphics::PixelFormat::createFormatCLUT8()),
 	_pfCursor(Graphics::PixelFormat::createFormatCLUT8()),
@@ -145,7 +145,16 @@ void OSystem_Wii::initBackend() {
 }
 
 void OSystem_Wii::quit() {
+	/* Delete _timerManager before deinitializing events as it's tied */
+	delete _timerManager;
+	_timerManager = nullptr;
+
 	deinitEvents();
+
+	/* Delete _eventManager before destroying FS to avoid problems when releasing virtual keyboard data */
+	delete _eventManager;
+	_eventManager = nullptr;
+
 	deinitSfx();
 	deinitGfx();
 

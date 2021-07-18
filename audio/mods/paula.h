@@ -43,7 +43,13 @@ public:
 		kPalCiaClock     = kPalSystemClock / 10,
 		kNtscCiaClock    = kNtscSystemClock / 10,
 		kPalPaulaClock   = kPalSystemClock / 2,
-		kNtscPauleClock  = kNtscSystemClock / 2
+		kNtscPaulaClock  = kNtscSystemClock / 2
+	};
+
+	enum FilterMode {
+		kFilterModeNone = 0,
+		kFilterModeA500,
+		kFilterModeA1200
 	};
 
 	/* TODO: Document this */
@@ -54,9 +60,19 @@ public:
 		explicit Offset(int off = 0) : int_off(off), rem_off(0) {}
 	};
 
-	Paula(bool stereo = false, int rate = 44100, uint interruptFreq = 0);
+	struct FilterState {
+		FilterMode mode;
+		bool ledFilter;
+
+		float a0[3];
+		float rc[NUM_VOICES][5];
+	};
+
+	Paula(bool stereo = false, int rate = 44100, uint interruptFreq = 0,
+	      FilterMode filterMode = Paula::defaultFilterMode(), int periodScaleDivisor = 1);
 	~Paula();
 
+	static FilterMode defaultFilterMode() { return kFilterModeA1200; }
 	bool playing() const { return _playing; }
 	void setTimerBaseValue( uint32 ticksPerSecond ) { _timerBase = ticksPerSecond; }
 	uint32 getTimerBaseValue() { return _timerBase; }
@@ -70,7 +86,7 @@ public:
 	}
 	void clearVoice(byte voice);
 	void clearVoices() { for (int i = 0; i < NUM_VOICES; ++i) clearVoice(i); }
-	void startPlay() { _playing = true; }
+	void startPlay() { filterResetState(); _playing = true; }
 	void stopPlay() { _playing = false; }
 	void pausePlay(bool pause) { _playing = !pause; }
 
@@ -184,7 +200,7 @@ protected:
 	}
 
 	void setAudioFilter(bool enable) {
-		// TODO: implement
+		_filterState.ledFilter = enable;
 	}
 
 private:
@@ -198,8 +214,13 @@ private:
 	uint32 _timerBase;
 	bool _playing;
 
+	FilterState _filterState;
+
 	template<bool stereo>
 	int readBufferIntern(int16 *buffer, const int numSamples);
+
+	void filterResetState();
+	float filterCalculateA0(int rate, int cutoff);
 };
 
 } // End of namespace Audio

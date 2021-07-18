@@ -26,6 +26,7 @@
 #include "engines/game.h"
 #include "gui/dialog.h"
 #include "gui/options.h"
+#include "gui/widget.h"
 
 namespace GUI {
 
@@ -39,8 +40,6 @@ class GraphicsWidget;
 class StaticTextWidget;
 class EditTextWidget;
 class SaveLoadChooser;
-
-Common::String addGameToConf(const GameDescriptor &result);
 
 /*
 * A dialog that allows the user to edit a config game entry.
@@ -62,13 +61,15 @@ class EditGameDialog : public OptionsDialog {
 	typedef Common::String String;
 	typedef Common::Array<Common::String> StringArray;
 public:
-	EditGameDialog(const String &domain, const String &desc);
+	EditGameDialog(const String &domain);
 
-	void open();
-	virtual void apply();
-	virtual void handleCommand(CommandSender *sender, uint32 cmd, uint32 data);
+	void open() override;
+	void apply() override;
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
 
 protected:
+	void setupGraphicsTab() override;
+
 	EditTextWidget *_descriptionWidget;
 	DomainEditTextWidget *_domainWidget;
 
@@ -84,12 +85,13 @@ protected:
 	PopUpWidget *_platformPopUp;
 
 	CheckboxWidget *_globalGraphicsOverride;
+	CheckboxWidget *_globalShaderOverride;
 	CheckboxWidget *_globalAudioOverride;
 	CheckboxWidget *_globalMIDIOverride;
 	CheckboxWidget *_globalMT32Override;
 	CheckboxWidget *_globalVolumeOverride;
 
-	ExtraGuiOptions _engineOptions;
+	OptionsContainerWidget *_engineOptions;
 };
 
 } // End of namespace GUI

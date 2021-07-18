@@ -49,14 +49,7 @@ enum MohawkGameType {
 	GType_MYST,
 	GType_MAKINGOF,
 	GType_RIVEN,
-	GType_ZOOMBINI,
 	GType_CSTIME,
-	GType_CSWORLD,
-	GType_CSAMTRAK,
-	GType_JAMESMATH,
-	GType_TREEHOUSE,
-	GType_1STDEGREE,
-	GType_CSUSA,
 	GType_LIVINGBOOKSV1,
 	GType_LIVINGBOOKSV2,
 	GType_LIVINGBOOKSV3,
@@ -64,12 +57,16 @@ enum MohawkGameType {
 	GType_LIVINGBOOKSV5
 };
 
+#define GAMEOPTION_ME   GUIO_GAMEOPTIONS1
+#define GAMEOPTION_25TH GUIO_GAMEOPTIONS2
+#define GAMEOPTION_DEMO GUIO_GAMEOPTIONS3
+
 enum MohawkGameFeatures {
-	GF_ME =      (1 << 0),	// Myst Masterpiece Edition
-	GF_DVD =     (1 << 1),
-	GF_DEMO =    (1 << 2),
-	GF_HASMIDI = (1 << 3),
-	GF_LB_10   = (1 << 4)   // very early Living Books 1.0 games
+	GF_ME             = (1 << 0), // Myst Masterpiece Edition
+	GF_25TH           = (1 << 1), // Myst and Riven 25th Anniversary
+	GF_DVD            = (1 << 2),
+	GF_DEMO           = (1 << 3),
+	GF_LB_10          = (1 << 4)  // very early Living Books 1.0 games
 };
 
 struct MohawkGameDescription;
@@ -80,23 +77,23 @@ class CursorManager;
 
 class MohawkEngine : public ::Engine {
 protected:
-	virtual Common::Error run();
+	Common::Error run() override;
 
 public:
 	MohawkEngine(OSystem *syst, const MohawkGameDescription *gamedesc);
-	virtual ~MohawkEngine();
+	~MohawkEngine() override;
 
 	// Detection related functions
 	const MohawkGameDescription *_gameDescription;
 	const char *getGameId() const;
 	uint32 getFeatures() const;
+	bool isGameVariant(MohawkGameFeatures feature) const;
 	const char *getAppName() const;
-	uint16 getVersion() const;
 	Common::Platform getPlatform() const;
 	uint8 getGameType() const;
-	Common::Language getLanguage() const;
+	virtual Common::Language getLanguage() const;
 
-	bool hasFeature(EngineFeature f) const;
+	bool hasFeature(EngineFeature f) const override;
 
 	CursorManager *_cursor;
 
@@ -106,6 +103,7 @@ public:
 	uint32 getResourceOffset(uint32 tag, uint16 id);
 	uint16 findResourceID(uint32 type, const Common::String &resName);
 	Common::String getResourceName(uint32 tag, uint16 id);
+	void closeAllArchives();
 
 	void pauseGame();
 

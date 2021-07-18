@@ -64,12 +64,12 @@ class SeekableReadStream;
 #define CUSTOM_XML_PARSER(parserName) \
 	protected: \
 	typedef parserName kLocalParserName; \
-	bool keyCallback(ParserNode *node) {return node->layout->doCallback(this, node); }\
+	bool keyCallback(ParserNode *node) override {return node->layout->doCallback(this, node); }\
 	struct CustomXMLKeyLayout : public XMLKeyLayout {\
 		typedef bool (parserName::*ParserCallback)(ParserNode *node);\
 		ParserCallback callback;\
 		bool doCallback(XMLParser *parent, ParserNode *node) {return ((kLocalParserName *)parent->*callback)(node);} };\
-	virtual void buildLayout() { \
+	virtual void buildLayout() override { \
 		Common::Stack<XMLKeyLayout *> layout; \
 		CustomXMLKeyLayout *lay = 0; \
 		XMLKeyLayout::XMLKeyProperty prop; \
@@ -92,7 +92,7 @@ public:
 	/**
 	 * Parser constructor.
 	 */
-	XMLParser() : _XMLkeys(0), _stream(0) {}
+	XMLParser() : _XMLkeys(nullptr), _stream(nullptr) {}
 
 	virtual ~XMLParser();
 
@@ -195,7 +195,7 @@ public:
 		if (!_activeKey.empty())
 			return _activeKey.top();
 
-		return 0;
+		return nullptr;
 	}
 
 	/**

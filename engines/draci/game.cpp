@@ -135,7 +135,7 @@ Game::Game(DraciEngine *vm) : _vm(vm), _walkingState(vm) {
 	}
 
 	_dialogueVars = new int[curOffset];
-	memset(_dialogueVars, 0, sizeof (int) * curOffset);
+	memset(_dialogueVars, 0, sizeof(int) * curOffset);
 
 	// Read in game info
 	file = initArchive->getFile(3);
@@ -643,8 +643,8 @@ void Game::loop(LoopSubstatus substatus, bool shouldExit) {
 			case kStatusDialogue:
 				handleDialogueLoop();
 				break;
-			case kStatusGate:
-				// cannot happen when isCursonOn; added for completeness
+			case kStatusGate: // cannot happen when isCursonOn; added for completeness
+			default:
 				break;
 			}
 		}
@@ -999,6 +999,8 @@ void Game::inventorySwitch(int keycode) {
 			setPreviousItemPosition(pos);
 			removeItem(new_item);
 		}
+		break;
+	default:
 		break;
 	}
 	if (getLoopStatus() == kStatusOrdinary) {
@@ -1594,7 +1596,7 @@ Game::~Game() {
 	delete[] _items;
 }
 
-void Game::DoSync(Common::Serializer &s, uint8 saveVersion) {
+void Game::synchronize(Common::Serializer &s, uint8 saveVersion) {
 	s.syncAsUint16LE(_currentRoom._roomNum);
 
 	for (uint i = 0; i < _info._numObjects; ++i) {

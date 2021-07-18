@@ -33,15 +33,18 @@ class String;
  * List of game language.
  */
 enum Language {
+	ZH_ANY,     // Generic Chinese (when only one game version exist)
 	ZH_CNA,
 	ZH_TWN,
 	HR_HRV,
 	CZ_CZE,
+	DA_DAN,
 	NL_NLD,
 	EN_ANY,     // Generic English (when only one game version exist)
 	EN_GRB,
 	EN_USA,
 	ET_EST,
+	FI_FIN,
 	FR_FRA,
 	DE_DEU,
 	GR_GRE,
@@ -52,11 +55,17 @@ enum Language {
 	KO_KOR,
 	LV_LAT,
 	NB_NOR,
+	FA_IRN,
 	PL_POL,
 	PT_BRA,
+	PT_POR,
 	RU_RUS,
+	SK_SVK,
 	ES_ESP,
 	SE_SWE,
+	TR_TUR,
+	UA_UKR,
+	SR_SER,
 
 	UNK_LANG = -1	// Use default language (i.e. none specified)
 };

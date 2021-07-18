@@ -241,20 +241,15 @@ void RivenVideo::playBlocking(int32 endTime) {
 		_vm->doFrame();
 
 		// Handle skipping
-		if (playTillEnd && _vm->getStack()->keyGetAction() == kKeyActionSkip) {
+		if (playTillEnd && _vm->getStack()->getAction() == kRivenActionSkip) {
 			continuePlaying = false;
 
 			// Seek to the last frame
 			_video->seek(_video->getDuration().addMsecs(-1));
 
 			_vm->getStack()->mouseForceUp();
-			_vm->getStack()->keyResetAction();
+			_vm->getStack()->resetAction();
 		}
-	}
-
-	if (playTillEnd) {
-		disable();
-		stop();
 	}
 
 	// Execute the stored opcode
@@ -262,6 +257,12 @@ void RivenVideo::playBlocking(int32 endTime) {
 	uint32 storedOpcodeTime = _vm->_scriptMan->getStoredMovieOpcodeTime();
 	if (_slot == storedOpcodeMovieSlot && getTime() >= storedOpcodeTime) { // CHECKME: Suspicious use of time units
 		_vm->_scriptMan->runStoredMovieOpcode();
+	}
+
+	if (playTillEnd) {
+		disable();
+		stop();
+		seek(0);
 	}
 
 	_vm->_cursor->showCursor();

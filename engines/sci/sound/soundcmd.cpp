@@ -91,21 +91,21 @@ int SoundCommandParser::getSoundResourceId(reg_t obj) {
 }
 
 void SoundCommandParser::initSoundResource(MusicEntry *newSound) {
-	if (newSound->resourceId && _resMan->testResource(ResourceId(kResourceTypeSound, newSound->resourceId)))
+	if (newSound->resourceId) {
 		newSound->soundRes = new SoundResource(newSound->resourceId, _resMan, _soundVersion);
-	else
-		newSound->soundRes = 0;
+		if (!newSound->soundRes->exists()) {
+			delete newSound->soundRes;
+			newSound->soundRes = nullptr;
+		}
+	} else {
+		newSound->soundRes = nullptr;
+	}
 
 	// In SCI1.1 games, sound effects are started from here. If we can find
 	// a relevant audio resource, play it, otherwise switch to synthesized
 	// effects. If the resource exists, play it using map 65535 (sound
 	// effects map)
-	bool checkAudioResource = getSciVersion() >= SCI_VERSION_1_1;
-	// Hoyle 4 has garbled audio resources in place of the sound resources.
-	if (g_sci->getGameId() == GID_HOYLE4)
-		checkAudioResource = false;
-
-	if (checkAudioResource && _resMan->testResource(ResourceId(kResourceTypeAudio, newSound->resourceId))) {
+	if (getSciVersion() >= SCI_VERSION_1_1 && _resMan->testResource(ResourceId(kResourceTypeAudio, newSound->resourceId))) {
 		// Found a relevant audio resource, create an audio stream if there is
 		// no associated sound resource, or if both resources exist and the
 		// user wants the digital version.
@@ -175,7 +175,7 @@ reg_t SoundCommandParser::kDoSoundPlay(EngineState *s, int argc, reg_t *argv) {
 	return s->r_acc;
 }
 
-void SoundCommandParser::processPlaySound(reg_t obj, bool playBed) {
+void SoundCommandParser::processPlaySound(reg_t obj, bool playBed, bool restoring) {
 	MusicEntry *musicSlot = _music->getSlot(obj);
 	if (!musicSlot) {
 		warning("kDoSound(play): Slot not found (%04x:%04x), initializing it manually", PRINT_REG(obj));
@@ -188,7 +188,14 @@ void SoundCommandParser::processPlaySound(reg_t obj, bool playBed) {
 			error("Failed to initialize uninitialized sound slot");
 	}
 
-	int resourceId = getSoundResourceId(obj);
+	int resourceId;
+	if (!restoring)
+		resourceId = getSoundResourceId(obj);
+	else
+		// Handle cases where a game was saved while track A was playing, but track B was initialized, waiting to be played later.
+		// In such cases, musicSlot->resourceId contains the actual track that was playing (A), while getSoundResourceId(obj)
+		// contains the track that's waiting to be played later (B) - bug #10907.
+		resourceId = musicSlot->resourceId;
 
 	if (musicSlot->resourceId != resourceId) { // another sound loaded into struct
 		processDisposeSound(obj);
@@ -455,7 +462,7 @@ reg_t SoundCommandParser::kDoSoundFade(EngineState *s, int argc, reg_t *argv) {
 		musicSlot->fadeTicker = 0;
 
 		// argv[4] is a boolean. Scripts sometimes pass strange values,
-		// but SSCI only checks for zero/non-zero. (Verified in KQ6.)
+		// but SSCI only checks for zero/non-zero. (Verified in KQ6).
 		// KQ6 room 460 even passes an object, but treating this as 'true'
 		// seems fine in that case.
 		if (argc == 5)
@@ -621,6 +628,10 @@ void SoundCommandParser::processUpdateCues(reg_t obj) {
 		writeSelectorValue(_segMan, obj, SELECTOR(min), musicSlot->ticker / 3600);
 		writeSelectorValue(_segMan, obj, SELECTOR(sec), musicSlot->ticker % 3600 / 60);
 		writeSelectorValue(_segMan, obj, SELECTOR(frame), musicSlot->ticker % 60 / 2);
+
+		if (_soundVersion >= SCI_VERSION_1_MIDDLE) {
+			writeSelectorValue(_segMan, obj, SELECTOR(vol), musicSlot->volume);
+		}
 	}
 }
 
@@ -633,6 +644,12 @@ reg_t SoundCommandParser::kDoSoundSendMidi(EngineState *s, int argc, reg_t *argv
 	byte midiCmd = (argc == 5) ? argv[2].toUint16() & 0xff : 0xB0;	// 0xB0: controller
 	uint16 controller = (argc == 5) ? argv[3].toUint16() : argv[2].toUint16();
 	uint16 param = (argc == 5) ? argv[4].toUint16() : argv[3].toUint16();
+
+	// This call is made in Hoyle 5 when toggling the music from the main menu.
+	// Ignore it for this game, since it doesn't use MIDI audio, and this call
+	// looks to be a leftover in Sound::mute (script 64989).
+	if (g_sci->getGameId() == GID_HOYLE5)
+		return s->r_acc;
 
 	if (argc == 4 && controller == 0xFF) {
 		midiCmd = 0xE0;	// 0xE0: pitch wheel
@@ -833,7 +850,8 @@ void SoundCommandParser::updateSci0Cues() {
 		// Is the sound stopped, and the sound object updated too? If yes, skip
 		// this sound, as SCI0 only allows one active song.
 		if  ((*i)->isQueued) {
-			pWaitingForPlay = (*i);
+			if (!pWaitingForPlay || pWaitingForPlay->priority < (*i)->priority)		// fix #9907
+				pWaitingForPlay = (*i);
 			// FIXME(?): In iceman 2 songs are queued when playing the door
 			// sound - if we use the first song for resuming then it's the wrong
 			// one. Both songs have same priority. Maybe the new sound function

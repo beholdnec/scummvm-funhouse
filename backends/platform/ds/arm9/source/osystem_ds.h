@@ -24,6 +24,10 @@
 #ifndef _OSYSTEM_DS_H_
 #define _OSYSTEM_DS_H_
 
+// Allow use of stuff in <nds.h>
+#define FORBIDDEN_SYMBOL_EXCEPTION_printf
+#define FORBIDDEN_SYMBOL_EXCEPTION_unistd_h
+
 #include "backends/base-backend.h"
 #include "common/events.h"
 #include "nds.h"
@@ -31,7 +35,6 @@
 #include "backends/saves/default/default-saves.h"
 #include "audio/mixer_intern.h"
 #include "graphics/surface.h"
-#include "graphics/colormasks.h"
 #include "graphics/palette.h"
 
 class OSystem_DS : public EventsBaseBackend, public PaletteManager {
@@ -80,11 +83,6 @@ public:
 	virtual bool hasFeature(Feature f);
 	virtual void setFeatureState(Feature f, bool enable);
 	virtual bool getFeatureState(Feature f);
-	virtual const GraphicsMode *getSupportedGraphicsModes() const;
-	virtual int getDefaultGraphicsMode() const;
-	virtual bool setGraphicsMode(int mode);
-	bool setGraphicsMode(const char *name);
-	virtual int getGraphicsMode() const;
 	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format);
 	virtual int16 getHeight();
 	virtual int16 getWidth();
@@ -100,7 +98,7 @@ public:
 
 	virtual void copyRectToScreen(const void *buf, int pitch, int x, int y, int w, int h);
 	virtual void updateScreen();
-	virtual void setShakePos(int shakeOffset);
+	virtual void setShakePos(int shakeXOffset, int shakeYOffset);
 
 	virtual void showOverlay();
 	virtual void hideOverlay();
@@ -109,7 +107,7 @@ public:
 	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h);
 	virtual int16 getOverlayHeight();
 	virtual int16 getOverlayWidth();
-	virtual Graphics::PixelFormat getOverlayFormat() const { return Graphics::createPixelFormat<1555>(); }
+	virtual Graphics::PixelFormat getOverlayFormat() const { return Graphics::PixelFormat(2, 5, 5, 5, 1, 0, 5, 10, 15); }
 
 	virtual bool showMouse(bool visible);
 
@@ -178,10 +176,6 @@ public:
 	void setGammaValue(int gamma) { _gammaValue = gamma; }
 
 	void engineDone();
-};
-
-static const OSystem::GraphicsMode s_supportedGraphicsModes[] = {
-	{0, 0, 0},
 };
 
 #endif

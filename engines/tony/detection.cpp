@@ -25,7 +25,6 @@
 #include "common/memstream.h"
 #include "engines/advancedDetector.h"
 #include "common/system.h"
-#include "graphics/colormasks.h"
 #include "graphics/surface.h"
 
 #include "tony/tony.h"
@@ -71,20 +70,24 @@ public:
 	TonyMetaEngine() : AdvancedMetaEngine(Tony::gameDescriptions, sizeof(Tony::TonyGameDescription), tonyGames) {
 	}
 
-	virtual const char *getName() const {
-		return "Tony Engine";
+	const char *getEngineId() const override {
+		return "tony";
 	}
 
-	virtual const char *getOriginalCopyright() const {
-		return "Tony Engine (C) Protonic Interactive";
+	const char *getName() const override {
+		return "Tony Tough and the Night of Roasted Moths";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	const char *getOriginalCopyright() const override {
+		return "Tony Tough and the Night of Roasted Moths (C) Protonic Interactive";
+	}
+
+	bool hasFeature(MetaEngineFeature f) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 };
 
 bool TonyMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -98,7 +101,7 @@ bool TonyMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool Tony::TonyEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsLoadingDuringRuntime) ||
 		(f == kSupportsSavingDuringRuntime);
 }

@@ -35,6 +35,9 @@
 #include "zvision/text/truetype_font.h"
 #include "zvision/sound/midi.h"
 
+#include "backends/keymapper/keymap.h"
+#include "backends/keymapper/keymapper.h"
+
 #include "common/config-manager.h"
 #include "common/str.h"
 #include "common/debug.h"
@@ -76,6 +79,10 @@ struct zvisionIniSettings {
 	{"mpegmovies", StateKey_MPEGMovies, -1, true, true}		// Zork: Grand Inquisitor DVD hi-res MPEG movies (0 = normal, 1 = hires, 2 = disable option)
 };
 
+const char *mainKeymapId = "zvision";
+const char *gameKeymapId = "zvision-game";
+const char *cutscenesKeymapId = "zvision-cutscenes";
+
 ZVision::ZVision(OSystem *syst, const ZVisionGameDescription *gameDesc)
 	: Engine(syst),
 	  _gameDescription(gameDesc),
@@ -90,7 +97,6 @@ ZVision::ZVision(OSystem *syst, const ZVisionGameDescription *gameDesc)
 	  _cursorManager(nullptr),
 	  _midiManager(nullptr),
 	  _rnd(nullptr),
-	  _console(nullptr),
 	  _menu(nullptr),
 	  _searchManager(nullptr),
 	  _textRenderer(nullptr),
@@ -112,7 +118,6 @@ ZVision::~ZVision() {
 	debug(1, "ZVision::~ZVision");
 
 	// Dispose of resources
-	delete _console;
 	delete _cursorManager;
 	delete _stringManager;
 	delete _saveManager;
@@ -191,7 +196,22 @@ void ZVision::initialize() {
 		}
 	}
 
+	Graphics::ModeList modes;
+	modes.push_back(Graphics::Mode(WINDOW_WIDTH, WINDOW_HEIGHT));
+#if defined(USE_MPEG2) && defined(USE_A52)
+	// For the DVD version of ZGI we can play high resolution videos
+	if (getGameId() == GID_GRANDINQUISITOR && (getFeatures() & GF_DVD))
+		modes.push_back(Graphics::Mode(HIRES_WINDOW_WIDTH, HIRES_WINDOW_HEIGHT));
+#endif
+	initGraphicsModes(modes);
+
 	initScreen();
+
+	Common::Keymapper *keymapper = _system->getEventManager()->getKeymapper();
+	_gameKeymap = keymapper->getKeymap(gameKeymapId);
+	_gameKeymap->setEnabled(true);
+	_cutscenesKeymap = keymapper->getKeymap(cutscenesKeymapId);
+	_cutscenesKeymap->setEnabled(false);
 
 	// Register random source
 	_rnd = new Common::RandomSource("zvision");
@@ -219,13 +239,13 @@ void ZVision::initialize() {
 
 	loadSettings();
 
-#ifndef USE_MPEG2
-	// libmpeg2 not loaded, disable the MPEG2 movies option
+#if !defined(USE_MPEG2) || !defined(USE_A52)
+	// libmpeg2 or liba52 not loaded, disable the MPEG2 movies option
 	_scriptManager->setStateValue(StateKey_MPEGMovies, 2);
 #endif
 
 	// Create debugger console. It requires GFX to be initialized
-	_console = new Console(this);
+	setDebugger(new Console(this));
 	_doubleFPS = ConfMan.getBool("doublefps");
 
 	// Initialize FPS timer callback
@@ -276,7 +296,8 @@ Common::Error ZVision::run() {
 
 			if (!Common::File::exists(fontName) && !_searchManager->hasFile(fontName) &&
 				!Common::File::exists(liberationFontName) && !_searchManager->hasFile(liberationFontName) &&
-				!Common::File::exists(freeFontName) && !_searchManager->hasFile(freeFontName)) {
+				!Common::File::exists(freeFontName) && !_searchManager->hasFile(freeFontName) &&
+				!Common::File::exists("fonts.dat") && !_searchManager->hasFile("fonts.dat")) {
 				foundAllFonts = false;
 				break;
 			}
@@ -340,10 +361,6 @@ Common::Error ZVision::run() {
 			delay >>= 1;
 		}
 
-		if (canSaveGameStateCurrently() && shouldPerformAutoSave(_saveManager->getLastSaveTime())) {
-			_saveManager->autoSave();
-		}
-
 		_system->delayMillis(delay);
 	}
 
@@ -360,20 +377,12 @@ void ZVision::pauseEngineIntern(bool pause) {
 	}
 }
 
-Common::String ZVision::generateSaveFileName(uint slot) {
-	return Common::String::format("%s.%03u", _targetName.c_str(), slot);
-}
-
 void ZVision::setRenderDelay(uint delay) {
 	_frameRenderDelay = delay;
 }
 
 bool ZVision::canRender() {
 	return _frameRenderDelay <= 0;
-}
-
-GUI::Debugger *ZVision::getDebugger() {
-	return _console;
 }
 
 void ZVision::syncSoundSettings() {

@@ -1,14 +1,14 @@
 MODULE := common
 
 MODULE_OBJS := \
+	achievements.o \
 	archive.o \
 	config-manager.o \
 	coroutines.o \
 	dcl.o \
 	debug.o \
 	error.o \
-	EventDispatcher.o \
-	EventMapper.o \
+	events.o \
 	file.o \
 	fs.o \
 	gui_options.o \
@@ -30,12 +30,14 @@ MODULE_OBJS := \
 	rational.o \
 	rendermode.o \
 	str.o \
+	str-enc.o \
 	stream.o \
 	system.o \
 	textconsole.o \
 	tokenizer.o \
 	translation.o \
 	unarj.o \
+	unicode-bidi.o \
 	unzip.o \
 	ustr.o \
 	util.o \
@@ -49,8 +51,8 @@ MODULE_OBJS += \
 	cosinetables.o \
 	dct.o \
 	fft.o \
-	huffman.o \
 	rdft.o \
+	encoding.o \
 	sinetables.o
 
 ifdef ENABLE_EVENTRECORDER
@@ -61,6 +63,47 @@ endif
 ifdef USE_UPDATES
 MODULE_OBJS += \
 	updates.o
+endif
+
+ifdef USE_LUA
+MODULE_OBJS += \
+	lua/double_serialization.o \
+	lua/lapi.o \
+	lua/lauxlib.o \
+	lua/lbaselib.o \
+	lua/lcode.o \
+	lua/ldblib.o \
+	lua/ldebug.o \
+	lua/ldo.o \
+	lua/lfunc.o \
+	lua/lgc.o \
+	lua/linit.o \
+	lua/liolib.o \
+	lua/llex.o \
+	lua/lmathlib.o \
+	lua/lmem.o \
+	lua/loadlib.o \
+	lua/lobject.o \
+	lua/lopcodes.o \
+	lua/loslib.o \
+	lua/lparser.o \
+	lua/lstate.o \
+	lua/lstring.o \
+	lua/lstrlib.o \
+	lua/ltable.o \
+	lua/ltablib.o \
+	lua/ltm.o \
+	lua/lua_persist.o \
+	lua/lua_persistence_util.o \
+	lua/lua_unpersist.o \
+	lua/lvm.o \
+	lua/lzio.o \
+	lua/scummvm_file.o
+endif
+
+ifdef USE_TTS
+MODULE_OBJS += \
+	text-to-speech.o
 endif
 
 # Include common rules

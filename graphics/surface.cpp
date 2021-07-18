@@ -354,6 +354,35 @@ void Surface::move(int dx, int dy, int height) {
 	}
 }
 
+void Surface::flipVertical(const Common::Rect &r) {
+	const int width = r.width() * format.bytesPerPixel;
+	byte *temp = new byte[width];
+	for (int y = r.top; y < r.bottom / 2; y++) {
+		byte *row1 = (byte *)getBasePtr(r.left, y);
+		byte *row2 = (byte *)getBasePtr(r.left, r.bottom - y - 1);
+
+		memcpy(temp, row1, width);
+		memcpy(row1, row2, width);
+		memcpy(row2, temp, width);
+	}
+	delete[] temp;
+}
+
+Graphics::Surface *Surface::scale(uint16 newWidth, uint16 newHeight, bool filtering) const {
+
+	Graphics::Surface *target = new Graphics::Surface();
+
+	target->create(newWidth, newHeight, format);
+
+	if (filtering) {
+		scaleBlitBilinear((byte *)target->getPixels(), (const byte *)getPixels(), target->pitch, pitch, target->w, target->h, w, h, format);
+	} else {
+		scaleBlit((byte *)target->getPixels(), (const byte *)getPixels(), target->pitch, pitch, target->w, target->h, w, h, format);
+	}
+
+	return target;
+}
+
 void Surface::convertToInPlace(const PixelFormat &dstFormat, const byte *palette) {
 	// Do not convert to the same format and ignore empty surfaces.
 	if (format == dstFormat || pixels == 0) {
@@ -434,8 +463,8 @@ Graphics::Surface *Surface::convertTo(const PixelFormat &dstFormat, const byte *
 	if (format.bytesPerPixel == 0 || format.bytesPerPixel > 4)
 		error("Surface::convertTo(): Can only convert from 1Bpp, 2Bpp, 3Bpp, and 4Bpp");
 
-	if (dstFormat.bytesPerPixel != 2 && dstFormat.bytesPerPixel != 4)
-		error("Surface::convertTo(): Can only convert to 2Bpp and 4Bpp");
+	if (dstFormat.bytesPerPixel < 2 || dstFormat.bytesPerPixel > 4)
+		error("Surface::convertTo(): Can only convert to 2Bpp, 3Bpp and 4Bpp");
 
 	surface->create(w, h, dstFormat);
 
@@ -457,6 +486,8 @@ Graphics::Surface *Surface::convertTo(const PixelFormat &dstFormat, const byte *
 
 				if (dstFormat.bytesPerPixel == 2)
 					*((uint16 *)dstRow) = color;
+				else if (dstFormat.bytesPerPixel == 3)
+					WRITE_UINT24(dstRow, color);
 				else
 					*((uint32 *)dstRow) = color;
 
@@ -487,6 +518,8 @@ Graphics::Surface *Surface::convertTo(const PixelFormat &dstFormat, const byte *
 
 				if (dstFormat.bytesPerPixel == 2)
 					*((uint16 *)dstRow) = color;
+				else if (dstFormat.bytesPerPixel == 3)
+					WRITE_UINT24(dstRow, color);
 				else
 					*((uint32 *)dstRow) = color;
 
@@ -510,7 +543,7 @@ FloodFill::FloodFill(Graphics::Surface *surface, uint32 oldColor, uint32 fillCol
 
 	if (_maskMode) {
 		_mask = new Graphics::Surface();
-		_mask->create(_w, _h, Graphics::PixelFormat::createFormatCLUT8()); // Uses calloc()
+		_mask->create(_w, _h, surface->format); // Uses calloc()
 	}
 
 	_visited = (byte *)calloc(_w * _h, 1);
@@ -526,8 +559,10 @@ FloodFill::~FloodFill() {
 
 	free(_visited);
 
-	if (_mask)
+	if (_mask) {
+		_mask->free();
 		delete _mask;
+	}
 }
 
 void FloodFill::addSeed(int x, int y) {
@@ -553,7 +588,7 @@ void FloodFill::addSeed(int x, int y) {
 					if (!_maskMode)
 						WRITE_UINT16(src, _fillColor);
 					else
-						*((byte *)dst) = 255;
+						*((uint16 *)dst) = 0xffff;
 
 					changed = true;
 				}
@@ -562,7 +597,7 @@ void FloodFill::addSeed(int x, int y) {
 					if (!_maskMode)
 						WRITE_UINT32(src, _fillColor);
 					else
-						*((byte *)dst) = 255;
+						*((uint32 *)dst) = 0xffffffff;
 
 					changed = true;
 				}
@@ -597,7 +632,7 @@ void FloodFill::fillMask() {
 
 	if (!_mask) {
 		_mask = new Graphics::Surface();
-		_mask->create(_w, _h, Graphics::PixelFormat::createFormatCLUT8()); // Uses calloc()
+		_mask->create(_w, _h, _surface->format); // Uses calloc()
 	}
 
 	fill();

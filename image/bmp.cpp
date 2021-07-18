@@ -69,8 +69,8 @@ bool BitmapDecoder::loadStream(Common::SeekableReadStream &stream) {
 	uint32 imageOffset = stream.readUint32LE();
 
 	uint32 infoSize = stream.readUint32LE();
-	if (infoSize != 40) {
-		warning("Only Windows v3 bitmaps are supported");
+	if (infoSize != 40 && infoSize != 108) {
+		warning("Only Windows v3 & v4 bitmaps are supported");
 		return false;
 	}
 
@@ -115,7 +115,7 @@ bool BitmapDecoder::loadStream(Common::SeekableReadStream &stream) {
 	}
 
 	// Create the codec (it will warn about unhandled compression)
-	_codec = createBitmapCodec(compression, width, height, bitsPerPixel);
+	_codec = createBitmapCodec(compression, 0, width, height, bitsPerPixel);
 	if (!_codec)
 		return false;
 
@@ -128,6 +128,58 @@ bool BitmapDecoder::loadStream(Common::SeekableReadStream &stream) {
 
 	// We only support raw bitmaps for now
 	_surface = _codec->decodeFrame(subStream);
+
+	return true;
+}
+
+bool writeBMP(Common::WriteStream &out, const Graphics::Surface &input) {
+#ifdef SCUMM_LITTLE_ENDIAN
+	const Graphics::PixelFormat requiredFormat_3byte(3, 8, 8, 8, 0, 16, 8, 0, 0);
+#else
+	const Graphics::PixelFormat requiredFormat_3byte(3, 8, 8, 8, 0, 0, 8, 16, 0);
+#endif
+
+	Graphics::Surface *tmp = NULL;
+	const Graphics::Surface *surface;
+
+	if (input.format == requiredFormat_3byte) {
+		surface = &input;
+	} else {
+		surface = tmp = input.convertTo(requiredFormat_3byte);
+	}
+
+	int dstPitch = surface->w * 3;
+	int extraDataLength = (dstPitch % 4) ? 4 - (dstPitch % 4) : 0;
+	int padding = 0;
+
+	out.writeByte('B');
+	out.writeByte('M');
+	out.writeUint32LE(surface->h * dstPitch + 54);
+	out.writeUint32LE(0);
+	out.writeUint32LE(54);
+	out.writeUint32LE(40);
+	out.writeUint32LE(surface->w);
+	out.writeUint32LE(surface->h);
+	out.writeUint16LE(1);
+	out.writeUint16LE(24);
+	out.writeUint32LE(0);
+	out.writeUint32LE(0);
+	out.writeUint32LE(0);
+	out.writeUint32LE(0);
+	out.writeUint32LE(0);
+	out.writeUint32LE(0);
+
+
+	for (uint y = surface->h; y-- > 0;) {
+		out.write((const void *)surface->getBasePtr(0, y), dstPitch);
+		out.write(&padding, extraDataLength);
+	}
+
+	// free tmp surface
+	if (tmp) {
+		tmp->free();
+		delete tmp;
+	}
 
 	return true;
 }

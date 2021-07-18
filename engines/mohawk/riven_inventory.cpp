@@ -54,7 +54,7 @@ void RivenInventory::draw() {
 	clearArea();
 
 	// Draw the demo's exit button
-	if (_vm->getFeatures() & GF_DEMO) {
+	if (_vm->isGameVariant(GF_DEMO)) {
 		// extras.mhk tBMP 101 contains "EXIT" instead of Atrus' journal in the demo!
 		// The demo's extras.mhk contains all the other inventory/marble/credits image
 		// but has hacked tBMP 101 with "EXIT". *sigh*
@@ -100,7 +100,7 @@ void RivenInventory::checkClick(const Common::Point &mousePos) {
 	}
 
 	// In the demo, check if we've clicked the exit button
-	if (_vm->getFeatures() & GF_DEMO) {
+	if (_vm->isGameVariant(GF_DEMO)) {
 		if (_demoExitRect.contains(mousePos)) {
 			if (_vm->getStack()->getId() == kStackAspit && _vm->getCard()->getId() == 1) {
 				// From the main menu, go to the "quit" screen
@@ -167,7 +167,7 @@ void RivenInventory::backFromItemScript() const {
 	uint32 backCardId = _vm->_vars["returncardid"];
 
 	// Return to where we were before entering the book
-	RivenCommand *back = new RivenStackChangeCommand(_vm, backStackId, backCardId, true);
+	RivenCommand *back = new RivenStackChangeCommand(_vm, backStackId, backCardId, true, false);
 	RivenScriptPtr backScript = _vm->_scriptMan->createScriptWithCommand(back);
 	_vm->_scriptMan->runScript(backScript, true);
 }
@@ -181,7 +181,7 @@ bool RivenInventory::isVisible() const {
 		return false;
 	}
 
-	if (_vm->getFeatures() & GF_DEMO) {
+	if (_vm->isGameVariant(GF_DEMO)) {
 		// The inventory is always visible in the demo
 		return true;
 	}

@@ -84,30 +84,34 @@ enum GameSpeed {
 	kGroovieSpeedFast
 };
 
+#define MAX_SAVES 25
+
 struct GroovieGameDescription;
 
 class GroovieEngine : public Engine {
 public:
 	GroovieEngine(OSystem *syst, const GroovieGameDescription *gd);
-	~GroovieEngine();
+	~GroovieEngine() override;
 
 	Common::Platform getPlatform() const;
 
 protected:
 
 	// Engine APIs
-	Common::Error run();
+	Common::Error run() override;
+	void pauseEngineIntern(bool pause) override;
 
-	virtual bool hasFeature(EngineFeature f) const;
+	bool hasFeature(EngineFeature f) const override;
 
-	virtual bool canLoadGameStateCurrently();
-	virtual Common::Error loadGameState(int slot);
-	virtual void syncSoundSettings();
-
-	virtual Debugger *getDebugger() { return _debugger; }
+	bool canLoadGameStateCurrently() override;
+	bool canSaveGameStateCurrently() override;
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	void syncSoundSettings() override;
 
 public:
 	void waitForInput();
+	bool isWaitingForInput() { return _waitingForInput; }
 
 	Graphics::PixelFormat _pixelFormat;
 	bool _spookyMode;
@@ -125,7 +129,6 @@ public:
 
 private:
 	const GroovieGameDescription *_gameDescription;
-	Debugger *_debugger;
 	bool _waitingForInput;
 	T7GFont _sphinxFont;
 };

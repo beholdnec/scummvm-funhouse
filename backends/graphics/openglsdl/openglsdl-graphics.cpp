@@ -32,7 +32,7 @@
 #include "common/translation.h"
 #endif
 
-OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(uint desktopWidth, uint desktopHeight, SdlEventSource *eventSource, SdlWindow *window)
+OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(SdlEventSource *eventSource, SdlWindow *window)
     : SdlGraphicsManager(eventSource, window), _lastRequestedHeight(0),
 #if SDL_VERSION_ATLEAST(2, 0, 0)
       _glContext(),
@@ -175,10 +175,12 @@ OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(uint desktopWidth, uint deskt
 		}
 	}
 
+	Common::Rect desktopRes = _window->getDesktopResolution();
+
 	// In case SDL is fine with every mode we will force the desktop mode.
 	// TODO? We could also try to add some default resolutions here.
-	if (_fullscreenVideoModes.empty() && desktopWidth && desktopHeight) {
-		_fullscreenVideoModes.push_back(VideoMode(desktopWidth, desktopHeight));
+	if (_fullscreenVideoModes.empty() && !desktopRes.isEmpty()) {
+		_fullscreenVideoModes.push_back(VideoMode(desktopRes.width(), desktopRes.height()));
 	}
 
 	// Get information about display sizes from the previous runs.
@@ -187,8 +189,8 @@ OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(uint desktopWidth, uint deskt
 		_desiredFullscreenHeight = ConfMan.getInt("last_fullscreen_mode_height", Common::ConfigManager::kApplicationDomain);
 	} else {
 		// Use the desktop resolutions when no previous default has been setup.
-		_desiredFullscreenWidth  = desktopWidth;
-		_desiredFullscreenHeight = desktopHeight;
+		_desiredFullscreenWidth  = desktopRes.width();
+		_desiredFullscreenHeight = desktopRes.height();
 	}
 }
 
@@ -197,22 +199,6 @@ OpenGLSdlGraphicsManager::~OpenGLSdlGraphicsManager() {
 	notifyContextDestroy();
 	SDL_GL_DeleteContext(_glContext);
 #endif
-}
-
-void OpenGLSdlGraphicsManager::activateManager() {
-	SdlGraphicsManager::activateManager();
-
-	// Register the graphics manager as a event observer
-	g_system->getEventManager()->getEventDispatcher()->registerObserver(this, 10, false);
-}
-
-void OpenGLSdlGraphicsManager::deactivateManager() {
-	// Unregister the event observer
-	if (g_system->getEventManager()->getEventDispatcher()) {
-		g_system->getEventManager()->getEventDispatcher()->unregisterObserver(this);
-	}
-
-	SdlGraphicsManager::deactivateManager();
 }
 
 bool OpenGLSdlGraphicsManager::hasFeature(OSystem::Feature f) const {
@@ -281,56 +267,6 @@ void OpenGLSdlGraphicsManager::initSize(uint w, uint h, const Graphics::PixelFor
 	return OpenGLGraphicsManager::initSize(w, h, format);
 }
 
-#ifdef USE_RGB_COLOR
-Common::List<Graphics::PixelFormat> OpenGLSdlGraphicsManager::getSupportedFormats() const {
-	Common::List<Graphics::PixelFormat> formats;
-
-	// Our default mode is (memory layout wise) RGBA8888 which is a different
-	// logical layout depending on the endianness. We chose this mode because
-	// it is the only 32bit color mode we can safely assume to be present in
-	// OpenGL and OpenGL ES implementations. Thus, we need to supply different
-	// logical formats based on endianness.
-#ifdef SCUMM_LITTLE_ENDIAN
-	// ABGR8888
-	formats.push_back(Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
-#else
-	// RGBA8888
-	formats.push_back(Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0));
-#endif
-	// RGB565
-	formats.push_back(Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0));
-	// RGBA5551
-	formats.push_back(Graphics::PixelFormat(2, 5, 5, 5, 1, 11, 6, 1, 0));
-	// RGBA4444
-	formats.push_back(Graphics::PixelFormat(2, 4, 4, 4, 4, 12, 8, 4, 0));
-
-#if !USE_FORCED_GLES && !USE_FORCED_GLES2
-#if !USE_FORCED_GL
-	if (!isGLESContext()) {
-#endif
-#ifdef SCUMM_LITTLE_ENDIAN
-		// RGBA8888
-		formats.push_back(Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0));
-#else
-		// ABGR8888
-		formats.push_back(Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
-#endif
-#if !USE_FORCED_GL
-	}
-#endif
-#endif
-
-	// RGB555, this is used by SCUMM HE 16 bit games.
-	// This is not natively supported by OpenGL ES implementations, we convert
-	// the pixel format internally.
-	formats.push_back(Graphics::PixelFormat(2, 5, 5, 5, 0, 10, 5, 0, 0));
-
-	formats.push_back(Graphics::PixelFormat::createFormatCLUT8());
-
-	return formats;
-}
-#endif
-
 void OpenGLSdlGraphicsManager::updateScreen() {
 	if (_ignoreResizeEvents) {
 		--_ignoreResizeEvents;
@@ -355,7 +291,8 @@ void OpenGLSdlGraphicsManager::notifyResize(const int width, const int height) {
 	getWindowSizeFromSdl(&currentWidth, &currentHeight);
 	if (width != currentWidth || height != currentHeight)
 		return;
-	handleResize(width, height);
+	// TODO: Implement high DPI support
+	handleResize(width, height, 90, 90);
 #else
 	if (!_ignoreResizeEvents && _hwScreen && !(_hwScreen->flags & SDL_FULLSCREEN)) {
 		// We save that we handled a resize event here. We need to know this
@@ -407,9 +344,13 @@ void *OpenGLSdlGraphicsManager::getProcAddress(const char *name) const {
 	return SDL_GL_GetProcAddress(name);
 }
 
-void OpenGLSdlGraphicsManager::handleResizeImpl(const int width, const int height) {
-	OpenGLGraphicsManager::handleResizeImpl(width, height);
-	SdlGraphicsManager::handleResizeImpl(width, height);
+void OpenGLSdlGraphicsManager::handleResizeImpl(const int width, const int height, const int xdpi, const int ydpi) {
+	OpenGLGraphicsManager::handleResizeImpl(width, height, xdpi, ydpi);
+	SdlGraphicsManager::handleResizeImpl(width, height, xdpi, ydpi);
+}
+
+bool OpenGLSdlGraphicsManager::saveScreenshot(const Common::String &filename) const {
+	return OpenGLGraphicsManager::saveScreenshot(filename);
 }
 
 bool OpenGLSdlGraphicsManager::setupMode(uint width, uint height) {
@@ -481,7 +422,8 @@ bool OpenGLSdlGraphicsManager::setupMode(uint width, uint height) {
 		// a chance to save the window size. That way if the user switches back
 		// to windowed mode, the window manager has a window size to apply instead
 		// of leaving the window at the fullscreen resolution size.
-		if (!_window->getSDLWindow()) {
+		const char *driver = SDL_GetCurrentVideoDriver();
+		if (!_window->getSDLWindow() && driver && strcmp(driver, "x11") == 0) {
 			_window->createOrUpdateWindow(width, height, flags);
 		}
 
@@ -508,7 +450,8 @@ bool OpenGLSdlGraphicsManager::setupMode(uint width, uint height) {
 	notifyContextCreate(rgba8888, rgba8888);
 	int actualWidth, actualHeight;
 	getWindowSizeFromSdl(&actualWidth, &actualHeight);
-	handleResize(actualWidth, actualHeight);
+	// TODO: Implement high DPI support
+	handleResize(actualWidth, actualHeight, 90, 90);
 	return true;
 #else
 	// WORKAROUND: Working around infamous SDL bugs when switching
@@ -555,7 +498,7 @@ bool OpenGLSdlGraphicsManager::setupMode(uint width, uint height) {
 
 	if (_hwScreen) {
 		notifyContextCreate(rgba8888, rgba8888);
-		handleResize(_hwScreen->w, _hwScreen->h);
+		handleResize(_hwScreen->w, _hwScreen->h, 90, 90);
 	}
 
 	// Ignore resize events (from SDL) for a few frames, if this isn't
@@ -569,207 +512,164 @@ bool OpenGLSdlGraphicsManager::setupMode(uint width, uint height) {
 }
 
 bool OpenGLSdlGraphicsManager::notifyEvent(const Common::Event &event) {
-	switch (event.type) {
-	case Common::EVENT_KEYUP:
-		return isHotkey(event);
+	if (event.type != Common::EVENT_CUSTOM_BACKEND_ACTION_START) {
+		return SdlGraphicsManager::notifyEvent(event);
+	}
 
-	case Common::EVENT_KEYDOWN:
-		if (event.kbd.hasFlags(Common::KBD_ALT)) {
-			if (   event.kbd.keycode == Common::KEYCODE_RETURN
-			    || event.kbd.keycode == (Common::KeyCode)SDLK_KP_ENTER) {
-				// Alt-Return and Alt-Enter toggle full screen mode
-				beginGFXTransaction();
-					setFeatureState(OSystem::kFeatureFullscreenMode, !getFeatureState(OSystem::kFeatureFullscreenMode));
-				endGFXTransaction();
+	switch ((CustomEventAction) event.customType) {
+	case kActionIncreaseScaleFactor:
+	case kActionDecreaseScaleFactor: {
+		const int direction = event.customType == kActionIncreaseScaleFactor ? +1 : -1;
 
-#ifdef USE_OSD
-				if (getFeatureState(OSystem::kFeatureFullscreenMode)) {
-					displayMessageOnOSD(_("Fullscreen mode"));
-				} else {
-					displayMessageOnOSD(_("Windowed mode"));
-				}
-#endif
+		if (getFeatureState(OSystem::kFeatureFullscreenMode)) {
+			// In case we are in fullscreen we will choose the previous
+			// or next mode.
+
+			// In case no modes are available we do nothing.
+			if (_fullscreenVideoModes.empty()) {
 				return true;
 			}
 
-			// Alt-s creates a screenshot
-			if (event.kbd.keycode == Common::KEYCODE_s) {
-				Common::String filename;
-
-				Common::String screenshotsPath;
-				OSystem_SDL *sdl_g_system = dynamic_cast<OSystem_SDL*>(g_system);
-				if (sdl_g_system)
-					screenshotsPath = sdl_g_system->getScreenshotsPath();
-
-				for (int n = 0;; n++) {
-					SDL_RWops *file;
-
-#ifdef USE_PNG
-					filename = Common::String::format("scummvm%05d.png", n);
-#else
-					filename = Common::String::format("scummvm%05d.bmp", n);
-#endif
-
-					file = SDL_RWFromFile((screenshotsPath + filename).c_str(), "r");
-
-					if (!file)
-						break;
-					SDL_RWclose(file);
-				}
-
-				if (saveScreenshot(screenshotsPath + filename)) {
-					if (screenshotsPath.empty())
-						debug("Saved screenshot '%s' in current directory", filename.c_str());
-					else
-						debug("Saved screenshot '%s' in directory '%s'", filename.c_str(), screenshotsPath.c_str());
-				} else {
-					if (screenshotsPath.empty())
-						warning("Could not save screenshot in current directory");
-					else
-						warning("Could not save screenshot in directory '%s'", screenshotsPath.c_str());
-				}
-
+			// Look for the current mode.
+			VideoModeArray::const_iterator i = Common::find(_fullscreenVideoModes.begin(),
+			                                                _fullscreenVideoModes.end(),
+			                                                VideoMode(_desiredFullscreenWidth, _desiredFullscreenHeight));
+			if (i == _fullscreenVideoModes.end()) {
 				return true;
 			}
 
-		} else if (event.kbd.hasFlags(Common::KBD_CTRL | Common::KBD_ALT)) {
-			if (   event.kbd.keycode == Common::KEYCODE_PLUS || event.kbd.keycode == Common::KEYCODE_MINUS
-			    || event.kbd.keycode == Common::KEYCODE_KP_PLUS || event.kbd.keycode == Common::KEYCODE_KP_MINUS) {
-				// Ctrl+Alt+Plus/Minus Increase/decrease the size
-				const int direction = (event.kbd.keycode == Common::KEYCODE_PLUS || event.kbd.keycode == Common::KEYCODE_KP_PLUS) ? +1 : -1;
-
-				if (getFeatureState(OSystem::kFeatureFullscreenMode)) {
-					// In case we are in fullscreen we will choose the previous
-					// or next mode.
-
-					// In case no modes are available we do nothing.
-					if (_fullscreenVideoModes.empty()) {
-						return true;
-					}
-
-					// Look for the current mode.
-					VideoModeArray::const_iterator i = Common::find(_fullscreenVideoModes.begin(),
-					                                                _fullscreenVideoModes.end(),
-					                                                VideoMode(_desiredFullscreenWidth, _desiredFullscreenHeight));
-					if (i == _fullscreenVideoModes.end()) {
-						return true;
-					}
-
-					// Cycle through the modes in the specified direction.
-					if (direction > 0) {
-						++i;
-						if (i == _fullscreenVideoModes.end()) {
-							i = _fullscreenVideoModes.begin();
-						}
-					} else {
-						if (i == _fullscreenVideoModes.begin()) {
-							i = _fullscreenVideoModes.end();
-						}
-						--i;
-					}
-
-					_desiredFullscreenWidth  = i->width;
-					_desiredFullscreenHeight = i->height;
-
-					// Try to setup the mode.
-					if (!setupMode(_lastRequestedWidth, _lastRequestedHeight)) {
-						warning("OpenGLSdlGraphicsManager::notifyEvent: Fullscreen resize failed ('%s')", SDL_GetError());
-						g_system->quit();
-					}
-				} else {
-					// Calculate the next scaling setting. We approximate the
-					// current scale setting in case the user resized the
-					// window. Then we apply the direction change.
-					int windowWidth = 0, windowHeight = 0;
-					getWindowSizeFromSdl(&windowWidth, &windowHeight);
-					_graphicsScale = MAX<int>(windowWidth / _lastRequestedWidth, windowHeight / _lastRequestedHeight);
-					_graphicsScale = MAX<int>(_graphicsScale + direction, 1);
-
-					// Since we overwrite a user resize here we reset its
-					// flag here. This makes enabling AR smoother because it
-					// will change the window size like in surface SDL.
-					_gotResize = false;
-
-					// Try to setup the mode.
-					if (!setupMode(_lastRequestedWidth * _graphicsScale, _lastRequestedHeight * _graphicsScale)) {
-						warning("OpenGLSdlGraphicsManager::notifyEvent: Window resize failed ('%s')", SDL_GetError());
-						g_system->quit();
-					}
+			// Cycle through the modes in the specified direction.
+			if (direction > 0) {
+				++i;
+				if (i == _fullscreenVideoModes.end()) {
+					i = _fullscreenVideoModes.begin();
 				}
-
-#ifdef USE_OSD
-				int windowWidth = 0, windowHeight = 0;
-				getWindowSizeFromSdl(&windowWidth, &windowHeight);
-				const Common::String osdMsg = Common::String::format(_("Resolution: %dx%d"), windowWidth, windowHeight);
-				displayMessageOnOSD(osdMsg.c_str());
-#endif
-
-				return true;
-			} else if (event.kbd.keycode == Common::KEYCODE_a) {
-				// In case the user changed the window size manually we will
-				// not change the window size again here.
-				_ignoreLoadVideoMode = _gotResize;
-
-				// Ctrl+Alt+a toggles the aspect ratio correction state.
-				beginGFXTransaction();
-					setFeatureState(OSystem::kFeatureAspectRatioCorrection, !getFeatureState(OSystem::kFeatureAspectRatioCorrection));
-				endGFXTransaction();
-
-				// Make sure we do not ignore the next resize. This
-				// effectively checks whether loadVideoMode has been called.
-				assert(!_ignoreLoadVideoMode);
-
-#ifdef USE_OSD
-				if (getFeatureState(OSystem::kFeatureAspectRatioCorrection))
-					displayMessageOnOSD(_("Enabled aspect ratio correction"));
-				else
-					displayMessageOnOSD(_("Disabled aspect ratio correction"));
-#endif
-
-				return true;
-			} else if (event.kbd.keycode == Common::KEYCODE_f) {
-				// Never ever try to resize the window when we simply want to enable or disable filtering.
-				// This assures that the window size does not change.
-				_ignoreLoadVideoMode = true;
-
-				// Ctrl+Alt+f toggles filtering on/off
-				beginGFXTransaction();
-				setFeatureState(OSystem::kFeatureFilteringMode, !getFeatureState(OSystem::kFeatureFilteringMode));
-				endGFXTransaction();
-
-				// Make sure we do not ignore the next resize. This
-				// effectively checks whether loadVideoMode has been called.
-				assert(!_ignoreLoadVideoMode);
-
-#ifdef USE_OSD
-				if (getFeatureState(OSystem::kFeatureFilteringMode)) {
-					displayMessageOnOSD(_("Filtering enabled"));
-				} else {
-					displayMessageOnOSD(_("Filtering disabled"));
+			} else {
+				if (i == _fullscreenVideoModes.begin()) {
+					i = _fullscreenVideoModes.end();
 				}
-#endif
+				--i;
+			}
 
-				return true;
+			_desiredFullscreenWidth  = i->width;
+			_desiredFullscreenHeight = i->height;
+
+			// Try to setup the mode.
+			if (!setupMode(_lastRequestedWidth, _lastRequestedHeight)) {
+				warning("OpenGLSdlGraphicsManager::notifyEvent: Fullscreen resize failed ('%s')", SDL_GetError());
+				g_system->quit();
+			}
+		} else {
+			// Calculate the next scaling setting. We approximate the
+			// current scale setting in case the user resized the
+			// window. Then we apply the direction change.
+			int windowWidth = 0, windowHeight = 0;
+			getWindowSizeFromSdl(&windowWidth, &windowHeight);
+			_graphicsScale = MAX<int>(windowWidth / _lastRequestedWidth, windowHeight / _lastRequestedHeight);
+			_graphicsScale = MAX<int>(_graphicsScale + direction, 1);
+
+			// Since we overwrite a user resize here we reset its
+			// flag here. This makes enabling AR smoother because it
+			// will change the window size like in surface SDL.
+			_gotResize = false;
+
+			// Try to setup the mode.
+			if (!setupMode(_lastRequestedWidth * _graphicsScale, _lastRequestedHeight * _graphicsScale)) {
+				warning("OpenGLSdlGraphicsManager::notifyEvent: Window resize failed ('%s')", SDL_GetError());
+				g_system->quit();
 			}
 		}
-		// Fall through
+
+#ifdef USE_OSD
+		int windowWidth = 0, windowHeight = 0;
+		getWindowSizeFromSdl(&windowWidth, &windowHeight);
+		const Common::String osdMsg = Common::String::format(_("Resolution: %dx%d"), windowWidth, windowHeight);
+		displayMessageOnOSD(osdMsg.c_str());
+#endif
+
+		return true;
+	}
+
+	case kActionToggleAspectRatioCorrection:
+		// In case the user changed the window size manually we will
+		// not change the window size again here.
+		_ignoreLoadVideoMode = _gotResize;
+
+		// Toggles the aspect ratio correction state.
+		beginGFXTransaction();
+			setFeatureState(OSystem::kFeatureAspectRatioCorrection, !getFeatureState(OSystem::kFeatureAspectRatioCorrection));
+		endGFXTransaction();
+
+		// Make sure we do not ignore the next resize. This
+		// effectively checks whether loadVideoMode has been called.
+		assert(!_ignoreLoadVideoMode);
+
+#ifdef USE_OSD
+		if (getFeatureState(OSystem::kFeatureAspectRatioCorrection))
+			displayMessageOnOSD(_("Enabled aspect ratio correction"));
+		else
+			displayMessageOnOSD(_("Disabled aspect ratio correction"));
+#endif
+
+		return true;
+
+	case kActionToggleFilteredScaling:
+		// Never ever try to resize the window when we simply want to enable or disable filtering.
+		// This assures that the window size does not change.
+		_ignoreLoadVideoMode = true;
+
+		// Ctrl+Alt+f toggles filtering on/off
+		beginGFXTransaction();
+			setFeatureState(OSystem::kFeatureFilteringMode, !getFeatureState(OSystem::kFeatureFilteringMode));
+		endGFXTransaction();
+
+		// Make sure we do not ignore the next resize. This
+		// effectively checks whether loadVideoMode has been called.
+		assert(!_ignoreLoadVideoMode);
+
+#ifdef USE_OSD
+		if (getFeatureState(OSystem::kFeatureFilteringMode)) {
+			displayMessageOnOSD(_("Filtering enabled"));
+		} else {
+			displayMessageOnOSD(_("Filtering disabled"));
+		}
+#endif
+
+		return true;
+
+	case kActionCycleStretchMode: {
+		// Never try to resize the window when changing the scaling mode.
+		_ignoreLoadVideoMode = true;
+
+		// Ctrl+Alt+s cycles through stretch mode
+		int index = 0;
+		const OSystem::GraphicsMode *stretchModes = getSupportedStretchModes();
+		const OSystem::GraphicsMode *sm = stretchModes;
+		while (sm->name) {
+			if (sm->id == getStretchMode())
+				break;
+			sm++;
+			index++;
+		}
+		index++;
+		if (!stretchModes[index].name)
+			index = 0;
+		beginGFXTransaction();
+		setStretchMode(stretchModes[index].id);
+		endGFXTransaction();
+
+#ifdef USE_OSD
+		Common::String message = Common::String::format("%s: %s",
+			_("Stretch mode"),
+			_(stretchModes[index].description)
+			);
+		displayMessageOnOSD(message.c_str());
+#endif
+
+		return true;
+	}
 
 	default:
-		return false;
+		return SdlGraphicsManager::notifyEvent(event);
 	}
-}
-
-bool OpenGLSdlGraphicsManager::isHotkey(const Common::Event &event) const {
-	if (event.kbd.hasFlags(Common::KBD_ALT)) {
-		return    event.kbd.keycode == Common::KEYCODE_RETURN
-		       || event.kbd.keycode == (Common::KeyCode)SDLK_KP_ENTER
-		       || event.kbd.keycode == Common::KEYCODE_s;
-	} else if (event.kbd.hasFlags(Common::KBD_CTRL | Common::KBD_ALT)) {
-		return    event.kbd.keycode == Common::KEYCODE_PLUS || event.kbd.keycode == Common::KEYCODE_MINUS
-		       || event.kbd.keycode == Common::KEYCODE_KP_PLUS || event.kbd.keycode == Common::KEYCODE_KP_MINUS
-		       || event.kbd.keycode == Common::KEYCODE_a
-		       || event.kbd.keycode == Common::KEYCODE_f;
-	}
-
-	return false;
 }

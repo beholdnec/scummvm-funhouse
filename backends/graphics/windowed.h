@@ -26,8 +26,17 @@
 #include "backends/graphics/graphics.h"
 #include "common/frac.h"
 #include "common/rect.h"
+#include "common/config-manager.h"
 #include "common/textconsole.h"
 #include "graphics/scaler/aspect.h"
+
+enum {
+	STRETCH_CENTER = 0,
+	STRETCH_INTEGRAL = 1,
+	STRETCH_FIT = 2,
+	STRETCH_STRETCH = 3,
+	STRETCH_FIT_FORCE_ASPECT = 4
+};
 
 class WindowedGraphicsManager : virtual public GraphicsManager {
 public:
@@ -35,10 +44,14 @@ public:
 		_windowWidth(0),
 		_windowHeight(0),
 		_overlayVisible(false),
+		_gameScreenShakeXOffset(0),
+		_gameScreenShakeYOffset(0),
 		_forceRedraw(false),
 		_cursorVisible(false),
 		_cursorX(0),
 		_cursorY(0),
+		_xdpi(90),
+		_ydpi(90),
 		_cursorNeedsRedraw(false),
 		_cursorLastInActiveArea(true) {}
 
@@ -64,6 +77,18 @@ public:
 		_forceRedraw = true;
 	}
 
+	virtual void setShakePos(int shakeXOffset, int shakeYOffset) override {
+		if (_gameScreenShakeXOffset != shakeXOffset || _gameScreenShakeYOffset != shakeYOffset) {
+			_gameScreenShakeXOffset = shakeXOffset;
+			_gameScreenShakeYOffset = shakeYOffset;
+			recalculateDisplayAreas();
+			_cursorNeedsRedraw = true;
+		}
+	}
+
+	int getWindowWidth() const { return _windowWidth; }
+	int getWindowHeight() const { return _windowHeight; }
+
 protected:
 	/**
 	 * @returns whether or not the game screen must have aspect ratio correction
@@ -75,7 +100,7 @@ protected:
 	 * Backend-specific implementation for updating internal surfaces that need
 	 * to reflect the new window size.
 	 */
-	virtual void handleResizeImpl(const int width, const int height) = 0;
+	virtual void handleResizeImpl(const int width, const int height, const int xdpi, const int ydpi) = 0;
 
 	/**
 	 * Converts the given point from the active virtual screen's coordinate
@@ -94,8 +119,11 @@ protected:
 			error("convertVirtualToWindow called without a valid draw rect");
 		}
 
-		return Common::Point(targetX + x * targetWidth / sourceWidth,
-							 targetY + y * targetHeight / sourceHeight);
+		int windowX = targetX + (x * targetWidth + sourceWidth / 2) / sourceWidth;
+		int windowY = targetY + (y * targetHeight + sourceHeight / 2) / sourceHeight;
+
+		return Common::Point(CLIP<int>(windowX, targetX, targetX + targetWidth - 1),
+		                     CLIP<int>(windowY, targetY, targetY + targetHeight - 1));
 	}
 
 	/**
@@ -120,8 +148,11 @@ protected:
 		x = CLIP<int>(x, sourceX, sourceMaxX);
 		y = CLIP<int>(y, sourceY, sourceMaxY);
 
-		return Common::Point(((x - sourceX) * targetWidth) / sourceWidth,
-							 ((y - sourceY) * targetHeight) / sourceHeight);
+		int virtualX = ((x - sourceX) * targetWidth + sourceWidth / 2) / sourceWidth;
+		int virtualY = ((y - sourceY) * targetHeight + sourceHeight / 2) / sourceHeight;
+
+		return Common::Point(CLIP<int>(virtualX, 0, targetWidth - 1),
+		                     CLIP<int>(virtualY, 0, targetHeight - 1));
 	}
 
 	/**
@@ -136,15 +167,24 @@ protected:
 	}
 
 	/**
+	 * @returns the scale used between the game size and the surface on which it is rendered.
+	 */
+	virtual int getGameRenderScale() const {
+		return 1;
+	}
+
+	/**
 	 * Called after the window has been updated with new dimensions.
 	 *
 	 * @param width The new width of the window, excluding window decoration.
 	 * @param height The new height of the window, excluding window decoration.
 	 */
-	void handleResize(const int width, const int height) {
+	void handleResize(const int width, const int height, const int xdpi, const int ydpi) {
 		_windowWidth = width;
 		_windowHeight = height;
-		handleResizeImpl(width, height);
+		_xdpi = xdpi;
+		_ydpi = ydpi;
+		handleResizeImpl(width, height, xdpi, ydpi);
 	}
 
 	/**
@@ -156,13 +196,11 @@ protected:
 			return;
 		}
 
-		const frac_t outputAspect = intToFrac(_windowWidth) / _windowHeight;
-
-		populateDisplayAreaDrawRect(getDesiredGameAspectRatio(), outputAspect, _gameDrawRect);
+		populateDisplayAreaDrawRect(getDesiredGameAspectRatio(), getWidth() * getGameRenderScale(), _gameDrawRect);
 
 		if (getOverlayHeight()) {
 			const frac_t overlayAspect = intToFrac(getOverlayWidth()) / getOverlayHeight();
-			populateDisplayAreaDrawRect(overlayAspect, outputAspect, _overlayDrawRect);
+			populateDisplayAreaDrawRect(overlayAspect, getOverlayWidth(), _overlayDrawRect);
 		}
 
 		if (_overlayVisible) {
@@ -175,6 +213,7 @@ protected:
 			_activeArea.height = getHeight();
 		}
 	}
+
 	/**
 	 * Sets the position of the hardware mouse cursor in the host system,
 	 * relative to the window.
@@ -184,7 +223,7 @@ protected:
 	 */
 	virtual void setSystemMousePosition(const int x, const int y) = 0;
 
-	virtual bool showMouse(const bool visible) override {
+	virtual bool showMouse(bool visible) override {
 		if (_cursorVisible == visible) {
 			return visible;
 		}
@@ -201,7 +240,7 @@ protected:
 	 * @param x	The new X position of the mouse in virtual screen coordinates.
 	 * @param y	The new Y position of the mouse in virtual screen coordinates.
 	 */
-	void warpMouse(const int x, const int y) {
+	void warpMouse(int x, int y) override {
 		// Check active coordinate instead of window coordinate to avoid warping
 		// the mouse if it is still within the same virtual pixel
 		const Common::Point virtualCursor = convertWindowToVirtual(_cursorX, _cursorY);
@@ -246,10 +285,25 @@ protected:
 	int _windowHeight;
 
 	/**
+	 * The DPI of the window.
+	 */
+	int _xdpi, _ydpi;
+
+	/**
 	 * Whether the overlay (i.e. launcher, including the out-of-game launcher)
 	 * is visible or not.
 	 */
 	bool _overlayVisible;
+
+	/**
+	 * The offset by which the screen is moved horizontally.
+	 */
+	int _gameScreenShakeXOffset;
+
+	/**
+	* The offset by which the screen is moved vertically.
+	*/
+	int _gameScreenShakeYOffset;
 
 	/**
 	 * The scaled draw rectangle for the game surface within the window.
@@ -316,19 +370,47 @@ protected:
 	int _cursorX, _cursorY;
 
 private:
-	void populateDisplayAreaDrawRect(const frac_t inputAspect, const frac_t outputAspect, Common::Rect &drawRect) const {
-		int width = _windowWidth;
-		int height = _windowHeight;
+	void populateDisplayAreaDrawRect(const frac_t displayAspect, int originalWidth, Common::Rect &drawRect) const {
+		int mode = getStretchMode();
+		// Mode Center   = use original size, or divide by an integral amount if window is smaller than game surface
+		// Mode Integral = scale by an integral amount.
+		// Mode Fit      = scale to fit the window while respecting the aspect ratio
+		// Mode Stretch  = scale and stretch to fit the window without respecting the aspect ratio
+		// Mode Fit Force Aspect = scale to fit the window while forcing a 4:3 aspect ratio
 
-		// Maintain aspect ratios
-		if (outputAspect < inputAspect) {
-			height = intToFrac(width) / inputAspect;
-		} else if (outputAspect > inputAspect) {
-			width = fracToInt(height * inputAspect);
+		int width = 0, height = 0;
+		if (mode == STRETCH_CENTER || mode == STRETCH_INTEGRAL) {
+			width = originalWidth;
+			height = intToFrac(width) / displayAspect;
+			if (width > _windowWidth || height > _windowHeight) {
+				int fac = 1 + MAX((width - 1) / _windowWidth, (height - 1) / _windowHeight);
+				width /= fac;
+				height /= fac;
+			} else if (mode == STRETCH_INTEGRAL) {
+				int fac = MIN(_windowWidth / width, _windowHeight / height);
+				width *= fac;
+				height *= fac;
+			}
+		} else {
+			frac_t windowAspect = intToFrac(_windowWidth) / _windowHeight;
+			width = _windowWidth;
+			height = _windowHeight;
+			if (mode == STRETCH_FIT_FORCE_ASPECT) {
+				frac_t ratio = intToFrac(4) / 3;
+				if (windowAspect < ratio)
+					height = intToFrac(width) / ratio;
+				else if (windowAspect > ratio)
+					width = fracToInt(height * ratio);
+			} else if (mode != STRETCH_STRETCH) {
+				if (windowAspect < displayAspect)
+					height = intToFrac(width) / displayAspect;
+				else if (windowAspect > displayAspect)
+					width = fracToInt(height * displayAspect);
+			}
 		}
-
-		drawRect.left = (_windowWidth - width) / 2;
-		drawRect.top = (_windowHeight - height) / 2;
+		
+		drawRect.left = ((_windowWidth - width) / 2) + _gameScreenShakeXOffset * width / getWidth();
+		drawRect.top = ((_windowHeight - height) / 2) + _gameScreenShakeYOffset * height / getHeight();
 		drawRect.setWidth(width);
 		drawRect.setHeight(height);
 	}

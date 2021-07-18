@@ -27,7 +27,7 @@
 
 namespace Bbvs {
 
-BbvsEngine::kReadSaveHeaderError BbvsEngine::readSaveHeader(Common::SeekableReadStream *in, bool loadThumbnail, SaveHeader &header) {
+WARN_UNUSED_RESULT BbvsEngine::kReadSaveHeaderError BbvsEngine::readSaveHeader(Common::SeekableReadStream *in, SaveHeader &header, bool skipThumbnail) {
 
 	header.version = in->readUint32LE();
 	if (header.version > BBVS_SAVEGAME_VERSION)
@@ -38,10 +38,8 @@ BbvsEngine::kReadSaveHeaderError BbvsEngine::readSaveHeader(Common::SeekableRead
 	while (descriptionLen--)
 		header.description += (char)in->readByte();
 
-	if (loadThumbnail) {
-		header.thumbnail = Graphics::loadThumbnail(*in);
-	} else {
-		Graphics::skipThumbnail(*in);
+	if (!Graphics::loadThumbnail(*in, header.thumbnail, skipThumbnail)) {
+		return kRSHEIoError;
 	}
 
 	// Not used yet, reserved for future usage
@@ -101,7 +99,7 @@ void BbvsEngine::loadgame(const char *filename) {
 
 	SaveHeader header;
 
-	kReadSaveHeaderError errorCode = readSaveHeader(in, false, header);
+	kReadSaveHeaderError errorCode = readSaveHeader(in, header);
 
 	if (errorCode != kRSHENoError) {
 		warning("Error loading savegame '%s'", filename);
@@ -184,21 +182,15 @@ void BbvsEngine::loadgame(const char *filename) {
 }
 
 Common::Error BbvsEngine::loadGameState(int slot) {
-	const char *fileName = getSavegameFilename(slot);
-	loadgame(fileName);
+	Common::String fileName = getSaveStateName(slot);
+	loadgame(fileName.c_str());
 	return Common::kNoError;
 }
 
-Common::Error BbvsEngine::saveGameState(int slot, const Common::String &description) {
-	const char *fileName = getSavegameFilename(slot);
-	savegame(fileName, description.c_str());
+Common::Error BbvsEngine::saveGameState(int slot, const Common::String &description, bool isAutosave) {
+	Common::String fileName = getSaveStateName(slot);
+	savegame(fileName.c_str(), description.c_str());
 	return Common::kNoError;
-}
-
-const char *BbvsEngine::getSavegameFilename(int num) {
-	static Common::String filename;
-	filename = getSavegameFilename(_targetName, num);
-	return filename.c_str();
 }
 
 Common::String BbvsEngine::getSavegameFilename(const Common::String &target, int num) {

@@ -20,20 +20,27 @@
  *
  */
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL
 #include "common/scummsys.h"
 
 #include "backends/platform/sdl/ps3/ps3.h"
 #include "backends/plugins/sdl/sdl-provider.h"
 #include "base/main.h"
 
+#include <net/net.h>
+
 int main(int argc, char *argv[]) {
+
+#ifdef USE_LIBCURL
+	netInitialize();
+#endif
 
 	// Create our OSystem instance
 	g_system = new OSystem_PS3();
 	assert(g_system);
 
 	// Pre initialize the backend
-	((OSystem_PS3 *)g_system)->init();
+	g_system->init();
 
 #ifdef DYNAMIC_MODULES
 	PluginManager::instance().addPluginProvider(new SDLPluginProvider());
@@ -43,7 +50,11 @@ int main(int argc, char *argv[]) {
 	int res = scummvm_main(argc, argv);
 
 	// Free OSystem
-	delete (OSystem_PS3 *)g_system;
+	g_system->destroy();
+
+#ifdef USE_LIBCURL
+	netDeinitialize();
+#endif
 
 	return res;
 }

@@ -34,11 +34,13 @@ public:
 	// Override from OSystem_SDL
 	virtual void init();
 	virtual void initBackend();
+#ifdef GUI_ENABLE_KEYSDIALOG
 	virtual void quit();
 	virtual void engineInit();
 	virtual void engineDone();
-	virtual bool setGraphicsMode(const char *name);
+#endif
 	virtual Common::String getDefaultConfigFileName();
+	virtual bool hasFeature(Feature f);
 
 	/**
 	 * Returns reference to File session
@@ -49,33 +51,13 @@ public:
 
 	void addSysArchivesToSearchSet(Common::SearchSet &s, int priority = 0);
 
-	// Vibration support
-#ifdef USE_VIBRA_SE_PXXX
-	/**
-	 * Intialize the vibration api used if present and supported
-	 */
-	void initializeVibration();
-
-	/**
-	 * Turn vibration on, repeat no time
-	 * @param vibraLength number of repetitions
-	 */
-	void vibrationOn(int vibraLength);
-
-	/**
-	 * Turns the vibration off
-	 */
-	void vibrationOff();
-
 protected:
-	SonyEricsson::CVibration* _vibrationApi;
-#endif // USE_VIBRA_SE_PXXX
-
-protected:
+#ifdef GUI_ENABLE_KEYSDIALOG
 	/**
 	 * Used to intialized special game mappings
 	 */
 	void checkMappings();
+#endif
 
 	RFs* _RFs;
 };

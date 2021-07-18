@@ -27,6 +27,7 @@
 #include "mohawk/riven_scripts.h"
 #include "mohawk/riven_sound.h"
 #include "mohawk/riven_stack.h"
+#include "mohawk/riven_stacks/aspit.h"
 #include "mohawk/riven_video.h"
 #include "common/memstream.h"
 
@@ -312,7 +313,7 @@ void RivenScript::applyCardPatches(MohawkEngine_Riven *vm, uint32 cardGlobalId, 
 	// switchCard(534);
 	// playSound(112, 256, 0);
 	if (cardGlobalId == 0x2E900 && scriptType == kMouseDownScript && hotspotId == 3
-			&& !(vm->getFeatures() & GF_DVD)) {
+			&& !vm->isGameVariant(GF_DVD)) {
 		shouldApplyPatches = true;
 		RivenSimpleCommand::ArgumentArray arguments;
 		arguments.push_back(112);
@@ -324,7 +325,7 @@ void RivenScript::applyCardPatches(MohawkEngine_Riven *vm, uint32 cardGlobalId, 
 
 	// Second part of the patch to fix the invalid card change when entering Gehn's office
 	// The first part is in the card patches.
-	if (cardGlobalId == 0x2E76 && scriptType == kCardUpdateScript && !(vm->getFeatures() & GF_DVD)) {
+	if (cardGlobalId == 0x2E76 && scriptType == kCardUpdateScript && !vm->isGameVariant(GF_DVD)) {
 		shouldApplyPatches = true;
 
 		for (uint i = 0; i < _commands.size(); i++) {
@@ -343,6 +344,38 @@ void RivenScript::applyCardPatches(MohawkEngine_Riven *vm, uint32 cardGlobalId, 
 		}
 
 		debugC(kRivenDebugPatches, "Applied invalid card change during screen update (2/2) to card %x", cardGlobalId);
+	}
+
+	// First part of the patch to fix the invalid steam sounds
+	// when looking at the Boiler island bridge from Temple island.
+	// The second part is in the card patches.
+	if (cardGlobalId == 0x22118 && scriptType == kCardLoadScript) {
+		shouldApplyPatches = true;
+
+		// Remove all the activateSLST calls.
+		// Fixed calls will be added back in the second part of the patch.
+		for (uint i = 0; i < _commands.size(); i++) {
+			if (_commands[i]->getType() == kRivenCommandActivateSLST) {
+				_commands.remove_at(i);
+				break;
+			}
+		}
+
+		debugC(kRivenDebugPatches, "Applied incorrect steam sounds (1/2) to card %x", cardGlobalId);
+	}
+
+	// Override the main menu new game script to call an external command.
+	// This way we can reset all the state when starting a new game while a game is already started.
+	if (cardGlobalId == 0xE2E && scriptType == kMouseDownScript && hotspotId == 16
+			&& vm->isGameVariant(GF_25TH)) {
+		shouldApplyPatches = true;
+		_commands.clear();
+
+		RivenSimpleCommand::ArgumentArray arguments;
+		arguments.push_back(RivenStacks::ASpit::kExternalNewGame);
+		arguments.push_back(0);
+		_commands.push_back(RivenCommandPtr(new RivenSimpleCommand(vm, kRivenCommandRunExternal, arguments)));
+		debugC(kRivenDebugPatches, "Applied override new game script patch to card %x", cardGlobalId);
 	}
 
 	if (shouldApplyPatches) {
@@ -885,11 +918,13 @@ void RivenSwitchCommand::applyCardPatches(uint32 globalId, int scriptType, uint1
 	}
 }
 
-RivenStackChangeCommand::RivenStackChangeCommand(MohawkEngine_Riven *vm, uint16 stackId, uint32 globalCardId, bool byStackId) :
+RivenStackChangeCommand::RivenStackChangeCommand(MohawkEngine_Riven *vm, uint16 stackId, uint32 globalCardId,
+                                                 bool byStackId, bool byStackCardId) :
 		RivenCommand(vm),
 		_stackId(stackId),
 		_cardId(globalCardId),
-		_byStackId(byStackId) {
+		_byStackId(byStackId),
+		_byStackCardId(byStackCardId) {
 
 }
 
@@ -902,7 +937,7 @@ RivenStackChangeCommand *RivenStackChangeCommand::createFromStream(MohawkEngine_
 	uint16 stackId = stream->readUint16BE();
 	uint32 globalCardId = stream->readUint32BE();
 
-	return new RivenStackChangeCommand(vm, stackId, globalCardId, false);
+	return new RivenStackChangeCommand(vm, stackId, globalCardId, false, false);
 }
 
 void RivenStackChangeCommand::execute() {
@@ -921,7 +956,14 @@ void RivenStackChangeCommand::execute() {
 	}
 
 	_vm->changeToStack(stackID);
-	uint16 cardID = _vm->getStack()->getCardStackId(_cardId);
+
+	uint16 cardID;
+	if (_byStackCardId) {
+		cardID = _cardId;
+	} else {
+		cardID = _vm->getStack()->getCardStackId(_cardId);
+	}
+
 	_vm->changeToCard(cardID);
 }
 

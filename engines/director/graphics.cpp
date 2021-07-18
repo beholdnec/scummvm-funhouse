@@ -19,190 +19,28 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
-#include "common/events.h"
-#include "common/macresman.h"
 #include "common/system.h"
-#include "engines/util.h"
-
-#include "graphics/palette.h"
-#include "graphics/fonts/macfont.h"
-#include "graphics/macgui/macfontmanager.h"
 #include "graphics/macgui/macwindowmanager.h"
 
 #include "director/director.h"
 
 namespace Director {
 
-// Referred as extern
-byte defaultPalette[768] = {
-	  0,   0,   0,  17,  17,  17,  34,  34,  34,  68,  68,  68,  85,  85,  85, 119,
-	119, 119, 136, 136, 136, 170, 170, 170, 187, 187, 187, 221, 221, 221, 238, 238,
-	238,   0,   0,  17,   0,   0,  34,   0,   0,  68,   0,   0,  85,   0,   0, 119,
-	  0,   0, 136,   0,   0, 170,   0,   0, 187,   0,   0, 221,   0,   0, 238,   0,
-	 17,   0,   0,  34,   0,   0,  68,   0,   0,  85,   0,   0, 119,   0,   0, 136,
-	  0,   0, 170,   0,   0, 187,   0,   0, 221,   0,   0, 238,   0,  17,   0,   0,
-	 34,   0,   0,  68,   0,   0,  85,   0,   0, 119,   0,   0, 136,   0,   0, 170,
-	  0,   0, 187,   0,   0, 221,   0,   0, 238,   0,   0,   0,   0,  51,   0,   0,
-	102,   0,   0, 153,   0,   0, 204,   0,   0, 255,   0,  51,   0,   0,  51,  51,
-	  0,  51, 102,   0,  51, 153,   0,  51, 204,   0,  51, 255,   0, 102,   0,   0,
-	102,  51,   0, 102, 102,   0, 102, 153,   0, 102, 204,   0, 102, 255,   0, 153,
-	  0,   0, 153,  51,   0, 153, 102,   0, 153, 153,   0, 153, 204,   0, 153, 255,
-	  0, 204,   0,   0, 204,  51,   0, 204, 102,   0, 204, 153,   0, 204, 204,   0,
-	204, 255,   0, 255,   0,   0, 255,  51,   0, 255, 102,   0, 255, 153,   0, 255,
-	204,   0, 255, 255,  51,   0,   0,  51,   0,  51,  51,   0, 102,  51,   0, 153,
-	 51,   0, 204,  51,   0, 255,  51,  51,   0,  51,  51,  51,  51,  51, 102,  51,
-	 51, 153,  51,  51, 204,  51,  51, 255,  51, 102,   0,  51, 102,  51,  51, 102,
-	102,  51, 102, 153,  51, 102, 204,  51, 102, 255,  51, 153,   0,  51, 153,  51,
-	 51, 153, 102,  51, 153, 153,  51, 153, 204,  51, 153, 255,  51, 204,   0,  51,
-	204,  51,  51, 204, 102,  51, 204, 153,  51, 204, 204,  51, 204, 255,  51, 255,
-	  0,  51, 255,  51,  51, 255, 102,  51, 255, 153,  51, 255, 204,  51, 255, 255,
-	102,   0,   0, 102,   0,  51, 102,   0, 102, 102,   0, 153, 102,   0, 204, 102,
-	  0, 255, 102,  51,   0, 102,  51,  51, 102,  51, 102, 102,  51, 153, 102,  51,
-	204, 102,  51, 255, 102, 102,   0, 102, 102,  51, 102, 102, 102, 102, 102, 153,
-	102, 102, 204, 102, 102, 255, 102, 153,   0, 102, 153,  51, 102, 153, 102, 102,
-	153, 153, 102, 153, 204, 102, 153, 255, 102, 204,   0, 102, 204,  51, 102, 204,
-	102, 102, 204, 153, 102, 204, 204, 102, 204, 255, 102, 255,   0, 102, 255,  51,
-	102, 255, 102, 102, 255, 153, 102, 255, 204, 102, 255, 255, 153,   0,   0, 153,
-	  0,  51, 153,   0, 102, 153,   0, 153, 153,   0, 204, 153,   0, 255, 153,  51,
-	  0, 153,  51,  51, 153,  51, 102, 153,  51, 153, 153,  51, 204, 153,  51, 255,
-	153, 102,   0, 153, 102,  51, 153, 102, 102, 153, 102, 153, 153, 102, 204, 153,
-	102, 255, 153, 153,   0, 153, 153,  51, 153, 153, 102, 153, 153, 153, 153, 153,
-	204, 153, 153, 255, 153, 204,   0, 153, 204,  51, 153, 204, 102, 153, 204, 153,
-	153, 204, 204, 153, 204, 255, 153, 255,   0, 153, 255,  51, 153, 255, 102, 153,
-	255, 153, 153, 255, 204, 153, 255, 255, 204,   0,   0, 204,   0,  51, 204,   0,
-	102, 204,   0, 153, 204,   0, 204, 204,   0, 255, 204,  51,   0, 204,  51,  51,
-	204,  51, 102, 204,  51, 153, 204,  51, 204, 204,  51, 255, 204, 102,   0, 204,
-	102,  51, 204, 102, 102, 204, 102, 153, 204, 102, 204, 204, 102, 255, 204, 153,
-	  0, 204, 153,  51, 204, 153, 102, 204, 153, 153, 204, 153, 204, 204, 153, 255,
-	204, 204,   0, 204, 204,  51, 204, 204, 102, 204, 204, 153, 204, 204, 204, 204,
-	204, 255, 204, 255,   0, 204, 255,  51, 204, 255, 102, 204, 255, 153, 204, 255,
-	204, 204, 255, 255, 255,   0,   0, 255,   0,  51, 255,   0, 102, 255,   0, 153,
-	255,   0, 204, 255,   0, 255, 255,  51,   0, 255,  51,  51, 255,  51, 102, 255,
-	 51, 153, 255,  51, 204, 255,  51, 255, 255, 102,   0, 255, 102,  51, 255, 102,
-	102, 255, 102, 153, 255, 102, 204, 255, 102, 255, 255, 153,   0, 255, 153,  51,
-	255, 153, 102, 255, 153, 153, 255, 153, 204, 255, 153, 255, 255, 204,   0, 255,
-	204,  51, 255, 204, 102, 255, 204, 153, 255, 204, 204, 255, 204, 255, 255, 255,
-	  0, 255, 255,  51, 255, 255, 102, 255, 255, 153, 255, 255, 204, 255, 255, 255
-};
+#include "director/graphics-data.h"
 
+/**
+ * The sprites colors are in reverse order with respect to the ids in director.
+ * The palette is in reverse order, this eases the code for loading files.
+ * All other color ids can be converted with: 255 - colorId.
+ **/
+uint32 DirectorEngine::transformColor(uint32 color) {
+	if (_pixelformat.bytesPerPixel == 1)
+		return 255 - color;
 
-static byte director3Patterns[][8] = {
-	{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
-	{ 0xFF, 0xFF, 0x77, 0xFF, 0xFF, 0xFF, 0x77, 0xFF },
-	{ 0x77, 0xFF, 0xDD, 0xFF, 0x77, 0xFF, 0xDD, 0xFF },
-	{ 0xFF, 0xDD, 0xFF, 0x55, 0xFF, 0xDD, 0xFF, 0x55 },
-	{ 0xFF, 0xD5, 0xFF, 0x55, 0xFF, 0x5D, 0xFF, 0x55 },
-	{ 0xFF, 0xAA, 0xFF, 0xAA, 0xFF, 0xAA, 0xFF, 0xAA },
-	{ 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA },
-	{ 0xAA, 0x44, 0xAA, 0x11, 0xAA, 0x44, 0xAA, 0x11 },
-	{ 0xAA, 0x44, 0xAA, 0x00, 0xAA, 0x44, 0xAA, 0x00 },
-	{ 0xAA, 0x00, 0xAA, 0x00, 0xAA, 0x00, 0xAA, 0x00 },
-	{ 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00, 0x88 },
-	{ 0x88, 0x00, 0x00, 0x00, 0x88, 0x00, 0x00, 0x00 },
-	{ 0x80, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00 },
-	{ 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-	{ 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 },
-	{ 0x21, 0x42, 0x84, 0x09, 0x12, 0x24, 0x48, 0x90 },
-	{ 0x11, 0x22, 0x44, 0x88, 0x11, 0x22, 0x44, 0x88 },
-	{ 0xEE, 0xDD, 0xBB, 0x77, 0xEE, 0xDD, 0xBB, 0x77 },
-	{ 0xF6, 0xED, 0xDB, 0xB7, 0x6F, 0xDE, 0xBD, 0x7B },
-	{ 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F },
-	{ 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF },
-	{ 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0xFF },
-	{ 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF },
-	{ 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0xFF },
-	{ 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00 },
-	{ 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00 },
-	{ 0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00 },
-	{ 0xFF, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00 },
-	{ 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-	{ 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 },
-	{ 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82 },
-	{ 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88 },
-	{ 0x94, 0x94, 0x94, 0x94, 0x94, 0x94, 0x94, 0x94 },
-	{ 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA },
-	{ 0xAD, 0xAD, 0xAD, 0xAD, 0xAD, 0xAD, 0xAD, 0xAD },
-	{ 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB },
-	{ 0xB7, 0xB7, 0xB7, 0xB7, 0xB7, 0xB7, 0xB7, 0xB7 },
-	{ 0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF },
-	{ 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x00 },
-	{ 0x7F, 0x7F, 0x7F, 0x00, 0x7F, 0x7F, 0x7F, 0x00 },
-	{ 0x77, 0x77, 0x77, 0x00, 0x77, 0x77, 0x77, 0x00 },
-	{ 0x88, 0x88, 0x88, 0xFF, 0x88, 0x88, 0x88, 0xFF },
-	{ 0x80, 0x80, 0x80, 0xFF, 0x80, 0x80, 0x80, 0xFF },
-	{ 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0xFF },
-	{ 0x01, 0x82, 0x44, 0x28, 0x10, 0x28, 0x44, 0x82 },
-	{ 0x11, 0x82, 0x45, 0xAB, 0xD7, 0xAB, 0x45, 0x82 },
-	{ 0xF7, 0x7F, 0xBE, 0x5D, 0x2A, 0x5D, 0xBE, 0x7F },
-	{ 0xFE, 0x7D, 0xBB, 0xD7, 0xEF, 0xD7, 0xBB, 0x7D },
-	{ 0xFE, 0x7F, 0xBF, 0xDF, 0xEF, 0xDF, 0xBF, 0x7F },
-	{ 0xEE, 0x77, 0xBB, 0xDD, 0xEE, 0xDD, 0xBB, 0x77 },
-	{ 0x11, 0x88, 0x44, 0x22, 0x11, 0x22, 0x44, 0x88 },
-	{ 0x01, 0x80, 0x40, 0x20, 0x10, 0x20, 0x40, 0x80 },
-	{ 0x22, 0x00, 0x01, 0x22, 0x54, 0x88, 0x01, 0x00 },
-	{ 0xBF, 0xAF, 0xAB, 0xAA, 0xEA, 0xFA, 0xFE, 0xFF },
-	{ 0xFF, 0xFF, 0xBE, 0x9C, 0xAA, 0xB6, 0xBE, 0xFF }
-};
+	color = 255 - color;
 
-static byte director3QuickDrawPatterns[][8] = {
-	{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
-	{ 0xDD, 0xFF, 0x77, 0xFF, 0xDD, 0xFF, 0x77, 0xFF },
-	{ 0xDD, 0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD, 0x77 },
-	{ 0xEE, 0xDD, 0xBB, 0x77, 0xEE, 0xDD, 0xBB, 0x77 },
-	{ 0xFF, 0xAA, 0xFF, 0xAA, 0xFF, 0xAA, 0xFF, 0xAA },
-	{ 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55 },
-	{ 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 },
-	{ 0x11, 0x22, 0x44, 0x88, 0x11, 0x22, 0x44, 0x88 },
-	{ 0xAA, 0x00, 0xAA, 0x00, 0xAA, 0x00, 0xAA, 0x00 },
-	{ 0x88, 0x22, 0x88, 0x22, 0x88, 0x22, 0x88, 0x22 },
-	{ 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00, 0x88 },
-	{ 0x10, 0x20, 0x40, 0x80, 0x01, 0x02, 0x04, 0x08 },
-	{ 0x80, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00 },
-	{ 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-	{ 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88 },
-	{ 0x58, 0xDF, 0x00, 0xDF, 0xDF, 0x58, 0x58, 0x58 },
-	{ 0xB1, 0x36, 0x06, 0x60, 0x63, 0x1B, 0x18, 0x81 },
-	{ 0x08, 0xFF, 0x01, 0x01, 0x01, 0xFF, 0x08, 0x08 },
-	{ 0x00, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00 },
-	{ 0x80, 0x80, 0x80, 0xFF, 0x80, 0x80, 0x80, 0x80 },
-	{ 0x80, 0x10, 0x02, 0x40, 0x04, 0x20, 0x09, 0x00 },
-	{ 0x80, 0x01, 0x82, 0x44, 0x38, 0x10, 0x20, 0x40 },
-	{ 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00 },
-	{ 0x22, 0xFF, 0x22, 0x22, 0x22, 0xFF, 0x22, 0x22 },
-	{ 0x00, 0x08, 0x14, 0x2A, 0x55, 0x2A, 0x14, 0x08 },
-	{ 0x81, 0xAA, 0x14, 0x08, 0x08, 0xAA, 0x41, 0x80 },
-	{ 0x3E, 0x1D, 0x88, 0xD1, 0xE3, 0xC5, 0x88, 0x5C },
-	{ 0xAA, 0x00, 0x80, 0x00, 0x88, 0x00, 0x80, 0x00 },
-	{ 0x00, 0x11, 0x82, 0x44, 0x28, 0x11, 0x00, 0x55 },
-	{ 0x7C, 0x10, 0x10, 0x28, 0xC7, 0x01, 0x01, 0x82 },
-	{ 0xEE, 0x31, 0xF1, 0xF1, 0xEE, 0x13, 0x1F, 0x1F },
-	{ 0x00, 0x40, 0x20, 0x10, 0x00, 0x01, 0x02, 0x04 },
-	{ 0x00, 0x00, 0x40, 0xA0, 0x00, 0x04, 0x0A, 0x00 },
-	{ 0x20, 0x60, 0x90, 0x09, 0x06, 0x81, 0x40, 0x20 },
-	{ 0x00, 0x7F, 0x43, 0x5F, 0x5F, 0x5F, 0x7F, 0x7F },
-	{ 0x01, 0x02, 0x45, 0xAA, 0xFF, 0x20, 0x40, 0x80 },
-	{ 0x00, 0x44, 0x0A, 0x11, 0x11, 0x11, 0x51, 0x24 },
-	{ 0x0F, 0x0F, 0x0F, 0x0F, 0xF0, 0xF0, 0xF0, 0xF0 },
-	{ 0xF8, 0xFC, 0xFA, 0xFC, 0xFA, 0x54, 0x2A, 0x00 },
-	{ 0x42, 0xC3, 0x3C, 0x3C, 0x3C, 0x3C, 0xC3, 0x42 },
-	{ 0x10, 0x38, 0x7C, 0xFE, 0x7D, 0x3A, 0x14, 0x08 },
-	{ 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF },
-	{ 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC },
-	{ 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00 },
-	{ 0xBB, 0xDD, 0xAE, 0x77, 0xEE, 0xDD, 0xAB, 0x77 },
-	{ 0x80, 0x40, 0x40, 0x20, 0x20, 0x18, 0x06, 0x01 },
-	{ 0x01, 0x82, 0x44, 0x28, 0x10, 0x28, 0x44, 0x82 },
-	{ 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xFF, 0xFF },
-	{ 0xE0, 0xE0, 0xE0, 0xE0, 0xE0, 0xFF, 0xFF, 0xFF },
-	{ 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x00, 0x00, 0x00 },
-	{ 0xC3, 0x87, 0x0F, 0x1E, 0x3C, 0x78, 0xF0, 0xE1 },
-	{ 0xF0, 0xF0, 0x0F, 0x0F, 0x0F, 0xF0, 0xF0, 0xF0 },
-	{ 0xFF, 0xFF, 0xE7, 0xC3, 0x81, 0x18, 0x3C, 0x7E },
-	{ 0x1F, 0x8F, 0xC7, 0xE3, 0xC7, 0x8F, 0x1F, 0x3E },
-	{ 0xFF, 0x2A, 0xFF, 0xC8, 0xFF, 0x65, 0xFF, 0x9D }
-};
+	return _wm->findBestColor(_currentPalette[color * 3], _currentPalette[color * 3 + 1], _currentPalette[color * 3 + 2]);
+}
 
 void DirectorEngine::loadPatterns() {
 	for (int i = 0; i < ARRAYSIZE(director3Patterns); i++)
@@ -217,90 +55,274 @@ Graphics::MacPatterns &DirectorEngine::getPatterns() {
 	return _director3QuickDrawPatterns;
 }
 
+void DirectorEngine::loadDefaultPalettes() {
+	_loadedPalettes[kClutSystemMac] = PaletteV4(kClutSystemMac, macPalette, 256);
+	_loadedPalettes[kClutRainbow] = PaletteV4(kClutRainbow, rainbowPalette, 256);
+	_loadedPalettes[kClutGrayscale] = PaletteV4(kClutGrayscale, grayscalePalette, 256);
+	_loadedPalettes[kClutPastels] = PaletteV4(kClutPastels, pastelsPalette, 256);
+	_loadedPalettes[kClutVivid] = PaletteV4(kClutVivid, vividPalette, 256);
+	_loadedPalettes[kClutNTSC] = PaletteV4(kClutNTSC, ntscPalette, 256);
+	_loadedPalettes[kClutMetallic] = PaletteV4(kClutMetallic, metallicPalette, 256);
+	_loadedPalettes[kClutSystemWin] = PaletteV4(kClutSystemWin, winPalette, 256);
+}
+
+PaletteV4 *DirectorEngine::getPalette(int id) {
+	if (!_loadedPalettes.contains(id)) {
+		warning("DirectorEngine::addPalette(): Palette %d not found", id);
+		return nullptr;
+	}
+
+	return &_loadedPalettes[id];
+}
+
+void DirectorEngine::addPalette(int id, byte *palette, int length) {
+	if (id < 0) {
+		warning("DirectorEngine::addPalette(): Negative palette ids reserved for default palettes");
+		return;
+	} else if (_loadedPalettes.contains(id)) {
+		delete[] _loadedPalettes[id].palette;
+	}
+
+	_loadedPalettes[id] = PaletteV4(id, palette, length);
+}
+
+bool DirectorEngine::setPalette(int id) {
+	if (id == 0) {
+		// Palette id of 0 is unused
+		return false;
+	} else if (!_loadedPalettes.contains(id)) {
+		warning("setPalette(): no palette with matching id %d", id);
+		return false;
+	}
+
+	PaletteV4 pal = _loadedPalettes[id];
+	setPalette(pal.palette, pal.length);
+
+	return true;
+}
+
 void DirectorEngine::setPalette(byte *palette, uint16 count) {
+	// Pass the palette to OSystem only for 8bpp mode
+	if (_pixelformat.bytesPerPixel == 1)
+		_system->getPaletteManager()->setPalette(palette, 0, count);
+
 	_currentPalette = palette;
 	_currentPaletteLength = count;
+
+	_wm->passPalette(palette, count);
 }
 
-void DirectorEngine::testFontScaling() {
-	int x = 10;
-	int y = 10;
-	int w = 640;
-	int h = 480;
-
-	initGraphics(w, h);
-	_system->getPaletteManager()->setPalette(defaultPalette, 0, 256);
-
-	Graphics::ManagedSurface surface;
-
-	surface.create(w, h);
-	surface.clear(255);
-
-	Graphics::MacFont origFont(Graphics::kMacFontNewYork, 18);
-
-	const Graphics::MacFONTFont *font1 = (const Graphics::MacFONTFont *)_wm->_fontMan->getFont(origFont);
-
-	Graphics::MacFONTFont::testBlit(font1, &surface, 0, x, y + 200, 500);
-
-	Graphics::MacFont bigFont(Graphics::kMacFontNewYork, 15);
-
-	font1 = (const Graphics::MacFONTFont *)_wm->_fontMan->getFont(bigFont);
-
-	Graphics::MacFONTFont::testBlit(font1, &surface, 0, x, y + 50 + 200, 500);
-
-	const char *text = "d";
-
-	for (int i = 9; i <= 20; i++) {
-		Graphics::MacFont macFont(Graphics::kMacFontNewYork, i);
-
-		const Graphics::Font *font = _wm->_fontMan->getFont(macFont);
-
-		int width = font->getStringWidth(text);
-
-		Common::Rect bbox = font->getBoundingBox(text, x, y, w);
-		surface.frameRect(bbox, 15);
-
-		font->drawString(&surface, text, x, y, width, 0);
-
-		x += width + 1;
-	}
-
-	g_system->copyRectToScreen(surface.getPixels(), surface.pitch, 0, 0, w, h);
-
-	Common::Event event;
-
-	while (true) {
-		if (g_system->getEventManager()->pollEvent(event))
-			if (event.type == Common::EVENT_QUIT)
-				break;
-
-		g_system->updateScreen();
-		g_system->delayMillis(10);
+void DirectorEngine::clearPalettes() {
+	for (Common::HashMap<int, PaletteV4>::iterator it = _loadedPalettes.begin(); it != _loadedPalettes.end(); ++it) {
+		if (it->_value.id > 0)
+			delete[] it->_value.palette;
 	}
 }
 
-void DirectorEngine::testFonts() {
-	Common::String fontName("Helvetica");
+void DirectorEngine::setCursor(int type) {
+	switch (type) {
+	case kCursorDefault:
+		_wm->popCursor();
+		break;
 
-	Common::MacResManager *fontFile = new Common::MacResManager();
-	if (!fontFile->open(fontName))
-		error("Could not open %s as a resource fork", fontName.c_str());
+	case kCursorMouseDown:
+		_wm->pushCustomCursor(mouseDown, 16, 16, 0, 0, 3);
+		break;
 
-	Common::MacResIDArray fonds = fontFile->getResIDArray(MKTAG('F','O','N','D'));
-	if (fonds.size() > 0) {
-		for (Common::Array<uint16>::iterator iterator = fonds.begin(); iterator != fonds.end(); ++iterator) {
-			Common::SeekableReadStream *stream = fontFile->getResource(MKTAG('F', 'O', 'N', 'D'), *iterator);
-			Common::String name = fontFile->getResName(MKTAG('F', 'O', 'N', 'D'), *iterator);
+	case kCursorMouseUp:
+		_wm->pushCustomCursor(mouseUp, 16, 16, 0, 0, 3);
+		break;
+	}
+}
 
-			debug("Font: %s", name.c_str());
+void DirectorEngine::draw() {
+	_wm->renderZoomBox(true);
+	_wm->draw();
+	g_system->updateScreen();
+}
 
-			Graphics::MacFontFamily font;
-			font.load(*stream);
+template <typename T>
+void inkDrawPixel(int x, int y, int src, void *data) {
+	DirectorPlotData *p = (DirectorPlotData *)data;
+
+	if (!p->destRect.contains(x, y))
+		return;
+
+	T dst;
+	uint32 tmpDst;
+
+	dst = (T)p->dst->getBasePtr(x, y);
+
+	if (p->ms) {
+		// Get the pixel that macDrawPixel will give us, but store it to apply the
+		// ink later.
+		tmpDst = *dst;
+		(p->_wm->getDrawPixel())(x, y, src, p->ms->pd);
+		src = *dst;
+
+		*dst = tmpDst;
+	} else if (p->alpha) {
+		// Sprite blend does not respect colourization; defaults to matte ink
+		byte rSrc, gSrc, bSrc;
+		byte rDst, gDst, bDst;
+
+		g_director->_wm->decomposeColor(src, rSrc, gSrc, bSrc);
+		g_director->_wm->decomposeColor(*dst, rDst, gDst, bDst);
+
+		double alpha = (double)p->alpha / 100.0;
+		rDst = static_cast<byte>((rSrc * alpha) + (rDst * (1.0 - alpha)));
+		gDst = static_cast<byte>((gSrc * alpha) + (gDst * (1.0 - alpha)));
+		bDst = static_cast<byte>((bSrc * alpha) + (bDst * (1.0 - alpha)));
+
+		*dst = p->_wm->findBestColor(rDst, gDst, bDst);
+		return;
+	}
+
+ 	switch (p->ink) {
+	case kInkTypeBackgndTrans:
+		if ((uint32)src == p->backColor)
+			break;
+		// fall through
+	case kInkTypeMatte:
+	case kInkTypeMask:
+		// Only unmasked pixels make it here, so copy them straight
+	case kInkTypeCopy: {
+		if (p->applyColor) {
+			// TODO: Improve the efficiency of this composition
+			byte rSrc, gSrc, bSrc;
+			byte rDst, gDst, bDst;
+			byte rFor, gFor, bFor;
+			byte rBak, gBak, bBak;
+
+			g_director->_wm->decomposeColor(src, rSrc, gSrc, bSrc);
+			g_director->_wm->decomposeColor(*dst, rDst, gDst, bDst);
+			g_director->_wm->decomposeColor(p->foreColor, rFor, gFor, bFor);
+			g_director->_wm->decomposeColor(p->backColor, rBak, gBak, bBak);
+
+			*dst = p->_wm->findBestColor((rSrc | rFor) & (~rSrc | rBak),
+																	 (gSrc | gFor) & (~gSrc | gBak),
+																	 (bSrc | bFor) & (~bSrc | bBak));
+		} else {
+			*dst = src;
+		}
+		break;
+	}
+	case kInkTypeNotCopy:
+		if (p->applyColor) {
+			// TODO: Improve the efficiency of this composition
+			byte rSrc, gSrc, bSrc;
+			byte rDst, gDst, bDst;
+			byte rFor, gFor, bFor;
+			byte rBak, gBak, bBak;
+
+			g_director->_wm->decomposeColor(src, rSrc, gSrc, bSrc);
+			g_director->_wm->decomposeColor(*dst, rDst, gDst, bDst);
+			g_director->_wm->decomposeColor(p->foreColor, rFor, gFor, bFor);
+			g_director->_wm->decomposeColor(p->backColor, rBak, gBak, bBak);
+
+			*dst = p->_wm->findBestColor((~rSrc | rFor) & (rSrc | rBak),
+																	 (~gSrc | gFor) & (gSrc | gBak),
+																	 (~bSrc | bFor) & (bSrc | bBak));
+		} else {
+			*dst = src;
+		}
+		break;
+	case kInkTypeTransparent:
+		*dst = p->applyColor ? (~src & p->foreColor) | (*dst & src) : (*dst & src);
+		break;
+	case kInkTypeNotTrans:
+		*dst = p->applyColor ? (src & p->foreColor) | (*dst & ~src) : (*dst & ~src);
+		break;
+	case kInkTypeReverse:
+		*dst ^= ~(src);
+		break;
+	case kInkTypeNotReverse:
+		*dst ^= src;
+		break;
+	case kInkTypeGhost:
+		*dst = p->applyColor ? (src | p->backColor) & (*dst | ~src) : (*dst | ~src);
+		break;
+	case kInkTypeNotGhost:
+		*dst = p->applyColor ? (~src | p->backColor) & (*dst | src) : *dst | src;
+		break;
+		// Arithmetic ink types
+	default: {
+		if ((uint32)src == p->colorWhite)
+			break;
+
+		byte rSrc, gSrc, bSrc;
+		byte rDst, gDst, bDst;
+
+		g_director->_wm->decomposeColor(src, rSrc, gSrc, bSrc);
+		g_director->_wm->decomposeColor(*dst, rDst, gDst, bDst);
+
+		switch (p->ink) {
+		case kInkTypeBlend:
+				*dst = p->_wm->findBestColor((rSrc + rDst) / 2, (gSrc + gDst) / 2, (bSrc + bDst) / 2);
+			break;
+		case kInkTypeAddPin:
+				*dst = p->_wm->findBestColor(MIN((rSrc + rDst), 0xff), MIN((gSrc + gDst), 0xff), MIN((bSrc + bDst), 0xff));
+			break;
+		case kInkTypeAdd:
+				*dst = p->_wm->findBestColor(abs(rSrc + rDst) % 0xff + 1, abs(gSrc + gDst) % 0xff + 1, abs(bSrc + bDst) % 0xff + 1);
+			break;
+		case kInkTypeSubPin:
+				*dst = p->_wm->findBestColor(MAX(rSrc - rDst, 0), MAX(gSrc - gDst, 0), MAX(bSrc - bDst, 0));
+			break;
+		case kInkTypeLight:
+				*dst = p->_wm->findBestColor(MAX(rSrc, rDst), MAX(gSrc, gDst), MAX(bSrc, bDst));
+			break;
+		case kInkTypeSub:
+				*dst = p->_wm->findBestColor(abs(rSrc - rDst) % 0xff + 1, abs(gSrc - gDst) % 0xff + 1, abs(bSrc - bDst) % 0xff + 1);
+			break;
+		case kInkTypeDark:
+				*dst = p->_wm->findBestColor(MIN(rSrc, rDst), MIN(gSrc, gDst), MIN(bSrc, bDst));
+			break;
+		default:
+			break;
 		}
 	}
-
-	delete fontFile;
+	}
 }
 
-
+Graphics::MacDrawPixPtr DirectorEngine::getInkDrawPixel() {
+	if (_pixelformat.bytesPerPixel == 1)
+		return &inkDrawPixel<byte *>;
+	else
+		return &inkDrawPixel<uint32 *>;
 }
+
+void DirectorPlotData::setApplyColor() {
+	applyColor = false;
+
+	if (foreColor == colorBlack && backColor == colorWhite)
+		applyColor = false;
+
+	switch (ink) {
+	case kInkTypeReverse:
+	case kInkTypeNotReverse:
+	case kInkTypeAddPin:
+	case kInkTypeAdd:
+ 	case kInkTypeSubPin:
+	case kInkTypeLight:
+	case kInkTypeSub:
+	case kInkTypeDark:
+	case kInkTypeBackgndTrans:
+		applyColor = false;
+	default:
+		break;
+	}
+
+	if (foreColor != colorBlack) {
+		if (ink != kInkTypeGhost && ink != kInkTypeNotGhost)
+			applyColor = true;
+	}
+
+	if (backColor != colorWhite) {
+		if (ink != kInkTypeTransparent &&
+				ink != kInkTypeNotTrans)
+			applyColor = true;
+	}
+}
+
+} // End of namespace Director

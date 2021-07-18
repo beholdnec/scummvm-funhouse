@@ -47,6 +47,7 @@
 #include "cine/bg_list.h"
 #include "cine/various.h"
 #include "cine/console.h"
+#include "cine/sound.h"
 
 //#define DUMP_SCRIPTS
 
@@ -95,7 +96,14 @@ enum CineGameFeatures {
 struct CINEGameDescription;
 struct SeqListElement;
 
-typedef Common::HashMap<Common::String, const char *> StringPtrHashMap;
+struct VolumeResource {
+	char name[10];
+	uint32 pNamesList;
+	int16 diskNum;
+	int32 sizeOfNamesList;
+};
+
+typedef Common::HashMap<Common::String, Common::Array<VolumeResource> > StringToVolumeResourceArrayHashMap;
 
 class CineConsole;
 
@@ -103,8 +111,8 @@ class CineEngine : public Engine {
 
 protected:
 	// Engine APIs
-	virtual Common::Error run();
-	virtual bool hasFeature(EngineFeature f) const;
+	Common::Error run() override;
+	bool hasFeature(EngineFeature f) const override;
 
 	void shutdown();
 
@@ -112,10 +120,11 @@ protected:
 
 public:
 	CineEngine(OSystem *syst, const CINEGameDescription *gameDesc);
-	virtual ~CineEngine();
+	~CineEngine() override;
 
-	virtual void syncSoundSettings();
+	void syncSoundSettings() override;
 
+	bool mayHave256Colors() const;
 	int getGameType() const;
 	uint32 getFeatures() const;
 	Common::Language getLanguage() const;
@@ -125,22 +134,22 @@ public:
 	void makeSystemMenu();
 	int scummVMSaveLoadDialog(bool isSave);
 	int modifyGameSpeed(int speedChange);
-	int getTimerDelay() const;
-	Common::Error loadGameState(int slot);
-	Common::Error saveGameState(int slot, const Common::String &desc);
-	bool canLoadGameStateCurrently();
-	bool canSaveGameStateCurrently();
+	void setDefaultGameSpeed();
+	uint32 getTimerDelay() const;
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	virtual Common::String getSaveStateName(int slot) const override;
+	bool canLoadGameStateCurrently() override;
+	bool canSaveGameStateCurrently() override;
 
 	const CINEGameDescription *_gameDescription;
 	Common::File _partFileHandle;
 
 	Common::RandomSource _rnd;
 
-	Common::StringArray _volumeResourceFiles;
-	StringPtrHashMap _volumeEntriesMap;
-	TextHandler _textHandler;
+	StringToVolumeResourceArrayHashMap _volumeEntriesMap;
 
-	GUI::Debugger *getDebugger() { return _console; }
+	TextHandler _textHandler;
 
 	bool _restartRequested;
 
@@ -148,16 +157,20 @@ private:
 	void initialize();
 	void showSplashScreen();
 	void resetEngine();
-	bool loadPlainSaveFW(Common::SeekableReadStream &in, CineSaveGameFormat saveGameFormat);
-	bool loadTempSaveOS(Common::SeekableReadStream &in);
+	bool checkSaveHeaderData(const ChunkHeader& hdr);
+	bool loadPlainSaveFW(Common::SeekableReadStream &in, CineSaveGameFormat saveGameFormat, uint32 version);	
+	bool loadVersionedSaveFW(Common::SeekableReadStream &in);
+	bool loadVersionedSaveOS(Common::SeekableReadStream &in);
 	bool makeLoad(const Common::String &saveName);
+	void writeSaveHeader(Common::OutSaveFile &out, uint32 headerId);
 	void makeSaveFW(Common::OutSaveFile &out);
 	void makeSaveOS(Common::OutSaveFile &out);
-	void makeSave(const Common::String &saveFileName);
+	void makeSave(const Common::String &saveFileName, uint32 playtime,
+		Common::String desc, bool isAutosave);
 	void mainLoop(int bootScriptIdx);
 	void readVolCnf();
+	Common::String getTargetSaveStateName(Common::String target, int slot) const;
 
-	CineConsole *_console;
 	bool _preLoad;
 	int _timerDelayMultiplier;
 
@@ -184,17 +197,20 @@ public:
 	ScriptVars _globalVars;
 	RawScriptArray _scriptTable; ///< Table of script bytecode
 
-	Common::Array<uint16> _zoneData;
+	Common::Array<int16> _zoneData;
 	Common::Array<uint16> _zoneQuery; ///< Only exists in Operation Stealth
 
 	Common::List<SeqListElement> _seqList;
 
 	Common::String _commandBuffer;
+	Common::Array<Common::KeyState> _keyInputList;
 };
 
 extern CineEngine *g_cine;
+extern Sound *g_sound;
 
 #define BOOT_PRC_NAME "AUTO00.PRC"
+#define BOOT_SCRIPT_INDEX 1
 #define COPY_PROT_FAIL_PRC_NAME "L201.ANI"
 
 enum {

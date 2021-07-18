@@ -41,7 +41,7 @@ RivenStack::RivenStack(MohawkEngine_Riven *vm, uint16 id) :
 		_id(id),
 		_mouseIsDown(false),
 		_shouldRefreshMouseCursor(false),
-		_keyAction(kKeyActionNone) {
+		_action(kRivenActionNone) {
 	removeTimer();
 
 	loadResourceNames();
@@ -96,6 +96,28 @@ int16 RivenStack::getIdFromName(RivenNameResource nameResource, const Common::St
 			return _cardNames.getNameId(name);
 		case kHotspotNames:
 			return _hotspotNames.getNameId(name);
+		default:
+			error("Unknown name resource %d", nameResource);
+	}
+}
+
+void RivenStack::registerName(RivenNameResource nameResource, uint16 nameId, const Common::String &name) {
+	switch (nameResource) {
+		case kVariableNames:
+			_varNames.registerName(nameId, name);
+			break;
+		case kExternalCommandNames:
+			_externalCommandNames.registerName(nameId, name);
+			break;
+		case kStackNames:
+			_stackNames.registerName(nameId, name);
+			break;
+		case kCardNames:
+			_cardNames.registerName(nameId, name);
+			break;
+		case kHotspotNames:
+			_hotspotNames.registerName(nameId, name);
+			break;
 		default:
 			error("Unknown name resource %d", nameResource);
 	}
@@ -184,16 +206,16 @@ void RivenStack::runDemoBoundaryDialog() {
 	dialog.runModal();
 }
 
-void RivenStack::runEndGame(uint16 videoCode, uint32 delay) {
+void RivenStack::runEndGame(uint16 videoCode, uint32 delay, uint32 videoFrameCountOverride) {
 	_vm->_sound->stopAllSLST();
 	RivenVideo *video = _vm->_video->openSlot(videoCode);
 	video->enable();
 	video->play();
 	video->setLooping(false);
-	runCredits(videoCode, delay);
+	runCredits(videoCode, delay, videoFrameCountOverride);
 }
 
-void RivenStack::runCredits(uint16 video, uint32 delay) {
+void RivenStack::runCredits(uint16 video, uint32 delay, uint32 videoFrameCountOverride) {
 	// Initialize our credits state
 	_vm->_cursor->hideCursor();
 	_vm->_gfx->beginCredits();
@@ -201,15 +223,30 @@ void RivenStack::runCredits(uint16 video, uint32 delay) {
 
 	RivenVideo *videoPtr = _vm->_video->getSlot(video);
 
-	while (!_vm->hasGameEnded() && _vm->_gfx->getCurCreditsImage() <= 320) {
-		if (videoPtr->getCurFrame() >= (int32)videoPtr->getFrameCount() - 1) {
+	int32 frameCount;
+	if (_vm->getLanguage() == Common::PL_POL && videoFrameCountOverride != 0) {
+		// In the Polish version, the ending videos are not encoded the same way
+		// as with the other languages. In the other versions, the video track
+		// ends after a while, but the audio track keeps going while the credits
+		// are shown.
+		// In the Polish version, the video track keeps going until the end
+		// of the file, but contains only white frames. This workaround stops
+		// displaying the video track just before the first white frame.
+		frameCount = videoFrameCountOverride;
+	} else {
+		frameCount = videoPtr->getFrameCount();
+	}
+
+	while (!_vm->hasGameEnded() && !videoPtr->endOfVideo()) {
+		if (videoPtr->getCurFrame() >= frameCount - 1) {
 			if (nextCreditsFrameStart == 0) {
+				videoPtr->disable();
 				// Set us up to start after delay ms
 				nextCreditsFrameStart = _vm->getTotalPlayTime() + delay;
 			} else if (_vm->getTotalPlayTime() >= nextCreditsFrameStart) {
 				// the first two frames stay on for 4 seconds
 				// the rest of the scroll updates happen at 60Hz
-				if (_vm->_gfx->getCurCreditsImage() < 304)
+				if (_vm->_gfx->getCurCreditsImage() < kRivenCreditsSecondImage)
 					nextCreditsFrameStart = _vm->getTotalPlayTime() + 4000;
 				else
 					nextCreditsFrameStart = _vm->getTotalPlayTime() + 1000 / 60;
@@ -221,7 +258,16 @@ void RivenStack::runCredits(uint16 video, uint32 delay) {
 		_vm->doFrame();
 	}
 
-	_vm->setGameEnded();
+	videoPtr->stop();
+	_vm->_cursor->showCursor();
+
+	// Clear the game state
+	_vm->startNewGame();
+
+	// Go to the main menu
+	RivenScriptPtr goToMainMenu = _vm->_scriptMan->createScriptWithCommand(
+			new RivenStackChangeCommand(_vm, kStackAspit, 1, true, true));
+	_vm->_scriptMan->runScript(goToMainMenu, true);
 }
 
 void RivenStack::installCardTimer() {
@@ -305,77 +351,24 @@ void RivenStack::onFrame() {
 	_vm->_scriptMan->runScript(script, true);
 }
 
-RivenKeyAction RivenStack::keyGetAction() const {
-	return _keyAction;
+RivenAction RivenStack::getAction() const {
+	return _action;
 }
 
-void RivenStack::keyResetAction() {
-	_keyAction = kKeyActionNone;
+void RivenStack::resetAction() {
+	_action = kRivenActionNone;
 }
 
-void RivenStack::onKeyPressed(const Common::KeyState &keyState) {
-	_keyAction = mapKeyStateToKeyAction(keyState);
+void RivenStack::onAction(RivenAction action) {
+	_action = action;
 
 	if (_vm->getCard() && !_vm->_scriptMan->hasQueuedScripts()) {
-		RivenScriptPtr script = _vm->getCard()->onKeyAction(_keyAction);
+		RivenScriptPtr script = _vm->getCard()->onKeyAction(_action);
 
 		if (!script->empty()) {
 			_vm->_scriptMan->runScript(script, true);
 		}
 	}
-}
-
-RivenKeyAction RivenStack::mapKeyStateToKeyAction(const Common::KeyState &keyState) {
-	switch (keyState.keycode) {
-		case Common::KEYCODE_ESCAPE:
-			return kKeyActionSkip;
-		case Common::KEYCODE_KP8:
-			if (keyState.flags & Common::KBD_NUM) {
-				break;
-			}
-			// Fallthrough
-		case Common::KEYCODE_UP:
-			return kKeyActionMoveForward;
-		case Common::KEYCODE_KP7:
-			if (keyState.flags & Common::KBD_NUM) {
-				break;
-			}
-			return kKeyActionMoveForwardLeft;
-		case Common::KEYCODE_KP9:
-			if (keyState.flags & Common::KBD_NUM) {
-				break;
-			}
-			return kKeyActionMoveForwardRight;
-		case Common::KEYCODE_KP4:
-			if (keyState.flags & Common::KBD_NUM) {
-				break;
-			}
-			// Fallthrough
-		case Common::KEYCODE_LEFT:
-			return kKeyActionMoveLeft;
-		case Common::KEYCODE_KP6:
-			if (keyState.flags & Common::KBD_NUM) {
-				break;
-			}
-			// Fallthrough
-		case Common::KEYCODE_RIGHT:
-			return kKeyActionMoveRight;
-		case Common::KEYCODE_KP2:
-			if (keyState.flags & Common::KBD_NUM) {
-				break;
-			}
-			// Fallthrough
-		case Common::KEYCODE_DOWN:
-			return kKeyActionMoveBack;
-		case Common::KEYCODE_PAGEUP:
-			return kKeyActionLookUp;
-		case Common::KEYCODE_PAGEDOWN:
-			return kKeyActionLookDown;
-		default:
-			break;
-	}
-
-	return kKeyActionNone;
 }
 
 Common::Point RivenStack::getMousePosition() const {
@@ -428,7 +421,7 @@ void RivenStack::pageTurn(RivenTransition transition) {
 }
 
 bool RivenStack::keepTurningPages() {
-	return (mouseIsDown() || keyGetAction() != kKeyActionNone) && !_vm->shouldQuit();
+	return (mouseIsDown() || getAction() != kRivenActionNone) && !_vm->shouldQuit();
 }
 
 void RivenStack::waitForPageTurnSound() {
@@ -507,6 +500,16 @@ int16 RivenNameList::getNameId(const Common::String &name) const {
 	}
 
 	return -1;
+}
+
+void RivenNameList::registerName(uint16 nameId, const Common::String &name) {
+	if (nameId >= _names.size()) {
+		_names.resize(nameId + 1);
+	}
+
+	_names[nameId] = name;
+
+	// We don't add the name to _index, getNameId does not work for names added this way
 }
 
 namespace RivenStacks {

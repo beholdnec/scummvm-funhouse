@@ -24,6 +24,7 @@
 #include "access/access.h"
 #include "access/resources.h"
 #include "access/scripts.h"
+#include "access/martian/martian_resources.h"
 
 namespace Access {
 
@@ -152,7 +153,7 @@ void Scripts::searchForSequence() {
 	_data->seek(0);
 	int sequenceId;
 	do {
-		while (_data->readByte() != SCRIPT_START_BYTE) ;
+		while (_data->readByte() != SCRIPT_START_BYTE) {}
 		sequenceId = _data->readUint16LE();
 	} while (sequenceId != _sequence);
 }
@@ -203,7 +204,7 @@ void Scripts::printWatch() {
 	int width = 0;
 	bool lastLine;
 	do {
-		lastLine = _vm->_fonts._font2.getLine(msg, _vm->_screen->_maxChars * 6, line, width);
+		lastLine = _vm->_fonts._font2->getLine(msg, _vm->_screen->_maxChars * 6, line, width);
 		// Draw the text
 		_vm->_bubbleBox->printString(line);
 

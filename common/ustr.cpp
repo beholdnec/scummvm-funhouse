@@ -23,6 +23,7 @@
 #include "common/ustr.h"
 #include "common/memorypool.h"
 #include "common/util.h"
+#include "unicode-bidi.h"
 
 namespace Common {
 
@@ -34,7 +35,7 @@ static uint32 computeCapacity(uint32 len) {
 }
 
 U32String::U32String(const value_type *str) : _size(0), _str(_storage) {
-	if (str == 0) {
+	if (str == nullptr) {
 		_storage[0] = 0;
 		_size = 0;
 	} else {
@@ -69,7 +70,33 @@ U32String::U32String(const U32String &str)
 		_extern._capacity = str._extern._capacity;
 		_str = str._str;
 	}
-	assert(_str != 0);
+	assert(_str != nullptr);
+}
+
+U32String::U32String(const char *str) : _size(0), _str(_storage) {
+	if (str == nullptr) {
+		_storage[0] = 0;
+		_size = 0;
+	} else {
+		initWithCStr(str, strlen(str));
+	}
+}
+
+U32String::U32String(const char *str, uint32 len) : _size(0), _str(_storage) {
+	initWithCStr(str, len);
+}
+
+U32String::U32String(const char *beginP, const char *endP) : _size(0), _str(_storage) {
+	assert(endP >= beginP);
+	initWithCStr(beginP, endP - beginP);
+}
+
+U32String::U32String(const String &str) : _size(0), _str(_storage) {
+	initWithCStr(str.c_str(), str.size());
+}
+
+U32String::U32String(const UnicodeBiDiText &txt) : _size(0), _str(_storage) {
+	initWithCStr(txt.visual.c_str(), txt.visual.size());
 }
 
 U32String::~U32String() {
@@ -98,6 +125,22 @@ U32String &U32String::operator=(const U32String &str) {
 	return *this;
 }
 
+U32String &U32String::operator=(const String &str) {
+	clear();
+	initWithCStr(str.c_str(), str.size());
+	return *this;
+}
+
+U32String &U32String::operator=(const value_type *str) {
+	return U32String::operator=(U32String(str));
+}
+
+U32String &U32String::operator=(const char *str) {
+	clear();
+	initWithCStr(str, strlen(str));
+	return *this;
+}
+
 U32String &U32String::operator+=(const U32String &str) {
 	if (&str == this) {
 		return operator+=(U32String(str));
@@ -122,6 +165,38 @@ U32String &U32String::operator+=(value_type c) {
 	return *this;
 }
 
+bool U32String::operator==(const U32String &x) const {
+	return equals(x);
+}
+
+bool U32String::operator==(const String &x) const {
+	return equals(x);
+}
+
+bool U32String::operator==(const value_type *x) const {
+	return equals(U32String(x));
+}
+
+bool U32String::operator==(const char *x) const {
+	return equals(x);
+}
+
+bool U32String::operator!=(const U32String &x) const {
+	return !equals(x);
+}
+
+bool U32String::operator!=(const String &x) const {
+	return !equals(x);
+}
+
+bool U32String::operator!=(const value_type *x) const {
+	return !equals(U32String(x));
+}
+
+bool U32String::operator!=(const char *x) const {
+	return !equals(x);
+}
+
 bool U32String::equals(const U32String &x) const {
 	if (this == &x || _str == x._str) {
 		return true;
@@ -134,6 +209,17 @@ bool U32String::equals(const U32String &x) const {
 	return !memcmp(_str, x._str, _size * sizeof(value_type));
 }
 
+bool U32String::equals(const String &x) const {
+	if (x.size() != _size)
+		return false;
+
+	for (size_t idx = 0; idx < _size; ++idx)
+		if (_str[idx] != (value_type)x[idx])
+			return false;
+
+	return true;
+}
+
 bool U32String::contains(value_type x) const {
 	for (uint32 i = 0; i < _size; ++i) {
 		if (_str[i] == x) {
@@ -144,6 +230,16 @@ bool U32String::contains(value_type x) const {
 	return false;
 }
 
+void U32String::insertChar(value_type c, uint32 p) {
+	assert(p <= _size);
+
+	ensureCapacity(_size + 1, true);
+	_size++;
+	for (uint32 i = _size; i > p; --i)
+		_str[i] = _str[i - 1];
+	_str[p] = c;
+}
+
 void U32String::deleteChar(uint32 p) {
 	assert(p < _size);
 
@@ -151,6 +247,30 @@ void U32String::deleteChar(uint32 p) {
 	while (p++ < _size)
 		_str[p - 1] = _str[p];
 	_size--;
+}
+
+void U32String::deleteLastChar() {
+	if (_size > 0)
+		deleteChar(_size - 1);
+}
+
+void U32String::erase(uint32 p, uint32 len) {
+	assert(p < _size);
+
+	makeUnique();
+	// If len == npos or p + len is over the end, remove all the way to the end
+	if (len == npos || p + len >= _size) {
+		// Delete char at p as well. So _size = (p - 1) + 1
+		_size = p;
+		// Null terminate
+		_str[_size] = 0;
+		return;
+	}
+
+	for ( ; p + len <= _size; p++) {
+		_str[p] = _str[p + len];
+	}
+	_size -= len;
 }
 
 void U32String::clear() {
@@ -177,6 +297,16 @@ void U32String::toUppercase() {
 			_str[i] = toupper(_str[i]);
 		}
 	}
+}
+
+uint32 U32String::find(value_type x, uint32 pos) const {
+	for (uint32 i = pos; i < _size; ++i) {
+		if (_str[i] == x) {
+			return i;
+		}
+	}
+
+	return npos;
 }
 
 uint32 U32String::find(const U32String &str, uint32 pos) const {
@@ -239,7 +369,7 @@ void U32String::ensureCapacity(uint32 new_size, bool keep_old) {
 		if (new_size < curCapacity)
 			newCapacity = curCapacity;
 		else
-			newCapacity = MAX(curCapacity * 2, computeCapacity(new_size+1));
+			newCapacity = MAX(curCapacity * 2, computeCapacity(new_size + 1));
 
 		// Allocate new storage
 		newStorage = new value_type[newCapacity];
@@ -265,15 +395,15 @@ void U32String::ensureCapacity(uint32 new_size, bool keep_old) {
 		// Set the ref count & capacity if we use an external storage.
 		// It is important to do this *after* copying any old content,
 		// else we would override data that has not yet been copied!
-		_extern._refCount = 0;
+		_extern._refCount = nullptr;
 		_extern._capacity = newCapacity;
 	}
 }
 
 void U32String::incRefCount() const {
 	assert(!isStorageIntern());
-	if (_extern._refCount == 0) {
-		if (g_refCountPool == 0) {
+	if (_extern._refCount == nullptr) {
+		if (g_refCountPool == nullptr) {
 			g_refCountPool = new MemoryPool(sizeof(int));
 			assert(g_refCountPool);
 		}
@@ -299,7 +429,12 @@ void U32String::decRefCount(int *oldRefCount) {
 			assert(g_refCountPool);
 			g_refCountPool->freeChunk(oldRefCount);
 		}
+		// Coverity thinks that we always free memory, as it assumes
+		// (correctly) that there are cases when oldRefCount == 0
+		// Thus, DO NOT COMPILE, trick it and shut tons of false positives
+#ifndef __COVERITY__
 		delete[] _str;
+#endif
 
 		// Even though _str points to a freed memory block now,
 		// we do not change its value, because any code that calls
@@ -316,15 +451,44 @@ void U32String::initWithCStr(const value_type *str, uint32 len) {
 
 	if (len >= _builtinCapacity) {
 		// Not enough internal storage, so allocate more
-		_extern._capacity = computeCapacity(len+1);
-		_extern._refCount = 0;
+		_extern._capacity = computeCapacity(len + 1);
+		_extern._refCount = nullptr;
 		_str = new value_type[_extern._capacity];
-		assert(_str != 0);
+		assert(_str != nullptr);
 	}
 
 	// Copy the string into the storage area
 	memmove(_str, str, len * sizeof(value_type));
 	_str[len] = 0;
+}
+
+void U32String::initWithCStr(const char *str, uint32 len) {
+	assert(str);
+
+	_storage[0] = 0;
+
+	_size = len;
+
+	if (len >= _builtinCapacity) {
+		// Not enough internal storage, so allocate more
+		_extern._capacity = computeCapacity(len + 1);
+		_extern._refCount = nullptr;
+		_str = new value_type[_extern._capacity];
+		assert(_str != nullptr);
+	}
+
+	// Copy the string into the storage area
+	for (size_t idx = 0; idx < len; ++idx, ++str)
+		_str[idx] = (byte)(*str);
+
+	_str[len] = 0;
+}
+
+
+U32String operator+(const U32String &x, const U32String &y) {
+	U32String temp(x);
+	temp += y;
+	return temp;
 }
 
 } // End of namespace Common

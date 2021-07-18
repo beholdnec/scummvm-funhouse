@@ -22,10 +22,18 @@
 
 #include "backends/graphics/sdl/sdl-graphics.h"
 #include "backends/platform/sdl/sdl-sys.h"
+#include "backends/platform/sdl/sdl.h"
 #include "backends/events/sdl/sdl-events.h"
+#include "backends/keymapper/action.h"
+#include "backends/keymapper/keymap.h"
 #include "common/config-manager.h"
+#include "common/fs.h"
 #include "common/textconsole.h"
+#include "common/translation.h"
 #include "graphics/scaler/aspect.h"
+#ifdef USE_OSD
+#include "common/translation.h"
+#endif
 
 SdlGraphicsManager::SdlGraphicsManager(SdlEventSource *source, SdlWindow *window)
 	: _eventSource(source), _window(window), _hwScreen(nullptr)
@@ -38,9 +46,17 @@ SdlGraphicsManager::SdlGraphicsManager(SdlEventSource *source, SdlWindow *window
 
 void SdlGraphicsManager::activateManager() {
 	_eventSource->setGraphicsManager(this);
+
+	// Register the graphics manager as a event observer
+	g_system->getEventManager()->getEventDispatcher()->registerObserver(this, 10, false);
 }
 
 void SdlGraphicsManager::deactivateManager() {
+	// Unregister the event observer
+	if (g_system->getEventManager()->getEventDispatcher()) {
+		g_system->getEventManager()->getEventDispatcher()->unregisterObserver(this);
+	}
+
 	_eventSource->setGraphicsManager(0);
 }
 
@@ -154,7 +170,7 @@ void SdlGraphicsManager::initSizeHint(const Graphics::ModeList &modes) {
 #endif
 }
 
-bool SdlGraphicsManager::showMouse(const bool visible) {
+bool SdlGraphicsManager::showMouse(bool visible) {
 	if (visible == _cursorVisible) {
 		return visible;
 	}
@@ -226,8 +242,7 @@ void SdlGraphicsManager::setSystemMousePosition(const int x, const int y) {
 	}
 }
 
-void SdlGraphicsManager::handleResizeImpl(const int width, const int height) {
-	_eventSource->resetKeyboardEmulation(width - 1, height - 1);
+void SdlGraphicsManager::handleResizeImpl(const int width, const int height, const int xdpi, const int ydpi) {
 	_forceRedraw = true;
 }
 
@@ -265,3 +280,168 @@ bool SdlGraphicsManager::createOrUpdateWindow(int width, int height, const Uint3
 	return true;
 }
 #endif
+
+void SdlGraphicsManager::saveScreenshot() {
+	Common::String filename;
+
+	Common::String screenshotsPath;
+	OSystem_SDL *sdl_g_system = dynamic_cast<OSystem_SDL*>(g_system);
+	if (sdl_g_system)
+		screenshotsPath = sdl_g_system->getScreenshotsPath();
+
+	// Use the name of the running target as a base for screenshot file names
+	Common::String currentTarget = ConfMan.getActiveDomainName();
+
+#ifdef USE_PNG
+	const char *extension = "png";
+#else
+	const char *extension = "bmp";
+#endif
+
+	for (int n = 0;; n++) {
+		filename = Common::String::format("scummvm%s%s-%05d.%s", currentTarget.empty() ? "" : "-",
+		                                  currentTarget.c_str(), n, extension);
+
+		Common::FSNode file = Common::FSNode(screenshotsPath + filename);
+		if (!file.exists()) {
+			break;
+		}
+	}
+
+	if (saveScreenshot(screenshotsPath + filename)) {
+		if (screenshotsPath.empty())
+			debug("Saved screenshot '%s' in current directory", filename.c_str());
+		else
+			debug("Saved screenshot '%s' in directory '%s'", filename.c_str(), screenshotsPath.c_str());
+	} else {
+		if (screenshotsPath.empty())
+			warning("Could not save screenshot in current directory");
+		else
+			warning("Could not save screenshot in directory '%s'", screenshotsPath.c_str());
+	}
+}
+
+bool SdlGraphicsManager::notifyEvent(const Common::Event &event) {
+	if (event.type != Common::EVENT_CUSTOM_BACKEND_ACTION_START) {
+		return false;
+	}
+
+	switch ((CustomEventAction) event.customType) {
+	case kActionToggleMouseCapture:
+		getWindow()->toggleMouseGrab();
+		return true;
+
+	case kActionToggleFullscreen:
+		toggleFullScreen();
+		return true;
+
+	case kActionSaveScreenshot:
+		saveScreenshot();
+		return true;
+
+	default:
+		return false;
+	}
+}
+
+void SdlGraphicsManager::toggleFullScreen() {
+	if (!g_system->hasFeature(OSystem::kFeatureFullscreenMode))
+		return;
+
+	beginGFXTransaction();
+	setFeatureState(OSystem::kFeatureFullscreenMode, !getFeatureState(OSystem::kFeatureFullscreenMode));
+	endGFXTransaction();
+#ifdef USE_OSD
+	if (getFeatureState(OSystem::kFeatureFullscreenMode))
+		displayMessageOnOSD(_("Fullscreen mode"));
+	else
+		displayMessageOnOSD(_("Windowed mode"));
+#endif
+}
+
+Common::Keymap *SdlGraphicsManager::getKeymap() {
+	using namespace Common;
+
+	Keymap *keymap = new Keymap(Keymap::kKeymapTypeGlobal, "sdl-graphics", _("Graphics"));
+	Action *act;
+
+	if (g_system->hasFeature(OSystem::kFeatureFullscreenMode)) {
+		act = new Action("FULS", _("Toggle fullscreen"));
+		act->addDefaultInputMapping("A+RETURN");
+		act->addDefaultInputMapping("A+KP_ENTER");
+		act->setCustomBackendActionEvent(kActionToggleFullscreen);
+		keymap->addAction(act);
+	}
+
+	act = new Action("CAPT", _("Toggle mouse capture"));
+	act->addDefaultInputMapping("C+m");
+	act->setCustomBackendActionEvent(kActionToggleMouseCapture);
+	keymap->addAction(act);
+
+	act = new Action("SCRS", _("Save screenshot"));
+	act->addDefaultInputMapping("A+s");
+	act->setCustomBackendActionEvent(kActionSaveScreenshot);
+	keymap->addAction(act);
+
+	if (hasFeature(OSystem::kFeatureAspectRatioCorrection)) {
+		act = new Action("ASPT", _("Toggle aspect ratio correction"));
+		act->addDefaultInputMapping("C+A+a");
+		act->setCustomBackendActionEvent(kActionToggleAspectRatioCorrection);
+		keymap->addAction(act);
+	}
+
+	if (hasFeature(OSystem::kFeatureFilteringMode)) {
+		act = new Action("FILT", _("Toggle linear filtered scaling"));
+		act->addDefaultInputMapping("C+A+f");
+		act->setCustomBackendActionEvent(kActionToggleFilteredScaling);
+		keymap->addAction(act);
+	}
+
+	if (hasFeature(OSystem::kFeatureStretchMode)) {
+		act = new Action("STCH", _("Cycle through stretch modes"));
+		act->addDefaultInputMapping("C+A+s");
+		act->setCustomBackendActionEvent(kActionCycleStretchMode);
+		keymap->addAction(act);
+	}
+
+	act = new Action("SCL+", _("Increase the scale factor"));
+	act->addDefaultInputMapping("C+A+PLUS");
+	act->addDefaultInputMapping("C+A+KP_PLUS");
+	act->setCustomBackendActionEvent(kActionIncreaseScaleFactor);
+	keymap->addAction(act);
+
+	act = new Action("SCL-", _("Decrease the scale factor"));
+	act->addDefaultInputMapping("C+A+MINUS");
+	act->addDefaultInputMapping("C+A+KP_MINUS");
+	act->setCustomBackendActionEvent(kActionDecreaseScaleFactor);
+	keymap->addAction(act);
+
+#ifdef USE_SCALERS
+	struct ActionEntry {
+		const char *id;
+		const char *description;
+	};
+	static const ActionEntry filters[] = {
+			{ "FLT1", _s("Switch to nearest neighbour scaling") },
+			{ "FLT2", _s("Switch to AdvMame 2x/3x scaling")     },
+#ifdef USE_HQ_SCALERS
+			{ "FLT3", _s("Switch to HQ 2x/3x scaling")          },
+#endif
+			{ "FLT4", _s("Switch to 2xSai scaling")             },
+			{ "FLT5", _s("Switch to Super2xSai scaling")        },
+			{ "FLT6", _s("Switch to SuperEagle scaling")        },
+			{ "FLT7", _s("Switch to TV 2x scaling")             },
+			{ "FLT8", _s("Switch to DotMatrix scaling")         }
+	};
+
+	for (uint i = 0; i < ARRAYSIZE(filters); i++) {
+		act = new Action(filters[i].id, filters[i].description);
+		act->addDefaultInputMapping(String::format("C+A+%d", i + 1));
+		act->addDefaultInputMapping(String::format("C+A+KP%d", i + 1));
+		act->setCustomBackendActionEvent(kActionSetScaleFilter1 + i);
+		keymap->addAction(act);
+	}
+#endif
+
+	return keymap;
+}

@@ -378,8 +378,15 @@ void RobotDecoder::initStream(const GuiResourceId robotId) {
 		error("Invalid robot file %s", fileName.c_str());
 	}
 
-	// TODO: Mac version not tested, so this could be totally wrong
-	_stream = new Common::SeekableSubReadStreamEndian(stream, 0, stream->size(), g_sci->getPlatform() == Common::kPlatformMacintosh, DisposeAfterUse::YES);
+	// Determine the robot file's endianness by examining the version field.
+	//  Some games such as Lighthouse were distributed as dual PC/Mac CDs
+	//  that shared the same little endian robot files, so endianness doesn't
+	//  always correspond to platform.
+	stream->seek(6, SEEK_SET);
+	const uint16 version = stream->readUint16BE();
+	const bool bigEndian = (0 < version && version <= 0x00ff);
+
+	_stream = new Common::SeekableSubReadStreamEndian(stream, 0, stream->size(), bigEndian, DisposeAfterUse::YES);
 	_stream->seek(2, SEEK_SET);
 	if (_stream->readUint32BE() != MKTAG('S', 'O', 'L', 0)) {
 		error("Resource %s is not Robot type!", fileName.c_str());
@@ -1169,8 +1176,14 @@ bool RobotDecoder::readPartialAudioRecordAndSubmit(const int startFrame, const i
 
 uint16 RobotDecoder::getFrameSize(Common::Rect &outRect) const {
 	assert(_plane != nullptr);
-	outRect.clip(0, 0);
-	for (RobotScreenItemList::size_type i = 0; i < _screenItemList.size(); ++i) {
+
+	if (_screenItemList.size() == 0) {
+		outRect.clip(0, 0);
+		return _numFramesTotal;
+	}
+
+	outRect = _screenItemList[0]->getNowSeenRect(*_plane);
+	for (RobotScreenItemList::size_type i = 1; i < _screenItemList.size(); ++i) {
 		ScreenItem &screenItem = *_screenItemList[i];
 		outRect.extend(screenItem.getNowSeenRect(*_plane));
 	}

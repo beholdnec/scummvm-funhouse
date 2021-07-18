@@ -33,8 +33,12 @@
 
 namespace Sci {
 
-Kernel::Kernel(ResourceManager *resMan, SegManager *segMan)
-	: _resMan(resMan), _segMan(segMan), _invalid("<invalid>") {
+Kernel::Kernel(ResourceManager *resMan, SegManager *segMan)	:
+	_resMan(resMan),
+	_segMan(segMan),
+	_invalid("<invalid>") {
+	loadSelectorNames();
+	mapSelectors();
 }
 
 Kernel::~Kernel() {
@@ -49,11 +53,6 @@ Kernel::~Kernel() {
 		}
 		delete[] it->signature;
 	}
-}
-
-void Kernel::init() {
-	loadSelectorNames();
-	mapSelectors();      // Map a few special selectors for later use
 }
 
 uint Kernel::getSelectorNamesSize() const {
@@ -113,16 +112,11 @@ int Kernel::findSelector(const char *selectorName) const {
 	return -1;
 }
 
-// used by Script patcher to figure out, if it's okay to initialize signature/patch-table
-bool Kernel::selectorNamesAvailable() {
-	return !_selectorNames.empty();
-}
-
 void Kernel::loadSelectorNames() {
 	Resource *r = _resMan->findResource(ResourceId(kResourceTypeVocab, VOCAB_RESOURCE_SELECTORS), 0);
 	bool oldScriptHeader = (getSciVersion() == SCI_VERSION_0_EARLY);
 
-#ifdef ENABLE_SCI32_MAC
+#ifdef ENABLE_SCI32
 	// Starting with KQ7, Mac versions have a BE name table. GK1 Mac and earlier (and all
 	// other platforms) always use LE.
 	const bool isBE = (g_sci->getPlatform() == Common::kPlatformMacintosh && getSciVersion() >= SCI_VERSION_2_1_EARLY
@@ -306,6 +300,9 @@ static uint16 *parseKernelSignature(const char *kernelName, const char *writtenS
 					writePos++;
 					signature = 0;
 				}
+				break;
+			default:
+				break;
 			}
 		}
 		switch (curChar) {
@@ -558,7 +555,7 @@ bool Kernel::signatureMatch(const uint16 *sig, int argc, const reg_t *argv) {
 	return false;
 }
 
-void Kernel::mapFunctions() {
+void Kernel::mapFunctions(GameFeatures *features) {
 	int mapped = 0;
 	int ignored = 0;
 	uint functionCount = _kernelNames.size();
@@ -614,13 +611,13 @@ void Kernel::mapFunctions() {
 			continue;
 		}
 
-#ifdef ENABLE_SCI32_MAC
-		// HACK: Phantasmagoria Mac uses a modified kDoSound (which *nothing*
-		// else seems to use)!
-		if (g_sci->getPlatform() == Common::kPlatformMacintosh && g_sci->getGameId() == GID_PHANTASMAGORIA && kernelName == "DoSound") {
-			_kernelFuncs[id].function = kDoSoundPhantasmagoriaMac;
-			_kernelFuncs[id].signature = parseKernelSignature("DoSoundPhantasmagoriaMac", "i.*");
-			_kernelFuncs[id].name = "DoSoundPhantasmagoriaMac";
+#ifdef ENABLE_SCI32
+		// Several SCI 2.1 Middle Mac games use a modified kDoSound
+		//  with different subop numbers.
+		if (features->useDoSoundMac32() && kernelName == "DoSound") {
+			_kernelFuncs[id].function = kDoSoundMac32;
+			_kernelFuncs[id].signature = parseKernelSignature("DoSoundMac32", "i(.*)");
+			_kernelFuncs[id].name = "DoSoundMac32";
 			continue;
 		}
 #endif
@@ -781,6 +778,10 @@ void Kernel::loadKernelNames(GameFeatures *features) {
 				_kernelNames[0x84] = "ShowMovie";
 		} else if (g_sci->getGameId() == GID_QFG4DEMO) {
 			_kernelNames[0x7b] = "RemapColors"; // QFG4 Demo has this SCI2 function instead of StrSplit
+		} else if (_resMan->testResource(ResourceId(kResourceTypeVocab, 184))) {
+			_kernelNames[0x7b] = "RemapColorsKawa";
+			_kernelNames[0x88] = "KawaDbugStr";
+			_kernelNames[0x89] = "KawaHacks";
 		}
 
 		_kernelNames[0x71] = "PalVary";
@@ -873,14 +874,27 @@ void Kernel::loadKernelNames(GameFeatures *features) {
 	}
 #endif
 
-	mapFunctions();
+	mapFunctions(features);
 }
 
 Common::String Kernel::lookupText(reg_t address, int index) {
 	if (address.getSegment())
 		return _segMan->getString(address);
 
-	Resource *textres = _resMan->findResource(ResourceId(kResourceTypeText, address.getOffset()), false);
+	ResourceId resourceId = ResourceId(kResourceTypeText, address.getOffset());
+	if (g_sci->getGameId() == GID_HOYLE3 && g_sci->getPlatform() == Common::kPlatformAmiga) {
+		// WORKAROUND: In the Amiga version of Hoyle 3, texts are stored as
+		// either text, font or palette types. Seems like the resource type
+		// bits are used as part of the resource numbers. This is the same
+		// as the workaround used in GfxFontFromResource()
+		resourceId = ResourceId(kResourceTypeText, address.getOffset() & 0x7FF);
+		if (!_resMan->testResource(resourceId))
+			resourceId = ResourceId(kResourceTypeFont, address.getOffset() & 0x7FF);
+		if (!_resMan->testResource(resourceId))
+			resourceId = ResourceId(kResourceTypePalette, address.getOffset() & 0x7FF);
+	}
+
+	Resource *textres = _resMan->findResource(resourceId, false);
 
 	if (!textres) {
 		error("text.%03d not found", address.getOffset());
@@ -888,6 +902,22 @@ Common::String Kernel::lookupText(reg_t address, int index) {
 
 	int textlen = textres->size();
 	const char *seeker = (const char *)textres->getUnsafeDataAt(0);
+
+	if (g_sci->getGameId() == GID_LONGBOW && address.getOffset() == 1535 && textlen == 2662) {
+		// WORKAROUND: Longbow 1.0's text resource 1535 is missing 8 texts for
+		//  the pub. It appears that only the 5.25 floppy release was affected.
+		//  This was fixed by Sierra's 1.0 patch.
+		if (index >= 41) {
+			// texts 41+ exist but with incorrect offsets
+			index -= 8;
+		} else if (index >= 33) {
+			// texts 33 through 40 are missing. they comprise two sequences of
+			//  four messages. only one of the two can play, and only once in
+			//  the specific circumstance that the player enters the pub as a
+			//  merchant, changes beards, and re-enters.
+			return "** MISSING MESSAGE **";
+		}
+	}
 
 	int _index = index;
 	while (index--)

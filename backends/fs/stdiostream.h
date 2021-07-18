@@ -28,7 +28,7 @@
 #include "common/stream.h"
 #include "common/str.h"
 
-class StdioStream : public Common::SeekableReadStream, public Common::WriteStream, public Common::NonCopyable {
+class StdioStream : public Common::SeekableReadStream, public Common::SeekableWriteStream, public Common::NonCopyable {
 protected:
 	/** File handle to the actual file. */
 	void *_handle;
@@ -41,19 +41,30 @@ public:
 	static StdioStream *makeFromPath(const Common::String &path, bool writeMode);
 
 	StdioStream(void *handle);
-	virtual ~StdioStream();
+	~StdioStream() override;
 
-	virtual bool err() const;
-	virtual void clearErr();
-	virtual bool eos() const;
+	bool err() const override;
+	void clearErr() override;
+	bool eos() const override;
 
-	virtual uint32 write(const void *dataPtr, uint32 dataSize);
-	virtual bool flush();
+	uint32 write(const void *dataPtr, uint32 dataSize) override;
+	bool flush() override;
 
-	virtual int32 pos() const;
-	virtual int32 size() const;
-	virtual bool seek(int32 offs, int whence = SEEK_SET);
-	virtual uint32 read(void *dataPtr, uint32 dataSize);
+	int32 pos() const override;
+	int32 size() const override;
+	bool seek(int32 offs, int whence = SEEK_SET) override;
+	uint32 read(void *dataPtr, uint32 dataSize) override;
+
+	/**
+	 * Configure buffered IO
+	 *
+	 * Must be called immediately after opening the file.
+	 * A buffer size of 0 disables buffering.
+	 *
+	 * @param bufferSize the size of the Stdio read / write buffer
+	 * @return success or failure
+	 */
+	bool setBufferSize(uint32 bufferSize);
 };
 
 #endif

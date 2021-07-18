@@ -20,8 +20,14 @@
  *
  */
 
+#include "director/director.h"
 #include "director/lingo/lingo.h"
+#include "director/lingo/lingo-code.h"
+#include "director/lingo/lingo-object.h"
+#include "director/cast.h"
+#include "director/movie.h"
 #include "director/frame.h"
+#include "director/score.h"
 #include "director/sprite.h"
 
 namespace Director {
@@ -31,19 +37,19 @@ struct EventHandlerType {
 	const char *name;
 } static const eventHandlerDescs[] = {
 	{ kEventPrepareMovie,		"prepareMovie" },
-	{ kEventStartMovie,			"startMovie" },			//		D3?
-	{ kEventStepMovie,			"stepMovie" },			//		D3?
-	{ kEventStopMovie,			"stopMovie" },			//		D3?
+	{ kEventStartMovie,			"startMovie" },			//		D3
+	{ kEventStepMovie,			"stepMovie" },			//		D3
+	{ kEventStopMovie,			"stopMovie" },			//		D3
 
 	{ kEventNew,				"newSprite" },
 	{ kEventBeginSprite,		"beginSprite" },
 	{ kEventEndSprite,			"endSprite" },
 
-	{ kEventEnterFrame, 		"enterFrame" },			//			D4
-	{ kEventPrepareFrame, 		"prepareFrame" },
-	{ kEventIdle,				"idle" },
+	{ kEventEnterFrame,			"enterFrame" },			//			D4
+	{ kEventPrepareFrame,		"prepareFrame" },
+	{ kEventIdle,				"idle" },				//		D3
 	{ kEventStepFrame,			"stepFrame"},
-	{ kEventExitFrame, 			"exitFrame" },			//			D4
+	{ kEventExitFrame,			"exitFrame" },			//			D4
 
 	{ kEventActivateWindow,		"activateWindow" },
 	{ kEventDeactivateWindow,	"deactivateWindow" },
@@ -51,12 +57,11 @@ struct EventHandlerType {
 	{ kEventResizeWindow,		"resizeWindow" },
 	{ kEventOpenWindow,			"openWindow" },
 	{ kEventCloseWindow,		"closeWindow" },
-	{ kEventStart,				"start" },
 
 	{ kEventKeyUp,				"keyUp" },				//			D4
 	{ kEventKeyDown,			"keyDown" },			// D2 w		D4 (as when from D2)
-	{ kEventMouseUp,			"mouseUp" },			// D2 w	D3?
-	{ kEventMouseDown,			"mouseDown" },			// D2 w	D3?
+	{ kEventMouseUp,			"mouseUp" },			// D2 w	D3
+	{ kEventMouseDown,			"mouseDown" },			// D2 w	D3
 	{ kEventRightMouseDown,		"rightMouseDown" },
 	{ kEventRightMouseUp,		"rightMouseUp" },
 	{ kEventMouseEnter,			"mouseEnter" },
@@ -66,7 +71,11 @@ struct EventHandlerType {
 
 	{ kEventTimeout,			"timeout" },			// D2 as when
 
-	{ kEventNone,				0 },
+	{ kEventStartUp,			"startUp" },
+
+	{ kEventGeneric,			"scummvm_generic" },
+
+	{ kEventNone, 0 }
 };
 
 void Lingo::initEventHandlerTypes() {
@@ -74,15 +83,16 @@ void Lingo::initEventHandlerTypes() {
 		_eventHandlerTypeIds[t->name] = t->handler;
 		_eventHandlerTypes[t->handler] = t->name;
 	}
+	_eventHandlerTypes[kEventNone] = 0;
 }
 
 ScriptType Lingo::event2script(LEvent ev) {
-	if (_vm->getVersion() < 4) {
+	if (_vm->getVersion() < 400) {
 		switch (ev) {
 		//case kEventStartMovie: // We are precompiling it now
 		//	return kMovieScript;
 		case kEventEnterFrame:
-			return kFrameScript;
+			return kScoreScript;
 		default:
 			return kNoneScript;
 		}
@@ -91,55 +101,18 @@ ScriptType Lingo::event2script(LEvent ev) {
 	return kNoneScript;
 }
 
-Symbol *Lingo::getHandler(Common::String &name) {
-	if (!_eventHandlerTypeIds.contains(name)) {
-		if (_builtins.contains(name))
-			return _builtins[name];
-
-		return NULL;
-	}
-
-	uint32 entityIndex = ENTITY_INDEX(_eventHandlerTypeIds[name], _currentEntityId);
-	if (!_handlers.contains(entityIndex))
-		return NULL;
-
-	return _handlers[entityIndex];
+int Movie::getEventCount() {
+	return _eventQueue.size();
 }
 
-void Lingo::primaryEventHandler(LEvent event) {
-	/* When an event occurs the message [...] is first sent to a
-	 * primary event handler: [... if exists it is executed] and the
-	 * event is passed on to other objects unless you explicitly stop
-	 * the message by including the dontPassEventCommand in the script
-	 * [D4 docs page 77]
-	 */
-	debugC(3, kDebugLingoExec, "STUB: primary event handler (%s) not implemented", _eventHandlerTypes[event]);
-	switch (event) {
-	case kEventMouseDown:
-	case kEventMouseUp:
-	case kEventKeyUp:
-	case kEventKeyDown:
-	case kEventTimeout:
-		// TODO
-		break;
-	default:
-		/* N.B.: No primary event handlers for events other than
-		 * keyup, keydown, mouseup, mousedown, timeout
-		 * [see: www.columbia.edu/itc/visualarts/r4110/s2001/handouts
-		 * /03_03_Event_Hierarchy.pdf]
-		 */
-		warning("primaryEventHandler() on event other than mouseDown, mouseUp, keyUp, keyDown, timeout");
-	}
-#ifdef DEBUG_DONTPASSEVENT
-	// #define DEBUG_DONTPASSEVENT to simulate raising of the dontPassEvent flag
-	g_lingo->dontPassEvent = true;
-	debugC(3, kDebugLingoExec, "STUB: primaryEventHandler raising dontPassEvent");
-#else
-	debugC(3, kDebugLingoExec, "STUB: primaryEventHandler not raising dontPassEvent");
-#endif
+void Movie::setPrimaryEventHandler(LEvent event, const Common::String &code) {
+	debugC(3, kDebugLingoExec, "setting primary event handler (%s)", _lingo->_eventHandlerTypes[event]);
+	LingoArchive *mainArchive = getMainLingoArch();
+	mainArchive->primaryEventHandlers[event] = code;
+	mainArchive->addCode(code.c_str(), kEventScript, event);
 }
 
-void Lingo::processInputEvent(LEvent event) {
+void Movie::queueSpriteEvent(LEvent event, int eventId, int spriteId) {
 	/* When the mouseDown or mouseUp occurs over a sprite, the message
 	 * goes first to the sprite script, then to the script of the cast
 	 * member, to the frame script and finally to the movie scripts.
@@ -150,163 +123,233 @@ void Lingo::processInputEvent(LEvent event) {
 	 * When more than one movie script [...]
 	 * [D4 docs] */
 
-	Score *score = _vm->getCurrentScore();
-	Frame *currentFrame = score->_frames[score->getCurrentFrame()];
+	Frame *currentFrame = _score->_frames[_score->getCurrentFrame()];
 	assert(currentFrame != nullptr);
-	uint16 spriteId = score->_currentMouseDownSpriteId;
+	Sprite *sprite = _score->getSpriteById(spriteId);
 
-	primaryEventHandler(event);
-
-	if (g_lingo->dontPassEvent) {
-		g_lingo->dontPassEvent = false;
-	} else {
-		if (_vm->getVersion() > 3) {
-			if (true) {
-				// TODO: Check whether occurring over a sprite
-				g_lingo->processEvent(event, kSpriteScript, currentFrame->_sprites[spriteId]->_scriptId);
+	// Sprite (score) script
+	if (sprite->_scriptId) {
+		ScriptContext *script = getScriptContext(kScoreScript, sprite->_scriptId);
+		if (script) {
+			// In D3 the event lingo is not contained in a handler
+			// If sprite is immediate, its script is run on mouseDown, otherwise on mouseUp
+			if (((event == kEventMouseDown && sprite->_immediate) || (event == kEventMouseUp && !sprite->_immediate))
+					&& script->_eventHandlers.contains(kEventGeneric)) {
+				_eventQueue.push(LingoEvent(kEventGeneric, eventId, kScoreScript, sprite->_scriptId, false, spriteId));
+			} else if (script->_eventHandlers.contains(event)) {
+				_eventQueue.push(LingoEvent(event, eventId, kScoreScript, sprite->_scriptId, false, spriteId));
 			}
-			g_lingo->processEvent(event, kCastScript, currentFrame->_sprites[spriteId]->_castId);
-			g_lingo->processEvent(event, kFrameScript, score->_frames[score->getCurrentFrame()]->_actionId);
-			// TODO: Is the kFrameScript call above correct?
-		} else if (event == kEventMouseUp) {
-			// Frame script overrides sprite script
-			if (!currentFrame->_sprites[spriteId]->_scriptId)
-				g_lingo->processEvent(kEventNone, kSpriteScript, currentFrame->_sprites[spriteId]->_castId + 1024);
-			else
-				g_lingo->processEvent(kEventNone, kFrameScript, currentFrame->_sprites[spriteId]->_scriptId);
 		}
-		if (event == kEventKeyDown) {
-			// TODO: is the above condition necessary or useful?
-			g_lingo->processEvent(event, kGlobalScript, 0);
-		}
-		runMovieScript(event);
+	}
+
+	// Cast script
+	ScriptContext *script = getScriptContext(kCastScript, sprite->_castId);
+	if (script && script->_eventHandlers.contains(event)) {
+		_eventQueue.push(LingoEvent(event, eventId, kCastScript, sprite->_castId, false, spriteId));
 	}
 }
 
-void Lingo::runMovieScript(LEvent event) {
+void Movie::queueFrameEvent(LEvent event, int eventId) {
+	/* [in D4] the enterFrame, exitFrame, idle and timeout messages
+	 * are sent to a frame script and then a movie script.	If the
+	 * current frame has no frame script when the event occurs, the
+	 * message goes to movie scripts.
+	 * [p.81 of D4 docs]
+	 */
+
+	// if (event == kEventPrepareFrame || event == kEventIdle) {
+	// 	entity = score->getCurrentFrame();
+	// } else {
+
+	assert(_score->_frames[_score->getCurrentFrame()] != nullptr);
+	int scriptId = _score->_frames[_score->getCurrentFrame()]->_actionId;
+	if (!scriptId)
+		return;
+
+	ScriptContext *script = getScriptContext(kScoreScript, scriptId);
+	if (!script)
+		return;
+
+	if (event == kEventEnterFrame && script->_eventHandlers.contains(kEventGeneric)) {
+		_eventQueue.push(LingoEvent(kEventGeneric, eventId, kScoreScript, scriptId, false));
+	} else if (script->_eventHandlers.contains(event)) {
+		_eventQueue.push(LingoEvent(event, eventId, kScoreScript, scriptId, false));
+	}
+}
+
+void Movie::queueMovieEvent(LEvent event, int eventId) {
 	/* If more than one movie script handles the same message, Lingo
 	 * searches the movie scripts according to their order in the cast
 	 * window [p.81 of D4 docs]
 	 */
 
-	for (uint i = 0; i < _scripts[kMovieScript].size(); i++) {
-		// processEvent(event,
-		//			 kMovieScript,
-		//			 ?);
-		// TODO: How do know which script handles the message?
-	}
-	debugC(3, kDebugLingoExec, "STUB: processEvent(event, kMovieScript, ?)");
-}
-
-void Lingo::processFrameEvent(LEvent event) {
-	/* [in D4] the enterFrame, exitFrame, idle and timeout messages
-	 * are sent to a frame script and then a movie script.  If the
-	 * current frame has no frame script when the event occurs, the
-	 * message goes to movie scripts.
-	 * [p.81 of D4 docs]
-	 */
-	// TODO: Same for D2-3 or not?
-	Score *score = _vm->getCurrentScore();
-
-	if (event == kEventTimeout) {
-		primaryEventHandler(event);
-	}
-
-	if (g_lingo->dontPassEvent) {
-		g_lingo->dontPassEvent = false;
-	} else {
-		int entity;
-
-		if (event == kEventPrepareFrame || event == kEventIdle) {
-			entity = score->getCurrentFrame();
-		} else {
-			assert(score->_frames[score->getCurrentFrame()] != nullptr);
-			entity = score->_frames[score->getCurrentFrame()]->_actionId;
+	// FIXME: shared cast movie scripts could come before main movie ones
+	LingoArchive *mainArchive = getMainLingoArch();
+	for (ScriptContextHash::iterator it = mainArchive->scriptContexts[kMovieScript].begin();
+			it != mainArchive->scriptContexts[kMovieScript].end(); ++it) {
+		if (it->_value->_eventHandlers.contains(event)) {
+			_eventQueue.push(LingoEvent(event, eventId, kMovieScript, it->_key, false));
+			return;
 		}
-		processEvent(event,
-		             kFrameScript,
-		             entity);
-		runMovieScript(event);
+	}
+	LingoArchive *sharedArchive = getSharedLingoArch();
+	if (sharedArchive) {
+		for (ScriptContextHash::iterator it = sharedArchive->scriptContexts[kMovieScript].begin();
+				it != sharedArchive->scriptContexts[kMovieScript].end(); ++it) {
+			if (it->_value->_eventHandlers.contains(event)) {
+				_eventQueue.push(LingoEvent(event, eventId, kMovieScript, it->_key, false));
+				return;
+			}
+		}
 	}
 }
 
-void Lingo::processGenericEvent(LEvent event) {
-	// Movie Script
-	int id = -1;
-	if (event == kEventStart || event == kEventPrepareMovie)
-		id = 0;
-	else
-		warning("STUB: processGenericEvent called for something else than kEventStart or kEventPrepareMovie, additional logic probably needed");
-	g_lingo->processEvent(event, kMovieScript, id);
-}
+void Movie::registerEvent(LEvent event, int targetId) {
+	int eventId = _nextEventId++;
+	if (_nextEventId < 0)
+		_nextEventId = 0;
 
-void Lingo::processSpriteEvent(LEvent event) {
-	Score *score = _vm->getCurrentScore();
-	Frame *currentFrame = score->_frames[score->getCurrentFrame()];
-	if (event == kEventBeginSprite) {
-		// TODO: Check if this is also possibly a kSpriteScript?
-		for (uint16 i = 0; i < CHANNEL_COUNT; i++)
-			if (currentFrame->_sprites[i]->_enabled)
-				g_lingo->processEvent(event, kCastScript, currentFrame->_sprites[i]->_scriptId);
+	int oldQueueSize = _eventQueue.size();
 
-	} else {
-		warning("STUB: processSpriteEvent called for something else than kEventBeginSprite, additional logic probably needed");
-	}
-
-}
-
-void Lingo::processEvent(LEvent event) {
+	/* When an event occurs the message [...] is first sent to a
+	 * primary event handler: [... if exists it is executed] and the
+	 * event is passed on to other objects unless you explicitly stop
+	 * the message by including the dontPassEvent command in the script
+	 * [D4 docs page 77]
+	 */
+	/* N.B.: No primary event handlers for events other than
+	 * keyup, keydown, mouseup, mousedown, timeout
+	 * [see: www.columbia.edu/itc/visualarts/r4110/s2001/handouts
+	 * /03_03_Event_Hierarchy.pdf]
+	 */
 	switch (event) {
+	case kEventMouseDown:
+	case kEventMouseUp:
+	case kEventKeyUp:
+	case kEventKeyDown:
+	case kEventTimeout:
+		if (getScriptContext(kEventScript, event)) {
+			_eventQueue.push(LingoEvent(kEventGeneric, eventId, kEventScript, event, true));
+		}
+		break;
+	case kEventMenuCallback:
+		if (getScriptContext(kEventScript, targetId)) {
+			_eventQueue.push(LingoEvent(kEventGeneric, eventId, kEventScript, targetId, true));
+		}
+		break;
+	default:
+		break;
+	}
+
+	if (_vm->getVersion() < 400) {
+		// In D2-3, specific objects handle each event, with no passing
+		switch(event) {
+		case kEventMouseUp:
+		case kEventMouseDown:
+			if (targetId) {
+				queueSpriteEvent(event, eventId, targetId);
+			}
+			break;
+
+		case kEventEnterFrame:
+			queueFrameEvent(event, eventId);
+			break;
+		
+		case kEventIdle:
+		case kEventStartUp:
+		case kEventStartMovie:
+		case kEventStepMovie:
+		case kEventStopMovie:
+			queueMovieEvent(event, eventId);
+			break;
+
+		default:
+			warning("registerEvent: Unhandled event %s", _lingo->_eventHandlerTypes[event]);	
+		}
+	} else {
+		/* In D4+, queue any objects that responds to this event, in order of precedence.
+		 *   (Sprite -> Cast Member -> Frame -> Movie)
+		 * Once one of these objects handles the event, any event handlers queued
+		 * for the same event will be ignored unless the pass command was called.
+		 */
+		switch (event) {
 		case kEventKeyUp:
 		case kEventKeyDown:
 		case kEventMouseUp:
 		case kEventMouseDown:
-			processInputEvent(event);
-			break;
+		case kEventBeginSprite:
+			if (targetId) {
+				queueSpriteEvent(event, eventId, targetId);
+			}
+			// fall through
 
 		case kEventIdle:
 		case kEventEnterFrame:
 		case kEventExitFrame:
-		case kEventNone:
-			processFrameEvent(event);
-			break;
+			queueFrameEvent(event, eventId);
+			// fall through
 
-		case kEventStart:
+		case kEventStartUp:
 		case kEventStartMovie:
 		case kEventStopMovie:
 		case kEventTimeout:
 		case kEventPrepareMovie:
-			processGenericEvent(event);
-			break;
-		case kEventBeginSprite:
-			processSpriteEvent(event);
+			queueMovieEvent(event, eventId);
 			break;
 
 		default:
-			warning("processEvent: Unhandled event %s", _eventHandlerTypes[event]);
+			warning("registerEvent: Unhandled event %s", _lingo->_eventHandlerTypes[event]);
+		}
+	}
+
+	if (oldQueueSize == _eventQueue.size()) {
+		debugC(9, kDebugEvents, "Lingo::registerEvent(%s): no event handler", _lingo->_eventHandlerTypes[event]);
 	}
 }
 
-void Lingo::processEvent(LEvent event, ScriptType st, int entityId) {
-	if (entityId < 0)
-		return;
+void Movie::processEvent(LEvent event, int targetId) {
+	registerEvent(event, targetId);
+	_vm->setCurrentMovie(this);
+	_lingo->processEvents();
+}
 
-	debugC(9, kDebugEvents, "Lingo::processEvent(%s, %s, %d)", _eventHandlerTypes[event], scriptType2str(st), entityId);
+void Lingo::processEvents() {
+	int lastEventId = -1;
+	Movie *movie = _vm->getCurrentMovie();
+	Score *sc = movie->getScore();
 
-	_currentEntityId = entityId;
+	if (_vm->getVersion() >= 300 && sc->getCurrentFrame() > 0 && sc->_playState != kPlayStopped && movie->_eventQueue.empty())
+		movie->registerEvent(kEventIdle);
+
+	while (!movie->_eventQueue.empty()) {
+		LingoEvent el = movie->_eventQueue.pop();
+
+		if (sc->_playState == kPlayStopped && el.event != kEventStopMovie)
+			continue;
+
+		if (lastEventId == el.eventId && !_passEvent)
+			continue;
+
+		_passEvent = el.passByDefault;
+		processEvent(el.event, el.scriptType, el.scriptId, el.channelId);
+		lastEventId = el.eventId;
+	}
+}
+
+void Lingo::processEvent(LEvent event, ScriptType st, int scriptId, int channelId) {
+	_currentChannelId = channelId;
 
 	if (!_eventHandlerTypes.contains(event))
-		error("processEvent: Unknown event %d for entity %d", event, entityId);
+		error("processEvent: Unknown event %d", event);
 
-	if (_handlers.contains(ENTITY_INDEX(event, entityId))) {
-		debugC(1, kDebugEvents, "Lingo::processEvent(%s, %s, %d), _eventHandler", _eventHandlerTypes[event], scriptType2str(st), entityId);
-		call(_eventHandlerTypes[event], 0); // D4+ Events
-	} else if (event == kEventNone && _scripts[st].contains(entityId)) {
-		debugC(1, kDebugEvents, "Lingo::processEvent(%s, %s, %d), script", _eventHandlerTypes[event], scriptType2str(st), entityId);
+	ScriptContext *script = g_director->getCurrentMovie()->getScriptContext(st, scriptId);
 
-		executeScript(st, entityId); // D3 list of scripts.
+	if (script && script->_eventHandlers.contains(event)) {
+		debugC(1, kDebugEvents, "Lingo::processEvent(%s, %s, %d): executing event handler", _eventHandlerTypes[event], scriptType2str(st), scriptId);
+		LC::call(script->_eventHandlers[event], 0, false);
+		execute(_pc);
 	} else {
-		//debugC(3, kDebugLingoExec, "STUB: processEvent(%s) for %d", _eventHandlerTypes[event], entityId);
+		debugC(9, kDebugEvents, "Lingo::processEvent(%s, %s, %d): no handler", _eventHandlerTypes[event], scriptType2str(st), scriptId);
 	}
 }
 

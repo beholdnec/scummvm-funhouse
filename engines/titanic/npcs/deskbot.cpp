@@ -204,6 +204,7 @@ bool CDeskbot::TrueTalkTriggerActionMsg(CTrueTalkTriggerActionMsg *msg) {
 		default:
 			break;
 		}
+		break;
 
 	case 20:
 		if (getPassengerClass() == 1) {
@@ -238,10 +239,15 @@ bool CDeskbot::TrueTalkTriggerActionMsg(CTrueTalkTriggerActionMsg *msg) {
 		break;
 
 	case 26:
-		_npcFlags |= NPCFLAG_MOVE_FINISH;
-		CTurnOff turnOff;
-		turnOff.execute(this);
-		lockMouse();
+		{
+			_npcFlags |= NPCFLAG_MOVE_FINISH;
+			CTurnOff turnOff;
+			turnOff.execute(this);
+			lockMouse();
+		}
+		break;
+
+	default:
 		break;
 	}
 
@@ -301,7 +307,7 @@ bool CDeskbot::TrueTalkNotifySpeechEndedMsg(CTrueTalkNotifySpeechEndedMsg *msg) 
 
 	CTurnOff turnOff;
 	CTrueTalkNPC::TrueTalkNotifySpeechEndedMsg(msg);
-	 
+
 	if (g_language == Common::DE_DEU) {
 		switch (msg->_dialogueId) {
 		case 41701:

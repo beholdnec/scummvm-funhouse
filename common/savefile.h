@@ -28,7 +28,6 @@
 #include "common/stream.h"
 #include "common/str-array.h"
 #include "common/error.h"
-#include "common/ptr.h"
 
 namespace Common {
 
@@ -47,7 +46,7 @@ typedef SeekableReadStream InSaveFile;
  */
 class OutSaveFile: public WriteStream {
 protected:
-	ScopedPtr<WriteStream> _wrapped;
+	WriteStream *_wrapped;
 
 public:
 	OutSaveFile(WriteStream *w);
@@ -172,18 +171,22 @@ public:
 	 *
 	 * @param oldName  Old name.
 	 * @param newName  New name.
+	 * @param compress  Toggles whether to compress the resulting save file
+	 *                  (default) or not.
 	 * @return true if no error occurred. false otherwise.
 	 */
-	virtual bool renameSavefile(const String &oldName, const String &newName);
+	virtual bool renameSavefile(const String &oldName, const String &newName, bool compress = true);
 
 	/**
 	 * Copy the given savefile.
 	 *
 	 * @param oldName  Old name.
 	 * @param newName  New name.
+	 * @param compress  Toggles whether to compress the resulting save file
+	 *                  (default) or not.
 	 * @return true if no error occurred. false otherwise.
 	 */
-	virtual bool copySavefile(const String &oldName, const String &newName);
+	virtual bool copySavefile(const String &oldName, const String &newName, bool compress = true);
 
 	/**
 	 * List available savegames matching a given pattern.

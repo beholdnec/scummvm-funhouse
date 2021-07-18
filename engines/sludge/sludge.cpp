@@ -27,11 +27,16 @@
 
 #include "sludge/cursors.h"
 #include "sludge/event.h"
+#include "sludge/fonttext.h"
+#include "sludge/floor.h"
 #include "sludge/graphics.h"
+#include "sludge/main_loop.h"
+#include "sludge/newfatal.h"
+#include "sludge/people.h"
+#include "sludge/region.h"
 #include "sludge/sludge.h"
 #include "sludge/sound.h"
-#include "sludge/fonttext.h"
-#include "sludge/main_loop.h"
+#include "sludge/speech.h"
 
 namespace Sludge {
 
@@ -41,7 +46,7 @@ Graphics::PixelFormat *SludgeEngine::getScreenPixelFormat() const { return _pixe
 Graphics::PixelFormat *SludgeEngine::getOrigPixelFormat() const { return _origFormat; }
 
 SludgeEngine::SludgeEngine(OSystem *syst, const SludgeGameDescription *gameDesc) :
-		Engine(syst), _gameDescription(gameDesc), _console(nullptr) {
+		Engine(syst), _gameDescription(gameDesc) {
 
 	// register your random source
 	_rnd = new Common::RandomSource("sludge");
@@ -67,11 +72,10 @@ SludgeEngine::SludgeEngine(OSystem *syst, const SludgeGameDescription *gameDesc)
 	launchNext = "";
 	loadNow = "";
 	gamePath = "";
-	bundleFolder = "";
-	fatalMessage = "";
-	fatalInfo = "Initialisation error! Something went wrong before we even got started!";
 
 	// Init managers
+	_fatalMan = new FatalMsgManager();
+	_peopleMan = new PeopleManager(this);
 	_resMan = new ResourceManager();
 	_languageMan = new LanguageManager();
 	_objMan = new ObjectManager(this);
@@ -80,6 +84,9 @@ SludgeEngine::SludgeEngine(OSystem *syst, const SludgeGameDescription *gameDesc)
 	_soundMan = new SoundManager();
 	_txtMan = new TextManager();
 	_cursorMan = new CursorManager(this);
+	_speechMan = new SpeechManager(this);
+	_regionMan = new RegionManager(this);
+	_floorMan = new FloorManager(this);
 }
 
 SludgeEngine::~SludgeEngine() {
@@ -90,10 +97,6 @@ SludgeEngine::~SludgeEngine() {
 
 	// Remove debug levels
 	DebugMan.clearAllDebugChannels();
-
-	// Dispose console
-	delete _console;
-	_console = nullptr;
 
 	// Dispose pixel formats
 	delete _origFormat;
@@ -118,6 +121,16 @@ SludgeEngine::~SludgeEngine() {
 	_languageMan = nullptr;
 	delete _resMan;
 	_resMan = nullptr;
+	delete _speechMan;
+	_speechMan = nullptr;
+	delete _regionMan;
+	_regionMan = nullptr;
+	delete _peopleMan;
+	_peopleMan = nullptr;
+	delete _floorMan;
+	_floorMan = nullptr;
+	delete _fatalMan;
+	_fatalMan = nullptr;
 }
 
 Common::Error SludgeEngine::run() {
@@ -125,7 +138,7 @@ Common::Error SludgeEngine::run() {
 	g_sludge = this;
 
 	// create console
-	_console = new SludgeConsole(this);
+	setDebugger(new SludgeConsole(this));
 
 	// debug log
 	main_loop(getGameFile());

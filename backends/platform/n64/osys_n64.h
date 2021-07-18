@@ -31,7 +31,6 @@
 #include "base/main.h"
 
 #include "graphics/surface.h"
-#include "graphics/colormasks.h"
 #include "graphics/palette.h"
 #include "graphics/pixelformat.h"
 
@@ -97,7 +96,8 @@ protected:
 	uint8 _offscrPixels; // Pixels to skip on each line before start drawing, used to center image
 	uint8 _maxFps; // Max frames-per-second which can be shown on screen
 
-	int _shakeOffset;
+	int _shakeXOffset;
+	int _shakeYOffset;
 
 	uint8 *_cursor_pal; // Cursor buffer, palettized
 	uint16 *_cursor_hic; // Cursor buffer, 16bit
@@ -146,7 +146,6 @@ public:
 	virtual bool getFeatureState(Feature f);
 	virtual const GraphicsMode *getSupportedGraphicsModes() const;
 	virtual int getDefaultGraphicsMode() const;
-	bool setGraphicsMode(const char *name);
 	virtual bool setGraphicsMode(int mode);
 	virtual int getGraphicsMode() const;
 	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format);
@@ -164,7 +163,7 @@ public:
 	virtual void updateScreen();
 	virtual Graphics::Surface *lockScreen();
 	virtual void unlockScreen();
-	virtual void setShakePos(int shakeOffset);
+	virtual void setShakePos(int shakeXOffset, int shakeYOffset);
 
 	virtual void showOverlay();
 	virtual void hideOverlay();
@@ -174,7 +173,7 @@ public:
 	virtual int16 getOverlayHeight();
 	virtual int16 getOverlayWidth();
 	virtual Graphics::PixelFormat getOverlayFormat() const {
-		return Graphics::createPixelFormat<555>();
+		return Graphics::PixelFormat(2, 5, 5, 5, 0, 11, 6, 1, 0);
 	}
 
 	virtual bool showMouse(bool visible);

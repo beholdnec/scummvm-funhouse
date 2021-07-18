@@ -137,37 +137,41 @@ public:
 	enum Mt32Type {
 		kMt32TypeNone,
 		kMt32TypeReal,
-		kMt32TypeEmulated
+		kMt32TypeEmulated,
+		kMt32TypeD110
 	};
 
 	MidiPlayer_Midi(SciVersion version);
-	virtual ~MidiPlayer_Midi();
+	~MidiPlayer_Midi() override;
 
-	int open(ResourceManager *resMan);
-	void close();
-	void send(uint32 b);
-	void sysEx(const byte *msg, uint16 length);
-	bool hasRhythmChannel() const { return true; }
-	byte getPlayId() const;
-	int getPolyphony() const {
+	int open(ResourceManager *resMan) override;
+	void close() override;
+	void send(uint32 b) override;
+	void sysEx(const byte *msg, uint16 length) override;
+	bool hasRhythmChannel() const override { return true; }
+	byte getPlayId() const override;
+	int getPolyphony() const override {
 		if (g_sci && g_sci->_features->useAltWinGMSound())
 			return 16;
 		else
 			return kVoices;
 	}
-	int getFirstChannel() const;
-	int getLastChannel() const;
-	void setVolume(byte volume);
-	virtual void onNewSound() override;
-	int getVolume();
-	void setReverb(int8 reverb);
-	void playSwitch(bool play);
+	int getFirstChannel() const override;
+	int getLastChannel() const override;
+	void setVolume(byte volume) override;
+	int getVolume() override;
+	void setReverb(int8 reverb) override;
+	void playSwitch(bool play) override;
+	void initTrack(SciSpan<const byte> &) override;
+	const char *reportMissingFiles() override { return _missingFiles; }
 
 private:
 	bool isMt32GmPatch(const SciSpan<const byte> &data);
 	void readMt32GmPatch(const SciSpan<const byte> &data);
 	void readMt32Patch(const SciSpan<const byte> &data);
 	void readMt32DrvData();
+	bool readD110DrvData();
+	bool readD110SysEx();
 
 	void mapMt32ToGm(const SciSpan<const byte> &data);
 	uint8 lookupGmInstrument(const char *iname);
@@ -199,6 +203,7 @@ private:
 	};
 
 	Mt32Type _mt32Type;
+	uint _mt32LCDSize;
 	bool _useMT32Track;
 	bool _hasReverb;
 	bool _playSwitch;
@@ -218,15 +223,20 @@ private:
 	uint8 _pitchBendRange[128];
 	uint8 _percussionVelocityScale[128];
 
-	byte _goodbyeMsg[20];
+	byte _goodbyeMsg[32];
 	byte _sysExBuf[kMaxSysExSize];
+
+	const char *_missingFiles;
 };
 
-MidiPlayer_Midi::MidiPlayer_Midi(SciVersion version) : MidiPlayer(version), _playSwitch(true), _masterVolume(15), _mt32Type(kMt32TypeNone), _hasReverb(false), _defaultReverb(-1), _useMT32Track(true) {
+MidiPlayer_Midi::MidiPlayer_Midi(SciVersion version) : MidiPlayer(version), _playSwitch(true), _masterVolume(15), _mt32Type(kMt32TypeNone), _mt32LCDSize(20), _hasReverb(false), _defaultReverb(-1), _useMT32Track(true), _missingFiles(nullptr) {
 	MidiDriver::DeviceHandle dev = MidiDriver::detectDevice(MDT_MIDI);
 	_driver = MidiDriver::createMidi(dev);
 
-	if (MidiDriver::getMusicType(dev) == MT_MT32 || ConfMan.getBool("native_mt32")) {
+	if (ConfMan.getInt("midi_mode") == kMidiModeD110) {
+		_mt32Type = kMt32TypeD110;
+		_mt32LCDSize = 32;
+	} else if (MidiDriver::getMusicType(dev) == MT_MT32 || ConfMan.getBool("native_mt32")) {
 		if (MidiDriver::getDeviceString(dev, MidiDriver::kDriverId) == "mt32") {
 			_mt32Type = kMt32TypeEmulated;
 		} else {
@@ -308,6 +318,7 @@ void MidiPlayer_Midi::noteOn(int channel, int note, int velocity) {
 
 void MidiPlayer_Midi::controlChange(int channel, int control, int value) {
 	assert(channel <= 15);
+	bool standard_midi_controller = true;
 
 	switch (control) {
 	case 0x07:
@@ -340,6 +351,8 @@ void MidiPlayer_Midi::controlChange(int channel, int control, int value) {
 		_channels[channel].hold = value;
 		break;
 	case 0x4b:	// voice mapping
+		// this is an internal Sierra command, and shouldn't be sent to the real MIDI driver - fixing #11409
+		standard_midi_controller = false;
 		break;
 	case 0x4e:	// velocity
 		break;
@@ -349,7 +362,8 @@ void MidiPlayer_Midi::controlChange(int channel, int control, int value) {
 		break;
 	}
 
-	_driver->send(0xb0 | channel, control, value);
+	if (standard_midi_controller)
+		_driver->send(0xb0 | channel, control, value);
 }
 
 void MidiPlayer_Midi::setPatch(int channel, int patch) {
@@ -357,46 +371,59 @@ void MidiPlayer_Midi::setPatch(int channel, int patch) {
 
 	assert(channel <= 15);
 
-	if ((channel == MIDI_RHYTHM_CHANNEL) || (_channels[channel].patch == patch))
+	// No need to do anything if a patch change is sent on the rhythm channel of an MT-32
+	// or if the requested patch is the same as the current patch.
+	if ((_mt32Type != kMt32TypeNone && channel == MIDI_RHYTHM_CHANNEL) || (_channels[channel].patch == patch))
 		return;
 
-	_channels[channel].patch = patch;
-	_channels[channel].velocityMapIdx = _velocityMapIdx[patch];
+	int patchToSend;
+	if (channel != MIDI_RHYTHM_CHANNEL) {
+		_channels[channel].patch = patch;
+		_channels[channel].velocityMapIdx = _velocityMapIdx[patch];
 
-	if (_channels[channel].mappedPatch == MIDI_UNMAPPED)
-		resetVol = true;
+		if (_channels[channel].mappedPatch == MIDI_UNMAPPED)
+			resetVol = true;
 
-	_channels[channel].mappedPatch = _patchMap[patch];
+		_channels[channel].mappedPatch = patchToSend = _patchMap[patch];
 
-	if (_patchMap[patch] == MIDI_UNMAPPED) {
-		debugC(kDebugLevelSound, "[Midi] Channel %i set to unmapped patch %i", channel, patch);
-		_driver->send(0xb0 | channel, 0x7b, 0);
-		_driver->send(0xb0 | channel, 0x40, 0);
-		return;
+		if (_patchMap[patch] == MIDI_UNMAPPED) {
+			debugC(kDebugLevelSound, "[Midi] Channel %i set to unmapped patch %i", channel, patch);
+			_driver->send(0xb0 | channel, 0x7b, 0);
+			_driver->send(0xb0 | channel, 0x40, 0);
+			return;
+		}
+
+		if (_patchMap[patch] >= 128) {
+			// Mapped to rhythm, don't send channel commands
+			return;
+		}
+
+		if (_channels[channel].keyShift != _keyShift[patch]) {
+			_channels[channel].keyShift = _keyShift[patch];
+			_driver->send(0xb0 | channel, 0x7b, 0);
+			_driver->send(0xb0 | channel, 0x40, 0);
+			resetVol = true;
+		}
+
+		if (resetVol || (_channels[channel].volAdjust != _volAdjust[patch])) {
+			_channels[channel].volAdjust = _volAdjust[patch];
+			controlChange(channel, 0x07, _channels[channel].volume);
+		}
+
+		uint8 bendRange = _pitchBendRange[patch];
+		if (bendRange != MIDI_UNMAPPED)
+			_driver->setPitchBendRange(channel, bendRange);
+	} else {
+		// A patch change on the rhythm channel of a Roland GS device indicates a drumkit change.
+		// Some GM devices support the GS drumkits as well.
+
+		// Apply drumkit fallback to correct invalid drumkit numbers.
+		patchToSend = patch < 128 ? _driver->_gsDrumkitFallbackMap[patch] : 0;
+		_channels[channel].patch = patchToSend;
+		debugC(kDebugLevelSound, "[Midi] Selected drumkit %i (requested %i)", patchToSend, patch);
 	}
 
-	if (_patchMap[patch] >= 128) {
-		// Mapped to rhythm, don't send channel commands
-		return;
-	}
-
-	if (_channels[channel].keyShift != _keyShift[patch]) {
-		_channels[channel].keyShift = _keyShift[patch];
-		_driver->send(0xb0 | channel, 0x7b, 0);
-		_driver->send(0xb0 | channel, 0x40, 0);
-		resetVol = true;
-	}
-
-	if (resetVol || (_channels[channel].volAdjust != _volAdjust[patch])) {
-		_channels[channel].volAdjust = _volAdjust[patch];
-		controlChange(channel, 0x07, _channels[channel].volume);
-	}
-
-	uint8 bendRange = _pitchBendRange[patch];
-	if (bendRange != MIDI_UNMAPPED)
-		_driver->setPitchBendRange(channel, bendRange);
-
-	_driver->send(0xc0 | channel, _patchMap[patch], 0);
+	_driver->send(0xc0 | channel, patchToSend, 0);
 
 	// Send a pointless command to work around a firmware bug in common
 	// USB-MIDI cables. If the first MIDI command in a USB packet is a
@@ -452,15 +479,11 @@ void MidiPlayer_Midi::send(uint32 b) {
 // We return 1 for mt32, because if we remap channels to 0 for mt32, those won't get played at all
 // NOTE: SSCI uses channels 1 through 8 for General MIDI as well, in the drivers I checked
 int MidiPlayer_Midi::getFirstChannel() const {
-	if (_mt32Type != kMt32TypeNone)
-		return 1;
-	return 0;
+	return 1;
 }
 
 int MidiPlayer_Midi::getLastChannel() const {
-	if (_mt32Type != kMt32TypeNone)
-		return 8;
-	return 15;
+	return 8;
 }
 
 void MidiPlayer_Midi::setVolume(byte volume) {
@@ -477,14 +500,6 @@ void MidiPlayer_Midi::setVolume(byte volume) {
 
 int MidiPlayer_Midi::getVolume() {
 	return _masterVolume;
-}
-
-void MidiPlayer_Midi::onNewSound() {
-	if (_defaultReverb >= 0)
-		// SCI0 in combination with MT-32 requires a reset of the reverb to
-		// the default value that is present in either the MT-32 patch data
-		// or MT32.DRV itself.
-		setReverb(_defaultReverb);
 }
 
 void MidiPlayer_Midi::setReverb(int8 reverb) {
@@ -505,6 +520,66 @@ void MidiPlayer_Midi::playSwitch(bool play) {
 		for (uint i = 1; i < 10; i++)
 			_driver->send(0xb0 | i, 7, 0);
 	}
+}
+
+void MidiPlayer_Midi::initTrack(SciSpan<const byte> &header) {
+	if (_version > SCI_VERSION_0_LATE)
+		return;
+
+	if (_defaultReverb >= 0)
+		// SCI0 in combination with MT-32 requires a reset of the reverb to
+		// the default value that is present in either the MT-32 patch data
+		// or MT32.DRV itself.
+		setReverb(_defaultReverb);
+
+	uint8 caps = header.getInt8At(0);
+	if (caps != 0 && (_version == SCI_VERSION_0_EARLY || caps != 2))
+		return;
+
+	uint8 readPos = 1;
+	uint8 flags = 0;
+	byte msg[9];
+	memset(msg, 0x10, 9);
+
+	if (_version == SCI_VERSION_0_EARLY) {
+		uint8 writePos = 0;
+		for (int i = 0; i < 16; ++i) {
+			flags = header.getInt8At(readPos++);
+			if (flags & 8) {
+				// If both flags 1 and 8 are set this will make the driver assign that channel to MT32 part 9.
+				// This suggests that any one channel could be the rhythm channel. I don't know whether this has any practical relevance.
+				// A channel not flagged with 8 can also be assigned to MT-32 part 9 if it just happens to be the last channel. This is how
+				// it is done in the tracks that I have seen so far. Flag 8 without flag 1 is the control channel (not handled in the driver).
+				if (flags & 1) {
+					if (i < 11) {
+						msg[8] = i;
+						writePos++;
+					}
+				} else {
+					debugC(9, kDebugLevelSound, "MidiPlayer_Midi::initTrack(): Control channel found: 0x%.02x", i);
+				}
+			} else if (i < 11 && (flags & 1)) {
+				assert(writePos < 9);
+				msg[writePos++] = i;
+			}
+		}
+
+	} else {
+		readPos = 3;
+		for (int i = 1; i < 9; ++i) {
+			readPos++;
+			flags = header.getInt8At(readPos++);
+			msg[i - 1] = (flags & 1) ? i : 0x10;
+		}
+
+		flags = header.getInt8At(readPos);
+		msg[8] = (flags & 0x80) ? 9 : 0x10;
+	}
+
+	// assign channels
+	debugC(5, kDebugLevelSound, "MidiPlayer_Midi::initTrack(): Channels assigned to MT-32 parts: 0x%.02x 0x%.02x 0x%.02x 0x%.02x 0x%.02x 0x%.02x 0x%.02x 0x%.02x 0x%.02x", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8]);
+ 	Sci::SciSpan<const byte> s(msg, 9);
+	sendMt32SysEx(0x10000D, s, false);
 }
 
 bool MidiPlayer_Midi::isMt32GmPatch(const SciSpan<const byte> &data) {
@@ -609,12 +684,12 @@ void MidiPlayer_Midi::readMt32Patch(const SciSpan<const byte> &data) {
 	Common::MemoryReadStream stream(data.toStream());
 
 	// Send before-SysEx text
-	stream.seek(20);
-	sendMt32SysEx(0x200000, stream, 20);
+	stream.seek(_mt32LCDSize);
+	sendMt32SysEx(0x200000, stream, _mt32LCDSize);
 
 	// Save goodbye message
-	assert(sizeof(_goodbyeMsg) == 20);
-	stream.read(_goodbyeMsg, 20);
+	assert(sizeof(_goodbyeMsg) >= _mt32LCDSize);
+	stream.read(_goodbyeMsg, _mt32LCDSize);
 
 	const uint8 volume = MIN<uint16>(stream.readUint16LE(), 100);
 	setMt32Volume(volume);
@@ -661,11 +736,13 @@ void MidiPlayer_Midi::readMt32Patch(const SciSpan<const byte> &data) {
 
 	// Send after-SysEx text
 	stream.seek(0);
-	sendMt32SysEx(0x200000, stream, 20);
+	sendMt32SysEx(0x200000, stream, _mt32LCDSize);
 
-	// Send the mystery SysEx
-	Common::MemoryReadStream mystery((const byte *)"\x16\x16\x16\x16\x16\x16", 6);
-	sendMt32SysEx(0x52000a, mystery, 6);
+	if (_mt32Type != kMt32TypeD110) {
+		// Send the mystery SysEx
+		Common::MemoryReadStream mystery((const byte *)"\x16\x16\x16\x16\x16\x16", 6);
+		sendMt32SysEx(0x52000a, mystery, 6);
+	}
 }
 
 void MidiPlayer_Midi::readMt32GmPatch(const SciSpan<const byte> &data) {
@@ -831,6 +908,142 @@ void MidiPlayer_Midi::readMt32DrvData() {
 	} else {
 		error("Failed to open MT32.DRV");
 	}
+}
+
+bool MidiPlayer_Midi::readD110DrvData() {
+	const char *fileName;
+
+	// Only one driver is known to exist
+	switch (g_sci->getGameId()) {
+	case GID_KQ4:
+		fileName = "DKQ4.DRV";
+		break;
+	default:
+		error("No D-110 driver is known to exist for this game");
+	}
+
+	Common::File f;
+	if (!f.open(fileName)) {
+		_missingFiles = fileName;
+		return false;
+	}
+
+	if (f.size() != 3500)
+		error("Unknown '%s' size (%d)", fileName, f.size());
+
+	f.seek(42);
+
+	// Send before-SysEx text
+	sendMt32SysEx(0x200000, f, 32);
+
+	// Timbres
+	f.seek(2761);
+	sendMt32SysEx(0x50000, f, 256);
+	sendMt32SysEx(0x50200, f, 128);
+
+	// Rhythm
+	sendMt32SysEx(0x30110, f, 256);
+	sendMt32SysEx(0x30310, f, 84);
+
+	f.seek(75);
+
+	// Send after-SysEx text
+	sendMt32SysEx(0x200000, f, 32);
+
+	f.read(_goodbyeMsg, 32);
+
+	byte reverbSysEx[13];
+	f.read(reverbSysEx, 13);
+	sysEx(reverbSysEx + 1, 11);
+
+	_hasReverb = false;
+
+	if (f.err() || f.eos())
+		error("Error reading '%s'", fileName);
+
+	f.close();
+
+	return true;
+}
+
+bool MidiPlayer_Midi::readD110SysEx() {
+	// These patches contain SysEx messages that were meant to be sent to the
+	// device with a 3rd party tool before starting the game with MT-32 music.
+	// In order to prevent the MT-32 patches from interfering with the
+	// D-110/D-10/D-20 patches, these SysEx use unit #18. The user would be
+	// required to change the unit number on their device. Since we can avoid
+	// sending the MT-32 patch, we override the unit number back to 17 here.
+
+	// The D-110 versions of these patches use Patch Memory at 0x060000,
+	// which is not available on the D-10/D-20. Additionally, this method
+	// requires user interaction on the device between SysEx upload and
+	// starting the game. We therefore use the D-20 patches instead.
+
+	// Patches for later games (using patch 4 format with GENMIDI.DRV) appear
+	// to have been distributed on the Sierra BBS in file GEND110.EXE. So far
+	// this file has not been recovered.
+
+	// Note: there was also aftermarket support for E-mu Proteus 1/2, but those
+	// files appear to have been lost in the mists of time as well.
+
+	const char *fileName;
+
+	switch (g_sci->getGameId()) {
+	case GID_KQ5:
+		fileName = "KQ5D20";
+		break;
+	case GID_QFG2:
+		fileName = "QFG2D20";
+		break;
+	default:
+		error("No aftermarket D-110 patch is known to exist for this game");
+	}
+
+	Common::File sysExFile;
+
+	if (!sysExFile.open(fileName)) {
+		_missingFiles = fileName;
+		return false;
+	}
+
+	byte sysExBuf[kMaxSysExSize + 2];
+
+	while (true) {
+		byte b = sysExFile.readByte();
+
+		if (sysExFile.err())
+			error("Error reading '%s'", fileName);
+
+		if (sysExFile.eos())
+			break;
+
+		if (b != 0xf0)
+			error("Unexpected data found in SysEx file '%s'", fileName);
+
+		uint sysExLen = 0;
+		sysExBuf[sysExLen++] = b;
+
+		while (sysExLen < ARRAYSIZE(sysExBuf) && b != 0xf7) {
+			b = sysExFile.readByte();
+			sysExBuf[sysExLen++] = b;
+		}
+
+		if (b != 0xf7 || sysExLen < 10)
+			error("SysEx has invalid size in SysEx file '%s'", fileName);
+
+		// Use unit #17
+		sysExBuf[2] = 0x10;
+		sysEx(sysExBuf + 1, sysExLen - 2);
+	}
+
+	// The D-10/D-20 have fixed MIDI channel assignments, so we need to set the D-110
+	// manually here
+	Common::MemoryReadStream s((const byte *)"\x01\x02\x03\x04\x05\x06\x07\x08\x09", 9);
+	sendMt32SysEx(0x10000d, s, 9);
+
+	memcpy(_goodbyeMsg, "    ScummVM                     ", 32);
+
+	return true;
 }
 
 byte MidiPlayer_Midi::lookupGmInstrument(const char *iname) {
@@ -1055,7 +1268,30 @@ int MidiPlayer_Midi::open(ResourceManager *resMan) {
 		}
 	}
 
-	if (_mt32Type != kMt32TypeNone) {
+	if (_mt32Type == kMt32TypeD110) {
+		// D-110, no reset SysEx exists
+		for (uint i = 0; i < MIDI_CHANNELS; ++i) {
+			_driver->send(0xb0 | i, 0x7b, 0); // All notes off
+			_driver->send(0xb0 | i, 0x79, 0); // Reset all controllers
+		}
+
+		if (getSciVersion() == SCI_VERSION_0_EARLY) {
+			if (!readD110DrvData())
+				return MidiDriver::MERR_DEVICE_NOT_AVAILABLE;
+		} else if (getSciVersion() == SCI_VERSION_0_LATE) {
+			res = resMan->findResource(ResourceId(kResourceTypePatch, 0), false);
+
+			if (!res) {
+				_missingFiles = "PATCH.000";
+				return MidiDriver::MERR_DEVICE_NOT_AVAILABLE;
+			}
+
+			readMt32Patch(*res);
+		} else {
+			if (!readD110SysEx())
+				return MidiDriver::MERR_DEVICE_NOT_AVAILABLE;
+		}
+	} else if (_mt32Type != kMt32TypeNone) {
 		// MT-32
 		resetMt32();
 
@@ -1164,9 +1400,10 @@ int MidiPlayer_Midi::open(ResourceManager *resMan) {
 void MidiPlayer_Midi::close() {
 	if (_mt32Type != kMt32TypeNone) {
 		// Send goodbye message
-		sendMt32SysEx(0x200000, SciSpan<const byte>(_goodbyeMsg, 20), true);
+		sendMt32SysEx(0x200000, SciSpan<const byte>(_goodbyeMsg, _mt32LCDSize), true);
 	}
 
+	_driver->setTimerCallback(NULL, NULL);
 	_driver->close();
 }
 

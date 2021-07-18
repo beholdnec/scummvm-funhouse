@@ -32,11 +32,14 @@
 
 namespace Graphics {
 
-enum MacBorderOffset {
-	kBorderOffsetLeft = 0,
-	kBorderOffsetRight = 1,
-	kBorderOffsetTop = 2,
-	kBorderOffsetBottom	= 3
+struct BorderOffsets {
+	int left;
+	int right;
+	int top;
+	int bottom;
+	int titleTop;
+	int titleBottom;
+	bool dark;
 };
 
 /**
@@ -89,6 +92,8 @@ public:
 	 * @param bottom Thickness (in pixels) of the bottom side of the border.
 	 */
 	void setOffsets(int left, int right, int top, int bottom);
+	void setOffsets(Common::Rect &rect);
+	void setOffsets(const BorderOffsets &offsets);
 
 	/**
 	 * Accessor method to retrieve a given border.
@@ -97,15 +102,16 @@ public:
 	 * @param offset The identifier of the offset wanted.
 	 * @return The desired offset in pixels.
 	 */
-	int getOffset(MacBorderOffset offset);
+	BorderOffsets &getOffset();
 
 	/**
 	 * Blit the desired border (active or inactive) into a destination surface.
 	 * It automatically resizes the border to fit the given surface.
 	 * @param destination The surface we want to blit into.
 	 * @param active True if we want to blit the active border, false otherwise.
+	 * @param wm The window manager.
 	 */
-	void blitBorderInto(ManagedSurface &destination, bool active);
+	void blitBorderInto(ManagedSurface &destination, bool active, MacWindowManager *wm);
 
 private:
 
@@ -115,8 +121,7 @@ private:
 	bool _activeInitialized;
 	bool _inactiveInitialized;
 
-	bool _hasOffsets;
-	int _borderOffsets[4];
+	BorderOffsets _borderOffsets;
 
 };
 

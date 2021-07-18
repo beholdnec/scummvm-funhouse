@@ -191,6 +191,16 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 		}
 	},
 
+	{
+		GAMEOPTION_APPLE2GS_ADD_SPEED_MENU,
+		{
+			_s("Add speed menu"),
+			_s("Add game speed menu (similar to PC version)"),
+			"apple2gs_speedmenu",
+			false
+		}
+	},
+
 	AD_EXTRA_GUI_OPTIONS_TERMINATOR
 };
 
@@ -202,25 +212,29 @@ class AgiMetaEngine : public AdvancedMetaEngine {
 
 public:
 	AgiMetaEngine() : AdvancedMetaEngine(Agi::gameDescriptions, sizeof(Agi::AGIGameDescription), agiGames, optionsList) {
-		_singleId = "agi";
 		_guiOptions = GUIO1(GUIO_NOSPEECH);
 	}
 
-	virtual const char *getName() const {
+	const char *getEngineId() const override {
+		return "agi";
+	}
+
+	const char *getName() const override {
 		return "AGI preAGI + v2 + v3";
 	}
-	virtual const char *getOriginalCopyright() const {
+
+	const char *getOriginalCopyright() const override {
 		return "Sierra AGI Engine (C) Sierra On-Line Software";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	bool hasFeature(MetaEngineFeature f) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 
-	const ADGameDescription *fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const;
+	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const override;
 };
 
 bool AgiMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -237,7 +251,7 @@ bool AgiMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool AgiBase::hasFeature(EngineFeature f) const {
 	return
-	    (f == kSupportsRTL) ||
+	    (f == kSupportsReturnToLauncher) ||
 	    (f == kSupportsLoadingDuringRuntime) ||
 	    (f == kSupportsSavingDuringRuntime);
 }
@@ -258,6 +272,10 @@ bool AgiMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameD
 			break;
 		case GID_WINNIE:
 			*engine = new Agi::WinnieEngine(syst, gd);
+			break;
+		default:
+			res = false;
+			error("PreAGI engine: unknown gameID");
 			break;
 		}
 		break;
@@ -375,7 +393,11 @@ SaveStateDescriptor AgiMetaEngine::querySaveMetaInfos(const char *target, int sl
 
 		char saveVersion = in->readByte();
 		if (saveVersion >= 4) {
-			Graphics::Surface *const thumbnail = Graphics::loadThumbnail(*in);
+			Graphics::Surface *thumbnail;
+			if (!Graphics::loadThumbnail(*in, thumbnail)) {
+				delete in;
+				return SaveStateDescriptor();
+			}
 
 			descriptor.setThumbnail(thumbnail);
 
@@ -417,7 +439,7 @@ SaveStateDescriptor AgiMetaEngine::querySaveMetaInfos(const char *target, int sl
 	}
 }
 
-const ADGameDescription *AgiMetaEngine::fallbackDetect(const FileMap &allFilesXXX, const Common::FSList &fslist) const {
+ADDetectedGame AgiMetaEngine::fallbackDetect(const FileMap &allFilesXXX, const Common::FSList &fslist) const {
 	typedef Common::HashMap<Common::String, int32> IntMap;
 	IntMap allFiles;
 	bool matchedUsingFilenames = false;
@@ -477,7 +499,6 @@ const ADGameDescription *AgiMetaEngine::fallbackDetect(const FileMap &allFilesXX
 
 		if (agipal) { // Check if it is AGIPAL
 			description = "Unknown v2 AGIPAL Game";
-			g_fallbackDesc.features |= GF_AGIPAL; // Add AGIPAL feature flag
 		} else { // Not AGIPAL so just plain v2
 			description = "Unknown v2 Game";
 		}
@@ -580,10 +601,10 @@ const ADGameDescription *AgiMetaEngine::fallbackDetect(const FileMap &allFilesXX
 
 		g_system->logMessage(LogMessageType::kWarning, fallbackWarning.c_str());
 
-		return (const ADGameDescription *)&g_fallbackDesc;
+		return ADDetectedGame(&g_fallbackDesc.desc);
 	}
 
-	return 0;
+	return ADDetectedGame();
 }
 
 #if PLUGIN_ENABLED_DYNAMIC(AGI)

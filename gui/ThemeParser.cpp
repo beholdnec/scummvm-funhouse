@@ -40,7 +40,8 @@ static const TextDataInfo kTextDataDefaults[] = {
 	{ kTextDataDefault,			"text_default" },
 	{ kTextDataButton,			"text_button" },
 	{ kTextDataNormalFont,		"text_normal" },
-	{ kTextDataTooltip,			"tooltip_normal" }
+	{ kTextDataTooltip,			"tooltip_normal" },
+	{ kTextDataConsole,			"console" }
 };
 
 
@@ -79,8 +80,12 @@ static TextColor parseTextColorId(const Common::String &name) {
 	return kTextColorMAX;
 }
 
-static Graphics::TextAlign parseTextHAlign(const Common::String &val) {
-	if (val == "left")
+Graphics::TextAlign parseTextHAlign(const Common::String &val) {
+	if (val == "start")
+		return Graphics::kTextAlignStart;
+	else if (val == "end")
+		return Graphics::kTextAlignEnd;
+	else if (val == "left")
 		return Graphics::kTextAlignLeft;
 	else if (val == "right")
 		return Graphics::kTextAlignRight;
@@ -104,7 +109,7 @@ static GUI::ThemeEngine::TextAlignVertical parseTextVAlign(const Common::String 
 
 ThemeParser::ThemeParser(ThemeEngine *parent) : XMLParser() {
 	_defaultStepGlobal = defaultDrawStep();
-	_defaultStepLocal = 0;
+	_defaultStepLocal = nullptr;
 	_theme = parent;
 }
 
@@ -118,14 +123,12 @@ void ThemeParser::cleanup() {
 	delete _defaultStepLocal;
 
 	_defaultStepGlobal = defaultDrawStep();
-	_defaultStepLocal = 0;
+	_defaultStepLocal = nullptr;
 	_palette.clear();
 }
 
 Graphics::DrawStep *ThemeParser::defaultDrawStep() {
 	Graphics::DrawStep *step = new Graphics::DrawStep;
-
-	memset(step, 0, sizeof(Graphics::DrawStep));
 
 	step->xAlign = Graphics::DrawStep::kVectorAlignManual;
 	step->yAlign = Graphics::DrawStep::kVectorAlignManual;
@@ -141,7 +144,7 @@ Graphics::DrawStep *ThemeParser::defaultDrawStep() {
 
 Graphics::DrawStep *ThemeParser::newDrawStep() {
 	assert(_defaultStepGlobal);
-	Graphics::DrawStep *step = 0; //new DrawStep;
+	Graphics::DrawStep *step = nullptr; //new DrawStep;
 
 	if (_defaultStepLocal) {
 		step = new Graphics::DrawStep(*_defaultStepLocal);
@@ -154,12 +157,12 @@ Graphics::DrawStep *ThemeParser::newDrawStep() {
 
 bool ThemeParser::parserCallback_defaults(ParserNode *node) {
 	ParserNode *parentNode = getParentNode(node);
-	Graphics::DrawStep *step = 0;
+	Graphics::DrawStep *step = nullptr;
 
 	if (parentNode->name == "render_info") {
 		step = _defaultStepGlobal;
 	} else if (parentNode->name == "drawdata") {
-		if (_defaultStepLocal == 0)
+		if (_defaultStepLocal == nullptr)
 			_defaultStepLocal = new Graphics::DrawStep(*_defaultStepGlobal);
 
 		step = _defaultStepLocal;
@@ -338,7 +341,7 @@ static Graphics::DrawingFunctionCallback getDrawingFunctionCallback(const Common
 	if (name == "alphabitmap")
 		return &Graphics::VectorRenderer::drawCallback_ALPHABITMAP;
 
-	return 0;
+	return nullptr;
 }
 
 
@@ -349,7 +352,7 @@ bool ThemeParser::parserCallback_drawstep(ParserNode *node) {
 
 	drawstep->drawingCall = getDrawingFunctionCallback(functionName);
 
-	if (drawstep->drawingCall == 0) {
+	if (drawstep->drawingCall == nullptr) {
 		delete drawstep;
 		return parserError(functionName + " is not a valid drawing function name");
 	}
@@ -382,7 +385,7 @@ bool ThemeParser::parserCallback_drawdata(ParserNode *node) {
 		return parserError("Error adding Draw Data set: Invalid DrawData name.");
 
 	delete _defaultStepLocal;
-	_defaultStepLocal = 0;
+	_defaultStepLocal = nullptr;
 
 	return true;
 }
@@ -630,6 +633,17 @@ bool ThemeParser::parseDrawStep(ParserNode *stepNode, Graphics::DrawStep *drawst
 		}
 	}
 
+	if (stepNode->values.contains("clip")) {
+		val = stepNode->values["clip"];
+		int cl, ct, cr, cb;
+		if (parseIntegerKey(val, 4, &cl, &ct, &cr, &cb)) {
+			drawstep->clip.left = cl;
+			drawstep->clip.top = ct;
+			drawstep->clip.right = cr;
+			drawstep->clip.bottom = cb;
+		}
+	}
+
 #undef PARSER_ASSIGN_INT
 #undef PARSER_ASSIGN_RGB
 
@@ -674,12 +688,7 @@ bool ThemeParser::parserCallback_widget(ParserNode *node) {
 		var = node->values["name"];
 		int width = -1;
 		int height = -1;
-		bool enabled = true;
-
-		if (node->values.contains("enabled")) {
-			if (!Common::parseBool(node->values["enabled"], enabled))
-				return parserError("Invalid value for Widget enabling (expecting true/false)");
-		}
+		bool useRTL = true;
 
 		if (node->values.contains("width")) {
 			if (_theme->getEvaluator()->hasVar(node->values["width"]) == true)
@@ -697,22 +706,25 @@ bool ThemeParser::parserCallback_widget(ParserNode *node) {
 				return parserError("Corrupted height value in key for " + var);
 		}
 
-		Graphics::TextAlign alignH = Graphics::kTextAlignLeft;
+		Graphics::TextAlign alignH = Graphics::kTextAlignStart;
 
 		if (node->values.contains("textalign")) {
 			if ((alignH = parseTextHAlign(node->values["textalign"])) == Graphics::kTextAlignInvalid)
 				return parserError("Invalid value for text alignment.");
 		}
 
-		_theme->getEvaluator()->addWidget(var, width, height, node->values["type"], enabled, alignH);
+		if (node->values.contains("rtl")) {
+			useRTL = false;
+		}
+
+		_theme->getEvaluator()->addWidget(var, node->values["type"], width, height, alignH, useRTL);
 	}
 
 	return true;
 }
 
 bool ThemeParser::parserCallback_dialog(ParserNode *node) {
-	Common::String var = "Dialog." + node->values["name"];
-	bool enabled = true;
+	Common::String name = node->values["name"];
 	int inset = 0;
 
 	if (resolutionCheck(node->values["resolution"]) == false) {
@@ -720,17 +732,29 @@ bool ThemeParser::parserCallback_dialog(ParserNode *node) {
 		return true;
 	}
 
-	if (node->values.contains("enabled")) {
-		if (!Common::parseBool(node->values["enabled"], enabled))
-			return parserError("Invalid value for Dialog enabling (expecting true/false)");
-	}
-
 	if (node->values.contains("inset")) {
 		if (!parseIntegerKey(node->values["inset"], 1, &inset))
 			return false;
 	}
 
-	_theme->getEvaluator()->addDialog(var, node->values["overlays"], enabled, inset);
+	Common::String overlays = node->values["overlays"];
+	// The size of a dialog depends on the value of its 'overlays' property:
+	//  - 'screen', means the dialog fills the whole screen.
+	//  - 'screen_center', means the size of the dialog is determined
+	//      by its contents, unless an explicit size is specified.
+	//  - if it is set to a user interface element name, the dialog takes
+	//      its size.
+
+	int width = -1, height = -1;
+	if (node->values.contains("size")) {
+		if (overlays != "screen_center")
+			return parserError("Dialogs can only have an explicit size if they overlay 'screen_center'.");
+
+		if (!parseIntegerKey(node->values["size"], 2, &width, &height))
+			return false;
+	}
+
+	_theme->getEvaluator()->addDialog(name, overlays, width, height, inset);
 
 	if (node->values.contains("shading")) {
 		int shading = 0;
@@ -740,37 +764,54 @@ bool ThemeParser::parserCallback_dialog(ParserNode *node) {
 			shading = 2;
 		else return parserError("Invalid value for Dialog background shading.");
 
-		_theme->getEvaluator()->setVar(var + ".Shading", shading);
+		_theme->getEvaluator()->setVar("Dialog." + name + ".Shading", shading);
 	}
 
 	return true;
 }
 
 bool ThemeParser::parserCallback_import(ParserNode *node) {
+	Common::String importedName = node->values["layout"];
 
-	if (!_theme->getEvaluator()->addImportedLayout(node->values["layout"]))
-		return parserError("Error importing external layout");
+	if (!_theme->getEvaluator()->hasDialog(importedName))
+		return parserError("Imported layout was not found: " + importedName);
+
+	_theme->getEvaluator()->addImportedLayout(importedName);
+
 	return true;
 }
 
 bool ThemeParser::parserCallback_layout(ParserNode *node) {
 	int spacing = -1;
-	bool center = false;
 
 	if (node->values.contains("spacing")) {
 		if (!parseIntegerKey(node->values["spacing"], 1, &spacing))
 			return false;
 	}
 
-	(void)Common::parseBool(node->values["center"], center);
+	ThemeLayout::ItemAlign itemAlign = ThemeLayout::kItemAlignStart;
+
+	if (node->values.contains("align")) {
+		Common::String val = node->values["align"];
+		if (val == "start") {
+			itemAlign = ThemeLayout::kItemAlignStart;
+		} else if (val == "center") {
+			itemAlign = ThemeLayout::kItemAlignCenter;
+		} else if (val == "end") {
+			itemAlign = ThemeLayout::kItemAlignEnd;
+		} else if (val == "stretch") {
+			itemAlign = ThemeLayout::kItemAlignStretch;
+		} else {
+			return parserError("'" + val + "' is not a valid item alignment for a layout.");
+		}
+	}
 
 	if (node->values["type"] == "vertical")
-		_theme->getEvaluator()->addLayout(GUI::ThemeLayout::kLayoutVertical, spacing, center);
+		_theme->getEvaluator()->addLayout(GUI::ThemeLayout::kLayoutVertical, spacing, itemAlign);
 	else if (node->values["type"] == "horizontal")
-		_theme->getEvaluator()->addLayout(GUI::ThemeLayout::kLayoutHorizontal, spacing, center);
+		_theme->getEvaluator()->addLayout(GUI::ThemeLayout::kLayoutHorizontal, spacing, itemAlign);
 	else
 		return parserError("Invalid layout type. Only 'horizontal' and 'vertical' layouts allowed.");
-
 
 	if (node->values.contains("padding")) {
 		int paddingL, paddingR, paddingT, paddingB;
@@ -924,7 +965,7 @@ bool ThemeParser::parseCommonLayoutProps(ParserNode *node, const Common::String 
 
 
 	if (node->values.contains("textalign")) {
-		Graphics::TextAlign alignH = Graphics::kTextAlignLeft;
+		Graphics::TextAlign alignH = Graphics::kTextAlignStart;
 
 		if ((alignH = parseTextHAlign(node->values["textalign"])) == Graphics::kTextAlignInvalid)
 			return parserError("Invalid value for text alignment.");

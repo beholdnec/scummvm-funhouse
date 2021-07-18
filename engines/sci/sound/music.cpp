@@ -23,6 +23,8 @@
 #include "audio/audiostream.h"
 #include "audio/decoders/raw.h"
 #include "common/config-manager.h"
+#include "common/translation.h"
+#include "gui/error.h"
 
 #include "sci/sci.h"
 #include "sci/console.h"
@@ -67,33 +69,33 @@ void SciMusic::init() {
 	// SCI sound init
 	_dwTempo = 0;
 
-	Common::Platform platform = g_sci->getPlatform();
+	const Common::Platform platform = g_sci->getPlatform();
 	uint32 deviceFlags;
-#ifdef ENABLE_SCI32
 	if (g_sci->_features->generalMidiOnly()) {
 		deviceFlags = MDT_MIDI;
 	} else {
-#endif
 		deviceFlags = MDT_PCSPK | MDT_PCJR | MDT_ADLIB | MDT_MIDI;
-#ifdef ENABLE_SCI32
 	}
-#endif
 
 	// Default to MIDI for Windows versions of SCI1.1 games, as their
 	// soundtrack is written for GM.
 	if (g_sci->_features->useAltWinGMSound())
 		deviceFlags |= MDT_PREFER_GM;
 
-	// Currently our CMS implementation only supports SCI1(.1)
-	if (getSciVersion() >= SCI_VERSION_1_EGA_ONLY && getSciVersion() <= SCI_VERSION_1_1)
+	// SCI_VERSION_0_EARLY games apparently don't support the CMS. At least there
+	// is no patch resource 101 and I also haven't seen any CMS driver file so far.
+	if (getSciVersion() > SCI_VERSION_0_EARLY && getSciVersion() <= SCI_VERSION_1_1)
 		deviceFlags |= MDT_CMS;
 
-	if (g_sci->getPlatform() == Common::kPlatformFMTowns) {
+	if (platform == Common::kPlatformFMTowns) {
 		if (getSciVersion() > SCI_VERSION_1_EARLY)
 			deviceFlags = MDT_TOWNS;
 		else
 			deviceFlags |= MDT_TOWNS;
 	}
+
+	if (platform == Common::kPlatformPC98)
+		deviceFlags |= MDT_PC98;
 
 	uint32 dev = MidiDriver::detectDevice(deviceFlags);
 	_musicType = MidiDriver::getMusicType(dev);
@@ -112,9 +114,12 @@ void SciMusic::init() {
 	switch (_musicType) {
 	case MT_ADLIB:
 		// FIXME: There's no Amiga sound option, so we hook it up to AdLib
-		if (g_sci->getPlatform() == Common::kPlatformAmiga || platform == Common::kPlatformMacintosh)
-			_pMidiDrv = MidiPlayer_AmigaMac_create(_soundVersion);
-		else
+		if (platform == Common::kPlatformMacintosh || platform == Common::kPlatformAmiga) {
+			if (getSciVersion() <= SCI_VERSION_0_LATE)
+				_pMidiDrv = MidiPlayer_AmigaMac0_create(_soundVersion, platform);
+			else
+				_pMidiDrv = MidiPlayer_AmigaMac1_create(_soundVersion, platform);
+		} else
 			_pMidiDrv = MidiPlayer_AdLib_create(_soundVersion);
 		break;
 	case MT_PCJR:
@@ -129,8 +134,12 @@ void SciMusic::init() {
 	case MT_TOWNS:
 		_pMidiDrv = MidiPlayer_FMTowns_create(_soundVersion);
 		break;
+	case MT_PC98:		
+		_pMidiDrv = MidiPlayer_PC9801_create(_soundVersion);
+		break;
 	default:
-		if (ConfMan.getBool("native_fb01"))
+		if (ConfMan.getInt("midi_mode") == kMidiModeFB01
+		    || (ConfMan.hasKey("native_fb01") && ConfMan.getBool("native_fb01")))
 			_pMidiDrv = MidiPlayer_Fb01_create(_soundVersion);
 		else
 			_pMidiDrv = MidiPlayer_Midi_create(_soundVersion);
@@ -146,6 +155,23 @@ void SciMusic::init() {
 			// of the Adlib driver (adl.drv) that it includes is unsupported. That demo
 			// doesn't have any sound anyway, so this shouldn't be fatal.
 		} else {
+			const char *missingFiles = _pMidiDrv->reportMissingFiles();
+			if (missingFiles) {
+				Common::String message = _(
+					"The selected audio driver requires the following file(s):\n\n"
+				);
+				message += missingFiles;
+				message += _("\n\n"
+					"Some audio drivers (at least for some games) were made\n"
+					"available by Sierra as aftermarket patches and thus might not\n"
+					"have been installed as part of the original game setup.\n\n"
+					"Please copy these file(s) into your game data directory.\n\n"
+					"However, please note that the file(s) might not be available\n"
+					"separately but only as content of (patched) resource bundles.\n"
+					"In that case you may need to apply the original Sierra patch.\n\n"
+				);
+				::GUI::displayErrorDialog(message.c_str());
+			}
 			error("Failed to initialize sound driver");
 		}
 	}
@@ -367,7 +393,7 @@ void SciMusic::soundInitSnd(MusicEntry *pSnd) {
 				}
 			}
 		} else
-			playSample = (track->digitalChannelNr != -1);
+			playSample = (track->digitalChannelNr != -1 && (_useDigitalSFX || track->channelCount == 1));
 
 		// Play digital sample
 		if (playSample) {
@@ -555,6 +581,12 @@ void SciMusic::soundPlay(MusicEntry *pSnd) {
 		if (pSnd->pMidiParser) {
 			Common::StackLock lock(_mutex);
 			pSnd->pMidiParser->mainThreadBegin();
+
+			// The track init always needs to be done. Otherwise some sounds will not be properly set up (bug #11476).
+			// It is also safe to do this for paused tracks, since the jumpToTick() command in line 602 will parse through
+			// the song from the beginning up to the resume position and ensure that the actual current voice mapping,
+			// instrument and volume settings etc. are correct.
+ 			pSnd->pMidiParser->initTrack();
 
 			if (pSnd->status != kSoundPaused)
 				pSnd->pMidiParser->sendInitCommands();
@@ -794,8 +826,15 @@ void SciMusic::sendMidiCommand(uint32 cmd) {
 
 void SciMusic::sendMidiCommand(MusicEntry *pSnd, uint32 cmd) {
 	Common::StackLock lock(_mutex);
-	if (!pSnd->pMidiParser)
-		error("tried to cmdSendMidi on non midi slot (%04x:%04x)", PRINT_REG(pSnd->soundObj));
+	if (!pSnd->pMidiParser) {
+		// FPFP calls kDoSound SendMidi to mute and unmute its gameMusic2 sound
+		//  object but some scenes set this to an audio sample. In Act 2, room
+		//  660 sets this to audio of restaurant customers talking. Walking up
+		//  the hotel stairs from room 500 to 235 calls gameMusic2:mute and
+		//  triggers this if gameMusic2 hasn't changed. Bug #10952
+		warning("tried to cmdSendMidi on non midi slot (%04x:%04x)", PRINT_REG(pSnd->soundObj));
+		return;
+	}
 
 	pSnd->pMidiParser->mainThreadBegin();
 	pSnd->pMidiParser->sendFromScriptToDriver(cmd);

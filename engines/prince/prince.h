@@ -38,7 +38,6 @@
 
 #include "gui/debugger.h"
 
-#include "engines/advancedDetector.h"
 #include "engines/engine.h"
 #include "engines/util.h"
 
@@ -58,14 +57,10 @@ enum PrinceGameType {
 	kPrinceDataPL
 };
 
-struct PrinceGameDescription {
-	ADGameDescription desc;
-	PrinceGameType gameType;
-};
-
 struct SavegameHeader;
 
 class PrinceEngine;
+struct PrinceGameDescription;
 class GraphicsMan;
 class Script;
 class Interpreter;
@@ -82,15 +77,18 @@ class Room;
 class Pscr;
 
 enum {
-	GF_TRANSLATED = 1 << 0
+	GF_TRANSLATED = 1 << 0,
+	GF_EXTRACTED  = 1 << 1,
+	GF_NOVOICES   = 1 << 2
 };
 
 struct SavegameHeader {
 	uint8 version;
 	Common::String saveName;
 	Graphics::Surface *thumbnail;
-	int saveYear, saveMonth, saveDay;
-	int saveHour, saveMinutes;
+	int16 saveYear, saveMonth, saveDay;
+	int16 saveHour, saveMinutes;
+	uint32 playTime;
 };
 
 #define kSavegameStrSize 14
@@ -186,7 +184,7 @@ struct Anim {
 		case kAnimX:
 			return _x;
 		default:
-			error("getAnimData() - Wrong offset type: %d", (int) offset);
+			error("getAnimData() - Wrong offset type: %d", (int)offset);
 		}
 	}
 
@@ -194,7 +192,7 @@ struct Anim {
 		if (offset == kAnimX) {
 			_x = value;
 		} else {
-			error("setAnimData() - Wrong offset: %d, value: %d", (int) offset, value);
+			error("setAnimData() - Wrong offset: %d, value: %d", (int)offset, value);
 		}
 	}
 };
@@ -275,23 +273,24 @@ enum Type {
 
 class PrinceEngine : public Engine {
 protected:
-	Common::Error run();
+	Common::Error run() override;
 
 public:
 	PrinceEngine(OSystem *syst, const PrinceGameDescription *gameDesc);
-	virtual ~PrinceEngine();
+	~PrinceEngine() override;
 
-	virtual bool hasFeature(EngineFeature f) const;
-	virtual void pauseEngineIntern(bool pause);
-	virtual bool canSaveGameStateCurrently();
-	virtual bool canLoadGameStateCurrently();
-	virtual Common::Error saveGameState(int slot, const Common::String &desc);
-	virtual Common::Error loadGameState(int slot);
+	bool scummVMSaveLoadDialog(bool isSave);
+
+	bool hasFeature(EngineFeature f) const override;
+	void pauseEngineIntern(bool pause) override;
+	bool canSaveGameStateCurrently() override;
+	bool canLoadGameStateCurrently() override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	Common::Error loadGameState(int slot) override;
 
 	void playVideo(Common::String videoFilename);
 
-	static bool readSavegameHeader(Common::InSaveFile *in, SavegameHeader &header);
-	Common::String generateSaveName(int slot);
+	WARN_UNUSED_RESULT static bool readSavegameHeader(Common::InSaveFile *in, SavegameHeader &header, bool skipThumbnail = true);
 	void writeSavegameHeader(Common::OutSaveFile *out, SavegameHeader &header);
 	void syncGame(Common::SeekableReadStream *readStream, Common::WriteStream *writeStream);
 	bool loadGame(int slotNumber);
@@ -317,6 +316,8 @@ public:
 	uint32 _mobTranslationSize;
 	byte *_mobTranslationData;
 
+	bool _missingVoice;
+
 	bool loadLocation(uint16 locationNr);
 	bool loadAnim(uint16 animNr, bool loop);
 	bool loadVoice(uint32 textSlot, uint32 sampleSlot, const Common::String &name);
@@ -339,8 +340,6 @@ public:
 	void freeAllSamples();
 
 	void setVoice(uint16 slot, uint32 sampleSlot, uint16 flag);
-
-	virtual GUI::Debugger *getDebugger();
 
 	void changeCursor(uint16 curId);
 	void printAt(uint32 slot, uint8 color, char *s, uint16 x, uint16 y);

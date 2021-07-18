@@ -45,6 +45,7 @@ void ScummEngine::addObjectToInventory(uint obj, uint room) {
 		idx = getObjectIndex(obj);
 		assert(idx >= 0);
 		ptr = getResourceAddress(rtFlObject, _objs[idx].fl_object_index) + 8;
+		assert(ptr);
 		size = READ_BE_UINT32(ptr + 4);
 	} else {
 		findObjectInRoom(&foir, foCodeHeader, obj, room);
@@ -236,6 +237,8 @@ bool ScummEngine::getClass(int obj, int cls) const {
 		case kObjectClassYFlip:
 			cls = 18;
 			break;
+		default:
+			break;
 		}
 	}
 
@@ -265,6 +268,8 @@ void ScummEngine::putClass(int obj, int cls, bool set) {
 			break;
 		case kObjectClassYFlip:
 			cls = 18;
+			break;
+		default:
 			break;
 		}
 	}
@@ -390,6 +395,8 @@ int ScummEngine::getObjectOrActorXY(int object, int &x, int &y) {
 			}
 		}
 		return -1;
+	default:
+		break;
 	}
 	getObjectXYPos(object, x, y);
 	return 0;
@@ -742,6 +749,7 @@ void ScummEngine::resetRoomObjects() {
 	const CodeHeader *cdhd;
 
 	room = getResourceAddress(rtRoom, _roomResource);
+	assert(room);
 
 	if (_numObjectsInRoom == 0)
 		return;
@@ -756,7 +764,7 @@ void ScummEngine::resetRoomObjects() {
 	assert(searchptr);
 
 	// Load in new room objects
-	ResourceIterator	obcds(searchptr, false);
+	ResourceIterator obcds(searchptr, false);
 	for (i = 0; i < _numObjectsInRoom; i++) {
 		od = &_objs[findLocalObjectSlot()];
 
@@ -784,7 +792,7 @@ void ScummEngine::resetRoomObjects() {
 	}
 
 	searchptr = room;
-	ResourceIterator	obims(room, false);
+	ResourceIterator obims(room, false);
 	for (i = 0; i < _numObjectsInRoom; i++) {
 		ptr = obims.findNext(MKTAG('O','B','I','M'));
 		if (ptr == NULL)
@@ -810,6 +818,7 @@ void ScummEngine_v3old::resetRoomObjects() {
 	const byte *room, *ptr;
 
 	room = getResourceAddress(rtRoom, _roomResource);
+	assert(room);
 
 	if (_numObjectsInRoom == 0)
 		return;
@@ -854,6 +863,7 @@ void ScummEngine_v4::resetRoomObjects() {
 	const byte *room;
 
 	room = getResourceAddress(rtRoom, _roomResource);
+	assert(room);
 
 	if (_numObjectsInRoom == 0)
 		return;
@@ -861,7 +871,7 @@ void ScummEngine_v4::resetRoomObjects() {
 	if (_numObjectsInRoom > _numLocalObjects)
 		error("More than %d objects in room %d", _numLocalObjects, _roomResource);
 
-	ResourceIterator	obcds(room, true);
+	ResourceIterator obcds(room, true);
 	for (i = 0; i < _numObjectsInRoom; i++) {
 		od = &_objs[findLocalObjectSlot()];
 
@@ -878,7 +888,7 @@ void ScummEngine_v4::resetRoomObjects() {
 		}
 	}
 
-	ResourceIterator	obims(room, true);
+	ResourceIterator obims(room, true);
 	for (i = 0; i < _numObjectsInRoom; i++) {
 		// In the PC Engine version of Loom, there aren't image blocks
 		// for all objects.
@@ -979,10 +989,12 @@ void ScummEngine::resetRoomObject(ObjectData *od, const byte *room, const byte *
 	assert(room);
 
 	if (searchptr == NULL) {
-		if (_game.version == 8)
+		if (_game.version == 8) {
 			searchptr = getResourceAddress(rtRoomScripts, _roomResource);
-		else
+			assert(searchptr);
+		} else {
 			searchptr = room;
+		}
 	}
 
 	cdhd = (const CodeHeader *)findResourceData(MKTAG('C','D','H','D'), searchptr + od->OBCDoffset);
@@ -1538,7 +1550,8 @@ int ScummEngine::getObjX(int obj) {
 		if (whereIsObject(obj) == WIO_NOT_FOUND)
 			return -1;
 		int x, y;
-		getObjectOrActorXY(obj, x, y);
+		if (getObjectOrActorXY(obj, x, y) == -1)
+			return -1;
 		return x;
 	}
 }
@@ -1553,7 +1566,8 @@ int ScummEngine::getObjY(int obj) {
 		if (whereIsObject(obj) == WIO_NOT_FOUND)
 			return -1;
 		int x, y;
-		getObjectOrActorXY(obj, x, y);
+		if (getObjectOrActorXY(obj, x, y) == -1)
+			return -1;
 		return y;
 	}
 }

@@ -23,47 +23,12 @@
 #ifndef DIRECTOR_SPRITE_H
 #define DIRECTOR_SPRITE_H
 
-#include "common/rect.h"
-
 namespace Director {
 
-enum InkType {
-	kInkTypeCopy,
-	kInkTypeTransparent,
-	kInkTypeReverse,
-	kInkTypeGhost,
-	kInkTypeNotCopy,
-	kInkTypeNotTrans,
-	kInkTypeNotReverse,
-	kInkTypeNotGhost,
-	kInkTypeMatte,
-	kInkTypeMask,
-	//10-31 Not used (Lingo in a Nutshell)
-	kInkTypeBlend = 32,
-	kInkTypeAddPin,
-	kInkTypeAdd,
-	kInkTypeSubPin,
-	kInkTypeBackgndTrans,
-	kInkTypeLight,
-	kInkTypeSub,
-	kInkTypeDark
-};
-
-// Director v4
-enum SpriteType {
-	kInactiveSprite, // turns the sprite off
-	kBitmapSprite,
-	kRectangleSprite,
-	kRoundedRectangleSprite,
-	kOvalSprite,
-	kLineTopBottomSprite, // line from top left to bottom right
-	kLineBottomTopSprite, // line from bottom left to top right
-	kTextSprite,
-	kButtonSprite,
-	kCheckboxSprite,
-	kRadioButtonSprite,
-	kUndeterminedSprite = 16 // use castType property to examine the type of cast member associated with sprite
-};
+class Frame;
+class BitmapCastMember;
+class ShapeCastMember;
+class TextCastMember;
 
 enum SpritePosition {
 	kSpritePositionUnk1 = 0,
@@ -89,63 +54,65 @@ enum MainChannelsPosition {
 	kBlendPosition,
 	kSound2Position,
 	kSound2TypePosition = 11,
-	kPaletePosition = 15
+	kPalettePosition = 15
 };
 
 class Sprite {
 public:
-	Sprite();
-	Sprite(const Sprite &sprite);
+	Sprite(Frame *frame);
 	~Sprite();
 
-	byte _x1;
-	uint16 _x2;
+	Frame *getFrame() const { return _frame; }
+	Score *getScore() const { return _score; }
+
+	void updateCast();
+
+	bool respondsToMouse();
+	bool isActive();
+	bool shouldHilite();
+
+	uint16 getPattern();
+	void setPattern(uint16 pattern);
+
+	void setCast(uint16 castid);
+	bool isQDShape();
+
+	Frame *_frame;
+	Score *_score;
+	Movie *_movie;
+
 	uint16 _scriptId;
-	byte _flags2;  // x40 editable, 0x80 moveable
-	byte _unk2;
+	uint16 _scriptCastIndex;
+	byte _colorcode;  // x40 editable, 0x80 moveable
+	byte _blendAmount;
 	uint32 _unk3;
 
 	bool _enabled;
-	uint16 _castId;
-	byte _spriteType;
+	uint16 _castIndex;
+	SpriteType _spriteType;
+	byte _inkData;
 	InkType _ink;
 	uint16 _trails;
 
-	BitmapCast *_bitmapCast;
-	ShapeCast *_shapeCast;
-	//SoundCast *_soundCast;
-	TextCast *_textCast;
-	ButtonCast *_buttonCast;
-	//ScriptCast *_scriptCast;
+	uint16 _castId;
+	uint16 _pattern;
+	CastMember *_cast;
 
-	uint16 _flags;
+	byte _thickness;
 	Common::Point _startPoint;
-	uint16 _width;
-	uint16 _height;
-	// TODO: default constraint = 0, if turned on, sprite is constrainted to the bounding rect
-	// As i know, constrainted != 0 only if sprite moveable
-	byte _constraint;
-	byte _moveable;
-	byte _backColor;
-	byte _foreColor;
-	uint16 _left;
-	uint16 _right;
-	uint16 _top;
-	uint16 _bottom;
+	int16 _width;
+	int16 _height;
+	bool _moveable;
+	bool _editable;
+	bool _puppet;
+	bool _immediate;
+	uint32 _backColor;
+	uint32 _foreColor;
+
 	byte _blend;
-	bool _visible;
-	SpriteType _type;
-	// Using in digital movie sprites
-	byte _movieRate;
-	uint16 _movieTime;
-	uint16 _startTime;
-	uint16 _stopTime;
+
 	byte _volume;
 	byte _stretch;
-	// Using in shape sprites
-	byte _lineSize;
-	// Using in text sprites
-	Common::String _editableText;
 };
 
 } // End of namespace Director

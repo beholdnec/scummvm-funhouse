@@ -250,7 +250,7 @@ byte *loadShortenFromStream(Common::ReadStream &stream, int &size, int &rate, by
 
 	// Get block size
 	if (version > 0) {
-		blockSize = gReader->getUint32((int) (log((double) DEFAULT_BLOCK_SIZE) / M_LN2));
+		blockSize = gReader->getUint32((int)(log((double) DEFAULT_BLOCK_SIZE) / M_LN2));
 		maxLPC = gReader->getUint32(2);
 		mean = gReader->getUint32(0);
 		uint32 skipBytes = gReader->getUint32(1);
@@ -417,6 +417,8 @@ byte *loadShortenFromStream(Common::ReadStream &stream, int &size, int &rate, by
 							for (i = 0; i < blockSize; i++)
 								buffer[curChannel][i] += channelOffset;
 
+						break;
+					default:
 						break;
 				}
 

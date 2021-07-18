@@ -36,7 +36,7 @@
 
 - (void)alertView:(UIAlertView *)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex {
 	OSystem_iOS7::sharedInstance()->quit();
-	exit(1);
+	abort();
 }
 
 @end
@@ -52,8 +52,8 @@ static void displayAlert(void *ctx) {
 }
 
 void OSystem_iOS7::fatalError() {
-	if (_lastErrorMessage) {
-		dispatch_async_f(dispatch_get_main_queue(), _lastErrorMessage, displayAlert);
+	if (_lastErrorMessage.size()) {
+		dispatch_async_f(dispatch_get_main_queue(), (void *)_lastErrorMessage.c_str(), displayAlert);
 		for(;;);
 	}
 	else {
@@ -61,16 +61,38 @@ void OSystem_iOS7::fatalError() {
 	}
 }
 
+void OSystem_iOS7::logMessage(LogMessageType::Type type, const char *message) {
+	FILE *output = 0;
+
+	if (type == LogMessageType::kInfo || type == LogMessageType::kDebug)
+		output = stdout;
+	else
+		output = stderr;
+
+	if (type == LogMessageType::kError) {
+		_lastErrorMessage = message;
+		NSString *messageString = [NSString stringWithUTF8String:message];
+		NSLog(@"%@", messageString);
+	}
+
+	fputs(message, output);
+	fflush(output);
+}
+
 void OSystem_iOS7::engineInit() {
 	EventsBaseBackend::engineInit();
 	// Prevent the device going to sleep during game play (and in particular cut scenes)
-	[[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+	});
 }
 
 void OSystem_iOS7::engineDone() {
 	EventsBaseBackend::engineDone();
 	// Allow the device going to sleep if idle while in the Launcher
-	[[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+	});
 }
 
 void OSystem_iOS7::initVideoContext() {
@@ -134,7 +156,8 @@ void OSystem_iOS7::initSize(uint width, uint height, const Graphics::PixelFormat
 
 	_videoContext->screenWidth = width;
 	_videoContext->screenHeight = height;
-	_videoContext->shakeOffsetY = 0;
+	_videoContext->shakeXOffset = 0;
+	_videoContext->shakeYOffset = 0;
 
 	// In case we use the screen texture as frame buffer we reset the pixels
 	// pointer here to avoid freeing the screen texture.
@@ -350,9 +373,10 @@ void OSystem_iOS7::unlockScreen() {
 	dirtyFullScreen();
 }
 
-void OSystem_iOS7::setShakePos(int shakeOffset) {
-	//printf("setShakePos(%i)\n", shakeOffset);
-	_videoContext->shakeOffsetY = shakeOffset;
+void OSystem_iOS7::setShakePos(int shakeXOffset, int shakeYOffset) {
+	//printf("setShakePos(%i, %i)\n", shakeXOffset, shakeYOffset);
+	_videoContext->shakeXOffset = shakeXOffset;
+	_videoContext->shakeYOffset = shakeYOffset;
 	execute_on_main_thread(^ {
 		[[iOS7AppDelegate iPhoneView] setViewTransformation];
 	});
@@ -384,7 +408,7 @@ void OSystem_iOS7::hideOverlay() {
 
 void OSystem_iOS7::clearOverlay() {
 	//printf("clearOverlay()\n");
-	bzero(_videoContext->overlayTexture.getPixels(), _videoContext->overlayTexture.h * _videoContext->overlayTexture.pitch);
+	memset(_videoContext->overlayTexture.getPixels(), 0, _videoContext->overlayTexture.h * _videoContext->overlayTexture.pitch);
 	dirtyFullOverlayScreen();
 }
 
@@ -578,4 +602,24 @@ void OSystem_iOS7::updateMouseTexture() {
 	execute_on_main_thread(^ {
 		[[iOS7AppDelegate iPhoneView] updateMouseCursor];
 	});
+}
+
+void OSystem_iOS7::setShowKeyboard(bool show) {
+	if (show) {
+		execute_on_main_thread(^ {
+			[[iOS7AppDelegate iPhoneView] showKeyboard];
+		});
+	} else {
+		// Do not hide the keyboard in portrait mode as it is shown automatically and not
+		// just when asked with the kFeatureVirtualKeyboard.
+		if (_screenOrientation == kScreenOrientationLandscape || _screenOrientation == kScreenOrientationFlippedLandscape) {
+			execute_on_main_thread(^ {
+				[[iOS7AppDelegate iPhoneView] hideKeyboard];
+			});
+		}
+	}
+}
+
+bool OSystem_iOS7::isKeyboardShown() const {
+	return [[iOS7AppDelegate iPhoneView] isKeyboardShown];
 }

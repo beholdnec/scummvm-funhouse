@@ -37,7 +37,6 @@
 
 namespace Common {
 
-#define MBI_INFOHDR 128
 #define MBI_ZERO1 0
 #define MBI_NAMELEN 1
 #define MBI_ZERO2 74
@@ -47,8 +46,21 @@ namespace Common {
 #define MAXNAMELEN 63
 
 MacResManager::MacResManager() {
-	memset(this, 0, sizeof(MacResManager));
-	close();
+	_stream = nullptr;
+	// _baseFileName cleared by String constructor
+
+	_mode = kResForkNone;
+
+	_resForkOffset = -1;
+	_resForkSize = 0;
+
+	_dataOffset = 0;
+	_dataLength = 0;
+	_mapOffset = 0;
+	_mapLength = 0;
+	_resMap.reset();
+	_resTypes = nullptr;
+	_resLists = nullptr;
 }
 
 MacResManager::~MacResManager() {
@@ -67,9 +79,9 @@ void MacResManager::close() {
 		delete[] _resLists[i];
 	}
 
-	delete[] _resLists; _resLists = 0;
-	delete[] _resTypes; _resTypes = 0;
-	delete _stream; _stream = 0;
+	delete[] _resLists; _resLists = nullptr;
+	delete[] _resTypes; _resTypes = nullptr;
+	delete _stream; _stream = nullptr;
 	_resMap.numTypes = 0;
 }
 
@@ -149,7 +161,8 @@ bool MacResManager::open(const String &fileName) {
 	if (file->open(fileName)) {
 		_baseFileName = fileName;
 
-		// FIXME: Is this really needed?
+		// Maybe file is in MacBinary but without .bin extension?
+		// Check it here
 		if (isMacBinary(*file)) {
 			file->seek(0);
 			if (loadFromMacBinary(*file))
@@ -361,7 +374,8 @@ bool MacResManager::isMacBinary(SeekableReadStream &stream) {
 	byte infoHeader[MBI_INFOHDR];
 	int resForkOffset = -1;
 
-	stream.read(infoHeader, MBI_INFOHDR);
+	if (stream.read(infoHeader, MBI_INFOHDR) != MBI_INFOHDR)
+		return false;
 
 	if (infoHeader[MBI_ZERO1] == 0 && infoHeader[MBI_ZERO2] == 0 &&
 		infoHeader[MBI_ZERO3] == 0 && infoHeader[MBI_NAMELEN] <= MAXNAMELEN) {
@@ -371,10 +385,11 @@ bool MacResManager::isMacBinary(SeekableReadStream &stream) {
 		uint32 rsrcSize = READ_BE_UINT32(infoHeader + MBI_RFLEN);
 
 		uint32 dataSizePad = (((dataSize + 127) >> 7) << 7);
-		uint32 rsrcSizePad = (((rsrcSize + 127) >> 7) << 7);
+		// Files produced by ISOBuster are not padded, thus, compare with the actual size
+		//uint32 rsrcSizePad = (((rsrcSize + 127) >> 7) << 7);
 
 		// Length check
-		if (MBI_INFOHDR + dataSizePad + rsrcSizePad == (uint32)stream.size()) {
+		if (MBI_INFOHDR + dataSizePad + rsrcSize <= (uint32)stream.size()) {
 			resForkOffset = MBI_INFOHDR + dataSizePad;
 		}
 	}
@@ -410,10 +425,11 @@ bool MacResManager::loadFromMacBinary(SeekableReadStream &stream) {
 		uint32 rsrcSize = READ_BE_UINT32(infoHeader + MBI_RFLEN);
 
 		uint32 dataSizePad = (((dataSize + 127) >> 7) << 7);
-		uint32 rsrcSizePad = (((rsrcSize + 127) >> 7) << 7);
+		// Files produced by ISOBuster are not padded, thus, compare with the actual size
+		//uint32 rsrcSizePad = (((rsrcSize + 127) >> 7) << 7);
 
 		// Length check
-		if (MBI_INFOHDR + dataSizePad + rsrcSizePad == (uint32)stream.size()) {
+		if (MBI_INFOHDR + dataSizePad + rsrcSize <= (uint32)stream.size()) {
 			_resForkOffset = MBI_INFOHDR + dataSizePad;
 			_resForkSize = rsrcSize;
 		}
@@ -463,7 +479,7 @@ bool MacResManager::load(SeekableReadStream &stream) {
 
 SeekableReadStream *MacResManager::getDataFork() {
 	if (!_stream)
-		return NULL;
+		return nullptr;
 
 	if (_mode == kResForkMacBinary) {
 		_stream->seek(MBI_DFLEN);
@@ -476,7 +492,7 @@ SeekableReadStream *MacResManager::getDataFork() {
 		return file;
 	delete file;
 
-	return NULL;
+	return nullptr;
 }
 
 MacResIDArray MacResManager::getResIDArray(uint32 typeID) {
@@ -544,7 +560,7 @@ SeekableReadStream *MacResManager::getResource(uint32 typeID, uint16 resID) {
 		}
 
 	if (typeNum == -1)
-		return NULL;
+		return nullptr;
 
 	for (int i = 0; i < _resTypes[typeNum].items; i++)
 		if (_resLists[typeNum][i].id == resID) {
@@ -553,14 +569,14 @@ SeekableReadStream *MacResManager::getResource(uint32 typeID, uint16 resID) {
 		}
 
 	if (resNum == -1)
-		return NULL;
+		return nullptr;
 
 	_stream->seek(_dataOffset + _resLists[typeNum][resNum].dataOffset);
 	uint32 len = _stream->readUint32BE();
 
 	// Ignore resources with 0 length
 	if (!len)
-		return 0;
+		return nullptr;
 
 	return _stream->readStream(len);
 }
@@ -574,14 +590,14 @@ SeekableReadStream *MacResManager::getResource(const String &fileName) {
 
 				// Ignore resources with 0 length
 				if (!len)
-					return 0;
+					return nullptr;
 
 				return _stream->readStream(len);
 			}
 		}
 	}
 
-	return 0;
+	return nullptr;
 }
 
 SeekableReadStream *MacResManager::getResource(uint32 typeID, const String &fileName) {
@@ -596,14 +612,14 @@ SeekableReadStream *MacResManager::getResource(uint32 typeID, const String &file
 
 				// Ignore resources with 0 length
 				if (!len)
-					return 0;
+					return nullptr;
 
 				return _stream->readStream(len);
 			}
 		}
 	}
 
-	return 0;
+	return nullptr;
 }
 
 void MacResManager::readMap() {
@@ -640,7 +656,7 @@ void MacResManager::readMap() {
 			resPtr->nameOffset = _stream->readUint16BE();
 			resPtr->dataOffset = _stream->readUint32BE();
 			_stream->readUint32BE();
-			resPtr->name = 0;
+			resPtr->name = nullptr;
 
 			resPtr->attr = resPtr->dataOffset >> 24;
 			resPtr->dataOffset &= 0xFFFFFF;
@@ -701,6 +717,63 @@ String MacResManager::disassembleAppleDoubleName(String name, bool *isAppleDoubl
 	}
 
 	return name;
+}
+
+void MacResManager::dumpRaw() {
+	byte *data = nullptr;
+	uint dataSize = 0;
+	Common::DumpFile out;
+
+	for (int i = 0; i < _resMap.numTypes; i++) {
+		for (int j = 0; j < _resTypes[i].items; j++) {
+			_stream->seek(_dataOffset + _resLists[i][j].dataOffset);
+			uint32 len = _stream->readUint32BE();
+
+			if (dataSize < len) {
+				free(data);
+				data = (byte *)malloc(len);
+				dataSize = len;
+			}
+
+			Common::String filename = Common::String::format("./dumps/%s-%s-%d", _baseFileName.c_str(), tag2str(_resTypes[i].id), j);
+			_stream->read(data, len);
+
+			if (!out.open(filename)) {
+				warning("MacResManager::dumpRaw(): Can not open dump file %s", filename.c_str());
+				return;
+			}
+
+			out.write(data, len);
+
+			out.flush();
+			out.close();
+
+		}
+	}
+}
+
+MacResManager::MacVers *MacResManager::parseVers(SeekableReadStream *vvers) {
+	MacVers *v = new MacVers;
+
+	v->majorVer = vvers->readByte();
+	v->minorVer = vvers->readByte();
+	byte devStage = vvers->readByte();
+	const char *s;
+	switch (devStage) {
+	case 0x20: s = "Prealpha"; break;
+	case 0x40: s = "Alpha";    break;
+	case 0x60: s = "Beta";     break;
+	case 0x80: s = "Final";    break;
+	default:   s = "";
+	}
+	v->devStr = s;
+
+	v->preReleaseVer = vvers->readByte();
+	v->region = vvers->readUint16BE();
+	v->str = vvers->readPascalString();
+	v->msg = vvers->readPascalString();
+
+	return v;
 }
 
 } // End of namespace Common

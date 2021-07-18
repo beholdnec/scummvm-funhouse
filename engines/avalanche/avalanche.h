@@ -48,10 +48,10 @@
 #include "avalanche/mainmenu.h"
 #include "avalanche/highscore.h"
 
+#include "common/error.h"
 #include "common/serializer.h"
 
 #include "engines/engine.h"
-#include "engines/advancedDetector.h"
 
 #include "graphics/cursorman.h"
 
@@ -61,9 +61,7 @@ class RandomSource;
 
 namespace Avalanche {
 
-struct AvalancheGameDescription {
-	ADGameDescription desc;
-};
+struct AvalancheGameDescription;
 
 static const int kSavegameVersion = 2;
 
@@ -97,10 +95,9 @@ public:
 	OSystem *_system;
 
 	AvalancheEngine(OSystem *syst, const AvalancheGameDescription *gd);
-	~AvalancheEngine();
+	~AvalancheEngine() override;
 
 	Common::ErrorCode initialize();
-	GUI::Debugger *getDebugger();
 
 	Common::RandomSource *_rnd;
 
@@ -108,16 +105,15 @@ public:
 	uint32 getFeatures() const;
 	const char *getGameId() const;
 	Common::Platform getPlatform() const;
-	bool hasFeature(EngineFeature f) const;
+	bool hasFeature(EngineFeature f) const override;
 	const char *getCopyrightString() const;
 
 	void synchronize(Common::Serializer &sz);
-	virtual bool canSaveGameStateCurrently();
-	Common::Error saveGameState(int slot, const Common::String &desc);
+	bool canSaveGameStateCurrently() override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
 	bool saveGame(const int16 slot, const Common::String &desc);
-	Common::String getSaveFileName(const int slot);
-	virtual bool canLoadGameStateCurrently();
-	Common::Error loadGameState(int slot);
+	bool canLoadGameStateCurrently() override;
+	Common::Error loadGameState(int slot) override;
 	bool loadGame(const int16 slot);
 	Common::String expandDate(int d, int m, int y);
 	uint32 getTimeInSeconds();
@@ -128,11 +124,7 @@ public:
 
 protected:
 	// Engine APIs
-	Common::Error run();
-
-private:
-	AvalancheConsole *_console;
-	Common::Platform _platform;
+	Common::Error run() override;
 
 public:
 	// For Thinkabout:

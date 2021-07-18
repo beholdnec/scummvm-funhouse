@@ -34,8 +34,6 @@
 #include "graphics/surface.h"
 
 #include "engines/engine.h"
-
-#include "gui/debugger.h"
 #include "fullpipe/console.h"
 
 struct ADGameDescription;
@@ -59,8 +57,11 @@ enum {
 	kDebugBehavior		= 1 << 6,
 	kDebugInventory		= 1 << 7,
 	kDebugSceneLogic	= 1 << 8,
-	kDebugInteractions	= 1 << 9
+	kDebugInteractions	= 1 << 9,
+	kDebugXML			= 1 << 10
 };
+
+#define MAXGAMEOBJH 10000
 
 class BehaviorManager;
 class BaseModalObject;
@@ -86,8 +87,24 @@ class SoundList;
 class StaticANIObject;
 class Vars;
 typedef Common::Array<int16> MovTable;
-typedef Common::Array<int32> Palette;
 typedef Common::Array<Common::Point> PointList;
+
+struct Palette {
+	uint32 pal[256];
+	uint size;
+
+	Palette() {
+		size = 0;
+		memset(pal, 0, 256 * 4);
+	}
+
+	void copy(const Palette &src) {
+		size = src.size;
+		memcpy(pal, src.pal, 256 * 4);
+	}
+};
+
+typedef Common::HashMap<uint16, Common::String> GameObjHMap;
 
 int global_messageHandler1(ExCommand *cmd);
 int global_messageHandler2(ExCommand *cmd);
@@ -99,14 +116,11 @@ void global_messageHandler_handleSound(ExCommand *cmd);
 class FullpipeEngine : public ::Engine {
 protected:
 
-	Common::Error run();
+	Common::Error run() override;
 
 public:
 	FullpipeEngine(OSystem *syst, const ADGameDescription *gameDesc);
-	virtual ~FullpipeEngine();
-
-	Console _console;
-	GUI::Debugger *getDebugger() { return &_console; }
+	~FullpipeEngine() override;
 
 	void initialize();
 	void restartGame();
@@ -133,6 +147,9 @@ public:
 	Common::ScopedPtr<GameLoader> _gameLoader;
 	GameProject *_gameProject;
 	bool loadGam(const char *fname, int scene = 0);
+
+	void loadGameObjH();
+	Common::String gameIdToStr(uint16 id);
 
 	GameVar *getGameLoaderGameVar();
 	InputController *getGameLoaderInputController();
@@ -346,16 +363,19 @@ public:
 
 	bool _stream2playing;
 
+	GameObjHMap _gameObjH;
+
 public:
 
 	bool _isSaveAllowed;
 
-	Common::Error loadGameState(int slot);
-	Common::Error saveGameState(int slot, const Common::String &description);
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &description, bool isAutosave = false) override;
+	virtual Common::String getSaveStateName(int slot) const override;
 
-	virtual bool canLoadGameStateCurrently() { return true; }
-	virtual bool canSaveGameStateCurrently() { return _isSaveAllowed; }
-	virtual bool hasFeature(EngineFeature f) const;
+	bool canLoadGameStateCurrently() override { return true; }
+	bool canSaveGameStateCurrently() override { return _isSaveAllowed; }
+	bool hasFeature(EngineFeature f) const override;
 
 };
 

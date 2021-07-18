@@ -47,13 +47,20 @@ ifdef PLUGIN
 PLUGIN-$(MODULE) := plugins/$(PLUGIN_PREFIX)$(notdir $(MODULE))$(PLUGIN_SUFFIX)
 $(PLUGIN-$(MODULE)): $(MODULE_OBJS-$(MODULE)) $(PLUGIN_EXTRA_DEPS)
 	$(QUIET)$(MKDIR) plugins
-	$(QUIET_PLUGIN)$(CXX) $(filter-out $(PLUGIN_EXTRA_DEPS),$+) $(PLUGIN_LDFLAGS) -o $@
+	$(QUIET_PLUGIN)$(CXX) $(SAVED_LDFLAGS) $(filter-out $(PLUGIN_EXTRA_DEPS),$+) $(PLUGIN_LDFLAGS) -o $@
 
 # Reset PLUGIN var
 PLUGIN:=
 
 # Add to "plugins" target
 plugins: $(PLUGIN-$(MODULE))
+
+ifdef SPLIT_DWARF
+$(PLUGIN-$(MODULE)).dwp: $(PLUGIN-$(MODULE))
+	$(QUIET_DWP)$(DWP) -e $<
+
+plugins: $(PLUGIN-$(MODULE)).dwp
+endif
 
 # Add to the PLUGINS variable
 PLUGINS += $(PLUGIN-$(MODULE))
@@ -91,5 +98,8 @@ endif # TOOL_EXECUTABLE
 clean: clean-$(MODULE)
 clean-$(MODULE): clean-% :
 	-$(RM) $(MODULE_OBJS-$*) $(MODULE_LIB-$*) $(PLUGIN-$*) $(TOOL-$*)
+ifdef SPLIT_DWARF
+	-$(RM) $(MODULE_OBJS-$*:.o=.dwo)
+endif
 
 .PHONY: clean-$(MODULE) $(MODULE)

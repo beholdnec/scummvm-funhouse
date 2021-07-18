@@ -29,6 +29,7 @@
 
 namespace Common {
 
+class ReadStream;
 class SeekableReadStream;
 
 /**
@@ -204,6 +205,38 @@ public:
 	}
 
 	/**
+	 * Write the given 64-bit floating point value stored
+	 * in little endian(LSB first) order into the stream.
+	 */
+	FORCEINLINE void writeDoubleLE(double value) {
+		uint64 n;
+
+		memcpy(&n, &value, 8);
+
+		writeUint64LE(n);
+	}
+
+
+	/**
+	 * Write the given 64-bit floating point value stored
+	 * in big endian order into the stream.
+	 */
+	FORCEINLINE void writeDoubleBE(double value) {
+		uint64 n;
+
+		memcpy(&n, &value, 8);
+
+		writeUint64BE(n);
+	}
+
+	/**
+	 * Write data from another stream to this one.
+	 */
+	uint32 writeStream(ReadStream *stream, uint32 dataSize);
+
+	uint32 writeStream(SeekableReadStream *stream);
+
+	/**
 	 * Write the given string to the stream.
 	 * This writes str.size() characters, but no terminating zero byte.
 	 */
@@ -211,10 +244,43 @@ public:
 };
 
 /**
+ * Derived abstract base class for write streams streams that are seekable
+ */
+class SeekableWriteStream : public WriteStream {
+public:
+	/**
+	 * Sets the stream position indicator for the stream. The new position,
+	 * measured in bytes, is obtained by adding offset bytes to the position
+	 * specified by whence. If whence is set to SEEK_SET, SEEK_CUR, or
+	 * SEEK_END, the offset is relative to the start of the file, the current
+	 * position indicator, or end-of-file, respectively. A successful call
+	 * to the seek() method clears the end-of-file indicator for the stream.
+	 *
+	 * @note The semantics of any implementation of this method are
+	 * supposed to match those of ISO C fseek().
+	 *
+	 * @param offset        the relative offset in bytes
+	 * @param whence        the seek reference: SEEK_SET, SEEK_CUR, or SEEK_END
+	 * @return true on success, false in case of a failure
+	 */
+	virtual bool seek(int32 offset, int whence = SEEK_SET) = 0;
+
+	/**
+	 * Obtains the current size of the stream, measured in bytes.
+	 * If this value is unknown or can not be computed, -1 is returned.
+	 *
+	 * @return the size of the stream, or -1 if an error occurred
+	 */
+	virtual int32 size() const = 0;
+};
+
+/**
  * Generic interface for a readable data stream.
  */
 class ReadStream : virtual public Stream {
 public:
+	ReadStream() {}
+
 	/**
 	 * Returns true if a read failed because the stream end has been reached.
 	 * This flag is cleared by clearErr().
@@ -443,6 +509,39 @@ public:
 		return f;
 	}
 
+
+	/**
+	 * Read a 64-bit floating point value stored in little endian (LSB first)
+	 * order from the stream and return it.
+	 * Performs no error checking. The return value is undefined
+	 * if a read error occurred (for which client code can check by
+	 * calling err() and eos() ).
+	 */
+	FORCEINLINE double readDoubleLE() {
+		uint64 n = readUint64LE();
+		double d;
+
+		memcpy(&d, &n, 8);
+
+		return d;
+	}
+
+	/**
+	 * Read a 64-bit floating point value stored in big endian
+	 * order from the stream and return it.
+	 * Performs no error checking. The return value is undefined
+	 * if a read error occurred (for which client code can check by
+	 * calling err() and eos() ).
+	 */
+	FORCEINLINE double readDoubleBE() {
+		uint64 n = readUint64BE();
+		double d;
+
+		memcpy(&d, &n, 8);
+
+		return d;
+	}
+
 	/**
 	 * Read the specified amount of data into a malloc'ed buffer
 	 * which then is wrapped into a MemoryReadStream.
@@ -532,9 +631,10 @@ public:
 	 *
 	 * @param s	the buffer to store into
 	 * @param bufSize	the size of the buffer
+	 * @param handleCR	if set (default), then CR and CR/LF are handled as well as LF
 	 * @return a pointer to the read string, or NULL if an error occurred
 	 */
-	virtual char *readLine(char *s, size_t bufSize);
+	virtual char *readLine(char *s, size_t bufSize, bool handleCR = true);
 
 
 	/**
@@ -546,8 +646,10 @@ public:
 	 * of the line, *without* the end of a line marker. This method
 	 * does not indicate whether an error occurred. Callers must use
 	 * err() or eos() to determine whether an exception occurred.
+	 *
+	 * @param handleCR	if set (default), then CR and CR/LF are handled as well as LF
 	 */
-	virtual String readLine();
+	virtual String readLine(bool handleCR = true);
 
 	/**
 	 * Print a hexdump of the stream while maintaing position. The number
@@ -607,7 +709,7 @@ public:
  * This is a SeekableReadStream subclass which adds non-endian read
  * methods whose endianness is set during the stream creation.
  */
-class SeekableReadStreamEndian : public SeekableReadStream, public ReadStreamEndian {
+class SeekableReadStreamEndian : virtual public SeekableReadStream, virtual public ReadStreamEndian {
 public:
 	SeekableReadStreamEndian(bool bigEndian) : ReadStreamEndian(bigEndian) {}
 };

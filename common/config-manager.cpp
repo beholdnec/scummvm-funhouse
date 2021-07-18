@@ -41,9 +41,7 @@ DECLARE_SINGLETON(ConfigManager);
 char const *const ConfigManager::kApplicationDomain = "scummvm";
 char const *const ConfigManager::kTransientDomain = "__TRANSIENT";
 
-#ifdef ENABLE_KEYMAPPER
 char const *const ConfigManager::kKeymapperDomain = "keymapper";
-#endif
 
 #ifdef USE_CLOUD
 char const *const ConfigManager::kCloudDomain = "cloud";
@@ -52,7 +50,7 @@ char const *const ConfigManager::kCloudDomain = "cloud";
 #pragma mark -
 
 
-ConfigManager::ConfigManager() : _activeDomain(0) {
+ConfigManager::ConfigManager() : _activeDomain(nullptr) {
 }
 
 void ConfigManager::defragment() {
@@ -68,9 +66,7 @@ void ConfigManager::copyFrom(ConfigManager &source) {
 	_miscDomains = source._miscDomains;
 	_appDomain = source._appDomain;
 	_defaultsDomain = source._defaultsDomain;
-#ifdef ENABLE_KEYMAPPER
 	_keymapperDomain = source._keymapperDomain;
-#endif
 #ifdef USE_CLOUD
 	_cloudDomain = source._cloudDomain;
 #endif
@@ -85,7 +81,7 @@ void ConfigManager::loadDefaultConfigFile() {
 	// Open the default config file
 	assert(g_system);
 	SeekableReadStream *stream = g_system->createConfigReadStream();
-	_filename.clear();  // clear the filename to indicate that we are using the default config file
+	_filename.clear(); // clear the filename to indicate that we are using the default config file
 
 	// ... load it, if available ...
 	if (stream) {
@@ -124,10 +120,8 @@ void ConfigManager::addDomain(const String &domainName, const ConfigManager::Dom
 		return;
 	if (domainName == kApplicationDomain) {
 		_appDomain = domain;
-#ifdef ENABLE_KEYMAPPER
 	} else if (domainName == kKeymapperDomain) {
 		_keymapperDomain = domain;
-#endif
 #ifdef USE_CLOUD
 	} else if (domainName == kCloudDomain) {
 		_cloudDomain = domain;
@@ -168,9 +162,7 @@ void ConfigManager::loadFromStream(SeekableReadStream &stream) {
 	_transientDomain.clear();
 	_domainSaveOrder.clear();
 
-#ifdef ENABLE_KEYMAPPER
 	_keymapperDomain.clear();
-#endif
 #ifdef USE_CLOUD
 	_cloudDomain.clear();
 #endif
@@ -282,10 +274,8 @@ void ConfigManager::flushToDisk() {
 	// Write the application domain
 	writeDomain(*stream, kApplicationDomain, _appDomain);
 
-#ifdef ENABLE_KEYMAPPER
 	// Write the keymapper domain
 	writeDomain(*stream, kKeymapperDomain, _keymapperDomain);
-#endif
 #ifdef USE_CLOUD
 	// Write the cloud domain
 	writeDomain(*stream, kCloudDomain, _cloudDomain);
@@ -321,7 +311,7 @@ void ConfigManager::flushToDisk() {
 
 void ConfigManager::writeDomain(WriteStream &stream, const String &name, const Domain &domain) {
 	if (domain.empty())
-		return;     // Don't bother writing empty domains.
+		return; // Don't bother writing empty domains.
 
 	// WORKAROUND: Fix for bug #1972625 "ALL: On-the-fly targets are
 	// written to the config file": Do not save domains that came from
@@ -373,10 +363,8 @@ const ConfigManager::Domain *ConfigManager::getDomain(const String &domName) con
 		return &_transientDomain;
 	if (domName == kApplicationDomain)
 		return &_appDomain;
-#ifdef ENABLE_KEYMAPPER
 	if (domName == kKeymapperDomain)
 		return &_keymapperDomain;
-#endif
 #ifdef USE_CLOUD
 	if (domName == kCloudDomain)
 		return &_cloudDomain;
@@ -386,7 +374,7 @@ const ConfigManager::Domain *ConfigManager::getDomain(const String &domName) con
 	if (_miscDomains.contains(domName))
 		return &_miscDomains[domName];
 
-	return 0;
+	return nullptr;
 }
 
 ConfigManager::Domain *ConfigManager::getDomain(const String &domName) {
@@ -397,10 +385,8 @@ ConfigManager::Domain *ConfigManager::getDomain(const String &domName) {
 		return &_transientDomain;
 	if (domName == kApplicationDomain)
 		return &_appDomain;
-#ifdef ENABLE_KEYMAPPER
 	if (domName == kKeymapperDomain)
 		return &_keymapperDomain;
-#endif
 #ifdef USE_CLOUD
 	if (domName == kCloudDomain)
 		return &_cloudDomain;
@@ -410,7 +396,7 @@ ConfigManager::Domain *ConfigManager::getDomain(const String &domName) {
 	if (_miscDomains.contains(domName))
 		return &_miscDomains[domName];
 
-	return 0;
+	return nullptr;
 }
 
 
@@ -541,6 +527,19 @@ void ConfigManager::set(const String &key, const String &value) {
 		_appDomain[key] = value;
 }
 
+void ConfigManager::setAndFlush(const String &key, const Common::String &value) {
+	if (value.empty() && !hasKey(key)) {
+		return;
+	}
+
+	if (hasKey(key) && get(key) == value) {
+		return;
+	}
+
+	set(key, value);
+	flushToDisk();
+}
+
 void ConfigManager::set(const String &key, const String &value, const String &domName) {
 	// FIXME: For now we continue to allow empty domName to indicate
 	// "use 'default' domain". This is mainly needed for the SCUMM ConfigDialog
@@ -620,7 +619,7 @@ void ConfigManager::registerDefault(const String &key, bool value) {
 
 void ConfigManager::setActiveDomain(const String &domName) {
 	if (domName.empty()) {
-		_activeDomain = 0;
+		_activeDomain = nullptr;
 	} else {
 		assert(isValidDomainName(domName));
 		_activeDomain = &_gameDomains[domName];
@@ -654,7 +653,7 @@ void ConfigManager::removeGameDomain(const String &domName) {
 	assert(isValidDomainName(domName));
 	if (domName == _activeDomainName) {
 		_activeDomainName.clear();
-		_activeDomain = 0;
+		_activeDomain = nullptr;
 	}
 	_gameDomains.erase(domName);
 }

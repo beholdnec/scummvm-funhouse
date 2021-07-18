@@ -70,6 +70,7 @@
 #include "sci/graphics/controls32.h"
 #include "sci/graphics/cursor32.h"
 #include "sci/graphics/frameout.h"
+#include "sci/graphics/maccursor32.h"
 #include "sci/graphics/palette32.h"
 #include "sci/graphics/remap32.h"
 #include "sci/graphics/text32.h"
@@ -129,7 +130,7 @@ SciEngine::SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gam
 	DebugMan.addDebugChannel(kDebugLevelDclInflate, "DCL", "DCL inflate debugging");
 	DebugMan.addDebugChannel(kDebugLevelVM, "VM", "VM debugging");
 	DebugMan.addDebugChannel(kDebugLevelScripts, "Scripts", "Notifies when scripts are unloaded");
-	DebugMan.addDebugChannel(kDebugLevelScriptPatcher, "ScriptPatcher", "Notifies when scripts are patched");
+	DebugMan.addDebugChannel(kDebugLevelPatcher, "Patcher", "Notifies when scripts or resources are patched");
 	DebugMan.addDebugChannel(kDebugLevelWorkarounds, "Workarounds", "Notifies when workarounds are triggered");
 	DebugMan.addDebugChannel(kDebugLevelVideo, "Video", "Video (SEQ, VMD, RBT) debugging");
 	DebugMan.addDebugChannel(kDebugLevelGame, "Game", "Debug calls from game scripts");
@@ -160,6 +161,7 @@ SciEngine::SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gam
 	SearchMan.addSubDirectoryMatching(gameDataDir, "Sound Folder"); // Mac audio files
 	SearchMan.addSubDirectoryMatching(gameDataDir, "Voices Folder", 0, 2, true); // Mac audio36 files (recursive for Torin)
 	SearchMan.addSubDirectoryMatching(gameDataDir, "Voices"); // Mac audio36 files
+	SearchMan.addSubDirectoryMatching(gameDataDir, "Voices/AUD#"); // LSL6 Mac audio36 files
 	SearchMan.addSubDirectoryMatching(gameDataDir, "VMD Folder"); // Mac VMD files
 
 	// Add the patches directory, except for KQ6CD; The patches folder in some versions of KQ6CD
@@ -238,7 +240,7 @@ SciEngine::~SciEngine() {
 	delete _soundCmd;
 	delete _kernel;
 	delete _vocabulary;
-	delete _console;
+	//_console deleted by Engine
 	delete _guestAdditions;
 	delete _features;
 	delete _gfxMacIconBar;
@@ -254,7 +256,7 @@ SciEngine::~SciEngine() {
 	g_sci = 0;
 }
 
-extern void showScummVMDialog(const Common::String &message);
+extern int showScummVMDialog(const Common::String& message, const char* altButton = nullptr, bool alignCenter = true);
 
 Common::Error SciEngine::run() {
 	_resMan = new ResourceManager();
@@ -274,8 +276,9 @@ Common::Error SciEngine::run() {
 	// Reset, so that error()s before SoundCommandParser is initialized wont cause a crash
 	_soundCmd = NULL;
 
-	// Add the after market GM patches for the specified game, if they exist
+	// Add the after market patches for the specified game, if they exist
 	_resMan->addNewGMPatch(_gameId);
+	_resMan->addNewD110Patch(_gameId);
 	_gameObjectAddress = _resMan->findGameObject(true, isBE());
 
 	_scriptPatcher = new ScriptPatcher();
@@ -308,14 +311,8 @@ Common::Error SciEngine::run() {
 	}
 
 	_kernel = new Kernel(_resMan, segMan);
-	_kernel->init();
-
 	_features = new GameFeatures(segMan, _kernel);
-	// Only SCI0, SCI01 and SCI1 EGA games used a parser
-	_vocabulary = (getSciVersion() <= SCI_VERSION_1_EGA_ONLY) ? new Vocabulary(_resMan, false) : NULL;
-	// Also, XMAS1990 apparently had a parser too. Refer to http://forums.scummvm.org/viewtopic.php?t=9135
-	if (getGameId() == GID_CHRISTMAS1990)
-		_vocabulary = new Vocabulary(_resMan, false);
+	_vocabulary = hasParser() ? new Vocabulary(_resMan, false) : NULL;
 
 	_gamestate = new EngineState(segMan);
 	_guestAdditions = new GuestAdditions(_gamestate, _features, _kernel);
@@ -335,6 +332,7 @@ Common::Error SciEngine::run() {
 
 	// Create debugger console. It requires GFX and _gamestate to be initialized
 	_console = new Console(this);
+	setDebugger(_console);
 
 	// The game needs to be initialized before the graphics system is initialized, as
 	// the graphics code checks parts of the seg manager upon initialization (e.g. for
@@ -387,24 +385,6 @@ Common::Error SciEngine::run() {
 
 	// Show any special warnings for buggy scripts with severe game bugs,
 	// which have been patched by Sierra
-	if (getGameId() == GID_LONGBOW) {
-		// Longbow 1.0 has a buggy script which prevents the game
-		// from progressing during the Green Man riddle sequence.
-		// A patch for this buggy script has been released by Sierra,
-		// and is necessary to complete the game without issues.
-		// The patched script is included in Longbow 1.1.
-		// Refer to bug #3036609.
-		Resource *buggyScript = _resMan->findResource(ResourceId(kResourceTypeScript, 180), 0);
-
-		if (buggyScript && (buggyScript->size() == 12354 || buggyScript->size() == 12362)) {
-			showScummVMDialog(_("A known buggy game script has been detected, which could "
-			                  "prevent you from progressing later on in the game, during "
-			                  "the sequence with the Green Man's riddles. Please, apply "
-			                  "the latest patch for this game by Sierra to avoid possible "
-			                  "problems."));
-		}
-	}
-
 	if (getGameId() == GID_KQ7 && ConfMan.getBool("subtitles")) {
 		showScummVMDialog(_("Subtitles are enabled, but subtitling in King's"
 						  " Quest 7 was unfinished and disabled in the release"
@@ -454,6 +434,10 @@ Common::Error SciEngine::run() {
 		                  "The issues that these patches fix do not occur in ScummVM, so you are "
 		                  "advised to remove this patch from your game folder in order to avoid "
 		                  "having unexpected errors and/or issues later on."));
+	}
+
+	if (getGameId() == GID_GK2 && ConfMan.getBool("subtitles") && !_resMan->testResource(ResourceId(kResourceTypeSync, 10))) {
+		suggestDownloadGK2SubTitlesPatch();
 	}
 
 	runGame();
@@ -524,6 +508,36 @@ bool SciEngine::gameHasFanMadePatch() {
 	}
 
 	return false;
+}
+
+void SciEngine::suggestDownloadGK2SubTitlesPatch() {
+	const char* altButton;
+	Common::String downloadMessage;
+
+	if (g_system->hasFeature(OSystem::kFeatureOpenUrl)) {
+		altButton = _("Download patch");
+		downloadMessage = _("(or click 'Download patch' button. But note - it only downloads, you will have to continue from there)\n");
+	}
+	else {
+		altButton = nullptr;
+		downloadMessage = "";
+	}
+
+	int result = showScummVMDialog(_("GK2 has a fan made subtitles, available thanks to the good persons at SierraHelp.\n\n"
+		"Installation:\n"
+		"- download http://www.sierrahelp.com/Files/Patches/GabrielKnight/GK2Subtitles.zip\n" +
+		downloadMessage +
+		"- extract zip file\n"
+		"- no need to run the .exe file\n"
+		"- extract the .exe file with a file archiver, like 7-zip\n"
+		"- create a PATCHES subdirectory inside your GK2 directory\n"
+		"- copy the content of GK2Subtitles\\SUBPATCH to the PATCHES subdirectory\n"
+		"- replace files with similar names\n"
+		"- restart the game\n"), altButton, false);
+	if (!result) {
+		char url[] = "http://www.sierrahelp.com/Files/Patches/GabrielKnight/GK2Subtitles.zip";
+		g_system->openUrl(url);
+	}
 }
 
 bool SciEngine::initGame() {
@@ -614,7 +628,7 @@ void SciEngine::initGraphics() {
 	} else {
 #endif
 		_gfxPalette16 = new GfxPalette(_resMan, _gfxScreen);
-		if (getGameId() == GID_QFG4DEMO)
+		if (getGameId() == GID_QFG4DEMO || _resMan->testResource(ResourceId(kResourceTypeVocab, 184)))
 			_gfxRemap16 = new GfxRemap(_gfxPalette16);
 #ifdef ENABLE_SCI32
 	}
@@ -625,7 +639,11 @@ void SciEngine::initGraphics() {
 #ifdef ENABLE_SCI32
 	if (getSciVersion() >= SCI_VERSION_2) {
 		// SCI32 graphic objects creation
-		_gfxCursor32 = new GfxCursor32();
+		if (g_sci->getPlatform() == Common::kPlatformMacintosh && _resMan->hasResourceType(kResourceTypeCursor)) {
+			_gfxCursor32 = new GfxMacCursor32();
+		} else {
+			_gfxCursor32 = new GfxCursor32();
+		}
 		_gfxCompare = new GfxCompare(_gamestate->_segMan, _gfxCache, nullptr, _gfxCoordAdjuster);
 		_gfxPaint32 = new GfxPaint32(_gamestate->_segMan);
 		_gfxTransitions32 = new GfxTransitions32(_gamestate->_segMan);
@@ -637,10 +655,9 @@ void SciEngine::initGraphics() {
 	} else {
 #endif
 		// SCI0-SCI1.1 graphic objects creation
-		_gfxCursor = new GfxCursor(_resMan, _gfxPalette16, _gfxScreen);
 		_gfxPorts = new GfxPorts(_gamestate->_segMan, _gfxScreen);
 		_gfxCoordAdjuster = new GfxCoordAdjuster16(_gfxPorts);
-		_gfxCursor->init(_gfxCoordAdjuster, _eventMan);
+		_gfxCursor = new GfxCursor(_resMan, _gfxPalette16, _gfxScreen, _gfxCoordAdjuster, _eventMan);
 		_gfxCompare = new GfxCompare(_gamestate->_segMan, _gfxCache, _gfxScreen, _gfxCoordAdjuster);
 		_gfxTransitions = new GfxTransitions(_gfxScreen, _gfxPalette16);
 		_gfxPaint16 = new GfxPaint16(_resMan, _gamestate->_segMan, _gfxCache, _gfxPorts, _gfxCoordAdjuster, _gfxScreen, _gfxPalette16, _gfxTransitions, _audio);
@@ -742,8 +759,8 @@ void SciEngine::exitGame() {
 	_gamestate->_fileHandles.resize(5);
 }
 
-// Invoked by error() when a severe error occurs
-GUI::Debugger *SciEngine::getDebugger() {
+// Invoked by debugger when a severe error occurs
+void SciEngine::severeError() {
 	if (_gamestate) {
 		ExecStack *xs = &(_gamestate->_executionStack.back());
 		if (xs) {
@@ -754,11 +771,8 @@ GUI::Debugger *SciEngine::getDebugger() {
 
 	_debugState.runningStep = 0; // Stop multiple execution
 	_debugState.seeking = kDebugSeekNothing; // Stop special seeks
-
-	return _console;
 }
 
-// Used to obtain the engine's console in order to print messages to it
 Console *SciEngine::getSciDebugger() {
 	return _console;
 }
@@ -769,6 +783,10 @@ const char *SciEngine::getGameIdStr() const {
 
 Common::Language SciEngine::getLanguage() const {
 	return _gameDescription->language;
+}
+
+bool SciEngine::isLanguageRTL() const {
+	return getLanguage() == Common::HE_ISR;
 }
 
 Common::Platform SciEngine::getPlatform() const {
@@ -797,9 +815,24 @@ bool SciEngine::isBE() const{
 	}
 }
 
+bool SciEngine::hasParser() const {
+	// Only SCI0, SCI01 and SCI1 EGA games used a parser, along with
+	//  multilingual LSL3 and SQ3 Amiga which are SCI_VERSION_1_MIDDLE
+	return getSciVersion() <= SCI_VERSION_1_EGA_ONLY ||
+			getGameId() == GID_LSL3 || getGameId() == GID_SQ3;
+}
+
 bool SciEngine::hasMacIconBar() const {
 	return _resMan->isSci11Mac() && getSciVersion() == SCI_VERSION_1_1 &&
 			(getGameId() == GID_KQ6 || getGameId() == GID_FREDDYPHARKAS);
+}
+
+bool SciEngine::hasMacSaveRestoreDialogs() const {
+    return _gameDescription->platform == Common::kPlatformMacintosh &&
+			(getSciVersion() <= SCI_VERSION_2_1_EARLY ||
+			 getGameId() == GID_GK2 ||
+			 getGameId() == GID_SQ6 ||
+			 getGameId() == GID_LIGHTHOUSE);
 }
 
 Common::String SciEngine::getSavegameName(int nr) const {
@@ -847,6 +880,15 @@ int SciEngine::inQfGImportRoom() const {
 	return 0;
 }
 
+void SciEngine::showQfgImportMessageBox() const {
+	showScummVMDialog(_("Characters saved inside ScummVM are shown "
+			"automatically. Character files saved in the original "
+			"interpreter need to be put inside ScummVM's saved games "
+			"directory and a prefix needs to be added depending on which "
+			"game it was saved in: 'qfg1-' for Quest for Glory 1, 'qfg2-' "
+			"for Quest for Glory 2. Example: 'qfg2-thief.sav'."));
+}
+
 void SciEngine::sleep(uint32 msecs) {
 	if (!msecs) {
 		return;
@@ -858,6 +900,11 @@ void SciEngine::sleep(uint32 msecs) {
 	for (;;) {
 		// let backend process events and update the screen
 		_eventMan->getSciEvent(kSciEventPeek);
+
+		// There is no point in waiting any more if we are just waiting to quit
+		if (g_engine->shouldQuit()) {
+			return;
+		}
 
 #ifdef ENABLE_SCI32
 		// If a game is in a wait loop, kFrameOut is not called, but mouse

@@ -23,11 +23,10 @@
 #ifndef DIRECTOR_ARCHIVE_H
 #define DIRECTOR_ARCHIVE_H
 
-#include "common/file.h"
-#include "common/substream.h"
-
 namespace Common {
 class MacResManager;
+class SeekableReadStreamEndian;
+class SeekableReadStream;
 }
 
 namespace Director {
@@ -36,8 +35,10 @@ namespace Director {
 
 struct Resource {
 	uint32 index;
-	uint32 offset;
+	int32 offset;
 	uint32 size;
+	uint32 uncompSize;
+	uint32 compressionType;
 	uint32 castId;
 	uint32 tag;
 	Common::String name;
@@ -53,13 +54,17 @@ public:
 	virtual bool openStream(Common::SeekableReadStream *stream, uint32 offset = 0) = 0;
 	virtual void close();
 
-	Common::String getFileName() const { return _fileName; }
+	Common::String getPathName() const { return _pathName; }
+	Common::String getFileName() const;
+	void setPathName(const Common::String &name) { _pathName = name; }
+	int getFileSize();
 
 	bool isOpen() const { return _stream != 0; }
 
 	bool hasResource(uint32 tag, int id) const;
 	bool hasResource(uint32 tag, const Common::String &resName) const;
-	virtual Common::SeekableSubReadStreamEndian *getResource(uint32 tag, uint16 id);
+	virtual Common::SeekableReadStreamEndian *getResource(uint32 tag, uint16 id);
+	virtual Common::SeekableReadStreamEndian *getFirstResource(uint32 tag);
 	virtual Resource getResourceDetail(uint32 tag, uint16 id);
 	uint32 getOffset(uint32 tag, uint16 id) const;
 	uint16 findResourceID(uint32 tag, const Common::String &resName) const;
@@ -76,42 +81,58 @@ protected:
 	typedef Common::HashMap<uint32, ResourceMap> TypeMap;
 	TypeMap _types;
 
-	Common::String _fileName;
+	Common::String _pathName;
 };
 
 class MacArchive : public Archive {
 public:
 	MacArchive();
-	~MacArchive();
+	~MacArchive() override;
 
-	void close();
-	bool openFile(const Common::String &fileName);
-	bool openStream(Common::SeekableReadStream *stream, uint32 startOffset = 0);
-	Common::SeekableSubReadStreamEndian *getResource(uint32 tag, uint16 id);
+	void close() override;
+	bool openFile(const Common::String &fileName) override;
+	bool openStream(Common::SeekableReadStream *stream, uint32 startOffset = 0) override;
+	Common::SeekableReadStreamEndian *getResource(uint32 tag, uint16 id) override;
 
 private:
 	Common::MacResManager *_resFork;
+
+	void readTags();
 };
 
 class RIFFArchive : public Archive {
 public:
 	RIFFArchive() : Archive() { _startOffset = 0; }
-	~RIFFArchive() {}
+	~RIFFArchive() override {}
 
-	bool openStream(Common::SeekableReadStream *stream, uint32 startOffset = 0);
-	Common::SeekableSubReadStreamEndian *getResource(uint32 tag, uint16 id);
+	bool openStream(Common::SeekableReadStream *stream, uint32 startOffset = 0) override;
+	Common::SeekableReadStreamEndian *getResource(uint32 tag, uint16 id) override;
 
 	uint32 _startOffset;
 };
 
 class RIFXArchive : public Archive {
 public:
-	RIFXArchive() : Archive(){ _isBigEndian = true; }
-	~RIFXArchive() {}
+	RIFXArchive();
+	~RIFXArchive() override;
 
-	bool openStream(Common::SeekableReadStream *stream, uint32 startOffset = 0);
-	Common::SeekableSubReadStreamEndian *getResource(uint32 tag, uint16 id);
-	Resource getResourceDetail(uint32 tag, uint16 id);
+	bool openStream(Common::SeekableReadStream *stream, uint32 startOffset = 0) override;
+	Common::SeekableReadStreamEndian *getFirstResource(uint32 tag) override;
+	virtual Common::SeekableReadStreamEndian *getFirstResource(uint32 tag, bool fileEndianness);
+	Common::SeekableReadStreamEndian *getResource(uint32 tag, uint16 id) override;
+	virtual Common::SeekableReadStreamEndian *getResource(uint32 tag, uint16 id, bool fileEndianness);
+	Resource getResourceDetail(uint32 tag, uint16 id) override;
+
+private:
+	bool readMemoryMap(Common::SeekableReadStreamEndian &stream, uint32 moreOffset);
+	bool readAfterburnerMap(Common::SeekableReadStreamEndian &stream, uint32 moreOffset);
+	void readCast(Common::SeekableReadStreamEndian &casStream);
+	void readKeyTable(Common::SeekableReadStreamEndian &keyStream);
+
+protected:
+	uint32 _rifxType;
+	Common::Array<Resource *> _resources;
+	Common::HashMap<uint32, byte *> _ilsData;
 };
 
 } // End of namespace Director

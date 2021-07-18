@@ -38,6 +38,7 @@ class TabWidget : public Widget {
 	typedef Common::String String;
 	struct Tab {
 		String title;
+		String dialogName;
 		Widget *firstWidget;
 		int _tabWidth;
 	};
@@ -60,11 +61,12 @@ protected:
 
 	ButtonWidget *_navLeft, *_navRight;
 	bool _navButtonsVisible;
+	int _lastRead;
 
 public:
 	TabWidget(GuiObject *boss, int x, int y, int w, int h);
 	TabWidget(GuiObject *boss, const String &name);
-	~TabWidget();
+	~TabWidget() override;
 
 	void init();
 
@@ -72,7 +74,7 @@ public:
 	 * Add a new tab with the given title. Returns a unique ID which can be used
 	 * to identify the tab (to remove it / activate it etc.).
 	 */
-	int addTab(const String &title);
+	int addTab(const String &title, const String &dialogName);
 
 	/**
 	 * Remove the tab with the given tab ID. Disposes all child widgets of that tab.
@@ -101,27 +103,30 @@ public:
 		_tabs[tabID].title = title;
 	}
 
-	virtual void handleMouseDown(int x, int y, int button, int clickCount);
-	virtual bool handleKeyDown(Common::KeyState state);
-	virtual void handleCommand(CommandSender *sender, uint32 cmd, uint32 data);
+	void handleMouseDown(int x, int y, int button, int clickCount) override;
+	void handleMouseMoved(int x, int y, int button) override;
+	void handleMouseLeft(int button) override { _lastRead = -1; };
+	bool handleKeyDown(Common::KeyState state) override;
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
 	virtual int getFirstVisible() const;
 	virtual void setFirstVisible(int tabID, bool adjustIfRoom = false);
 
-	virtual bool containsWidget(Widget *) const;
+	bool containsWidget(Widget *) const override;
 
-	virtual void reflowLayout();
+	void reflowLayout() override;
 
-	virtual void draw();
+	void draw() override;
+	void markAsDirty() override;
 
 protected:
 	// We overload getChildY to make sure child widgets are positioned correctly.
 	// Essentially this compensates for the space taken up by the tab title header.
-	virtual int16 getChildY() const;
-	virtual uint16 getHeight() const;
+	int16 getChildY() const override;
+	uint16 getHeight() const override;
 
-	virtual void drawWidget();
+	void drawWidget() override;
 
-	virtual Widget *findWidget(int x, int y);
+	Widget *findWidget(int x, int y) override;
 
 	virtual void adjustTabs(int value);
 

@@ -24,7 +24,7 @@
 #define BACKENDS_MIXER_SDL_H
 
 #include "backends/platform/sdl/sdl-sys.h"
-#include "audio/mixer_intern.h"
+#include "backends/mixer/mixer.h"
 
 /**
  * SDL mixer manager. It wraps the actual implementation
@@ -32,9 +32,8 @@
  * the SDL audio subsystem and the callback for the
  * audio mixer implementation.
  */
-class SdlMixerManager {
+class SdlMixerManager : public MixerManager {
 public:
-	SdlMixerManager();
 	virtual ~SdlMixerManager();
 
 	/**
@@ -42,12 +41,7 @@ public:
 	 */
 	virtual void init();
 
-	/**
-	 * Get the audio mixer implementation
-	 */
-	Audio::Mixer *getMixer() { return (Audio::Mixer *)_mixer; }
-
-	// Used by LinuxMoto Port
+	// Used by Event recorder
 
 	/**
 	 * Pauses the audio system
@@ -60,17 +54,11 @@ public:
 	virtual int resumeAudio();
 
 protected:
-	/** The mixer implementation */
-	Audio::MixerImpl *_mixer;
-
 	/**
 	 * The obtained audio specification after opening the
 	 * audio system.
 	 */
 	SDL_AudioSpec _obtained;
-
-	/** State of the audio system */
-	bool _audioSuspended;
 
 	/**
 	 * Returns the desired audio specification

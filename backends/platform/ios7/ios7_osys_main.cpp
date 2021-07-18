@@ -35,8 +35,15 @@
 #include "common/rect.h"
 #include "common/file.h"
 #include "common/fs.h"
+#include "common/config-manager.h"
+#include "common/translation.h"
 
 #include "base/main.h"
+
+#include "engines/engine.h"
+#include "engines/metaengine.h"
+
+#include "gui/gui-manager.h"
 
 #include "backends/saves/default/default-saves.h"
 #include "backends/timer/default/default-timer.h"
@@ -111,7 +118,7 @@ OSystem_iOS7::OSystem_iOS7() :
 	_screenOrientation(kScreenOrientationFlippedLandscape), _mouseClickAndDragEnabled(false),
 	_gestureStartX(-1), _gestureStartY(-1), _fullScreenIsDirty(false), _fullScreenOverlayIsDirty(false),
 	_mouseDirty(false), _timeSuspended(0), _lastDragPosX(-1), _lastDragPosY(-1), _screenChangeCount(0),
-	_lastErrorMessage(NULL), _mouseCursorPaletteEnabled(false), _gfxTransactionError(kTransactionSuccess) {
+	_mouseCursorPaletteEnabled(false), _gfxTransactionError(kTransactionSuccess) {
 	_queuedInputEvent.type = Common::EVENT_INVALID;
 	_touchpadModeEnabled = !iOS7_isBigDevice();
 #ifdef IPHONE_SANDBOXED
@@ -158,7 +165,7 @@ void OSystem_iOS7::initBackend() {
 
 	_timerManager = new DefaultTimerManager();
 
-	gettimeofday(&_startTime, NULL);
+	_startTime = CACurrentMediaTime();
 
 	setupMixer();
 
@@ -171,6 +178,10 @@ bool OSystem_iOS7::hasFeature(Feature f) {
 	switch (f) {
 	case kFeatureCursorPalette:
 	case kFeatureFilteringMode:
+	case kFeatureVirtualKeyboard:
+	case kFeatureClipboardSupport:
+	case kFeatureOpenUrl:
+	case kFeatureNoQuit:
 		return true;
 
 	default:
@@ -193,6 +204,9 @@ void OSystem_iOS7::setFeatureState(Feature f, bool enable) {
 	case kFeatureAspectRatioCorrection:
 		_videoContext->asprectRatioCorrection = enable;
 		break;
+	case kFeatureVirtualKeyboard:
+		setShowKeyboard(enable);
+		break;
 
 	default:
 		break;
@@ -207,6 +221,8 @@ bool OSystem_iOS7::getFeatureState(Feature f) {
 		return _videoContext->filtering;
 	case kFeatureAspectRatioCorrection:
 		return _videoContext->asprectRatioCorrection;
+	case kFeatureVirtualKeyboard:
+		return isKeyboardShown();
 
 	default:
 		return false;
@@ -217,13 +233,22 @@ void OSystem_iOS7::suspendLoop() {
 	bool done = false;
 	uint32 startTime = getMillis();
 
+	PauseToken pt;
+	if (g_engine)
+		pt = g_engine->pauseEngine();
+
+	// We also need to stop the audio queue and restart it later in case there
+	// is an audio interruption that render it invalid.
 	stopSoundsystem();
 
 	InternalEvent event;
 	while (!done) {
-		if (iOS7_fetchEvent(&event))
+		if (iOS7_fetchEvent(&event)) {
 			if (event.type == kInputApplicationResumed)
 				done = true;
+			else if (event.type == kInputApplicationSaveState)
+				handleEvent_applicationSaveState();
+		}
 		usleep(100000);
 	}
 
@@ -232,9 +257,63 @@ void OSystem_iOS7::suspendLoop() {
 	_timeSuspended += getMillis() - startTime;
 }
 
+void OSystem_iOS7::saveState() {
+	// Clear any previous restore state to avoid having and obsolete one if we don't save it again below.
+	clearState();
+
+	// If there is an engine running and it accepts autosave, do an autosave and add the current
+	// running target to the config file.
+	if (g_engine && g_engine->hasFeature(Engine::kSupportsSavingDuringRuntime) && g_engine->canSaveAutosaveCurrently()) {
+		Common::String targetName(ConfMan.getActiveDomainName());
+		int saveSlot = g_engine->getAutosaveSlot();
+		// Make sure we do not overwrite a user save
+		SaveStateDescriptor desc = g_engine->getMetaEngine().querySaveMetaInfos(targetName.c_str(), saveSlot);
+		if (desc.getSaveSlot() != -1 && !desc.isAutosave())
+			return;
+
+		// Do the auto-save, and if successful store this it in the config
+		if (g_engine->saveGameState(saveSlot, _("Autosave"), true).getCode() == Common::kNoError) {
+			ConfMan.set("restore_target", targetName, Common::ConfigManager::kApplicationDomain);
+			ConfMan.setInt("restore_slot", saveSlot, Common::ConfigManager::kApplicationDomain);
+			ConfMan.flushToDisk();
+		}
+	}
+}
+
+void OSystem_iOS7::restoreState() {
+	Common::String target;
+	int slot = -1;
+	if (ConfMan.hasKey("restore_target", Common::ConfigManager::kApplicationDomain) &&
+		ConfMan.hasKey("restore_slot", Common::ConfigManager::kApplicationDomain)) {
+		target = ConfMan.get("restore_target", Common::ConfigManager::kApplicationDomain);
+		slot = ConfMan.getInt("restore_slot", Common::ConfigManager::kApplicationDomain);
+		clearState();
+	}
+
+	// If the g_engine is still running (i.e. the application was not terminated) we don't need to do anything.
+	if (g_engine)
+		return;
+
+	if (!target.empty() && slot != -1) {
+		ConfMan.setInt("save_slot", slot, Common::ConfigManager::kTransientDomain);
+		ConfMan.setActiveDomain(target);
+		if (GUI::GuiManager::hasInstance())
+			g_gui.exitLoop();
+	}
+}
+
+void OSystem_iOS7::clearState() {
+	if (ConfMan.hasKey("restore_target", Common::ConfigManager::kApplicationDomain) &&
+	ConfMan.hasKey("restore_slot", Common::ConfigManager::kApplicationDomain)) {
+		ConfMan.removeKey("restore_target", Common::ConfigManager::kApplicationDomain);
+		ConfMan.removeKey("restore_slot", Common::ConfigManager::kApplicationDomain);
+		ConfMan.flushToDisk();
+	}
+}
+
 uint32 OSystem_iOS7::getMillis(bool skipRecord) {
 	CFTimeInterval timeInSeconds = CACurrentMediaTime();
-	return (uint32) (timeInSeconds * 1000.0);
+	return (uint32) ((timeInSeconds - _startTime) * 1000.0) - _timeSuspended;
 }
 
 void OSystem_iOS7::delayMillis(uint msecs) {
@@ -343,25 +422,8 @@ void OSystem_iOS7::addSysArchivesToSearchSet(Common::SearchSet &s, int priority)
 	}
 }
 
-void OSystem_iOS7::logMessage(LogMessageType::Type type, const char *message) {
-	FILE *output = 0;
-
-	if (type == LogMessageType::kInfo || type == LogMessageType::kDebug)
-		output = stdout;
-	else
-		output = stderr;
-
-	if (type == LogMessageType::kError) {
-		free(_lastErrorMessage);
-		_lastErrorMessage = strdup(message);
-	}
-
-	fputs(message, output);
-	fflush(output);
-}
-
 bool iOS7_touchpadModeEnabled() {
-	OSystem_iOS7 *sys = (OSystem_iOS7 *) g_system;
+	OSystem_iOS7 *sys = dynamic_cast<OSystem_iOS7 *>(g_system);
 	return sys && sys->touchpadModeEnabled();
 }
 
@@ -401,4 +463,10 @@ void iOS7_main(int argc, char **argv) {
 	// Invoke the actual ScummVM main entry point:
 	scummvm_main(argc, (const char *const *) argv);
 	g_system->quit();       // TODO: Consider removing / replacing this!
+
+	if (newfp != NULL) {
+		//*stdout = NULL;
+		//*stderr = NULL;
+		fclose(newfp);
+	}
 }

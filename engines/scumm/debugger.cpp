@@ -145,8 +145,8 @@ bool ScummDebugger::Cmd_IMuse(int argc, const char **argv) {
 					debugPrintf("Selecting from %d songs...\n", _vm->_numSounds);
 					sound = _vm->_rnd.getRandomNumber(_vm->_numSounds);
 				}
-				_vm->ensureResourceLoaded(rtSound, sound);
-				_vm->_musicEngine->startSound(sound);
+				if (_vm->getResourceAddress(rtSound, sound))
+					_vm->_musicEngine->startSound(sound);
 
 				debugPrintf("Attempted to start music %d.\n", sound);
 			} else {
@@ -303,12 +303,15 @@ bool ScummDebugger::Cmd_ImportRes(int argc, const char** argv) {
 		if (_vm->_game.features & GF_SMALL_HEADER) {
 			size = file.readUint16LE();
 			file.seek(-2, SEEK_CUR);
-		} else if (_vm->_game.features & GF_SMALL_HEADER) { // FIXME: This never was executed
+#if 0
+		// FIXME: This never was executed due to duplicated if condition
+		} else if (_vm->_game.features & GF_SMALL_HEADER) {
 			if (_vm->_game.version == 4)
 				file.seek(8, SEEK_CUR);
 			size = file.readUint32LE();
 			file.readUint16LE();
 			file.seek(-6, SEEK_CUR);
+#endif
 		} else {
 			file.readUint32BE();
 			size = file.readUint32BE();

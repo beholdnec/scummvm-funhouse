@@ -23,164 +23,93 @@
 #ifndef DIRECTOR_CAST_H
 #define DIRECTOR_CAST_H
 
-#include "common/rect.h"
-#include "common/substream.h"
-#include "director/archive.h"
-#include "graphics/surface.h"
+#include "common/hash-str.h"
+
+namespace Common {
+	class ReadStreamEndian;
+	struct Rect;
+	class SeekableReadStreamEndian;
+}
 
 namespace Director {
 
+class Archive;
+struct CastMemberInfo;
+class CastMember;
+class DirectorEngine;
+class Lingo;
+struct LingoArchive;
+struct Resource;
 class Stxt;
-class CachedMacText;
-
-enum CastType {
-	kCastTypeNull = 0,
-	kCastBitmap = 1,
-	kCastFilmLoop = 2,
-	kCastText = 3,
-	kCastPalette = 4,
-	kCastPicture = 5,
-	kCastSound = 6,
-	kCastButton = 7,
-	kCastShape = 8,
-	kCastMovie = 9,
-	kCastDigitalVideo = 10,
-	kCastLingoScript = 11,
-	kCastRTE = 12
-};
+class BitmapCastMember;
+class ScriptCastMember;
+class ShapeCastMember;
+class TextCastMember;
 
 class Cast {
 public:
-	CastType type;
-	Common::Rect initialRect;
-	Common::Rect boundingRect;
-	Common::Array<Resource> children;
+	Cast(Movie *movie, bool shared = false);
+	~Cast();
 
-	const Graphics::Surface *surface;
+	bool loadArchive();
+	void setArchive(Archive *archive);
+	Archive *getArchive() const { return _castArchive; };
+	Common::String getMacName() const { return _macName; }
 
-	byte modified;
-};
+	void loadConfig(Common::SeekableReadStreamEndian &stream);
+	void loadCastDataVWCR(Common::SeekableReadStreamEndian &stream);
+	void loadCastData(Common::SeekableReadStreamEndian &stream, uint16 id, Resource *res);
+	void loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id);
+	void loadLingoContext(Common::SeekableReadStreamEndian &stream);
 
-class BitmapCast : public Cast {
+	void loadCastChildren();
+	void loadSoundCasts();
+
+	void copyCastStxts();
+	Common::Rect getCastMemberInitialRect(int castId);
+	void setCastMemberModified(int castId);
+	CastMember *getCastMember(int castId);
+	CastMember *getCastMemberByName(const Common::String &name);
+	CastMember *getCastMemberByScriptId(int scriptId);
+	CastMemberInfo *getCastMemberInfo(int castId);
+	const Stxt *getStxt(int castId);
+	Common::String getVideoPath(int castId);
+
+	void dumpScript(const char *script, ScriptType type, uint16 id);
+
+private:
+	PaletteV4 loadPalette(Common::SeekableReadStreamEndian &stream);
+	void loadScriptText(Common::SeekableReadStreamEndian &stream);
+	void loadFontMap(Common::SeekableReadStreamEndian &stream);
+	Common::String getString(Common::String str);
+
 public:
-	BitmapCast(Common::ReadStreamEndian &stream, uint32 castTag, uint16 version = 2);
+	Archive *_castArchive;
+	Common::HashMap<uint16, Common::String> _fontMap;
 
-	uint16 regX;
-	uint16 regY;
-	uint8 flags;
-	uint16 someFlaggyThing;
-	uint16 unk1, unk2;
+	Common::HashMap<int, CastMember *> *_loadedCast;
+	Common::HashMap<int, const Stxt *> *_loadedStxts;
+	uint16 _castIDoffset;
+	uint16 _castArrayStart;
+	uint16 _castArrayEnd;
 
-	uint16 bitsPerPixel;
+	int _defaultPalette;
 
-	uint32 tag;
-};
+	uint16 _movieScriptCount;
+	LingoArchive *_lingoArchive;
 
-enum ShapeType {
-	kShapeRectangle,
-	kShapeRoundRect,
-	kShapeOval,
-	kShapeLine
-};
+private:
+	DirectorEngine *_vm;
+	Lingo *_lingo;
+	Movie *_movie;
 
-class ShapeCast : public Cast {
-public:
-	ShapeCast(Common::ReadStreamEndian &stream, uint16 version = 2);
+	bool _isShared;
 
-	ShapeType shapeType;
-	uint16 pattern;
-	byte fgCol;
-	byte bgCol;
-	byte fillType;
-	byte lineThickness;
-	byte lineDirection;
-};
+	Common::String _macName;
 
-enum TextType {
-	kTextTypeAdjustToFit,
-	kTextTypeScrolling,
-	kTextTypeFixed
-};
-
-enum TextAlignType {
-	kTextAlignRight = -1,
-	kTextAlignLeft,
-	kTextAlignCenter
-};
-
-enum TextFlag {
-	kTextFlagEditable,
-	kTextFlagAutoTab,
-	kTextFlagDoNotWrap
-};
-
-enum SizeType {
-	kSizeNone,
-	kSizeSmallest,
-	kSizeSmall,
-	kSizeMedium,
-	kSizeLarge,
-	kSizeLargest
-};
-
-class TextCast : public Cast {
-public:
-	TextCast(Common::ReadStreamEndian &stream, uint16 version = 2);
-
-	SizeType borderSize;
-	SizeType gutterSize;
-	SizeType boxShadow;
-
-	byte flags1;
-	uint32 fontId;
-	uint16 fontSize;
-	TextType textType;
-	TextAlignType textAlign;
-	SizeType textShadow;
-	byte textSlant;
-	Common::Array<TextFlag> textFlags;
-	uint16 palinfo1, palinfo2, palinfo3;
-
-	Common::String _ftext;
-	void importStxt(const Stxt *stxt);
-	void importRTE(byte* text);
-	CachedMacText *cachedMacText;
-};
-
-enum ButtonType {
-	kTypeButton,
-	kTypeCheckBox,
-	kTypeRadio
-};
-
-class ButtonCast : public TextCast {
-public:
-	ButtonCast(Common::ReadStreamEndian &stream, uint16 version = 2);
-
-	ButtonType buttonType;
-};
-
-class ScriptCast : public Cast {
-public:
-	ScriptCast(Common::ReadStreamEndian &stream, uint16 version = 2);
-
-	uint32 id;
-};
-
-
-
-struct CastInfo {
-	Common::String script;
-	Common::String name;
-	Common::String directory;
-	Common::String fileName;
-	Common::String type;
-};
-
-struct Label {
-	Common::String name;
-	uint16 number;
-	Label(Common::String name1, uint16 number1) { name = name1; number = number1; }
+	Common::HashMap<uint16, CastMemberInfo *> _castsInfo;
+	Common::HashMap<Common::String, int, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> _castsNames;
+	Common::HashMap<uint16, int> _castsScriptIds;
 };
 
 } // End of namespace Director

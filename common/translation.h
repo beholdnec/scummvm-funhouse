@@ -28,6 +28,7 @@
 #include "common/str.h"
 #include "common/singleton.h"
 #include "common/str-array.h"
+#include "common/language.h"
 
 #ifdef USE_TRANSLATION
 
@@ -44,7 +45,7 @@ struct TLanguage {
 	const char *name;
 	int id;
 
-	TLanguage() : name(0), id(0) {}
+	TLanguage() : name(nullptr), id(0) {}
 	TLanguage(const char *n, int i) : name(n), id(i) {}
 };
 
@@ -173,6 +174,13 @@ public:
 	 * Returns currently selected translation language
 	 */
 	String getCurrentLanguage() const;
+
+	/*
+	 * Wrapper for GNU FriBidi implementation of the Unicode Bidirectional Algorithm
+	 * For LTR (Left To Right) languages, returns the original input
+	 * For RTL (Right To Left) languages, returns visual representation of a logical single-line input
+	 */
+	String convertBiDiString(const String &input);
 
 private:
 	/**

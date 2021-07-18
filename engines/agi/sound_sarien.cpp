@@ -237,7 +237,7 @@ void SoundGenSarien::playSound() {
 }
 
 uint32 SoundGenSarien::mixSound() {
-	register int i, p;
+	int i, p;
 	const int16 *src;
 	int c, b, m;
 
@@ -311,6 +311,9 @@ uint32 SoundGenSarien::mixSound() {
 			} else {
 				_chn[c].env = 0;
 			}
+			break;
+		default:
+			break;
 		}
 	}
 

@@ -34,7 +34,7 @@ namespace Titanic {
 
 class CStarField;
 class CStarMarkers;
-class CStarCamera;
+class CCamera;
 class SimpleFile;
 
 class CStarCrosshairs {
@@ -78,14 +78,18 @@ public:
 
 	void draw(CSurfaceArea *surfaceArea);
 
-	bool fn1(CStarField *starField, CSurfaceArea *surfaceArea, CStarCamera *camera);
-	void fn2(CVideoSurface *surface, CStarField *starField, CStarMarkers *markers);
-	
+	bool fn1(CStarField *starField, CSurfaceArea *surfaceArea, CCamera *camera);
+
 	/**
-	 * Increments the index for the number of matches
+	 * Increments the number of matches
 	 */
 	void incMatches();
-	
+
+	/**
+	 * Decrements the number of matches
+	 */
+	void decMatches(CVideoSurface *surface, CStarField *starField, CStarMarkers *markers);
+
 	/**
 	 * Draw the crosshairs for a given star
 	 */
@@ -101,12 +105,12 @@ public:
 	 * Erase crosshairs for the most recently selected star
 	 */
 	void eraseCurrent(CSurfaceArea *surfaceArea);
-	
+
 	/**
 	 * Draw crosshairs at the given position
 	 */
 	void drawAt(const FPoint &pt, CSurfaceArea *surfaceArea);
-	
+
 	/**
 	 * Returns the position of the most recently selected star
 	 */

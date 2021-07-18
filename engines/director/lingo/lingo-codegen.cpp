@@ -43,280 +43,169 @@
 // ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 // THIS SOFTWARE.
 
-#include "director/lingo/lingo.h"
-#include "common/file.h"
-#include "audio/decoders/wave.h"
+#include "common/endian.h"
 
+#include "director/director.h"
+#include "director/lingo/lingo.h"
+#include "director/lingo/lingo-code.h"
+#include "director/lingo/lingo-object.h"
 #include "director/lingo/lingo-gr.h"
-#include "director/util.h"
 
 namespace Director {
-
-void Lingo::execute(uint pc) {
-	for(_pc = pc; (*_currentScript)[_pc] != STOP && !_returning;) {
-		Common::String instr = decodeInstruction(_pc);
-
-		if (debugChannelSet(5, kDebugLingoExec))
-			printStack("Stack before: ");
-
-		debugC(1, kDebugLingoExec, "[%3d]: %s", _pc, instr.c_str());
-
-		_pc++;
-		(*((*_currentScript)[_pc - 1]))();
-
-		if (debugChannelSet(5, kDebugLingoExec))
-			printStack("Stack after: ");
-	}
-}
-
-void Lingo::printStack(const char *s) {
-	Common::String stack(s);
-
-	for (uint i = 0; i < _stack.size(); i++) {
-		Datum d = _stack[i];
-		d.toString();
-		stack += Common::String::format("<%s> ", d.u.s->c_str());
-	}
-	debugC(5, kDebugLingoExec, "%s", stack.c_str());
-}
-
-Common::String Lingo::decodeInstruction(uint pc, uint *newPc) {
-	Symbol sym;
-	Common::String res;
-
-	sym.u.func = (*_currentScript)[pc++];
-	if (_functions.contains((void *)sym.u.s)) {
-		res = _functions[(void *)sym.u.s]->name;
-		const char *pars = _functions[(void *)sym.u.s]->proto;
-		inst i;
-
-		while (*pars) {
-			switch (*pars++) {
-			case 'i':
-				{
-					i = (*_currentScript)[pc++];
-					int v = READ_UINT32(&i);
-
-					res += Common::String::format(" %d", v);
-					break;
-				}
-			case 'f':
-				{
-					Datum d;
-					i = (*_currentScript)[pc++];
-					d.u.f = *(double *)(&i);
-
-					res += Common::String::format(" %f", d.u.f);
-					break;
-				}
-			case 'o':
-				{
-					i = (*_currentScript)[pc++];
-					int v = READ_UINT32(&i);
-
-					res += Common::String::format(" [%5d]", v);
-					break;
-				}
-			case 's':
-				{
-					char *s = (char *)&(*_currentScript)[pc];
-					pc += calcStringAlignment(s);
-
-					res += Common::String::format(" \"%s\"", s);
-					break;
-				}
-			default:
-				warning("decodeInstruction: Unknown parameter type: %c", pars[-1]);
-			}
-
-			if (*pars)
-				res += ',';
-		}
-	} else {
-		res = "<unknown>";
-	}
-
-	if (newPc)
-		*newPc = pc;
-
-	return res;
-}
-
-Symbol *Lingo::lookupVar(const char *name, bool create, bool putInGlobalList) {
-	Symbol *sym = nullptr;
-
-	// Looking for the cast member constants
-	if (_vm->getVersion() < 4) { // TODO: There could be a flag 'Allow Outdated Lingo' in Movie Info in D4
-		int val = castNumToNum(name);
-
-		if (val != -1) {
-			if (!create)
-				error("Cast reference used in wrong context: %s", name);
-
-			sym = new Symbol;
-
-			sym->type = CASTREF;
-			sym->u.i = val;
-
-			return sym;
-		}
-	}
-
-	if (!_localvars || !_localvars->contains(name)) { // Create variable if it was not defined
-		// Check if it is a global symbol
-		if (_globalvars.contains(name) && _globalvars[name]->type == SYMBOL)
-			return _globalvars[name];
-
-		if (!create)
-			return NULL;
-
-		sym = new Symbol;
-		sym->name = name;
-		sym->type = VOID;
-		sym->u.i = 0;
-
-		if (_localvars)
-			(*_localvars)[name] = sym;
-
-		if (putInGlobalList) {
-			sym->global = true;
-			_globalvars[name] = sym;
-		}
-	} else {
-		sym = (*_localvars)[name];
-
-		if (sym->global)
-			sym = _globalvars[name];
-	}
-
-	return sym;
-}
 
 void Lingo::cleanLocalVars() {
 	// Clean up current scope local variables and clean up memory
 	debugC(3, kDebugLingoExec, "cleanLocalVars: have %d vars", _localvars->size());
 
-	for (SymbolHash::const_iterator h = _localvars->begin(); h != _localvars->end(); ++h) {
-		if (!h->_value->global) {
-			delete h->_value;
-		}
-	}
-
+	g_lingo->_localvars->clear();
 	delete g_lingo->_localvars;
 
-	g_lingo->_localvars = 0;
+	g_lingo->_localvars = nullptr;
 }
 
-void Lingo::define(Common::String &name, int start, int nargs, Common::String *prefix, int end) {
-	if (prefix)
-		name = *prefix + "-" + name;
+Symbol ScriptContext::define(Common::String &name, int nargs, ScriptData *code, Common::Array<Common::String> *argNames, Common::Array<Common::String> *varNames) {
+	Symbol sym;
+	sym.name = new Common::String(name);
+	sym.type = HANDLER;
+	sym.u.defn = code;
+	sym.nargs = nargs;
+	sym.maxArgs = nargs;
+	sym.argNames = argNames;
+	sym.varNames = varNames;
+	sym.ctx = this;
+	sym.archive = _archive;
 
-	debugC(1, kDebugLingoCompile, "define(\"%s\", %d, %d, %d)", name.c_str(), start, _currentScript->size() - 1, nargs);
-
-	Symbol *sym = getHandler(name);
-	if (sym == NULL) { // Create variable if it was not defined
-		sym = new Symbol;
-
-		sym->name = name;
-		sym->type = HANDLER;
-
-		if (!_eventHandlerTypeIds.contains(name)) {
-			_builtins[name] = sym;
-		} else {
-			_handlers[ENTITY_INDEX(_eventHandlerTypeIds[name.c_str()], _currentEntityId)] = sym;
+	if (debugChannelSet(1, kDebugCompile)) {
+		uint pc = 0;
+		while (pc < sym.u.defn->size()) {
+			uint spc = pc;
+			Common::String instr = g_lingo->decodeInstruction(_archive, sym.u.defn, pc, &pc);
+			debugC(1, kDebugCompile, "[%5d] %s", spc, instr.c_str());
 		}
-	} else {
-		// we don't want to be here. The getHandler call should have used the EntityId and the result
-		// should have been unique!
-		warning("Redefining handler '%s'", name.c_str());
-		delete sym->u.defn;
+		debugC(1, kDebugCompile, "<end define code>");
 	}
 
-	if (end == -1)
-		end = _currentScript->size();
+	if (!g_lingo->_eventHandlerTypeIds.contains(name)) {
+		_functionHandlers[name] = sym;
+		if (_scriptType == kMovieScript && _archive && !_archive->functionHandlers.contains(name)) {
+			_archive->functionHandlers[name] = sym;
+		}
+	} else {
+		_eventHandlers[g_lingo->_eventHandlerTypeIds[name]] = sym;
+	}
 
-	sym->u.defn = new ScriptData(&(*_currentScript)[start], end - start + 1);
-	sym->nargs = nargs;
-	sym->maxArgs = nargs;
+	return sym;
+}
+
+Symbol Lingo::codeDefine(Common::String &name, int start, int nargs, int end, bool removeCode) {
+	if (debugChannelSet(-1, kDebugFewFramesOnly) || debugChannelSet(1, kDebugCompile))
+		debug("codeDefine(\"%s\"(len: %d), %d, %d, %d)",
+			name.c_str(), _currentAssembly->size() - 1, start, nargs, end);
+
+	if (end == -1)
+		end = _currentAssembly->size();
+
+	ScriptData *code = new ScriptData(&(*_currentAssembly)[start], end - start);
+	Common::Array<Common::String> *argNames = new Common::Array<Common::String>;
+	for (uint i = 0; i < _argstack.size(); i++) {
+		argNames->push_back(Common::String(_argstack[i]->c_str()));
+	}
+	Common::Array<Common::String> *varNames = new Common::Array<Common::String>;
+	for (Common::HashMap<Common::String, VarType, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo>::iterator it = _methodVars->begin(); it != _methodVars->end(); ++it) {
+		if (it->_value == kVarLocal)
+			varNames->push_back(Common::String(it->_key));
+	}
+
+	Symbol sym = _assemblyContext->define(name, nargs, code, argNames, varNames);
+
+	if (debugChannelSet(1, kDebugCompile)) {
+		debug("Function vars");
+		debugN("  Args: ");
+		for (uint i = 0; i < argNames->size(); i++) {
+			debugN("%s, ", (*argNames)[i].c_str());
+		}
+		debugN("\n");
+		debugN("  Local vars: ");
+		for (uint i = 0; i < varNames->size(); i++) {
+			debugN("%s, ", (*varNames)[i].c_str());
+		}
+		debugN("\n");
+	}
+
+	// Now remove all defined code from the _currentAssembly
+	if (removeCode)
+		for (int i = end - 1; i >= start; i--) {
+			_currentAssembly->remove_at(i);
+		}
+
+	return sym;
 }
 
 int Lingo::codeString(const char *str) {
 	int numInsts = calcStringAlignment(str);
 
 	// Where we copy the string over
-	int pos = _currentScript->size();
+	int pos = _currentAssembly->size();
 
 	// Allocate needed space in script
 	for (int i = 0; i < numInsts; i++)
-		_currentScript->push_back(0);
+		_currentAssembly->push_back(0);
 
-	byte *dst = (byte *)&_currentScript->front() + pos * sizeof(inst);
+	byte *dst = (byte *)&_currentAssembly->front() + pos * sizeof(inst);
 
 	memcpy(dst, str, strlen(str) + 1);
 
-	return _currentScript->size();
+	return _currentAssembly->size();
 }
 
 int Lingo::codeFloat(double f) {
 	int numInsts = calcCodeAlignment(sizeof(double));
 
 	// Where we copy the string over
-	int pos = _currentScript->size();
+	int pos = _currentAssembly->size();
 
 	// Allocate needed space in script
 	for (int i = 0; i < numInsts; i++)
-		_currentScript->push_back(0);
+		_currentAssembly->push_back(0);
 
-	double *dst = (double *)((byte *)&_currentScript->front() + pos * sizeof(inst));
+	double *dst = (double *)((byte *)&_currentAssembly->front() + pos * sizeof(inst));
 
 	*dst = f;
 
-	return _currentScript->size();
+	return _currentAssembly->size();
 }
 
-int Lingo::codeConst(int val) {
-	int res = g_lingo->code1(g_lingo->c_constpush);
+int Lingo::codeInt(int val) {
 	inst i = 0;
 	WRITE_UINT32(&i, val);
 	g_lingo->code1(i);
 
-	return res;
+	return _currentAssembly->size();
 }
 
-int Lingo::codeArray(int arraySize) {
-	int res = g_lingo->code1(g_lingo->c_arraypush);
-	inst i = 0;
-	WRITE_UINT32(&i, arraySize);
-	g_lingo->code1(i);
+bool Lingo::isInArgStack(Common::String *s) {
+	for (uint i = 0; i < _argstack.size(); i++)
+		if (_argstack[i]->equalsIgnoreCase(*s))
+			return true;
 
-	return res;
+	return false;
 }
 
 void Lingo::codeArg(Common::String *s) {
-	_argstack.push_back(s);
+	_argstack.push_back(new Common::String(*s));
 }
 
-void Lingo::codeArgStore() {
-	while (true) {
-		if (_argstack.empty()) {
-			break;
-		}
+void Lingo::clearArgStack() {
+	for (uint i = 0; i < _argstack.size(); i++)
+		delete _argstack[i];
 
-		Common::String *arg = _argstack.back();
-		_argstack.pop_back();
-
-		code1(c_varpush);
-		codeString(arg->c_str());
-		code1(c_assign);
-
-		delete arg;
-	}
+	_argstack.clear();
 }
 
 int Lingo::codeSetImmediate(bool state) {
 	g_lingo->_immediateMode = state;
 
-	int res = g_lingo->code1(g_lingo->c_setImmediate);
+	int res = g_lingo->code1(LC::c_setImmediate);
 	inst i = 0;
 	WRITE_UINT32(&i, state);
 	g_lingo->code1(i);
@@ -324,8 +213,16 @@ int Lingo::codeSetImmediate(bool state) {
 	return res;
 }
 
-int Lingo::codeFunc(Common::String *s, int numpar) {
-	int ret = g_lingo->code1(g_lingo->c_call);
+int Lingo::codeCmd(Common::String *s, int numpar) {
+	// Insert current line number to our asserts
+	if (s->equalsIgnoreCase("scummvmAssert") || s->equalsIgnoreCase("scummvmAssertEqual")) {
+		g_lingo->code1(LC::c_intpush);
+		g_lingo->codeInt(g_lingo->_linenumber);
+
+		numpar++;
+	}
+
+	int ret = g_lingo->code1(LC::c_callcmd);
 
 	g_lingo->codeString(s->c_str());
 
@@ -336,15 +233,10 @@ int Lingo::codeFunc(Common::String *s, int numpar) {
 	return ret;
 }
 
-int Lingo::codeMe(Common::String *method, int numpar) {
-	int ret = g_lingo->code1(g_lingo->c_call);
+int Lingo::codeFunc(Common::String *s, int numpar) {
+	int ret = g_lingo->code1(LC::c_callfunc);
 
-	Common::String m(g_lingo->_currentFactory);
-
-	m += '-';
-	m += *method;
-
-	g_lingo->codeString(m.c_str());
+	g_lingo->codeString(s->c_str());
 
 	inst num = 0;
 	WRITE_UINT32(&num, numpar);
@@ -355,17 +247,17 @@ int Lingo::codeMe(Common::String *method, int numpar) {
 
 void Lingo::codeLabel(int label) {
 	_labelstack.push_back(label);
+	debugC(4, kDebugCompile, "codeLabel: Added label %d", label);
 }
 
-void Lingo::processIf(int elselabel, int endlabel) {
-	inst ielse1, iend;
-	int  else1 = elselabel;
+void Lingo::processIf(int toplabel, int endlabel) {
+	inst iend;
 
-	WRITE_UINT32(&iend, endlabel);
+	debugC(4, kDebugCompile, "processIf(%d, %d)", toplabel, endlabel);
 
 	while (true) {
 		if (_labelstack.empty()) {
-			warning("Label stack underflow");
+			warning("Lingo::processIf(): Label stack underflow");
 			break;
 		}
 
@@ -376,30 +268,52 @@ void Lingo::processIf(int elselabel, int endlabel) {
 		if (!label)
 			break;
 
-		if (else1)
-			else1 = else1 - label;
+		debugC(4, kDebugCompile, "processIf: label at %d", label);
 
-		WRITE_UINT32(&ielse1, else1);
-		(*_currentScript)[label + 2] = ielse1;    /* elsepart */
-		(*_currentScript)[label + 3] = iend;      /* end, if cond fails */
+		WRITE_UINT32(&iend, endlabel - label + 1);
 
-		else1 = label;
+		(*_currentAssembly)[label] = iend;	/* end, if cond fails */
+	}
+}
+
+void Lingo::varCreate(const Common::String &name, bool global, DatumHash *localvars) {
+	if (localvars == nullptr) {
+		localvars = _localvars;
+	}
+
+	if (localvars && localvars->contains(name)) {
+		if (global)
+			warning("varCreate: variable %s is local, not global", name.c_str());
+		return;
+	} else if (_currentMe.type == OBJECT && _currentMe.u.obj->hasProp(name)) {
+		if (global)
+			warning("varCreate: variable %s is instance or property, not global", name.c_str());
+		return;
+	} else if (_globalvars.contains(name)) {
+		if (!global)
+			warning("varCreate: variable %s is global, not local", name.c_str());
+		return;
+	}
+
+	if (global) {
+		_globalvars[name] = Datum();
+		_globalvars[name].type = INT;
+		_globalvars[name].u.i = 0;
+	} else {
+		(*localvars)[name] = Datum();
 	}
 }
 
 void Lingo::codeFactory(Common::String &name) {
-	_currentFactory = name;
-
-	Symbol *sym = new Symbol;
-
-	sym->name = name;
-	sym->type = BLTIN;
-	sym->nargs = -1;
-	sym->maxArgs = 0;
-	sym->parens = true;
-	sym->u.bltin = g_lingo->b_factory;
-
-	_handlers[ENTITY_INDEX(_eventHandlerTypeIds[name.c_str()], _currentEntityId)] = sym;
+	// FIXME: The factory's context should not be tied to the LingoArchive
+	// but bytecode needs it to resolve names
+	_assemblyContext->setName(name);
+	_assemblyContext->setFactory(true);
+	if (!_globalvars.contains(name)) {
+		_globalvars[name] = _assemblyContext;
+	} else {
+		warning("Factory '%s' already defined", name.c_str());
+	}
 }
 
-}
+} // End of namespace Director

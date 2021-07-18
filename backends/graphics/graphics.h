@@ -42,17 +42,28 @@ public:
 	virtual void setFeatureState(OSystem::Feature f, bool enable) = 0;
 	virtual bool getFeatureState(OSystem::Feature f) const = 0;
 
-	virtual const OSystem::GraphicsMode *getSupportedGraphicsModes() const = 0;
-	virtual int getDefaultGraphicsMode() const = 0;
-	virtual bool setGraphicsMode(int mode) = 0;
-	virtual void resetGraphicsScale() = 0;
-	virtual int getGraphicsMode() const = 0;
+	virtual const OSystem::GraphicsMode *getSupportedGraphicsModes() const {
+		static const OSystem::GraphicsMode noGraphicsModes[] = {{"NONE", "Normal", 0}, {nullptr, nullptr, 0 }};
+		return noGraphicsModes;
+	};
+	virtual int getDefaultGraphicsMode() const { return 0; }
+	virtual bool setGraphicsMode(int mode) { return (mode == 0); }
+	virtual void resetGraphicsScale() {}
+	virtual int getGraphicsMode() const { return 0; }
 	virtual const OSystem::GraphicsMode *getSupportedShaders() const {
 		static const OSystem::GraphicsMode no_shader[2] = {{"NONE", "Normal (no shader)", 0}, {0, 0, 0}};
 		return no_shader;
 	};
+	virtual int getDefaultShader() const { return 0; }
 	virtual bool setShader(int id) { return false; }
 	virtual int getShader() const { return 0; }
+	virtual const OSystem::GraphicsMode *getSupportedStretchModes() const {
+		static const OSystem::GraphicsMode noStretchModes[] = {{"NONE", "Normal", 0}, {nullptr, nullptr, 0 }};
+		return noStretchModes;
+	}
+	virtual int getDefaultStretchMode() const { return 0; }
+	virtual bool setStretchMode(int mode) { return false; }
+	virtual int getStretchMode() const { return 0; }
 
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const = 0;
@@ -74,7 +85,7 @@ public:
 	virtual void unlockScreen() = 0;
 	virtual void fillScreen(uint32 col) = 0;
 	virtual void updateScreen() = 0;
-	virtual void setShakePos(int shakeOffset) = 0;
+	virtual void setShakePos(int shakeXOffset, int shakeYOffset) = 0;
 	virtual void setFocusRectangle(const Common::Rect& rect) = 0;
 	virtual void clearFocusRectangle() = 0;
 

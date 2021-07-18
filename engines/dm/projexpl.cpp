@@ -193,6 +193,8 @@ bool ProjExpl::hasProjectileImpactOccurred(int16 impactType, int16 mapXCombo, in
 		}
 		}
 		break;
+	default:
+		break;
 	}
 	if (championAttack && _projectilePoisonAttack && _vm->getRandomNumber(2)
 	&& _vm->_championMan->addPendingDamageAndWounds_getDamage(championIndex, attack, kDMWoundHead | kDMWoundTorso, _projectileAttackType))
@@ -482,6 +484,7 @@ void ProjExpl::processEvent25(TimelineEvent *event) {
 	CreatureInfo *creatureInfo = nullptr;
 
 	CreatureType creatureType;
+	creatureType = kDMCreatureTypeGiantScorpion; // Value of 0 as default to avoid possible uninitialized usage
 	if (groupThing != _vm->_thingEndOfList) {
 		group = (Group *)_vm->_dungeonMan->getThingData(groupThing);
 		creatureType = group->_type;
@@ -503,10 +506,10 @@ void ProjExpl::processEvent25(TimelineEvent *event) {
 	case 0xFF82:
 		if (!(attack >>= 1))
 			break;
+		// fall through
 	case 0xFF80:
 		if (curSquareType == kDMElementTypeDoor)
 			_vm->_groupMan->groupIsDoorDestoryedByAttack(mapX, mapY, attack, true, 0);
-
 		break;
 	case 0xFF83:
 		if ((groupThing != _vm->_thingEndOfList) && getFlag(creatureInfo->_attributes, kDMCreatureMaskNonMaterial)) {
@@ -548,6 +551,8 @@ void ProjExpl::processEvent25(TimelineEvent *event) {
 			explosion->setAttack(explosion->getAttack() - 3);
 			AddEventFl = true;
 		}
+		break;
+	default:
 		break;
 	}
 	if (AddEventFl) {

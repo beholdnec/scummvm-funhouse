@@ -38,6 +38,21 @@ SdlWindow::SdlWindow()
 	_lastFlags(0), _lastX(SDL_WINDOWPOS_UNDEFINED), _lastY(SDL_WINDOWPOS_UNDEFINED)
 #endif
 	{
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#elif SDL_VERSION_ATLEAST(1, 2, 10)
+	// Query the desktop resolution. We simply hope nothing tried to change
+	// the resolution so far.
+	const SDL_VideoInfo *videoInfo = SDL_GetVideoInfo();
+	if (videoInfo && videoInfo->current_w > 0 && videoInfo->current_h > 0) {
+		_desktopRes = Common::Rect(videoInfo->current_w, videoInfo->current_h);
+	}
+#elif defined(MAEMO)
+	// All supported Maemo devices have a display resolution of 800x480
+	_desktopRes = Common::Rect(800, 480);
+#else
+#error Unable to detect screen resolution
+#endif
 }
 
 SdlWindow::~SdlWindow() {
@@ -47,6 +62,7 @@ SdlWindow::~SdlWindow() {
 }
 
 void SdlWindow::setupIcon() {
+#ifndef __MORPHOS__
 	int x, y, w, h, ncols, nbytes, i;
 	unsigned int rgba[256];
 	unsigned int *icon;
@@ -78,6 +94,8 @@ void SdlWindow::setupIcon() {
 			col = 0x00000000;
 		else if (!strcmp(color, "black"))
 			col = 0xFF000000;
+		else if (!strcmp(color, "gray20"))
+			col = 0xFF333333;
 		else if (color[0] == '#') {
 			if (sscanf(color + 1, "%06x", &col) != 1) {
 				warning("Wrong format of color (%s)", color + 1);
@@ -113,6 +131,7 @@ void SdlWindow::setupIcon() {
 
 	SDL_FreeSurface(sdl_surf);
 	free(icon);
+#endif
 }
 
 void SdlWindow::setWindowCaption(const Common::String &caption) {
@@ -184,11 +203,26 @@ void SdlWindow::iconifyWindow() {
 bool SdlWindow::getSDLWMInformation(SDL_SysWMinfo *info) const {
 	SDL_VERSION(&info->version);
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	return SDL_GetWindowWMInfo(_window, info);
-#else
+	return _window ? (SDL_GetWindowWMInfo(_window, info) == SDL_TRUE) : false;
+#elif !defined(__MORPHOS__)
 	return SDL_GetWMInfo(info);
+#else
+	return false;
 #endif
 }
+
+Common::Rect SdlWindow::getDesktopResolution() {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	int displayIndex = _window ? SDL_GetWindowDisplayIndex(_window) : 0;
+	SDL_DisplayMode displayMode;
+	if (!SDL_GetDesktopDisplayMode(displayIndex, &displayMode)) {
+		_desktopRes = Common::Rect(displayMode.w, displayMode.h);
+	}
+#endif
+
+	return _desktopRes;
+}
+
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 SDL_Surface *copySDLSurface(SDL_Surface *src) {

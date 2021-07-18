@@ -49,12 +49,27 @@ template<typename T> inline T ABS(T x)		{ return (x >= 0) ? x : -x; }
 template<typename T> inline T MIN(T a, T b)	{ return (a < b) ? a : b; }
 template<typename T> inline T MAX(T a, T b)	{ return (a > b) ? a : b; }
 template<typename T> inline T CLIP(T v, T amin, T amax)
-		{ if (v < amin) return amin; else if (v > amax) return amax; else return v; }
+	{
+#if !defined(RELEASE_BUILD)
+		// debug builds use this assert to pinpoint
+		// any problematic cases, where amin and amax
+		// are incorrectly ordered
+		// and thus CLIP() would return an invalid result
+		assert(amin <= amax);
+#endif
+		if (v < amin) return amin;
+		else if (v > amax) return amax;
+		return v;
+	}
 
 /**
- * Template method which swaps the vaulues of its two parameters.
+ * Template method which swaps the values of its two parameters.
  */
 template<typename T> inline void SWAP(T &a, T &b) { T tmp = a; a = b; b = tmp; }
+
+#ifdef ARRAYSIZE
+#undef ARRAYSIZE
+#endif
 
 /**
  * Macro which determines the number of entries in a fixed size array.
@@ -123,7 +138,7 @@ bool isAlnum(int c);
  * false is returned.
  *
  * @param c		the character to test
- * @return		true if the character is TODO, false otherwise.
+ * @return		true if the character is alphabetic, false otherwise.
  */
 bool isAlpha(int c);
 
@@ -136,6 +151,16 @@ bool isAlpha(int c);
  * @return		true if the character is a decimal-digit, false otherwise.
  */
 bool isDigit(int c);
+
+/**
+ * Test whether the given character is a hwzadecimal-digit (0-9 or A-F).
+ * If the parameter is outside the range of a signed or unsigned char, then
+ * false is returned.
+ *
+ * @param c		the character to test
+ * @return		true if the character is a hexadecimal-digit, false otherwise.
+ */
+bool isXDigit(int c);
 
 /**
  * Test whether the given character is a lower-case letter (a-z).
@@ -181,15 +206,42 @@ bool isUpper(int c);
  */
 bool isPrint(int c);
 
-
 /**
  * Test whether the given character is a punctuation character,
- * (i.e not alphanumeric.
+ * (i.e. not alphanumeric).
  *
  * @param c		the character to test
  * @return		true if the character is punctuation, false otherwise.
  */
 bool isPunct(int c);
+
+/**
+ * Test whether the given character is a control character.
+ *
+ * @param c		the character to test
+ * @return		true if the character is a control character, false otherwise.
+ */
+bool isCntrl(int c);
+
+/**
+ * Test whether the given character has a graphical representation.
+ *
+ * @param c		the character to test
+ * @return		true if the character is a graphic, false otherwise.
+ */
+bool isGraph(int c);
+
+
+/**
+ * Represent bytes size of a file as a number with floating point and
+ * largest suitable units. For example, 1474560 bytes as 1.4 MB.
+ * 
+ * @param bytes		size in bytes to be represented
+ * @param unitsOut	(out-parameter) string with units
+ * @note			use _() to translate units correctly
+ * @return			string with a floating point number representing given size
+ */
+Common::String getHumanReadableBytes(uint64 bytes, Common::String &unitsOut);
 
 } // End of namespace Common
 

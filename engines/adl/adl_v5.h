@@ -29,22 +29,25 @@ namespace Adl {
 
 class AdlEngine_v5 : public AdlEngine_v4 {
 public:
-	virtual ~AdlEngine_v5() { }
+	~AdlEngine_v5() override { }
 
 protected:
 	AdlEngine_v5(OSystem *syst, const AdlGameDescription *gd);
 
-	// AdlEngine_v4
-	virtual RegionChunkType getRegionChunkType(const uint16 addr) const;
-	virtual void initRoomState(RoomState &roomState) const;
-	virtual byte restoreRoomState(byte room);
+	// AdlEngine
+	void setupOpcodeTables() override;
 
-	int o5_isNounNotInRoom(ScriptEnv &e);
-	int o5_abortScript(ScriptEnv &e);
-	int o5_dummy(ScriptEnv &e);
-	int o5_setTextMode(ScriptEnv &e);
-	int o5_setRegionRoom(ScriptEnv &e);
-	int o5_setRoomPic(ScriptEnv &e);
+	// AdlEngine_v4
+	RegionChunkType getRegionChunkType(const uint16 addr) const override;
+	void initRoomState(RoomState &roomState) const override;
+	byte restoreRoomState(byte room) override;
+
+	int o_isNounNotInRoom(ScriptEnv &e) override;
+	virtual int o_abortScript(ScriptEnv &e);
+	virtual int o_dummy(ScriptEnv &e);
+	virtual int o_setTextMode(ScriptEnv &e);
+	int o_setRegionRoom(ScriptEnv &e) override;
+	int o_setRoomPic(ScriptEnv &e) override;
 };
 
 } // End of namespace Adl

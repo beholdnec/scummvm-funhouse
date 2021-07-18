@@ -83,18 +83,6 @@ enum VideoFlags {
 	kStretch         = 1 << 8
 };
 
-struct VideoState {
-	Common::String fileName;
-	uint16 x;
-	uint16 y;
-	uint16 flags;
-
-	void reset() {
-		fileName = "";
-		x = y = flags = 0;
-	}
-};
-
 /**
  * Trace information about a VM function call.
  */
@@ -113,9 +101,9 @@ struct SciCallOrigin {
 struct EngineState : public Common::Serializable {
 public:
 	EngineState(SegManager *segMan);
-	virtual ~EngineState();
+	~EngineState() override;
 
-	virtual void saveLoadWithSerializer(Common::Serializer &ser);
+	void saveLoadWithSerializer(Common::Serializer &ser) override;
 
 public:
 	SegManager *_segMan; /**< The segment manager */
@@ -126,7 +114,8 @@ public:
 	uint32 _screenUpdateTime;	/**< The last time the game updated the screen */
 
 	void speedThrottler(uint32 neededSleep);
-	int wait(int16 ticks);
+	uint16 wait(uint16 ticks);
+	void sleep(uint16 ticks);
 
 #ifdef ENABLE_SCI32
 	uint32 _eventCounter; /**< total times kGetEvent was invoked since the last call to kFrameOut */
@@ -146,6 +135,10 @@ public:
 
 	// see detection.cpp / SciEngine::loadGameState()
 	int _delayedRestoreGameId; // the saved game id, that it supposed to get restored (triggered by ScummVM menu)
+
+	// see kmisc.cpp / kMacPlatform32
+	int _kq7MacSaveGameId; // the saved game id to use when saving (might not exist yet)
+	Common::String _kq7MacSaveGameDescription; // description to use when saving game
 
 	uint _chosenQfGImportItem; // Remembers the item selected in QfG import rooms
 
@@ -211,9 +204,6 @@ public:
 	};
 	uint16 _memorySegmentSize;
 	byte _memorySegment[kMemorySegmentMax];
-
-	// TODO: Excise video code from the state manager
-	VideoState _videoState;
 
 	/**
 	 * Resets the engine state.

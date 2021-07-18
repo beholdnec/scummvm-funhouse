@@ -35,12 +35,20 @@
 
 namespace Avalanche {
 
+struct AvalancheGameDescription {
+	ADGameDescription desc;
+};
+
 uint32 AvalancheEngine::getFeatures() const {
 	return _gameDescription->desc.flags;
 }
 
 const char *AvalancheEngine::getGameId() const {
 	return _gameDescription->desc.gameId;
+}
+
+Common::Platform AvalancheEngine::getPlatform() const {
+	return _gameDescription->desc.platform;
 }
 
 static const PlainGameDescriptor avalancheGames[] = {
@@ -58,8 +66,8 @@ static const ADGameDescription gameDescriptions[] = {
 		},
 		Common::EN_ANY,
 		Common::kPlatformDOS,
-		ADGF_NO_FLAGS,
-		GUIO0()
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NOMIDI)
 	},
 
 	AD_TABLE_END_MARKER
@@ -70,21 +78,25 @@ public:
 	AvalancheMetaEngine() : AdvancedMetaEngine(gameDescriptions, sizeof(AvalancheGameDescription), avalancheGames) {
 	}
 
-	const char *getName() const {
+	const char *getEngineId() const override {
+		return "avalanche";
+	}
+
+	const char *getName() const override {
 		return "Avalanche";
 	}
 
-	const char *getOriginalCopyright() const {
-		return "Avalanche Engine Copyright (c) 1994-1995 Mike, Mark and Thomas Thurman.";
+	const char *getOriginalCopyright() const override {
+		return "Avalanche (C) 1994-1995 Mike, Mark and Thomas Thurman.";
 	}
 
-	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const;
-	bool hasFeature(MetaEngineFeature f) const;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const override;
+	bool hasFeature(MetaEngineFeature f) const override;
 
-	int getMaximumSaveSlot() const { return 99; }
-	SaveStateList listSaves(const char *target) const;
-	void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	int getMaximumSaveSlot() const override { return 99; }
+	SaveStateList listSaves(const char *target) const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 };
 
 bool AvalancheMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const {
@@ -193,7 +205,12 @@ SaveStateDescriptor AvalancheMetaEngine::querySaveMetaInfos(const char *target, 
 
 		SaveStateDescriptor desc(slot, description);
 
-		Graphics::Surface *const thumbnail = Graphics::loadThumbnail(*f);
+		Graphics::Surface *thumbnail;
+		if (!Graphics::loadThumbnail(*f, thumbnail)) {
+			warning("Cannot read thumbnail data, possibly broken savegame");
+			delete f;
+			return SaveStateDescriptor();
+		}
 		desc.setThumbnail(thumbnail);
 
 		delete f;

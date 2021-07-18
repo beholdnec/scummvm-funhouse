@@ -20,28 +20,34 @@
  *
  */
 
-#include "common/scummsys.h"
+#include "plumbers/plumbers.h"
+#include "plumbers/console.h"
 
-#include "common/config-manager.h"
-#include "common/error.h"
-#include "graphics/cursorman.h"
-#include "graphics/surface.h"
-#include "graphics/screen.h"
-#include "graphics/palette.h"
-#include "graphics/font.h"
-#include "graphics/fontman.h"
-#include "common/system.h"
-#include "engines/util.h"
+#include "audio/decoders/wave.h"
+#include "audio/audiostream.h"
+
 #include "common/debug.h"
 #include "common/debug-channels.h"
+#include "common/error.h"
+#include "common/events.h"
+#include "common/file.h"
+#include "common/system.h"
+#include "common/timer.h"
 
-#include "plumbers/plumbers.h"
+#include "engines/util.h"
+
+#include "graphics/cursorman.h"
+#include "graphics/font.h"
+#include "graphics/fontman.h"
+#include "graphics/palette.h"
+#include "graphics/surface.h"
+
+#include "image/bmp.h"
 
 namespace Plumbers {
 
-PlumbersGame::PlumbersGame(OSystem *syst, const ADGameDescription *gameDesc) : Engine(syst), _gameDescription(gameDesc) {
-	_image = nullptr;
-	_console = nullptr;
+PlumbersGame::PlumbersGame(OSystem *syst, const ADGameDescription *gameDesc) :
+		Engine(syst), _gameDescription(gameDesc), _console(0), _image(0) {
 	_timerInstalled = false;
 	_showScoreFl = false;
 	_setDurationFl = false;
@@ -59,7 +65,7 @@ PlumbersGame::PlumbersGame(OSystem *syst, const ADGameDescription *gameDesc) : E
 
 PlumbersGame::~PlumbersGame() {
 	delete _image;
-	delete _console;
+	//_console is deleted by Engine
 }
 
 static const byte MOUSECURSOR_SCI[] = {
@@ -89,7 +95,9 @@ static const byte cursorPalette[] = {
 
 Common::Error PlumbersGame::run() {
 	initGraphics(640, 480);
-	_console = new Console(this);
+	_image = new Image::BitmapDecoder();
+	_console = new Console();
+	setDebugger(_console);
 
 	CursorMan.replaceCursor(MOUSECURSOR_SCI, 11, 16, 0, 0, 0);
 	CursorMan.replaceCursorPalette(cursorPalette, 0, 3);
@@ -113,7 +121,7 @@ Common::Error PlumbersGame::run() {
 		while (g_system->getEventManager()->pollEvent(event)) {
 			switch (event.type) {
 			case Common::EVENT_QUIT:
-			case Common::EVENT_RTL:
+			case Common::EVENT_RETURN_TO_LAUNCHER:
 				quit = true;
 				break;
 
@@ -134,11 +142,6 @@ Common::Error PlumbersGame::run() {
 					// Allows to skip speech by skipping wait delay
 					onTimer(this);
 				}
-				break;
-			case Common::EVENT_KEYDOWN:
-				if (event.kbd.keycode == Common::KEYCODE_d && event.kbd.hasFlags(Common::KBD_CTRL))
-					_console->attach();
-
 				break;
 			default:
 				break;
@@ -162,6 +165,8 @@ Common::Error PlumbersGame::run() {
 			case PlaySound:
 				playSound();
 				break;
+			default:
+				break;
 			}
 		}
 
@@ -178,17 +183,11 @@ Common::Error PlumbersGame::run() {
 void PlumbersGame::loadImage(const Common::String &dirname, const Common::String &filename) {
 	Common::String name = dirname + "/" + filename;
 	debugC(1, kDebugGeneral, "%s : %s", __FUNCTION__, name.c_str());
-	Common::File *file = new Common::File();
-	if (!file->open(name))
+	Common::File file;
+	if (!file.open(name))
 		error("unable to load image %s", name.c_str());
 
-	if (_image)
-		delete _image;
-
-	_image = new Image::BitmapDecoder();
-	_image->loadStream(*file);
-	file->close();
-	delete file;
+	_image->loadStream(file);
 }
 
 void PlumbersGame::drawScreen() {
@@ -227,8 +226,6 @@ void PlumbersGame::drawScreen() {
 		g_system->getPaletteManager()->setPalette(_image->getPalette(), 0, 256);
 		g_system->updateScreen();
 	}
-
-	_console->onFrame();
 }
 
 void PlumbersGame::playSound() {
@@ -362,7 +359,6 @@ void PlumbersGame::readTables(const Common::String &fileName) {
 		file.read(buf, kMaxName);
 		_bitmaps[i]._filename = Common::String(buf);
 	}
-	file.close();
 }
 
 int PlumbersGame::getSceneNumb(int sNo) {

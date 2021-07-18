@@ -20,27 +20,48 @@
  *
  */
 
-#include "osystem.h"
+#include "backends/platform/3ds/osystem.h"
+#include "backends/plugins/3ds/3ds-provider.h"
+
 #include <3ds.h>
+#include <malloc.h>
+
+enum {
+	SYSTEM_MODEL_2DS = 3
+};
 
 int main(int argc, char *argv[]) {
 	// Initialize basic libctru stuff
-	gfxInitDefault();
 	cfguInit();
+	gfxInitDefault();
+
+	// 800px wide top screen is not available on old 2DS systems
+	u8 systemModel = 0;
+	CFGU_GetSystemModel(&systemModel);
+	gfxSetWide(systemModel != SYSTEM_MODEL_2DS);
+
+	romfsInit();
 	osSetSpeedupEnable(true);
 // 	consoleInit(GFX_TOP, NULL);
+	gdbHioDevInit();
+	gdbHioDevRedirectStdStreams(true, true, true);
+
+#ifdef USE_LIBCURL
+	const uint32 soc_sharedmem_size = 0x10000;
+	void *soc_sharedmem = memalign(0x1000, soc_sharedmem_size);
+	socInit((u32 *)soc_sharedmem, soc_sharedmem_size);
+#endif
 
 	g_system = new _3DS::OSystem_3DS();
 	assert(g_system);
 
-	// Invoke the actual ScummVM main entry point
-// 	if (argc > 2)
-// 		res = scummvm_main(argc-2, &argv[2]);
-// 	else
-// 		res = scummvm_main(argc, argv);
-	scummvm_main(0, nullptr);
+#ifdef DYNAMIC_MODULES
+	PluginManager::instance().addPluginProvider(new CTRPluginProvider());
+#endif
 
-	delete dynamic_cast<_3DS::OSystem_3DS*>(g_system);
+	int res = scummvm_main(argc, argv);
+
+	g_system->destroy();
 
 	// Turn on both screen backlights before exiting.
 	if (R_SUCCEEDED(gspLcdInit())) {
@@ -48,7 +69,12 @@ int main(int argc, char *argv[]) {
 		gspLcdExit();
 	}
 
-	cfguExit();
+#ifdef USE_LIBCURL
+	socExit();
+#endif
+	gdbHioDevExit();
+	romfsExit();
 	gfxExit();
-	return 0;
+	cfguExit();
+	return res;
 }

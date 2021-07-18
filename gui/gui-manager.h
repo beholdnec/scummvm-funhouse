@@ -39,6 +39,7 @@ class Font;
 
 namespace Common {
 	struct Event;
+	class Keymap;
 }
 
 namespace GUI {
@@ -67,15 +68,21 @@ class GuiManager : public Common::Singleton<GuiManager> {
 	friend class Dialog;
 	friend class Common::Singleton<SingletonBaseType>;
 	GuiManager();
-	~GuiManager();
+	~GuiManager() override;
 public:
 
 	// Main entry for the GUI: this will start an event loop that keeps running
 	// until no dialogs are active anymore.
 	void runLoop();
 
+	// If the GUI loop is running close all the dialogs causing the loop to finish.
+	// Typically you may want to use it after setting the ConfMan active domain to
+	// a game domain to cause the game to start.
+	void exitLoop();
+
 	void processEvent(const Common::Event &event, Dialog *const activeDialog);
-	void doFullRedraw();
+	Common::Keymap *getKeymap() const;
+	void scheduleTopDialogRedraw();
 
 	bool isActive() const	{ return ! _dialogStack.empty(); }
 
@@ -86,6 +93,12 @@ public:
 
 	int getWidth() const { return _width; }
 	int getHeight() const { return _height; }
+
+	bool useRTL() const { return _useRTL; }
+	void setLanguageRTL();
+
+	void setDialogPaddings(int l, int r);
+	int getOverlayOffset() { return _topDialogRightPadding - _topDialogLeftPadding; }
 
 	const Graphics::Font &getFont(ThemeEngine::FontStyle style = ThemeEngine::kFontStyleBold) const { return *(_theme->getFont(style)); }
 	int getFontHeight(ThemeEngine::FontStyle style = ThemeEngine::kFontStyleBold) const { return _theme->getFontHeight(style); }
@@ -106,9 +119,12 @@ public:
 	 * dialog is provided and is present in the DialogStack, the object will
 	 * only be deleted when that dialog is the top level dialog.
 	 */
-	void addToTrash(GuiObject*, Dialog* parent = 0);
+	void addToTrash(GuiObject*, Dialog* parent = nullptr);
+	void initTextToSpeech();
 
 	bool _launched;
+
+	void redrawFull();
 
 protected:
 	enum RedrawStatus {
@@ -133,6 +149,11 @@ protected:
 
 	bool		_useStdCursor;
 
+	bool		_useRTL;
+
+	int			_topDialogLeftPadding;
+	int			_topDialogRightPadding;
+
 	// position and time of last mouse click (used to detect double clicks)
 	struct MousePos {
 		MousePos() : x(-1), y(-1), count(0) { time = 0; }
@@ -154,8 +175,7 @@ protected:
 	Common::List<GuiObjectTrashItem> _guiObjectTrash;
 
 	void initKeymap();
-	void pushKeymap();
-	void popKeymap();
+	void enableKeymap(bool enabled);
 
 	void saveState();
 	void restoreState();
@@ -164,8 +184,6 @@ protected:
 	void closeTopDialog();
 
 	void redraw();
-
-	void loop();
 
 	void setupCursor();
 	void animateCursor();

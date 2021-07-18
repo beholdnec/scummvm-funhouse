@@ -97,6 +97,7 @@ PictureObject::PictureObject() {
 	_ox2 = 0;
 	_oy2 = 0;
 	_objtype = kObjTypePictureObject;
+	_picture = nullptr;
 }
 
 PictureObject::PictureObject(PictureObject *src) : GameObject(src) {
@@ -112,9 +113,9 @@ bool PictureObject::load(MfcArchive &file, bool bigPicture) {
 	GameObject::load(file);
 
 	if (bigPicture)
-		_picture = Common::SharedPtr<Picture>(new BigPicture());
+		_picture = new BigPicture();
 	else
-		_picture = Common::SharedPtr<Picture>(new Picture());
+		_picture = new Picture();
 
 	_picture->load(file);
 
@@ -232,6 +233,11 @@ GameObject::GameObject(GameObject *src) {
 	_priority = src->_priority;
 	_field_20 = 1;
 	_field_8 = src->_field_8;
+}
+
+Common::String GameObject::toXML() {
+	return Common::String::format("id=\"%s\" name=\"%s\" x=%d y=%d priority=%d f8=%d",
+		g_fp->gameIdToStr(_id).c_str(), transCyrillic(_objectName), _ox, _oy, _priority, _field_8);
 }
 
 bool GameObject::load(MfcArchive &file) {
@@ -439,6 +445,8 @@ bool Picture::load(MfcArchive &file) {
 	_width = file.readUint32LE();
 	_height = file.readUint32LE();
 
+	debug(7, "Picture::load: x: %d y: %d, w: %d, h: %d", _x, _y, _width, _height);
+
 	_mflags |= 1;
 
 	_memoryObject2.reset(new MemoryObject2);
@@ -455,15 +463,16 @@ bool Picture::load(MfcArchive &file) {
 	int havePal = file.readUint32LE();
 
 	if (havePal > 0) {
-		_paletteData.reserve(256);
 		for (int i = 0; i < 256; ++i) {
-			_paletteData.push_back(file.readUint32LE());
+			_paletteData.pal[i] = file.readUint32LE();
 		}
+		_paletteData.size = 256;
 	}
 
 	getData();
 
-	debugC(5, kDebugLoading, "Picture::load: loaded <%s>", _memfilename.c_str());
+	debugC(5, kDebugLoading, "Picture::load: loaded memobject=\"%s\" x=%d y=%d f44=%d width=%d height=%d alpha=%d memobject2=\"%s\"", _memfilename.c_str(),
+				_x, _y, _field_44, _width, _height, _alpha, _memoryObject2->_memfilename.c_str());
 
 	return true;
 }
@@ -521,7 +530,7 @@ void Picture::getDibInfo() {
 	_bitmap->load(s);
 	delete s;
 
-	_bitmap->decode(_data, _paletteData.size() ? _paletteData : *g_fp->_globalPalette);
+	_bitmap->decode(_data, _paletteData.size ? _paletteData : *g_fp->_globalPalette);
 }
 
 const Bitmap *Picture::getPixelData() {
@@ -554,7 +563,7 @@ void Picture::draw(int x, int y, int style, int angle) {
 	}
 
 	const Palette *pal;
-	if (_paletteData.size()) {
+	if (_paletteData.size) {
 		pal = &_paletteData;
 	} else {
 		//warning("Picture:draw: using global palette");
@@ -620,10 +629,10 @@ void Picture::displayPicture() {
 }
 
 void Picture::setPaletteData(const Palette &pal) {
-	if (pal.size()) {
-		_paletteData = pal;
+	if (pal.size) {
+		_paletteData.copy(pal);
 	} else {
-		_paletteData.clear();
+		_paletteData.size = 0;
 	}
 }
 
@@ -688,6 +697,7 @@ Bitmap::Bitmap() {
 	_dataSize = 0;
 	_flags = 0;
 	_flipping = Graphics::FLIP_NONE;
+	_surface = nullptr;
 }
 
 Bitmap::Bitmap(const Bitmap &src) {
@@ -700,13 +710,13 @@ Bitmap::Bitmap(const Bitmap &src) {
 	_height = src._height;
 	_surface = src._surface;
 	_flipping = src._flipping;
+	_surface = src._surface;
 }
 
 Bitmap::~Bitmap() {
 	// TODO: This is a hack because Graphics::Surface has terrible resource
 	// management
-	if (_surface.unique())
-		_surface->free();
+	//_surface->free();
 }
 
 void Bitmap::load(Common::ReadStream *s) {
@@ -736,7 +746,7 @@ bool Bitmap::isPixelHitAtPos(int x, int y) {
 }
 
 void Bitmap::decode(byte *pixels, const Palette &palette) {
-	_surface = TransSurfacePtr(new Graphics::TransparentSurface, Graphics::SurfaceDeleter());
+	_surface = new Graphics::TransparentSurface, Graphics::SurfaceDeleter();
 	_surface->create(_width, _height, Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0));
 
 	if (_type == MKTAG('R', 'B', '\0', '\0'))
@@ -785,7 +795,7 @@ bool Bitmap::putDibRB(byte *pixels, const Palette &palette) {
 	uint16 *srcPtr2;
 	uint16 *srcPtr;
 
-	if (!palette.size()) {
+	if (!palette.size) {
 		debugC(2, kDebugDrawing, "Bitmap::putDibRB(): Both global and local palettes are empty");
 		return false;
 	}
@@ -839,8 +849,9 @@ bool Bitmap::putDibRB(byte *pixels, const Palette &palette) {
 				if (fillLen > 0 || start1 >= 0) {
 					if (x <= _width + 1 || (fillLen += _width - x + 1, fillLen > 0)) {
 						if (y <= endy) {
-							int bgcolor = palette[(pixel >> 8) & 0xff];
+							int bgcolor = palette.pal[(pixel >> 8) & 0xff];
 							curDestPtr = (uint32 *)_surface->getBasePtr(start1, y);
+							fillLen = MIN(_width - start1, fillLen);
 							colorFill(curDestPtr, fillLen, bgcolor);
 						}
 					}
@@ -859,14 +870,15 @@ bool Bitmap::putDibRB(byte *pixels, const Palette &palette) {
 					}
 				}
 
-				if (x > _width + 1) {
-					fillLen += _width - x + 1;
+				if (x > _width) {
+					fillLen += _width - x;
 					if (fillLen <= 0)
 						continue;
 				}
 
 				if (y <= endy) {
 					curDestPtr = (uint32 *)_surface->getBasePtr(start1, y);
+					fillLen = MIN(_width - start1, fillLen);
 					paletteFill(curDestPtr, (byte *)srcPtr2, fillLen, palette);
 				}
 			}
@@ -889,7 +901,7 @@ void Bitmap::putDibCB(byte *pixels, const Palette &palette) {
 
 	cb05_format = (_type == MKTAG('C', 'B', '\05', 'e'));
 
-	if (!palette.size() && !cb05_format)
+	if (!palette.size && !cb05_format)
 		error("Bitmap::putDibCB(): Both global and local palettes are empty");
 
 	bpp = cb05_format ? 2 : 1;
@@ -952,7 +964,7 @@ void Bitmap::paletteFill(uint32 *dest, byte *src, int len, const Palette &palett
 	byte r, g, b;
 
 	for (int i = 0; i < len; i++) {
-		g_fp->_origFormat.colorToRGB(palette[*src++] & 0xffff, r, g, b);
+		g_fp->_origFormat.colorToRGB(palette.pal[*src++] & 0xffff, r, g, b);
 
 		*dest++ = TS_ARGB(0xff, r, g, b);
 	}
@@ -981,7 +993,7 @@ void Bitmap::copierKeyColor(uint32 *dest, byte *src, int len, int keyColor, cons
 	if (!cb05_format) {
 		for (int i = 0; i < len; i++) {
 			if (*src != keyColor) {
-				g_fp->_origFormat.colorToRGB(palette[*src] & 0xffff, r, g, b);
+				g_fp->_origFormat.colorToRGB(palette.pal[*src] & 0xffff, r, g, b);
 				*dest = TS_ARGB(0xff, r, g, b);
 			}
 
@@ -1025,7 +1037,7 @@ void Bitmap::copier(uint32 *dest, byte *src, int len, const Palette &palette, bo
 
 	if (!cb05_format) {
 		for (int i = 0; i < len; i++) {
-			g_fp->_origFormat.colorToRGB(palette[*src++] & 0xffff, r, g, b);
+			g_fp->_origFormat.colorToRGB(palette.pal[*src++] & 0xffff, r, g, b);
 
 			*dest++ = TS_ARGB(0xff, r, g, b);
 		}

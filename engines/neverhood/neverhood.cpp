@@ -47,7 +47,8 @@
 
 namespace Neverhood {
 
-NeverhoodEngine::NeverhoodEngine(OSystem *syst, const NeverhoodGameDescription *gameDesc) : Engine(syst), _gameDescription(gameDesc), _console(nullptr) {
+NeverhoodEngine::NeverhoodEngine(OSystem *syst, const ADGameDescription *gameDesc) :
+		Engine(syst), _gameDescription(gameDesc) {
 	// Setup mixer
 	if (!_mixer->isReady()) {
 		warning("Sound initialization failed.");
@@ -84,7 +85,7 @@ Common::Error NeverhoodEngine::run() {
 	_gameVars = new GameVars();
 	_screen = new Screen(this);
 	_res = new ResourceMan();
-	_console = new Console(this);
+	setDebugger(new Console(this));
 
 	if (isDemo()) {
 		_res->addArchive("a.blb");
@@ -110,7 +111,7 @@ Common::Error NeverhoodEngine::run() {
 	_updateSound = true;
 	_enableMusic = !_mixer->isSoundTypeMuted(Audio::Mixer::kMusicSoundType);
 
-	if (isDemo()) {
+	if (isDemo() && !isBigDemo()) {
 		// Adjust this navigation list for the demo version
 		NavigationList *navigationList = _staticData->getNavigationList(0x004B67E8);
 		(*navigationList)[0].middleSmackerFileHash = 0;
@@ -135,7 +136,6 @@ Common::Error NeverhoodEngine::run() {
 	delete _soundMan;
 	delete _audioResourceMan;
 
-	delete _console;
 	delete _res;
 	delete _screen;
 
@@ -153,11 +153,6 @@ void NeverhoodEngine::mainLoop() {
 		while (eventMan->pollEvent(event)) {
 			switch (event.type) {
 			case Common::EVENT_KEYDOWN:
-				if (event.kbd.hasFlags(Common::KBD_CTRL) && event.kbd.keycode == Common::KEYCODE_d) {
-					// Open debugger console
-					_console->attach();
-					continue;
-				}
 				_gameModule->handleKeyDown(event.kbd.keycode);
 				_gameModule->handleAsciiKey(event.kbd.ascii);
 				break;
@@ -182,9 +177,6 @@ void NeverhoodEngine::mainLoop() {
 			case Common::EVENT_WHEELDOWN:
 				_gameModule->handleWheelDown();
 				break;
-			case Common::EVENT_QUIT:
-				_system->quit();
-				break;
 			default:
 				break;
 			}
@@ -193,7 +185,6 @@ void NeverhoodEngine::mainLoop() {
 			_gameModule->checkRequests();
 			_gameModule->handleUpdate();
 			_gameModule->draw();
-			_console->onFrame();
 			_screen->update();
 			if (_updateSound)
 				_soundMan->update();

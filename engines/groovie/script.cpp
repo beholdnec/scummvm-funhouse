@@ -26,7 +26,6 @@
 #include "groovie/cell.h"
 #include "groovie/cursor.h"
 #include "groovie/graphics.h"
-#include "groovie/groovie.h"
 #include "groovie/music.h"
 #include "groovie/player.h"
 #include "groovie/resource.h"
@@ -46,6 +45,26 @@
 
 namespace Groovie {
 
+// Adapted from SCRIPT.GRV
+const byte t7gMidiInitScript[] = {
+	0x1A, 0x00, 0x01, 0xB1, 0x12, 0x00,		// strcmpnejmp (if (var 0100 != 01) jmp 0012)
+	0x02, 0x46, 0x4C,						// playsong 4C46 (GM init)
+	0x03,									// bf9on (fade-in)
+	0x09, 0x60, 0x24,						// videofromref 2460 (GM init video)
+	0x09, 0x60, 0x24,						// videofromref 2460 (GM init video)
+	0x04,									// palfadeout
+	0x29,									// stopmidi
+	0x1A, 0x00, 0x01, 0xB2, 0x21, 0x00,		// :0012 - strcmpnejmp (if (var 0100 != 02) jmp 0021)
+	0x02, 0x45, 0x4C,						// playsong 4C45 (MT-32 init)
+	0x03,									// bf9on (fade-in)
+	0x09, 0x61, 0x24,						// videofromref 2461 (MT-32 init video)
+	0x04,									// palfadeout
+	0x29,									// stopmidi
+	0x31, 0x63, 0x00, 0x00, 0x00,			// :0021 - midivolume 0063, 0000
+	0x3C,									// checkvalidsaves
+	0x43, 0x00								// returnscript 00
+};
+
 Script::Script(GroovieEngine *vm, EngineVersion version) :
 	_code(NULL), _savedCode(NULL), _stacktop(0), _debugger(NULL), _vm(vm),
 	_videoFile(NULL), _videoRef(0), _staufsMove(NULL), _lastCursor(0xff),
@@ -58,6 +77,9 @@ Script::Script(GroovieEngine *vm, EngineVersion version) :
 		break;
 	case kGroovieV2:
 		_opcodes = _opcodesV2;
+		break;
+	default:
+		_opcodes = nullptr;
 		break;
 	}
 
@@ -172,11 +194,23 @@ bool Script::loadScript(Common::String filename) {
 
 void Script::directGameLoad(int slot) {
 	// Reject invalid slots
-	if (slot < 0 || slot > 9) {
+	if (slot < 0 || slot > MAX_SAVES - 1) {
 		return;
 	}
 
-	// TODO: Return to the main script, likely reusing most of o_returnscript()
+	// Return to the main script if required
+	if (_savedCode) {
+		// Returning the correct spot, dealing with _savedVariables, etc
+		// is not needed as game state is getting nuked anyway
+		delete[] _code;
+		_code = _savedCode;
+		_codeSize = _savedCodeSize;
+		_savedCode = nullptr;
+	}
+
+	uint16 targetInstruction;
+	const byte *midiInitScript = 0;
+	uint8 midiInitScriptSize = 0;
 
 	// HACK: We set the slot to load in the appropriate variable, and set the
 	// current instruction to the one that actually loads the saved game
@@ -185,21 +219,46 @@ void Script::directGameLoad(int slot) {
 	if (_version == kGroovieT7G) {
 		// 7th Guest
 		setVariable(0x19, slot);
-		_currentInstruction = 0x287;
+		targetInstruction = 0x287;
+		// TODO Not sure if this works on or is necessary for Mac or iOS
+		// versions. Disabling it to prevent breaking game loading.
+		if (_vm->getPlatform() == Common::kPlatformDOS) {
+			midiInitScript = t7gMidiInitScript;
+			midiInitScriptSize = sizeof(t7gMidiInitScript);
+		}
 	} else {
 		// 11th Hour
 		setVariable(0xF, slot);
 		// FIXME: This bypasses a lot of the game's initialization procedure
-		_currentInstruction = 0xE78E;
+		targetInstruction = 0xE78E;
 	}
 
-	// TODO: We'll probably need to start by running the beginning of the
-	// script to let it do the soundcard initialization and then do the
-	// actual loading.
+	if (midiInitScript && !_vm->_musicPlayer->isMidiInit()) {
+		// Run the MIDI init script as a subscript.
 
-	// Due to HACK above, the call to check valid save slots is not run.
-	// As this is where we load save names, manually call it here.
-	o_checkvalidsaves();
+		// Backup the current script state
+		_savedCode = _code;
+		_savedCodeSize = _codeSize;
+		_savedStacktop = _stacktop;
+		_savedScriptFile = _scriptFile;
+		// Set the game load instruction as the backup instruction. This
+		// will run when the subscript returns.
+		_savedInstruction = targetInstruction;
+
+		// Set the MIDI init script as the current script.
+		_codeSize = midiInitScriptSize;
+		_code = new byte[_codeSize];
+		memcpy(_code, midiInitScript, _codeSize);
+		_stacktop = 0;
+		_currentInstruction = 0;
+	} else {
+		// No MIDI initialization necessary. Just jump to the game load
+		// instruction.
+		_currentInstruction = targetInstruction;
+		// Due to HACK above, the call to check valid save slots is not run.
+		// As this is where we load save names, manually call it here.
+		o_checkvalidsaves();
+	}
 }
 
 void Script::step() {
@@ -386,6 +445,8 @@ bool Script::hotspot(Common::Rect rect, uint16 address, uint8 cursor) {
 }
 
 void Script::loadgame(uint slot) {
+	_vm->_musicPlayer->stop();
+
 	Common::InSaveFile *file = SaveLoad::openForLoading(ConfMan.getActiveDomainName(), slot);
 
 	// Loading the variables. It is endian safe because they're byte variables
@@ -395,6 +456,22 @@ void Script::loadgame(uint slot) {
 
 	// Hide the mouse cursor
 	_vm->_grvCursorMan->show(false);
+}
+
+bool Script::canDirectSave() const {
+	// Disallow when running a subscript
+	return _savedCode == nullptr;
+}
+
+void Script::directGameSave(int slot, const Common::String &desc) {
+	if (slot < 0 || slot > MAX_SAVES - 1) {
+		return;
+	}
+	const char *saveName = desc.c_str();
+	for (int i = 0; i < 15; i++) {
+		_variables[i] = saveName[i] - 0x30;
+	}
+	savegame(slot);
 }
 
 void Script::savegame(uint slot) {
@@ -416,9 +493,11 @@ void Script::savegame(uint slot) {
 	// Cache the saved name
 	for (int i = 0; i < 15; i++) {
 		newchar = _variables[i] + 0x30;
-		if ((newchar < 0x30 || newchar > 0x39) && (newchar < 0x41 || newchar > 0x7A)) {
+		if ((newchar < 0x30 || newchar > 0x39) && (newchar < 0x41 || newchar > 0x7A) && newchar != 0x2E) {
 			save[i] = '\0';
 			break;
+		} else if (newchar == 0x2E) { // '.', generated when space is pressed
+			save[i] = ' ';
 		} else {
 			save[i] = newchar;
 		}
@@ -541,18 +620,37 @@ void Script::o_videofromref() {			// 0x09
 			debugCN(1, kDebugScript, " (This video is special somehow!)");
 			warning("(This video (0x%04X) is special somehow!)", fileref);
 		}
+
+	default:
+		break;
 	}
 	if (fileref != _videoRef) {
 		debugCN(1, kDebugScript, "\n");
 	}
+
+	// Determine if the MT-32 or GM initialization video is being played
+	bool gmInitVideo = _version == kGroovieT7G && fileref == 0x2460;
+	bool mt32InitVideo = _version == kGroovieT7G && fileref == 0x2461;
 	// Play the video
-	if (!playvideofromref(fileref)) {
+	// If a MIDI init video is being played, loop it until the "audio"
+	// (init commands) has finished playing
+	if (!playvideofromref(fileref, gmInitVideo || mt32InitVideo)) {
 		// Move _currentInstruction back
 		_currentInstruction -= 3;
+	} else if (gmInitVideo || mt32InitVideo) {
+		// MIDI initialization has completed. Set this on the music player,
+		// so that MIDI init will not be done again on game load.
+		_vm->_musicPlayer->setMidiInit(true);
+		if (gmInitVideo)
+			// The script plays the GM init video twice to give the "audio"
+			// enough time to play. It has just looped until the audio finished,
+			// so the second play is no longer necessary.
+			// Skip the next instruction.
+			_currentInstruction += 3;
 	}
 }
 
-bool Script::playvideofromref(uint32 fileref) {
+bool Script::playvideofromref(uint32 fileref, bool loopUntilAudioDone) {
 	// It isn't the current video, open it
 	if (fileref != _videoRef) {
 
@@ -587,8 +685,6 @@ bool Script::playvideofromref(uint32 fileref) {
 			return true;
 		}
 
-		_bitflags = 0;
-
 		// Reset the clicked mouse events
 		_eventMouseClicked = 0;
 	}
@@ -601,6 +697,8 @@ bool Script::playvideofromref(uint32 fileref) {
 		// Reset the skip address
 		_videoSkipAddress = 0;
 
+		_bitflags = 0;
+
 		// End the playback
 		return true;
 	}
@@ -610,7 +708,17 @@ bool Script::playvideofromref(uint32 fileref) {
 		bool endVideo = _vm->_videoPlayer->playFrame();
 		_vm->_musicPlayer->frameTick();
 
-		if (endVideo) {
+		if (endVideo && loopUntilAudioDone && _vm->_musicPlayer->isPlaying()) {
+			// The video has ended, but the audio hasn't. Loop the video.
+			_videoFile->seek(0);
+			// Clear bit flag 9 (fade-in)
+			_vm->_videoPlayer->load(_videoFile, _bitflags & ~(1 << 9));
+			return false;
+		}
+
+		if (endVideo || (loopUntilAudioDone && !_vm->_musicPlayer->isPlaying())) {
+			// The video has ended, or it was being looped and the audio has ended.
+
 			// Close the file
 			delete _videoFile;
 			_videoFile = NULL;
@@ -622,13 +730,19 @@ bool Script::playvideofromref(uint32 fileref) {
 
 			// Newline
 			debugCN(1, kDebugScript, "\n");
+
+			_bitflags = 0;
+
+			// Let the caller know if the video has ended
+			return true;
 		}
 
-		// Let the caller know if the video has ended
-		return endVideo;
+		// The video has not ended yet.
+		return false;
 	}
 
 	// If the file is closed, finish the playback
+	_bitflags = 0;
 	return true;
 }
 
@@ -654,8 +768,6 @@ void Script::o_inputloopstart() {	//0x0B
 	// Save the current pressed character for the whole loop
 	_kbdChar = _eventKbdChar;
 	_eventKbdChar = 0;
-
-	_vm->_musicPlayer->startBackground();
 }
 
 void Script::o_keyboardaction() {
@@ -1368,7 +1480,7 @@ void Script::o_checkvalidsaves() {
 	debugC(1, kDebugScript, "CHECKVALIDSAVES");
 
 	// Reset the array of valid saves and the savegame names cache
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < MAX_SAVES; i++) {
 		setVariable(i, 0);
 		_saveNames[i] = "E M P T Y";
 	}

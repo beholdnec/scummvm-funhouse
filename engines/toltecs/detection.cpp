@@ -126,6 +126,20 @@ static const ToltecsGameDescription gameDescriptions[] = {
 	},
 
 	{
+		// 3 Skulls of the Toltecs Polish version
+		// Reported by cachaito in Trac#11134
+		{
+			"toltecs",
+			0,
+			AD_ENTRY1s("WESTERN", "8ec48dd4e52a822d314418f1d3284e64", 337646148),
+			Common::PL_POL,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NONE)
+		},
+	},
+
+	{
 		// 3 Skulls of the Toltecs French version
 		{
 			"toltecs",
@@ -162,6 +176,20 @@ static const ToltecsGameDescription gameDescriptions[] = {
 			Common::kPlatformDOS,
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NONE)
+		},
+	},
+
+	{
+		// 3 Skulls of the Toltecs Czech version
+		// Reported by AfBu in Trac#11263
+		{
+			"toltecs",
+			0,
+				AD_ENTRY1s("WESTERN", "57503131c0217c76b07d0b5c14805631", 337644552),
+				Common::CZ_CZE,
+				Common::kPlatformDOS,
+				ADGF_NO_FLAGS,
+				GUIO1(GUIO_NONE)
 		},
 	},
 
@@ -206,24 +234,27 @@ static const ExtraGuiOption toltecsExtraGuiOption = {
 class ToltecsMetaEngine : public AdvancedMetaEngine {
 public:
 	ToltecsMetaEngine() : AdvancedMetaEngine(Toltecs::gameDescriptions, sizeof(Toltecs::ToltecsGameDescription), toltecsGames) {
-		_singleId = "toltecs";
 	}
 
-	virtual const char *getName() const {
-		return "Toltecs Engine";
+	const char *getEngineId() const override {
+		return "toltecs";
 	}
 
-	virtual const char *getOriginalCopyright() const {
-		return "Toltecs Engine Revistronic (C) 1996";
+	const char *getName() const override {
+		return "3 Skulls of the Toltecs";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	virtual const ExtraGuiOptions getExtraGuiOptions(const Common::String &target) const;
-	SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	const char *getOriginalCopyright() const override {
+		return "3 Skulls of the Toltecs (C) Revistronic 1996";
+	}
+
+	bool hasFeature(MetaEngineFeature f) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	const ExtraGuiOptions getExtraGuiOptions(const Common::String &target) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 };
 
 bool ToltecsMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -240,7 +271,7 @@ bool ToltecsMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool Toltecs::ToltecsEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsLoadingDuringRuntime) ||
 		(f == kSupportsSavingDuringRuntime);
 }
@@ -276,7 +307,7 @@ SaveStateList ToltecsMetaEngine::listSaves(const char *target) const {
 		if (slotNum >= 0 && slotNum <= 999) {
 			Common::InSaveFile *in = saveFileMan->openForLoading(file->c_str());
 			if (in) {
-				if (Toltecs::ToltecsEngine::readSaveHeader(in, false, header) == Toltecs::ToltecsEngine::kRSHENoError) {
+				if (Toltecs::ToltecsEngine::readSaveHeader(in, header) == Toltecs::ToltecsEngine::kRSHENoError) {
 					saveList.push_back(SaveStateDescriptor(slotNum, header.description));
 				}
 				delete in;
@@ -325,7 +356,7 @@ SaveStateDescriptor ToltecsMetaEngine::querySaveMetaInfos(const char *target, in
 		Toltecs::ToltecsEngine::SaveHeader header;
 		Toltecs::ToltecsEngine::kReadSaveHeaderError error;
 
-		error = Toltecs::ToltecsEngine::readSaveHeader(in, true, header);
+		error = Toltecs::ToltecsEngine::readSaveHeader(in, header, false);
 		delete in;
 
 		if (error == Toltecs::ToltecsEngine::kRSHENoError) {

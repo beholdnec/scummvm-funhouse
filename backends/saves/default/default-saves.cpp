@@ -29,8 +29,9 @@
 
 #if defined(USE_CLOUD) && defined(USE_LIBCURL)
 #include "backends/cloud/cloudmanager.h"
-#include "common/file.h"
 #endif
+#include "common/file.h"
+#include "common/system.h"
 
 #if !defined(DISABLE_DEFAULT_SAVEFILEMANAGER)
 
@@ -43,9 +44,7 @@
 #include "common/config-manager.h"
 #include "common/zlib.h"
 
-#ifndef _WIN32_WCE
 #include <errno.h>	// for removeSavefile()
-#endif
 
 #if defined(USE_CLOUD) && defined(USE_LIBCURL)
 const char *DefaultSaveFileManager::TIMESTAMPS_FILENAME = "timestamps";
@@ -62,7 +61,9 @@ DefaultSaveFileManager::DefaultSaveFileManager(const Common::String &defaultSave
 void DefaultSaveFileManager::checkPath(const Common::FSNode &dir) {
 	clearError();
 	if (!dir.exists()) {
-		setError(Common::kPathDoesNotExist, "The savepath '"+dir.getPath()+"' does not exist");
+		if (!dir.createDirectory()) {
+			setError(Common::kPathDoesNotExist, "Failed to create directory '"+dir.getPath()+"'");
+		}
 	} else if (!dir.isDirectory()) {
 		setError(Common::kPathNotDirectory, "The savepath '"+dir.getPath()+"' is not a directory");
 	}
@@ -168,6 +169,8 @@ Common::OutSaveFile *DefaultSaveFileManager::openForSaving(const Common::String 
 
 	// Open the file for saving.
 	Common::WriteStream *const sf = fileNode.createWriteStream();
+	if (!sf)
+		return nullptr;
 	Common::OutSaveFile *const result = new Common::OutSaveFile(compress ? Common::wrapCompressedWriteStream(sf) : sf);
 
 	// Add file to cache now that it exists.
@@ -206,13 +209,12 @@ bool DefaultSaveFileManager::removeSavefile(const Common::String &filename) {
 		// compile because of this, please let us know (scummvm-devel).
 		// There is a nicely portable workaround, too: Make this method overloadable.
 		if (remove(fileNode.getPath().c_str()) != 0) {
-#ifndef _WIN32_WCE
 			if (errno == EACCES)
 				setError(Common::kWritePermissionDenied, "Search or write permission denied: "+fileNode.getName());
 
 			if (errno == ENOENT)
 				setError(Common::kPathDoesNotExist, "removeSavefile: '"+fileNode.getName()+"' does not exist or path is invalid");
-#endif
+
 			return false;
 		} else {
 			return true;
@@ -234,11 +236,6 @@ Common::String DefaultSaveFileManager::getSavePath() const {
 		ConfMan.flushToDisk();
 		dir = ConfMan.get("savepath");
 	}
-
-#ifdef _WIN32_WCE
-	if (dir.empty())
-		dir = ConfMan.get("path");
-#endif
 
 	return dir;
 }
@@ -357,7 +354,10 @@ void DefaultSaveFileManager::saveTimestamps(Common::HashMap<Common::String, uint
 	}
 
 	for (Common::HashMap<Common::String, uint32>::iterator i = timestamps.begin(); i != timestamps.end(); ++i) {
-		Common::String data = i->_key + Common::String::format(" %u\n", i->_value);
+		uint32 v = i->_value;
+		if (v < 1) v = 1; // 0 timestamp is treated as EOF up there, so we should never save zeros
+
+		Common::String data = i->_key + Common::String::format(" %u\n", v);
 		if (f.write(data.c_str(), data.size()) != data.size()) {
 			warning("DefaultSaveFileManager: failed to write timestamps data into '%s'", filename.c_str());
 			return;
@@ -368,6 +368,8 @@ void DefaultSaveFileManager::saveTimestamps(Common::HashMap<Common::String, uint
 	f.finalize();
 	f.close();
 }
+
+#endif // ifdef USE_LIBCURL
 
 Common::String DefaultSaveFileManager::concatWithSavesPath(Common::String name) {
 	DefaultSaveFileManager *manager = dynamic_cast<DefaultSaveFileManager *>(g_system->getSavefileManager());
@@ -384,7 +386,5 @@ Common::String DefaultSaveFileManager::concatWithSavesPath(Common::String name) 
 	if (backslashes > 0) return path + '\\' + name;
 	return path + '/' + name;
 }
-
-#endif // ifdef USE_LIBCURL
 
 #endif // !defined(DISABLE_DEFAULT_SAVEFILEMANAGER)

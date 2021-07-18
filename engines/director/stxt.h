@@ -23,23 +23,43 @@
 #ifndef DIRECTOR_STXT_H
 #define DIRECTOR_STXT_H
 
-#include "director/director.h"
+namespace Common {
+class ReadStreamEndian;
+}
 
 namespace Director {
 
+struct FontStyle {
+	uint32 formatStartOffset;
+	uint16 height;
+	uint16 ascent;
+
+	uint16 fontId;
+	byte textSlant;
+
+	uint16 fontSize;
+
+	uint16 r, g, b;
+
+	FontStyle();
+	void read(Common::ReadStreamEndian &textStream);
+};
+
 class Stxt {
 public:
-	Stxt(Common::SeekableSubReadStreamEndian &textStream);
+	Stxt(Cast *cast, Common::SeekableReadStreamEndian &textStream);
 
 public:
+	Cast *_cast;
 	Common::String _ftext;
-	uint32 _fontId;
-	uint16 _fontSize;
+	Common::String _ptext;
 	TextType _textType;
 	TextAlignType _textAlign;
 	SizeType _textShadow;
-	byte _textSlant;
-	uint16 _palinfo1, _palinfo2, _palinfo3;
+
+	uint32 _size;
+
+	FontStyle _style;
 	uint16 _unk1f;
 	uint16 _unk2f;
 	byte _unk3f;

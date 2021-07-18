@@ -32,14 +32,13 @@
 #include "engines/wintermute/base/gfx/base_surface.h"
 #include "engines/wintermute/base/base_parser.h"
 #include "engines/wintermute/base/base_game.h"
+#include "engines/wintermute/base/base_engine.h"
 #include "engines/wintermute/base/base_file_manager.h"
 #include "engines/wintermute/utils/utils.h"
 #include "engines/wintermute/wintermute.h"
 #include "graphics/fonts/ttf.h"
 #include "graphics/fontman.h"
 #include "common/unzip.h"
-#include "common/config-manager.h" // For Scummmodern.zip
-#include <limits.h>
 
 namespace Wintermute {
 
@@ -49,6 +48,7 @@ IMPLEMENT_PERSISTENT(BaseFontTT, false)
 BaseFontTT::BaseFontTT(BaseGame *inGame) : BaseFont(inGame) {
 	_fontHeight = 12;
 	_isBold = _isItalic = _isUnderline = _isStriked = false;
+	_charset = CHARSET_ANSI;
 
 	_fontFile = nullptr;
 	_font = nullptr;
@@ -117,7 +117,7 @@ int BaseFontTT::getTextWidth(const byte *text, int maxLength) {
 	if (_gameRef->_textEncoding == TEXT_UTF8) {
 		textStr = StringUtil::utf8ToWide((const char *)text);
 	} else {
-		textStr = StringUtil::ansiToWide((const char *)text);
+		textStr = StringUtil::ansiToWide((const char *)text, _charset);
 	}
 
 	if (maxLength >= 0 && textStr.size() > (uint32)maxLength) {
@@ -138,7 +138,7 @@ int BaseFontTT::getTextHeight(const byte *text, int width) {
 	if (_gameRef->_textEncoding == TEXT_UTF8) {
 		textStr = StringUtil::utf8ToWide((const char *)text);
 	} else {
-		textStr = StringUtil::ansiToWide((const char *)text);
+		textStr = StringUtil::ansiToWide((const char *)text, _charset);
 	}
 
 
@@ -163,7 +163,7 @@ void BaseFontTT::drawText(const byte *text, int x, int y, int width, TTextAlign 
 	if (_gameRef->_textEncoding == TEXT_UTF8) {
 		textStr = StringUtil::utf8ToWide((const char *)text);
 	} else {
-		textStr = StringUtil::ansiToWide((const char *)text);
+		textStr = StringUtil::ansiToWide((const char *)text, _charset);
 	}
 
 	if (maxLength >= 0 && textStr.size() > (uint32)maxLength) {
@@ -174,7 +174,7 @@ void BaseFontTT::drawText(const byte *text, int x, int y, int width, TTextAlign 
 	BaseRenderer *renderer = _gameRef->_renderer;
 
 	// find cached surface, if exists
-	uint32 minUseTime = UINT_MAX;
+	uint32 minUseTime = INT_MAX_VALUE;
 	int minIndex = -1;
 	BaseSurface *surface = nullptr;
 	int textOffset = 0;
@@ -413,7 +413,7 @@ bool BaseFontTT::loadBuffer(char *buffer) {
 			break;
 
 		case TOKEN_CHARSET:
-			// we don't need this anymore
+			parser.scanStr(params, "%d", &_charset);
 			break;
 
 		case TOKEN_COLOR: {
@@ -442,6 +442,8 @@ bool BaseFontTT::loadBuffer(char *buffer) {
 		}
 		break;
 
+		default:
+			break;
 		}
 	}
 	if (cmd == PARSERR_TOKENNOTFOUND) {
@@ -500,6 +502,9 @@ bool BaseFontTT::parseLayer(BaseTTFontLayer *layer, char *buffer) {
 			layer->_color = BYTETORGBA(RGBCOLGetR(layer->_color), RGBCOLGetG(layer->_color), RGBCOLGetB(layer->_color), a);
 		}
 		break;
+
+		default:
+			break;
 		}
 	}
 	if (cmd != PARSERR_EOF) {
@@ -520,6 +525,7 @@ bool BaseFontTT::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transferBool(TMEMBER(_isStriked));
 	persistMgr->transferSint32(TMEMBER(_fontHeight));
 	persistMgr->transferCharPtr(TMEMBER(_fontFile));
+	persistMgr->transferSint32(TMEMBER_INT(_charset));
 
 
 	// persist layers
@@ -587,35 +593,10 @@ bool BaseFontTT::initFont() {
 		file = nullptr;
 	}
 
-	// Fallback2: Try to find ScummModern.zip, and get the font from there:
+	// Fallback2: Try load the font from the common fonts archive:
 	if (!_font) {
-		Common::SeekableReadStream *themeFile = nullptr;
-		if (ConfMan.hasKey("themepath")) {
-			Common::FSNode themePath(ConfMan.get("themepath"));
-			if (themePath.exists()) {
-				Common::FSNode scummModern = themePath.getChild("scummmodern.zip");
-				if (scummModern.exists()) {
-					themeFile = scummModern.createReadStream();
-				}
-			}
-		}
-		if (!themeFile) { // Fallback 2.5: Search for ScummModern.zip in SearchMan.
-			themeFile = SearchMan.createReadStreamForMember("scummmodern.zip");
-		}
-		if (themeFile) {
-			Common::Archive *themeArchive = Common::makeZipArchive(themeFile);
-			if (themeArchive->hasFile(fallbackFilename)) {
-				file = nullptr;
-				file = themeArchive->createReadStreamForMember(fallbackFilename);
-				_deletableFont = Graphics::loadTTFFont(*file, _fontHeight, Graphics::kTTFSizeModeCharacter, 96); // Use the same dpi as WME (96 vs 72).
-				_font = _deletableFont;
-			}
-			// We're not using BaseFileManager, so clean up after ourselves:
-			delete file;
-			file = nullptr;
-			delete themeArchive;
-			themeArchive = nullptr;
-		}
+		_deletableFont = Graphics::loadTTFFontFromArchive(fallbackFilename, _fontHeight, Graphics::kTTFSizeModeCharacter, 96); // Use the same dpi as WME (96 vs 72).
+		_font = _deletableFont;
 	}
 
 	// Fallback3: Try to ask FontMan for the FreeSans.ttf ScummModern.zip uses:
@@ -635,6 +616,11 @@ bool BaseFontTT::initFont() {
 		warning("BaseFontTT::InitFont - Couldn't load font: %s", _fontFile);
 	}
 	_lineHeight = _font->getFontHeight();
+#ifdef ENABLE_FOXTAIL
+	if (BaseEngine::instance().isFoxTail(FOXTAIL_1_2_896, FOXTAIL_LATEST_VERSION)) {
+		_lineHeight -= 1;
+	}
+#endif
 	return STATUS_OK;
 }
 

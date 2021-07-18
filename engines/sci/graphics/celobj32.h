@@ -132,6 +132,9 @@ struct CelInfo32 {
 		default:
 			assert(!"Should never happen");
 		}
+		// This code should not be reached but the compiler expects to see a legal
+		// return from a non-void function.
+		return Common::String("here be dragons");
 	}
 };
 
@@ -333,6 +336,12 @@ public:
 	bool _mirrorX;
 
 	/**
+	 * If true, the source for this cel is a Mac pic or view whose pixels for
+	 * entries 0 and 255 must be swapped when drawing since we use the PC palette.
+	 */
+	bool _isMacSource;
+
+	/**
 	 * Initialises static CelObj members.
 	 */
 	static void init();
@@ -493,7 +502,7 @@ private:
 
 public:
 	CelObjView(const GuiResourceId viewId, const int16 loopNo, const int16 celNo);
-	virtual ~CelObjView() override {};
+	~CelObjView() override {};
 
 	using CelObj::draw;
 
@@ -506,8 +515,8 @@ public:
 	 */
 	void draw(Buffer &target, const Common::Rect &targetRect, const Common::Point &scaledPosition, bool mirrorX, const Ratio &scaleX, const Ratio &scaleY);
 
-	virtual CelObjView *duplicate() const override;
-	virtual const SciSpan<const byte> getResPointer() const override;
+	CelObjView *duplicate() const override;
+	const SciSpan<const byte> getResPointer() const override;
 
 	Common::Point getLinkPosition(const int16 linkId) const;
 };
@@ -545,13 +554,13 @@ public:
 	int16 _priority;
 
 	CelObjPic(const GuiResourceId pictureId, const int16 celNo);
-	virtual ~CelObjPic() override {};
+	~CelObjPic() override {};
 
 	using CelObj::draw;
-	virtual void draw(Buffer &target, const Common::Rect &targetRect, const Common::Point &scaledPosition, const bool mirrorX) override;
+	void draw(Buffer &target, const Common::Rect &targetRect, const Common::Point &scaledPosition, const bool mirrorX) override;
 
-	virtual CelObjPic *duplicate() const override;
-	virtual const SciSpan<const byte> getResPointer() const override;
+	CelObjPic *duplicate() const override;
+	const SciSpan<const byte> getResPointer() const override;
 };
 
 #pragma mark -
@@ -565,10 +574,10 @@ public:
 class CelObjMem : public CelObj {
 public:
 	CelObjMem(const reg_t bitmap);
-	virtual ~CelObjMem() override {};
+	~CelObjMem() override {};
 
-	virtual CelObjMem *duplicate() const override;
-	virtual const SciSpan<const byte> getResPointer() const override;
+	CelObjMem *duplicate() const override;
+	const SciSpan<const byte> getResPointer() const override;
 };
 
 #pragma mark -
@@ -581,18 +590,18 @@ public:
 class CelObjColor : public CelObj {
 public:
 	CelObjColor(const uint8 color, const int16 width, const int16 height);
-	virtual ~CelObjColor() override {};
+	~CelObjColor() override {};
 
 	using CelObj::draw;
 	/**
 	 * Block fills the target buffer with the cel color.
 	 */
 	void draw(Buffer &target, const Common::Rect &targetRect) const;
-	virtual void draw(Buffer &target, const ScreenItem &screenItem, const Common::Rect &targetRect, const bool mirrorX) override;
-	virtual void draw(Buffer &target, const Common::Rect &targetRect, const Common::Point &scaledPosition, const bool mirrorX) override;
+	void draw(Buffer &target, const ScreenItem &screenItem, const Common::Rect &targetRect, const bool mirrorX) override;
+	void draw(Buffer &target, const Common::Rect &targetRect, const Common::Point &scaledPosition, const bool mirrorX) override;
 
-	virtual CelObjColor *duplicate() const override;
-	virtual const SciSpan<const byte> getResPointer() const override;
+	CelObjColor *duplicate() const override;
+	const SciSpan<const byte> getResPointer() const override;
 };
 } // End of namespace Sci
 

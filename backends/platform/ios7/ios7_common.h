@@ -25,7 +25,7 @@
 
 #include "graphics/surface.h"
 
-// #define ENABLE_IOS7_SCALERS
+#define ENABLE_IOS7_SCALERS
 
 
 enum InputEvent {
@@ -39,8 +39,12 @@ enum InputEvent {
 	kInputKeyPressed,
 	kInputApplicationSuspended,
 	kInputApplicationResumed,
+	kInputApplicationSaveState,
+	kInputApplicationClearState,
+	kInputApplicationRestoreState,
 	kInputSwipe,
-	kInputTap
+	kInputTap,
+	kInputMainMenu
 };
 
 enum ScreenOrientation {
@@ -79,7 +83,8 @@ struct VideoContext {
 	VideoContext() : asprectRatioCorrection(), screenWidth(), screenHeight(), overlayVisible(false),
 	                 overlayWidth(), overlayHeight(), mouseX(), mouseY(),
 	                 mouseHotspotX(), mouseHotspotY(), mouseWidth(), mouseHeight(),
-	                 mouseIsVisible(), graphicsMode(kGraphicsModeNone), filtering(false), shakeOffsetY() {
+	                 mouseIsVisible(), graphicsMode(kGraphicsModeNone), filtering(false),
+	                 shakeXOffset(), shakeYOffset() {
 	}
 
 	// Game screen state
@@ -102,7 +107,8 @@ struct VideoContext {
 	// Misc state
 	GraphicsModes graphicsMode;
 	bool filtering;
-	int shakeOffsetY;
+	int shakeXOffset;
+	int shakeYOffset;
 };
 
 struct InternalEvent {

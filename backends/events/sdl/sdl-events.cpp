@@ -29,31 +29,13 @@
 #include "backends/graphics/graphics.h"
 #include "common/config-manager.h"
 #include "common/textconsole.h"
-
-#ifdef JOY_ANALOG
-#include "math.h"
-#endif
-
-// FIXME move joystick defines out and replace with confile file options
-// we should really allow users to map any key to a joystick button
-#define JOY_DEADZONE 3200
-
-#ifndef __SYMBIAN32__ // Symbian wants dialog joystick i.e cursor for movement/selection
-	#define JOY_ANALOG
-#endif
-
-// #define JOY_INVERT_Y
-#define JOY_XAXIS 0
-#define JOY_YAXIS 1
-// buttons
-#define JOY_BUT_LMOUSE 0
-#define JOY_BUT_RMOUSE 2
-#define JOY_BUT_ESCAPE 3
-#define JOY_BUT_PERIOD 1
-#define JOY_BUT_SPACE 4
-#define JOY_BUT_F5 5
+#include "common/fs.h"
+#include "engines/engine.h"
+#include "gui/gui-manager.h"
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
+#define GAMECONTROLLERDB_FILE "gamecontrollerdb.txt"
+
 static uint32 convUTF8ToUTF32(const char *src) {
 	uint32 utf32 = 0;
 
@@ -72,17 +54,41 @@ static uint32 convUTF8ToUTF32(const char *src) {
 
 	return utf32;
 }
+
+void SdlEventSource::loadGameControllerMappingFile() {
+	bool loaded = false;
+	if (ConfMan.hasKey("controller_map_db")) {
+		Common::FSNode file = Common::FSNode(ConfMan.get("controller_map_db"));
+		if (file.exists()) {
+			if (SDL_GameControllerAddMappingsFromFile(file.getPath().c_str()) < 0)
+				error("File %s not valid: %s", file.getPath().c_str(), SDL_GetError());
+			else {
+				loaded = true;
+				debug("Game controller DB file loaded: %s", file.getPath().c_str());
+			}
+		} else
+			warning("Game controller DB file not found: %s", file.getPath().c_str());
+	}
+	if (!loaded && ConfMan.hasKey("extrapath")) {
+		Common::FSNode dir = Common::FSNode(ConfMan.get("extrapath"));
+		Common::FSNode file = dir.getChild(GAMECONTROLLERDB_FILE);
+		if (file.exists()) {
+			if (SDL_GameControllerAddMappingsFromFile(file.getPath().c_str()) < 0)
+				error("File %s not valid: %s", file.getPath().c_str(), SDL_GetError());
+			else
+				debug("Game controller DB file loaded: %s", file.getPath().c_str());
+		}
+	}
+}
 #endif
 
 SdlEventSource::SdlEventSource()
-    : EventSource(), _scrollLock(false), _joystick(0), _lastScreenID(0), _graphicsManager(0), _queuedFakeMouseMove(false)
+    : EventSource(), _scrollLock(false), _joystick(0), _lastScreenID(0), _graphicsManager(0), _queuedFakeMouseMove(false),
+      _lastHatPosition(SDL_HAT_CENTERED), _mouseX(0), _mouseY(0), _engineRunning(false)
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-      , _queuedFakeKeyUp(false), _fakeKeyUp()
+      , _queuedFakeKeyUp(false), _fakeKeyUp(), _controller(nullptr)
 #endif
       {
-	// Reset mouse state
-	memset(&_km, 0, sizeof(_km));
-
 	int joystick_num = ConfMan.getInt("joystick_num");
 	if (joystick_num >= 0) {
 		// Initialize SDL joystick subsystem
@@ -90,31 +96,25 @@ SdlEventSource::SdlEventSource()
 			error("Could not initialize SDL: %s", SDL_GetError());
 		}
 
-		// Enable joystick
-		if (SDL_NumJoysticks() > joystick_num) {
-			_joystick = SDL_JoystickOpen(joystick_num);
-			debug("Using joystick: %s",
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-			      SDL_JoystickName(_joystick)
-#else
-			      SDL_JoystickName(joystick_num)
-#endif
-			     );
-		} else {
-			warning("Invalid joystick: %d", joystick_num);
+		if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == -1) {
+			error("Could not initialize SDL: %s", SDL_GetError());
 		}
+		loadGameControllerMappingFile();
+#endif
+
+		openJoystick(joystick_num);
 	}
 }
 
 SdlEventSource::~SdlEventSource() {
-	if (_joystick)
-		SDL_JoystickClose(_joystick);
+	closeJoystick();
 }
 
-int SdlEventSource::mapKey(SDLKey sdlKey, SDLMod mod, Uint16 unicode) {
+int SdlEventSource::mapKey(SDL_Keycode sdlKey, SDL_Keymod mod, Uint16 unicode) {
 	Common::KeyCode key = SDLToOSystemKeycode(sdlKey);
 
-	// Keep unicode in case it's regular ASCII text or in case we didn't get a valid keycode
+	// Keep unicode in case it's regular ASCII text, Hebrew or in case we didn't get a valid keycode
 	//
 	// We need to use unicode in those cases, simply because SDL1.x passes us non-layout-adjusted keycodes.
 	// So unicode is the only way to get layout-adjusted keys.
@@ -136,6 +136,10 @@ int SdlEventSource::mapKey(SDLKey sdlKey, SDLMod mod, Uint16 unicode) {
 				if (unicode > 0x7E)
 					unicode = 0; // do not allow any characters above 0x7E
 			} else {
+				// We allow Hebrew characters
+				if (unicode >= 0x05D0 && unicode <= 0x05EA)
+					return unicode;
+
 				// We must not restrict as much as when Ctrl/Alt-modifiers are active, otherwise
 				// we wouldn't let umlauts through for SDL1. For SDL1 umlauts may set for example KEYCODE_QUOTE, KEYCODE_MINUS, etc.
 				if (unicode > 0xFF)
@@ -152,8 +156,14 @@ int SdlEventSource::mapKey(SDLKey sdlKey, SDLMod mod, Uint16 unicode) {
 	if (key >= Common::KEYCODE_F1 && key <= Common::KEYCODE_F9) {
 		return key - Common::KEYCODE_F1 + Common::ASCII_F1;
 	} else if (key >= Common::KEYCODE_KP0 && key <= Common::KEYCODE_KP9) {
-		if ((mod & KMOD_NUM) == 0)
-			return 0; // In case Num-Lock is NOT enabled, return 0 for ascii, so that directional keys on numpad work
+		// WORKAROUND:  Disable this change for AmigaOS4 as it is breaking numpad usage ("fighting") on that platform.
+		// This fixes bug #10558.
+		// The actual issue here is that the SCUMM engine uses ASCII codes instead of keycodes for input.
+		// See also the relevant FIXME in SCUMM's input.cpp.
+		#ifndef __amigaos4__
+			if ((mod & KMOD_NUM) == 0)
+				return 0; // In case Num-Lock is NOT enabled, return 0 for ascii, so that directional keys on numpad work
+		#endif
 		return key - Common::KEYCODE_KP0 + '0';
 	} else if (key >= Common::KEYCODE_UP && key <= Common::KEYCODE_PAGEDOWN) {
 		return key;
@@ -162,7 +172,7 @@ int SdlEventSource::mapKey(SDLKey sdlKey, SDLMod mod, Uint16 unicode) {
 		return unicode;
 	} else if (key >= 'a' && key <= 'z' && (mod & KMOD_SHIFT)) {
 		return key & ~0x20;
-	} else if (key >= Common::KEYCODE_NUMLOCK && key <= Common::KEYCODE_EURO) {
+	} else if (key >= Common::KEYCODE_NUMLOCK && key < Common::KEYCODE_LAST) {
 		return 0;
 	} else {
 		return key;
@@ -170,6 +180,9 @@ int SdlEventSource::mapKey(SDLKey sdlKey, SDLMod mod, Uint16 unicode) {
 }
 
 bool SdlEventSource::processMouseEvent(Common::Event &event, int x, int y) {
+	_mouseX = x;
+	_mouseY = y;
+
 	event.mouse.x = x;
 	event.mouse.y = y;
 
@@ -180,161 +193,23 @@ bool SdlEventSource::processMouseEvent(Common::Event &event, int x, int y) {
 	return true;
 }
 
-bool SdlEventSource::handleKbdMouse(Common::Event &event) {
-	// returns true if an event is generated
-	// Skip recording of these events
-	uint32 curTime = g_system->getMillis(true);
-
-	if (curTime >= _km.last_time + _km.delay_time) {
-
-		int16 oldKmX = _km.x;
-		int16 oldKmY = _km.y;
-
-		_km.last_time = curTime;
-		if (_km.x_down_count == 1) {
-			_km.x_down_time = curTime;
-			_km.x_down_count = 2;
-		}
-		if (_km.y_down_count == 1) {
-			_km.y_down_time = curTime;
-			_km.y_down_count = 2;
-		}
-
-		if (_km.x_vel || _km.y_vel) {
-			if (_km.x_down_count) {
-				if (curTime > _km.x_down_time + 300) {
-					if (_km.x_vel > 0)
-						_km.x_vel += MULTIPLIER;
-					else
-						_km.x_vel -= MULTIPLIER;
-				} else if (curTime > _km.x_down_time + 200) {
-					if (_km.x_vel > 0)
-						_km.x_vel = 5 * MULTIPLIER;
-					else
-						_km.x_vel = -5 * MULTIPLIER;
-				}
-			}
-			if (_km.y_down_count) {
-				if (curTime > _km.y_down_time + 300) {
-					if (_km.y_vel > 0)
-						_km.y_vel += MULTIPLIER;
-					else
-						_km.y_vel -= MULTIPLIER;
-				} else if (curTime > _km.y_down_time + 200) {
-					if (_km.y_vel > 0)
-						_km.y_vel = 5 * MULTIPLIER;
-					else
-						_km.y_vel = -5 * MULTIPLIER;
-				}
-			}
-
-			int16 speedFactor = 25;
-
-			if (g_system->hasFeature(OSystem::kFeatureKbdMouseSpeed)) {
-				switch (ConfMan.getInt("kbdmouse_speed")) {
-				// 0.25 keyboard pointer speed
-				case 0:
-					speedFactor = 100;
-					break;
-				// 0.5 speed
-				case 1:
-					speedFactor = 50;
-					break;
-				// 0.75 speed
-				case 2:
-					speedFactor = 33;
-					break;
-				// 1.0 speed
-				case 3:
-					speedFactor = 25;
-					break;
-				// 1.25 speed
-				case 4:
-					speedFactor = 20;
-					break;
-				// 1.5 speed
-				case 5:
-					speedFactor = 17;
-					break;
-				// 1.75 speed
-				case 6:
-					speedFactor = 14;
-					break;
-				// 2.0 speed
-				case 7:
-					speedFactor = 12;
-					break;
-				default:
-					speedFactor = 25;
-				}
-			}
-
-			// - The modifier key makes the mouse movement slower
-			// - The extra factor "delay/speedFactor" ensures velocities 
-			// are independent of the kbdMouse update rate
-			// - all velocities were originally chosen
-			// at a delay of 25, so that is the reference used here
-			// - note: operator order is important to avoid overflow
-			if (_km.modifier) {
-				_km.x += ((_km.x_vel / 10) * ((int16)_km.delay_time)) / speedFactor;
-				_km.y += ((_km.y_vel / 10) * ((int16)_km.delay_time)) / speedFactor;
-			} else {
-				_km.x += (_km.x_vel * ((int16)_km.delay_time)) / speedFactor;
-				_km.y += (_km.y_vel * ((int16)_km.delay_time)) / speedFactor;
-			}
-
-			if (_km.x < 0) {
-				_km.x = 0;
-				_km.x_vel = -1 * MULTIPLIER;
-				_km.x_down_count = 1;
-			} else if (_km.x > _km.x_max * MULTIPLIER) {
-				_km.x = _km.x_max * MULTIPLIER;
-				_km.x_vel = 1 * MULTIPLIER;
-				_km.x_down_count = 1;
-			}
-
-			if (_km.y < 0) {
-				_km.y = 0;
-				_km.y_vel = -1 * MULTIPLIER;
-				_km.y_down_count = 1;
-			} else if (_km.y > _km.y_max * MULTIPLIER) {
-				_km.y = _km.y_max * MULTIPLIER;
-				_km.y_vel = 1 * MULTIPLIER;
-				_km.y_down_count = 1;
-			}
-
-			if (_graphicsManager) {
-				_graphicsManager->getWindow()->warpMouseInWindow((Uint16)(_km.x / MULTIPLIER), (Uint16)(_km.y / MULTIPLIER));
-			}
-
-			if (_km.x != oldKmX || _km.y != oldKmY) {
-				event.type = Common::EVENT_MOUSEMOVE;
-				return processMouseEvent(event, _km.x / MULTIPLIER, _km.y / MULTIPLIER);
-			}
-		}
-	}
-	return false;
-}
-
-void SdlEventSource::SDLModToOSystemKeyFlags(SDLMod mod, Common::Event &event) {
+void SdlEventSource::SDLModToOSystemKeyFlags(SDL_Keymod mod, Common::Event &event) {
 
 	event.kbd.flags = 0;
 
-#ifdef LINUPY
-	// Yopy has no ALT key, steal the SHIFT key
-	// (which isn't used much anyway)
-	if (mod & KMOD_SHIFT)
-		event.kbd.flags |= Common::KBD_ALT;
-#else
 	if (mod & KMOD_SHIFT)
 		event.kbd.flags |= Common::KBD_SHIFT;
 	if (mod & KMOD_ALT)
 		event.kbd.flags |= Common::KBD_ALT;
-#endif
 	if (mod & KMOD_CTRL)
 		event.kbd.flags |= Common::KBD_CTRL;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (mod & KMOD_GUI)
+		event.kbd.flags |= Common::KBD_META;
+#else
 	if (mod & KMOD_META)
 		event.kbd.flags |= Common::KBD_META;
+#endif
 
 	// Sticky flags
 	if (mod & KMOD_NUM)
@@ -343,7 +218,7 @@ void SdlEventSource::SDLModToOSystemKeyFlags(SDLMod mod, Common::Event &event) {
 		event.kbd.flags |= Common::KBD_CAPS;
 }
 
-Common::KeyCode SdlEventSource::SDLToOSystemKeycode(const SDLKey key) {
+Common::KeyCode SdlEventSource::SDLToOSystemKeycode(const SDL_Keycode key) {
 	switch (key) {
 	case SDLK_BACKSPACE: return Common::KEYCODE_BACKSPACE;
 	case SDLK_TAB: return Common::KEYCODE_TAB;
@@ -416,21 +291,6 @@ Common::KeyCode SdlEventSource::SDLToOSystemKeycode(const SDLKey key) {
 	case SDLK_y: return Common::KEYCODE_y;
 	case SDLK_z: return Common::KEYCODE_z;
 	case SDLK_DELETE: return Common::KEYCODE_DELETE;
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	case SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_GRAVE): return Common::KEYCODE_TILDE;
-#else
-	case SDLK_WORLD_16: return Common::KEYCODE_TILDE;
-#endif
-	case SDLK_KP0: return Common::KEYCODE_KP0;
-	case SDLK_KP1: return Common::KEYCODE_KP1;
-	case SDLK_KP2: return Common::KEYCODE_KP2;
-	case SDLK_KP3: return Common::KEYCODE_KP3;
-	case SDLK_KP4: return Common::KEYCODE_KP4;
-	case SDLK_KP5: return Common::KEYCODE_KP5;
-	case SDLK_KP6: return Common::KEYCODE_KP6;
-	case SDLK_KP7: return Common::KEYCODE_KP7;
-	case SDLK_KP8: return Common::KEYCODE_KP8;
-	case SDLK_KP9: return Common::KEYCODE_KP9;
 	case SDLK_KP_PERIOD: return Common::KEYCODE_KP_PERIOD;
 	case SDLK_KP_DIVIDE: return Common::KEYCODE_KP_DIVIDE;
 	case SDLK_KP_MULTIPLY: return Common::KEYCODE_KP_MULTIPLY;
@@ -462,28 +322,93 @@ Common::KeyCode SdlEventSource::SDLToOSystemKeycode(const SDLKey key) {
 	case SDLK_F13: return Common::KEYCODE_F13;
 	case SDLK_F14: return Common::KEYCODE_F14;
 	case SDLK_F15: return Common::KEYCODE_F15;
-	case SDLK_NUMLOCK: return Common::KEYCODE_NUMLOCK;
 	case SDLK_CAPSLOCK: return Common::KEYCODE_CAPSLOCK;
-	case SDLK_SCROLLOCK: return Common::KEYCODE_SCROLLOCK;
 	case SDLK_RSHIFT: return Common::KEYCODE_RSHIFT;
 	case SDLK_LSHIFT: return Common::KEYCODE_LSHIFT;
 	case SDLK_RCTRL: return Common::KEYCODE_RCTRL;
 	case SDLK_LCTRL: return Common::KEYCODE_LCTRL;
 	case SDLK_RALT: return Common::KEYCODE_RALT;
 	case SDLK_LALT: return Common::KEYCODE_LALT;
-	case SDLK_LSUPER: return Common::KEYCODE_LSUPER;
-	case SDLK_RSUPER: return Common::KEYCODE_RSUPER;
 	case SDLK_MODE: return Common::KEYCODE_MODE;
-	case SDLK_COMPOSE: return Common::KEYCODE_COMPOSE;
 	case SDLK_HELP: return Common::KEYCODE_HELP;
-	case SDLK_PRINT: return Common::KEYCODE_PRINT;
 	case SDLK_SYSREQ: return Common::KEYCODE_SYSREQ;
-#if !SDL_VERSION_ATLEAST(2, 0, 0)
-	case SDLK_BREAK: return Common::KEYCODE_BREAK;
-#endif
 	case SDLK_MENU: return Common::KEYCODE_MENU;
 	case SDLK_POWER: return Common::KEYCODE_POWER;
 	case SDLK_UNDO: return Common::KEYCODE_UNDO;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	case SDLK_SCROLLLOCK: return Common::KEYCODE_SCROLLOCK;
+	case SDLK_NUMLOCKCLEAR: return Common::KEYCODE_NUMLOCK;
+	case SDLK_LGUI: return Common::KEYCODE_LSUPER;
+	case SDLK_RGUI: return Common::KEYCODE_RSUPER;
+	case SDLK_PRINTSCREEN: return Common::KEYCODE_PRINT;
+	case SDLK_APPLICATION: return Common::KEYCODE_COMPOSE;
+	case SDLK_KP_0: return Common::KEYCODE_KP0;
+	case SDLK_KP_1: return Common::KEYCODE_KP1;
+	case SDLK_KP_2: return Common::KEYCODE_KP2;
+	case SDLK_KP_3: return Common::KEYCODE_KP3;
+	case SDLK_KP_4: return Common::KEYCODE_KP4;
+	case SDLK_KP_5: return Common::KEYCODE_KP5;
+	case SDLK_KP_6: return Common::KEYCODE_KP6;
+	case SDLK_KP_7: return Common::KEYCODE_KP7;
+	case SDLK_KP_8: return Common::KEYCODE_KP8;
+	case SDLK_KP_9: return Common::KEYCODE_KP9;
+	case SDLK_PERCENT: return Common::KEYCODE_PERCENT;
+	case SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_GRAVE): return Common::KEYCODE_TILDE;
+	case SDLK_F16: return Common::KEYCODE_F16;
+	case SDLK_F17: return Common::KEYCODE_F17;
+	case SDLK_F18: return Common::KEYCODE_F18;
+	case SDLK_SLEEP: return Common::KEYCODE_SLEEP;
+	case SDLK_MUTE: return Common::KEYCODE_MUTE;
+	case SDLK_VOLUMEUP: return Common::KEYCODE_VOLUMEUP;
+	case SDLK_VOLUMEDOWN: return Common::KEYCODE_VOLUMEDOWN;
+	case SDLK_EJECT: return Common::KEYCODE_EJECT;
+	case SDLK_WWW: return Common::KEYCODE_WWW;
+	case SDLK_MAIL: return Common::KEYCODE_MAIL;
+	case SDLK_CALCULATOR: return Common::KEYCODE_CALCULATOR;
+	case SDLK_CUT: return Common::KEYCODE_CUT;
+	case SDLK_COPY: return Common::KEYCODE_COPY;
+	case SDLK_PASTE: return Common::KEYCODE_PASTE;
+	case SDLK_SELECT: return Common::KEYCODE_SELECT;
+	case SDLK_CANCEL: return Common::KEYCODE_CANCEL;
+	case SDLK_AC_SEARCH: return Common::KEYCODE_AC_SEARCH;
+	case SDLK_AC_HOME: return Common::KEYCODE_AC_HOME;
+	case SDLK_AC_BACK: return Common::KEYCODE_AC_BACK;
+	case SDLK_AC_FORWARD: return Common::KEYCODE_AC_FORWARD;
+	case SDLK_AC_STOP: return Common::KEYCODE_AC_STOP;
+	case SDLK_AC_REFRESH: return Common::KEYCODE_AC_REFRESH;
+	case SDLK_AC_BOOKMARKS: return Common::KEYCODE_AC_BOOKMARKS;
+	case SDLK_AUDIONEXT: return Common::KEYCODE_AUDIONEXT;
+	case SDLK_AUDIOPREV: return Common::KEYCODE_AUDIOPREV;
+	case SDLK_AUDIOSTOP: return Common::KEYCODE_AUDIOSTOP;
+	case SDLK_AUDIOPLAY: return Common::KEYCODE_AUDIOPLAYPAUSE;
+	case SDLK_AUDIOMUTE: return Common::KEYCODE_AUDIOMUTE;
+#if SDL_VERSION_ATLEAST(2, 0, 6)
+	case SDLK_AUDIOREWIND: return Common::KEYCODE_AUDIOREWIND;
+	case SDLK_AUDIOFASTFORWARD: return Common::KEYCODE_AUDIOFASTFORWARD;
+#endif
+#else
+	case SDLK_SCROLLOCK: return Common::KEYCODE_SCROLLOCK;
+	case SDLK_NUMLOCK: return Common::KEYCODE_NUMLOCK;
+	case SDLK_LSUPER: return Common::KEYCODE_LSUPER;
+	case SDLK_RSUPER: return Common::KEYCODE_RSUPER;
+	case SDLK_PRINT: return Common::KEYCODE_PRINT;
+	case SDLK_COMPOSE: return Common::KEYCODE_COMPOSE;
+	case SDLK_KP0: return Common::KEYCODE_KP0;
+	case SDLK_KP1: return Common::KEYCODE_KP1;
+	case SDLK_KP2: return Common::KEYCODE_KP2;
+	case SDLK_KP3: return Common::KEYCODE_KP3;
+	case SDLK_KP4: return Common::KEYCODE_KP4;
+	case SDLK_KP5: return Common::KEYCODE_KP5;
+	case SDLK_KP6: return Common::KEYCODE_KP6;
+	case SDLK_KP7: return Common::KEYCODE_KP7;
+	case SDLK_KP8: return Common::KEYCODE_KP8;
+	case SDLK_KP9: return Common::KEYCODE_KP9;
+	case SDLK_WORLD_16: return Common::KEYCODE_TILDE;
+	case SDLK_BREAK: return Common::KEYCODE_BREAK;
+	case SDLK_LMETA: return Common::KEYCODE_LMETA;
+	case SDLK_RMETA: return Common::KEYCODE_RMETA;
+	case SDLK_EURO: return Common::KEYCODE_EURO;
+#endif
 	default: return Common::KEYCODE_INVALID;
 	}
 }
@@ -501,7 +426,7 @@ bool SdlEventSource::pollEvent(Common::Event &event) {
 #endif
 
 	// If the screen changed, send an Common::EVENT_SCREEN_CHANGED
-	int screenID = ((OSystem_SDL *)g_system)->getGraphicsManager()->getScreenChangeID();
+	int screenID = g_system->getScreenChangeID();
 	if (screenID != _lastScreenID) {
 		_lastScreenID = screenID;
 		event.type = Common::EVENT_SCREEN_CHANGED;
@@ -521,11 +446,6 @@ bool SdlEventSource::pollEvent(Common::Event &event) {
 			return true;
 	}
 
-	// Handle mouse control via analog joystick and keyboard
-	if (handleKbdMouse(event)) {
-		return true;
-	}
-
 	return false;
 }
 
@@ -541,21 +461,16 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		return handleMouseButtonDown(ev, event);
 	case SDL_MOUSEBUTTONUP:
 		return handleMouseButtonUp(ev, event);
-	case SDL_JOYBUTTONDOWN:
-		return handleJoyButtonDown(ev, event);
-	case SDL_JOYBUTTONUP:
-		return handleJoyButtonUp(ev, event);
-	case SDL_JOYAXISMOTION:
-		return handleJoyAxisMotion(ev, event);
+	case SDL_SYSWMEVENT:
+		return handleSysWMEvent(ev, event);
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	case SDL_MOUSEWHEEL: {
 		Sint32 yDir = ev.wheel.y;
-		// HACK: It seems we want the mouse coordinates supplied
-		// with a mouse wheel event. However, SDL2 does not supply
-		// these, thus we use whatever we got last time. It seems
-		// these are always stored in _km.x, _km.y.
-		if (!processMouseEvent(event, _km.x / MULTIPLIER, _km.y / MULTIPLIER)) {
+		// We want the mouse coordinates supplied with a mouse wheel event.
+		// However, SDL2 does not supply these, thus we use whatever we got
+		// last time.
+		if (!processMouseEvent(event, _mouseX, _mouseY)) {
 			return false;
 		}
 		if (yDir < 0) {
@@ -611,9 +526,44 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		//case SDL_WINDOWEVENT_RESIZED:
 			return handleResizeEvent(event, ev.window.data1, ev.window.data2);
 
+		case SDL_WINDOWEVENT_FOCUS_GAINED: {
+			// When we gain focus, we to update whether the display can turn off
+			// dependingif a game isn't running or not
+			event.type = Common::EVENT_FOCUS_GAINED;
+			if (_engineRunning) {
+				SDL_DisableScreenSaver();
+			} else {
+				SDL_EnableScreenSaver();
+			}
+			return true;
+		}
+
+		case SDL_WINDOWEVENT_FOCUS_LOST: {
+			// Always allow the display to turn off if ScummVM is out of focus
+			event.type = Common::EVENT_FOCUS_LOST;
+			SDL_EnableScreenSaver();
+			return true;
+		}
+
 		default:
 			return false;
 		}
+
+	case SDL_JOYDEVICEADDED:
+		return handleJoystickAdded(ev.jdevice, event);
+
+	case SDL_JOYDEVICEREMOVED:
+		return handleJoystickRemoved(ev.jdevice, event);
+
+	case SDL_DROPFILE:
+		event.type = Common::EVENT_DROP_FILE;
+		event.path = Common::String(ev.drop.file);
+		SDL_free(ev.drop.file);
+		return true;
+
+	case SDL_CLIPBOARDUPDATE:
+		event.type = Common::EVENT_CLIPBOARD_UPDATE;
+		return true;
 #else
 	case SDL_VIDEOEXPOSE:
 		if (_graphicsManager)
@@ -628,7 +578,39 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		event.type = Common::EVENT_QUIT;
 		return true;
 
+	default:
+		break;
 	}
+
+	if (_joystick) {
+		switch (ev.type) {
+		case SDL_JOYBUTTONDOWN:
+			return handleJoyButtonDown(ev, event);
+		case SDL_JOYBUTTONUP:
+			return handleJoyButtonUp(ev, event);
+		case SDL_JOYAXISMOTION:
+			return handleJoyAxisMotion(ev, event);
+		case SDL_JOYHATMOTION:
+			return handleJoyHatMotion(ev, event);
+		default:
+			break;
+		}
+	}
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (_controller) {
+		switch (ev.type) {
+		case SDL_CONTROLLERBUTTONDOWN:
+			return handleControllerButton(ev, event, false);
+		case SDL_CONTROLLERBUTTONUP:
+			return handleControllerButton(ev, event, true);
+		case SDL_CONTROLLERAXISMOTION:
+			return handleControllerAxisMotion(ev, event);
+		default:
+			break;
+		}
+	}
+#endif
 
 	return false;
 }
@@ -638,63 +620,22 @@ bool SdlEventSource::handleKeyDown(SDL_Event &ev, Common::Event &event) {
 
 	SDLModToOSystemKeyFlags(SDL_GetModState(), event);
 
-	SDLKey sdlKeycode = obtainKeycode(ev.key.keysym);
+	SDL_Keycode sdlKeycode = obtainKeycode(ev.key.keysym);
+	Common::KeyCode key = SDLToOSystemKeycode(sdlKeycode);
 
 	// Handle scroll lock as a key modifier
-	if (sdlKeycode == SDLK_SCROLLOCK)
+	if (key == Common::KEYCODE_SCROLLOCK)
 		_scrollLock = !_scrollLock;
 
 	if (_scrollLock)
 		event.kbd.flags |= Common::KBD_SCRL;
 
-	// Ctrl-m toggles mouse capture
-	if (event.kbd.hasFlags(Common::KBD_CTRL) && sdlKeycode == 'm') {
-		if (_graphicsManager) {
-			_graphicsManager->getWindow()->toggleMouseGrab();
-		}
-		return false;
-	}
-
-#if defined(MACOSX)
-	// On Macintosh, Cmd-Q quits
-	if ((ev.key.keysym.mod & KMOD_META) && sdlKeycode == 'q') {
-		event.type = Common::EVENT_QUIT;
-		return true;
-	}
-#elif defined(POSIX)
-	// On other *nix systems, Control-Q quits
-	if ((ev.key.keysym.mod & KMOD_CTRL) && sdlKeycode == 'q') {
-		event.type = Common::EVENT_QUIT;
-		return true;
-	}
-#else
-	// Ctrl-z quits
-	if ((event.kbd.hasFlags(Common::KBD_CTRL) && sdlKeycode == 'z')) {
-		event.type = Common::EVENT_QUIT;
-		return true;
-	}
-
-	#ifdef WIN32
-	// On Windows, also use the default Alt-F4 quit combination
-	if ((ev.key.keysym.mod & KMOD_ALT) && sdlKeycode == SDLK_F4) {
-		event.type = Common::EVENT_QUIT;
-		return true;
-	}
-	#endif
-#endif
-
-	// Ctrl-u toggles mute
-	if ((ev.key.keysym.mod & KMOD_CTRL) && sdlKeycode == 'u') {
-		event.type = Common::EVENT_MUTE;
-		return true;
-	}
-
 	if (remapKey(ev, event))
 		return true;
 
 	event.type = Common::EVENT_KEYDOWN;
-	event.kbd.keycode = SDLToOSystemKeycode(sdlKeycode);
-	event.kbd.ascii = mapKey(sdlKeycode, (SDLMod)ev.key.keysym.mod, obtainUnicode(ev.key.keysym));
+	event.kbd.keycode = key;
+	event.kbd.ascii = mapKey(sdlKeycode, (SDL_Keymod)ev.key.keysym.mod, obtainUnicode(ev.key.keysym));
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	event.kbdRepeat = ev.key.repeat;
@@ -707,40 +648,13 @@ bool SdlEventSource::handleKeyUp(SDL_Event &ev, Common::Event &event) {
 	if (remapKey(ev, event))
 		return true;
 
-	SDLKey sdlKeycode = obtainKeycode(ev.key.keysym);
-	SDLMod mod = SDL_GetModState();
-
-	// Check if this is an event handled by handleKeyDown(), and stop if it is
-
-	// Check if the Ctrl key is down, so that we can trap cases where the
-	// user has the Ctrl key down, and has just released a special key
-	if (mod & KMOD_CTRL) {
-		if (sdlKeycode == 'm' ||	// Ctrl-m toggles mouse capture
-#if defined(MACOSX)
-			// Meta - Q, handled below
-#elif defined(POSIX)
-			sdlKeycode == 'q' ||	// On other *nix systems, Control-Q quits
-#else
-			sdlKeycode == 'z' ||	// Ctrl-z quit
-#endif
-			sdlKeycode == 'u')	// Ctrl-u toggles mute
-			return false;
-	}
-
-	// Same for other keys (Meta and Alt)
-#if defined(MACOSX)
-	if ((mod & KMOD_META) && sdlKeycode == 'q')
-		return false;	// On Macintosh, Cmd-Q quits
-#endif
-
-	// If we reached here, this isn't an event handled by handleKeyDown(), thus
-	// continue normally
+	SDL_Keycode sdlKeycode = obtainKeycode(ev.key.keysym);
+	SDL_Keymod mod = SDL_GetModState();
 
 	event.type = Common::EVENT_KEYUP;
 	event.kbd.keycode = SDLToOSystemKeycode(sdlKeycode);
-	event.kbd.ascii = mapKey(sdlKeycode, (SDLMod)ev.key.keysym.mod, 0);
+	event.kbd.ascii = mapKey(sdlKeycode, (SDL_Keymod)ev.key.keysym.mod, 0);
 
-	// Ctrl-Alt-<key> will change the GFX mode
 	SDLModToOSystemKeyFlags(mod, event);
 
 	// Set the scroll lock sticky flag
@@ -752,10 +666,6 @@ bool SdlEventSource::handleKeyUp(SDL_Event &ev, Common::Event &event) {
 
 bool SdlEventSource::handleMouseMotion(SDL_Event &ev, Common::Event &event) {
 	event.type = Common::EVENT_MOUSEMOVE;
-
-	// update KbdMouse
-	_km.x = ev.motion.x * MULTIPLIER;
-	_km.y = ev.motion.y * MULTIPLIER;
 
 	return processMouseEvent(event, ev.motion.x, ev.motion.y);
 }
@@ -775,12 +685,16 @@ bool SdlEventSource::handleMouseButtonDown(SDL_Event &ev, Common::Event &event) 
 	else if (ev.button.button == SDL_BUTTON_MIDDLE)
 		event.type = Common::EVENT_MBUTTONDOWN;
 #endif
+#if defined(SDL_BUTTON_X1)
+	else if (ev.button.button == SDL_BUTTON_X1)
+		event.type = Common::EVENT_X1BUTTONDOWN;
+#endif
+#if defined(SDL_BUTTON_X2)
+	else if (ev.button.button == SDL_BUTTON_X2)
+		event.type = Common::EVENT_X2BUTTONDOWN;
+#endif
 	else
 		return false;
-
-	// update KbdMouse
-	_km.x = ev.button.x * MULTIPLIER;
-	_km.y = ev.button.y * MULTIPLIER;
 
 	return processMouseEvent(event, ev.button.x, ev.button.y);
 }
@@ -794,223 +708,236 @@ bool SdlEventSource::handleMouseButtonUp(SDL_Event &ev, Common::Event &event) {
 	else if (ev.button.button == SDL_BUTTON_MIDDLE)
 		event.type = Common::EVENT_MBUTTONUP;
 #endif
+#if defined(SDL_BUTTON_X1)
+	else if (ev.button.button == SDL_BUTTON_X1)
+		event.type = Common::EVENT_X1BUTTONUP;
+#endif
+#if defined(SDL_BUTTON_X2)
+	else if (ev.button.button == SDL_BUTTON_X2)
+		event.type = Common::EVENT_X2BUTTONUP;
+#endif
 	else
 		return false;
-
-	// update KbdMouse
-	_km.x = ev.button.x * MULTIPLIER;
-	_km.y = ev.button.y * MULTIPLIER;
 
 	return processMouseEvent(event, ev.button.x, ev.button.y);
 }
 
-bool SdlEventSource::handleJoyButtonDown(SDL_Event &ev, Common::Event &event) {
-	if (ev.jbutton.button == JOY_BUT_LMOUSE) {
-		event.type = Common::EVENT_LBUTTONDOWN;
-		return processMouseEvent(event, _km.x / MULTIPLIER, _km.y / MULTIPLIER);
-	} else if (ev.jbutton.button == JOY_BUT_RMOUSE) {
-		event.type = Common::EVENT_RBUTTONDOWN;
-		return processMouseEvent(event, _km.x / MULTIPLIER, _km.y / MULTIPLIER);
-	} else {
-		event.type = Common::EVENT_KEYDOWN;
-		switch (ev.jbutton.button) {
-		case JOY_BUT_ESCAPE:
-			event.kbd.keycode = Common::KEYCODE_ESCAPE;
-			event.kbd.ascii = mapKey(SDLK_ESCAPE, (SDLMod)ev.key.keysym.mod, 0);
-			break;
-		case JOY_BUT_PERIOD:
-			event.kbd.keycode = Common::KEYCODE_PERIOD;
-			event.kbd.ascii = mapKey(SDLK_PERIOD, (SDLMod)ev.key.keysym.mod, 0);
-			break;
-		case JOY_BUT_SPACE:
-			event.kbd.keycode = Common::KEYCODE_SPACE;
-			event.kbd.ascii = mapKey(SDLK_SPACE, (SDLMod)ev.key.keysym.mod, 0);
-			break;
-		case JOY_BUT_F5:
-			event.kbd.keycode = Common::KEYCODE_F5;
-			event.kbd.ascii = mapKey(SDLK_F5, (SDLMod)ev.key.keysym.mod, 0);
-			break;
+bool SdlEventSource::handleSysWMEvent(SDL_Event &ev, Common::Event &event) {
+	return false;
+}
+
+void SdlEventSource::openJoystick(int joystickIndex) {
+	if (SDL_NumJoysticks() > joystickIndex) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		if (SDL_IsGameController(joystickIndex)) {
+			_controller = SDL_GameControllerOpen(joystickIndex);
+			debug("Using game controller: %s", SDL_GameControllerName(_controller));
+		} else
+#endif
+		{
+			_joystick = SDL_JoystickOpen(joystickIndex);
+			debug("Using joystick: %s",
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+                  SDL_JoystickName(_joystick)
+#else
+                  SDL_JoystickName(joystickIndex)
+#endif
+			);
 		}
-		return true;
+	} else {
+		debug(5, "Invalid joystick: %d", joystickIndex);
 	}
+}
+
+void SdlEventSource::closeJoystick() {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (_controller) {
+		SDL_GameControllerClose(_controller);
+		_controller = nullptr;
+	}
+#endif
+	if (_joystick) {
+		SDL_JoystickClose(_joystick);
+		_joystick = nullptr;
+	}
+}
+
+int SdlEventSource::mapSDLJoystickButtonToOSystem(Uint8 sdlButton) {
+	Common::JoystickButton osystemButtons[] = {
+	    Common::JOYSTICK_BUTTON_A,
+	    Common::JOYSTICK_BUTTON_B,
+	    Common::JOYSTICK_BUTTON_X,
+	    Common::JOYSTICK_BUTTON_Y,
+	    Common::JOYSTICK_BUTTON_LEFT_SHOULDER,
+	    Common::JOYSTICK_BUTTON_RIGHT_SHOULDER,
+	    Common::JOYSTICK_BUTTON_BACK,
+	    Common::JOYSTICK_BUTTON_START,
+	    Common::JOYSTICK_BUTTON_LEFT_STICK,
+	    Common::JOYSTICK_BUTTON_RIGHT_STICK
+	};
+
+	if (sdlButton >= ARRAYSIZE(osystemButtons)) {
+		return -1;
+	}
+
+	return osystemButtons[sdlButton];
+}
+
+bool SdlEventSource::handleJoyButtonDown(SDL_Event &ev, Common::Event &event) {
+	int button = mapSDLJoystickButtonToOSystem(ev.jbutton.button);
+	if (button < 0) {
+		return false;
+	}
+
+	event.type = Common::EVENT_JOYBUTTON_DOWN;
+	event.joystick.button = button;
+
+	return true;
 }
 
 bool SdlEventSource::handleJoyButtonUp(SDL_Event &ev, Common::Event &event) {
-	if (ev.jbutton.button == JOY_BUT_LMOUSE) {
-		event.type = Common::EVENT_LBUTTONUP;
-		return processMouseEvent(event, _km.x / MULTIPLIER, _km.y / MULTIPLIER);
-	} else if (ev.jbutton.button == JOY_BUT_RMOUSE) {
-		event.type = Common::EVENT_RBUTTONUP;
-		return processMouseEvent(event, _km.x / MULTIPLIER, _km.y / MULTIPLIER);
-	} else {
-		event.type = Common::EVENT_KEYUP;
-		switch (ev.jbutton.button) {
-		case JOY_BUT_ESCAPE:
-			event.kbd.keycode = Common::KEYCODE_ESCAPE;
-			event.kbd.ascii = mapKey(SDLK_ESCAPE, (SDLMod)ev.key.keysym.mod, 0);
-			break;
-		case JOY_BUT_PERIOD:
-			event.kbd.keycode = Common::KEYCODE_PERIOD;
-			event.kbd.ascii = mapKey(SDLK_PERIOD, (SDLMod)ev.key.keysym.mod, 0);
-			break;
-		case JOY_BUT_SPACE:
-			event.kbd.keycode = Common::KEYCODE_SPACE;
-			event.kbd.ascii = mapKey(SDLK_SPACE, (SDLMod)ev.key.keysym.mod, 0);
-			break;
-		case JOY_BUT_F5:
-			event.kbd.keycode = Common::KEYCODE_F5;
-			event.kbd.ascii = mapKey(SDLK_F5, (SDLMod)ev.key.keysym.mod, 0);
-			break;
-		}
-		return true;
+	int button = mapSDLJoystickButtonToOSystem(ev.jbutton.button);
+	if (button < 0) {
+		return false;
 	}
+
+	event.type = Common::EVENT_JOYBUTTON_UP;
+	event.joystick.button = button;
+
+	return true;
 }
 
 bool SdlEventSource::handleJoyAxisMotion(SDL_Event &ev, Common::Event &event) {
+	event.type = Common::EVENT_JOYAXIS_MOTION;
+	event.joystick.axis = ev.jaxis.axis;
+	event.joystick.position = ev.jaxis.value;
 
-	int axis = ev.jaxis.value;
-#ifdef JOY_ANALOG
-	// conversion factor between keyboard mouse and joy axis value
-	int vel_to_axis = (1500 / MULTIPLIER);
-#else
-	if (axis > JOY_DEADZONE) {
-		axis -= JOY_DEADZONE;
-	} else if (axis < -JOY_DEADZONE) {
-		axis += JOY_DEADZONE;
-	} else
-		axis = 0;
-#endif
+	return true;
+}
 
-	if (ev.jaxis.axis == JOY_XAXIS) {
-#ifdef JOY_ANALOG
-		_km.joy_x = axis;
-#else
-		if (axis != 0) {
-			_km.x_vel = (axis > 0) ? 1 * MULTIPLIER:-1 * MULTIPLIER;
-			_km.x_down_count = 1;
-		} else {
-			_km.x_vel = 0;
-			_km.x_down_count = 0;
-		}
-#endif
-	} else if (ev.jaxis.axis == JOY_YAXIS) {
-#ifndef JOY_INVERT_Y
-		axis = -axis;
-#endif
-#ifdef JOY_ANALOG
-		_km.joy_y = -axis;
-#else
-		if (axis != 0) {
-			_km.y_vel = (-axis > 0) ? 1 * MULTIPLIER: -1 * MULTIPLIER;
-			_km.y_down_count = 1;
-		} else {
-			_km.y_vel = 0;
-			_km.y_down_count = 0;
-		}
-#endif
+#define HANDLE_HAT_UP(new, old, mask, joybutton) \
+	if ((old & mask) && !(new & mask)) { \
+		event.joystick.button = joybutton; \
+		g_system->getEventManager()->pushEvent(event); \
 	}
-#ifdef JOY_ANALOG
-	// radial and scaled analog joystick deadzone
-	float analogX = (float)_km.joy_x;
-	float analogY = (float)_km.joy_y;
-	float deadZone = (float)JOY_DEADZONE;
-	if (g_system->hasFeature(OSystem::kFeatureJoystickDeadzone))
-		deadZone = (float)ConfMan.getInt("joystick_deadzone") * 1000.0f;
-	float scalingFactor = 1.0f;
-	float magnitude = 0.0f;
 
-	magnitude = sqrt(analogX * analogX + analogY * analogY);
-
-	if (magnitude >= deadZone) {
-		_km.x_down_count = 0;
-		_km.y_down_count = 0;
-		scalingFactor = 1.0f / magnitude * (magnitude - deadZone) / (32769.0f - deadZone);
-		_km.x_vel = (int16)(analogX * scalingFactor * 32768.0f / vel_to_axis);
-		_km.y_vel = (int16)(analogY * scalingFactor * 32768.0f / vel_to_axis);
-	} else {
-		_km.x_vel = 0;
-		_km.y_vel = 0;
+#define HANDLE_HAT_DOWN(new, old, mask, joybutton) \
+	if ((new & mask) && !(old & mask)) { \
+		event.joystick.button = joybutton; \
+		g_system->getEventManager()->pushEvent(event); \
 	}
-#endif
+
+bool SdlEventSource::handleJoyHatMotion(SDL_Event &ev, Common::Event &event) {
+	event.type = Common::EVENT_JOYBUTTON_UP;
+	HANDLE_HAT_UP(ev.jhat.value, _lastHatPosition, SDL_HAT_UP, Common::JOYSTICK_BUTTON_DPAD_UP)
+	HANDLE_HAT_UP(ev.jhat.value, _lastHatPosition, SDL_HAT_DOWN, Common::JOYSTICK_BUTTON_DPAD_DOWN)
+	HANDLE_HAT_UP(ev.jhat.value, _lastHatPosition, SDL_HAT_LEFT, Common::JOYSTICK_BUTTON_DPAD_LEFT)
+	HANDLE_HAT_UP(ev.jhat.value, _lastHatPosition, SDL_HAT_RIGHT, Common::JOYSTICK_BUTTON_DPAD_RIGHT)
+
+	event.type = Common::EVENT_JOYBUTTON_DOWN;
+	HANDLE_HAT_DOWN(ev.jhat.value, _lastHatPosition, SDL_HAT_UP, Common::JOYSTICK_BUTTON_DPAD_UP)
+	HANDLE_HAT_DOWN(ev.jhat.value, _lastHatPosition, SDL_HAT_DOWN, Common::JOYSTICK_BUTTON_DPAD_DOWN)
+	HANDLE_HAT_DOWN(ev.jhat.value, _lastHatPosition, SDL_HAT_LEFT, Common::JOYSTICK_BUTTON_DPAD_LEFT)
+	HANDLE_HAT_DOWN(ev.jhat.value, _lastHatPosition, SDL_HAT_RIGHT, Common::JOYSTICK_BUTTON_DPAD_RIGHT)
+
+	_lastHatPosition = ev.jhat.value;
 
 	return false;
 }
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+bool SdlEventSource::handleJoystickAdded(const SDL_JoyDeviceEvent &device, Common::Event &event) {
+	debug(5, "SdlEventSource: Received joystick added event for index '%d'", device.which);
+
+	int joystick_num = ConfMan.getInt("joystick_num");
+	if (joystick_num != device.which) {
+		return false;
+	}
+
+	debug(5, "SdlEventSource: Newly added joystick with index '%d' matches 'joysticky_num', trying to use it", device.which);
+
+	closeJoystick();
+	openJoystick(joystick_num);
+
+	event.type = Common::EVENT_INPUT_CHANGED;
+	return true;
+}
+
+bool SdlEventSource::handleJoystickRemoved(const SDL_JoyDeviceEvent &device, Common::Event &event) {
+	debug(5, "SdlEventSource: Received joystick removed event for instance id '%d'", device.which);
+
+	SDL_Joystick *joystick;
+	if (_controller) {
+		joystick = SDL_GameControllerGetJoystick(_controller);
+	} else {
+		joystick = _joystick;
+	}
+
+	if (!joystick) {
+		return false;
+	}
+
+	if (SDL_JoystickInstanceID(joystick) != device.which) {
+		return false;
+	}
+
+	debug(5, "SdlEventSource: Newly removed joystick with instance id '%d' matches currently used joystick, closing current joystick", device.which);
+
+	closeJoystick();
+
+	event.type = Common::EVENT_INPUT_CHANGED;
+	return true;
+}
+
+int SdlEventSource::mapSDLControllerButtonToOSystem(Uint8 sdlButton) {
+	Common::JoystickButton osystemButtons[] = {
+	    Common::JOYSTICK_BUTTON_A,
+	    Common::JOYSTICK_BUTTON_B,
+	    Common::JOYSTICK_BUTTON_X,
+	    Common::JOYSTICK_BUTTON_Y,
+	    Common::JOYSTICK_BUTTON_BACK,
+	    Common::JOYSTICK_BUTTON_GUIDE,
+	    Common::JOYSTICK_BUTTON_START,
+	    Common::JOYSTICK_BUTTON_LEFT_STICK,
+	    Common::JOYSTICK_BUTTON_RIGHT_STICK,
+	    Common::JOYSTICK_BUTTON_LEFT_SHOULDER,
+	    Common::JOYSTICK_BUTTON_RIGHT_SHOULDER,
+	    Common::JOYSTICK_BUTTON_DPAD_UP,
+	    Common::JOYSTICK_BUTTON_DPAD_DOWN,
+	    Common::JOYSTICK_BUTTON_DPAD_LEFT,
+	    Common::JOYSTICK_BUTTON_DPAD_RIGHT
+	};
+
+	if (sdlButton >= ARRAYSIZE(osystemButtons)) {
+		return -1;
+	}
+
+	return osystemButtons[sdlButton];
+}
+
+bool SdlEventSource::handleControllerButton(const SDL_Event &ev, Common::Event &event, bool buttonUp) {
+	int button = mapSDLControllerButtonToOSystem(ev.cbutton.button);
+
+	if (button < 0)
+		return false;
+
+	event.type = buttonUp ? Common::EVENT_JOYBUTTON_UP : Common::EVENT_JOYBUTTON_DOWN;
+	event.joystick.button = button;
+
+	return true;
+}
+
+bool SdlEventSource::handleControllerAxisMotion(const SDL_Event &ev, Common::Event &event) {
+	event.type = Common::EVENT_JOYAXIS_MOTION;
+	event.joystick.axis = ev.caxis.axis;
+	event.joystick.position = ev.caxis.value;
+
+	return true;
+}
+#endif
 
 bool SdlEventSource::remapKey(SDL_Event &ev, Common::Event &event) {
-#ifdef LINUPY
-	// On Yopy map the End button to quit
-	if ((ev.key.keysym.sym == 293)) {
-		event.type = Common::EVENT_QUIT;
-		return true;
-	}
-	// Map menu key to f5 (scumm menu)
-	if (ev.key.keysym.sym == 306) {
-		event.type = Common::EVENT_KEYDOWN;
-		event.kbd.keycode = Common::KEYCODE_F5;
-		event.kbd.ascii = mapKey(SDLK_F5, ev.key.keysym.mod, 0);
-		return true;
-	}
-	// Map action key to action
-	if (ev.key.keysym.sym == 291) {
-		event.type = Common::EVENT_KEYDOWN;
-		event.kbd.keycode = Common::KEYCODE_TAB;
-		event.kbd.ascii = mapKey(SDLK_TAB, ev.key.keysym.mod, 0);
-		return true;
-	}
-	// Map OK key to skip cinematic
-	if (ev.key.keysym.sym == 292) {
-		event.type = Common::EVENT_KEYDOWN;
-		event.kbd.keycode = Common::KEYCODE_ESCAPE;
-		event.kbd.ascii = mapKey(SDLK_ESCAPE, ev.key.keysym.mod, 0);
-		return true;
-	}
-#endif
-
-#ifdef QTOPIA
-	// Quit on fn+backspace on zaurus
-	if (ev.key.keysym.sym == 127) {
-		event.type = Common::EVENT_QUIT;
-		return true;
-	}
-
-	// Map menu key (f11) to f5 (scumm menu)
-	if (ev.key.keysym.sym == SDLK_F11) {
-		event.type = Common::EVENT_KEYDOWN;
-		event.kbd.keycode = Common::KEYCODE_F5;
-		event.kbd.ascii = mapKey(SDLK_F5, ev.key.keysym.mod, 0);
-	}
-	// Map center (space) to tab (default action)
-	// I wanted to map the calendar button but the calendar comes up
-	else if (ev.key.keysym.sym == SDLK_SPACE) {
-		event.type = Common::EVENT_KEYDOWN;
-		event.kbd.keycode = Common::KEYCODE_TAB;
-		event.kbd.ascii = mapKey(SDLK_TAB, ev.key.keysym.mod, 0);
-	}
-	// Since we stole space (pause) above we'll rebind it to the tab key on the keyboard
-	else if (ev.key.keysym.sym == SDLK_TAB) {
-		event.type = Common::EVENT_KEYDOWN;
-		event.kbd.keycode = Common::KEYCODE_SPACE;
-		event.kbd.ascii = mapKey(SDLK_SPACE, ev.key.keysym.mod, 0);
-	} else {
-	// Let the events fall through if we didn't change them, this may not be the best way to
-	// set it up, but i'm not sure how sdl would like it if we let if fall through then redid it though.
-	// and yes i have an huge terminal size so i dont wrap soon enough.
-		event.type = Common::EVENT_KEYDOWN;
-		event.kbd.keycode = ev.key.keysym.sym;
-		event.kbd.ascii = mapKey(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode);
-	}
-#endif
 	return false;
-}
-
-void SdlEventSource::resetKeyboardEmulation(int16 x_max, int16 y_max) {
-	_km.x_max = x_max;
-	_km.y_max = y_max;
-	_km.delay_time = 12;
-	_km.last_time = 0;
-	_km.modifier = false;
-	_km.joy_x = 0;
-	_km.joy_y = 0;
 }
 
 void SdlEventSource::fakeWarpMouse(const int x, const int y) {
@@ -1019,12 +946,24 @@ void SdlEventSource::fakeWarpMouse(const int x, const int y) {
 	_fakeMouseMove.mouse = Common::Point(x, y);
 }
 
+bool SdlEventSource::isJoystickConnected() const {
+	return _joystick
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	        || _controller
+#endif
+	        ;
+}
+
+void SdlEventSource::setEngineRunning(const bool value) {
+	_engineRunning = value;
+}
+
 bool SdlEventSource::handleResizeEvent(Common::Event &event, int w, int h) {
 	if (_graphicsManager) {
 		_graphicsManager->notifyResize(w, h);
 
 		// If the screen changed, send an Common::EVENT_SCREEN_CHANGED
-		int screenID = ((OSystem_SDL *)g_system)->getGraphicsManager()->getScreenChangeID();
+		int screenID = g_system->getScreenChangeID();
 		if (screenID != _lastScreenID) {
 			_lastScreenID = screenID;
 			event.type = Common::EVENT_SCREEN_CHANGED;
@@ -1035,8 +974,8 @@ bool SdlEventSource::handleResizeEvent(Common::Event &event, int w, int h) {
 	return false;
 }
 
-SDLKey SdlEventSource::obtainKeycode(const SDL_keysym keySym) {
-#if !SDL_VERSION_ATLEAST(2, 0, 0) && defined(WIN32) && !defined(_WIN32_WCE)
+SDL_Keycode SdlEventSource::obtainKeycode(const SDL_Keysym keySym) {
+#if !SDL_VERSION_ATLEAST(2, 0, 0) && defined(WIN32)
 	// WORKAROUND: SDL 1.2 on Windows does not use the user configured keyboard layout,
 	// resulting in "keySym.sym" values to always be those expected for an US keyboard.
 	// For example, SDL returns SDLK_Q when pressing the 'A' key on an AZERTY keyboard.
@@ -1062,9 +1001,9 @@ SDLKey SdlEventSource::obtainKeycode(const SDL_keysym keySym) {
 		if (ch) {
 			if (ch >= 'A' && ch <= 'Z') {
 				// Windows returns uppercase ASCII whereas SDL expects lowercase
-				return (SDLKey)(SDLK_a + (ch - 'A'));
+				return (SDL_Keycode)(SDLK_a + (ch - 'A'));
 			} else {
-				return (SDLKey)ch;
+				return (SDL_Keycode)ch;
 			}
 		}
 	}
@@ -1073,7 +1012,7 @@ SDLKey SdlEventSource::obtainKeycode(const SDL_keysym keySym) {
 	return keySym.sym;
 }
 
-uint32 SdlEventSource::obtainUnicode(const SDL_keysym keySym) {
+uint32 SdlEventSource::obtainUnicode(const SDL_Keysym keySym) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_Event events[2];
 

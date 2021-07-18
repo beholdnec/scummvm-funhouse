@@ -12,11 +12,15 @@ MODULE_OBJS := \
 	fonts/newfont.o \
 	fonts/ttf.o \
 	fonts/winfont.o \
+	larryScale.o \
 	maccursor.o \
+	macgui/datafiles.o \
+	macgui/macbutton.o \
 	macgui/macfontmanager.o \
 	macgui/macmenu.o \
 	macgui/mactext.o \
 	macgui/mactextwindow.o \
+	macgui/macwidget.o \
 	macgui/macwindow.o \
 	macgui/macwindowborder.o \
 	macgui/macwindowmanager.o \

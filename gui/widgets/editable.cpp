@@ -47,6 +47,9 @@ void EditableWidget::init() {
 
 	_editScrollOffset = 0;
 
+	_align = g_gui.useRTL() ? Graphics::kTextAlignRight : Graphics::kTextAlignLeft;
+	_drawAlign = _align;
+
 	_font = ThemeEngine::kFontStyleBold;
 	_inversion = ThemeEngine::kTextInversionNone;
 }
@@ -58,8 +61,12 @@ void EditableWidget::reflowLayout() {
 	Widget::reflowLayout();
 
 	_editScrollOffset = g_gui.getStringWidth(_editString, _font) - getEditRect().width();
-	if (_editScrollOffset < 0)
+	if (_editScrollOffset < 0) {
 		_editScrollOffset = 0;
+		_drawAlign = _align;
+	} else {
+		_drawAlign = Graphics::kTextAlignLeft;
+	}
 }
 
 void EditableWidget::setEditString(const String &str) {
@@ -156,8 +163,9 @@ bool EditableWidget::handleKeyDown(Common::KeyState state) {
 	case Common::KEYCODE_DOWN:
 	case Common::KEYCODE_END:
 		// Move caret to end
-		dirty = setCaretPos(_editString.size());
+		setCaretPos(_editString.size());
 		forcecaret = true;
+		dirty = true;
 		break;
 
 	case Common::KEYCODE_LEFT:
@@ -181,12 +189,13 @@ bool EditableWidget::handleKeyDown(Common::KeyState state) {
 	case Common::KEYCODE_UP:
 	case Common::KEYCODE_HOME:
 		// Move caret to start
-		dirty = setCaretPos(0);
+		setCaretPos(0);
 		forcecaret = true;
+		dirty = true;
 		break;
 
 	case Common::KEYCODE_v:
-		if (g_system->hasFeature(OSystem::kFeatureClipboardSupport) && state.flags & Common::KBD_CTRL) {
+		if (state.flags & Common::KBD_CTRL) {
 			if (g_system->hasTextInClipboard()) {
 				String text = g_system->getTextFromClipboard();
 				for (uint32 i = 0; i < text.size(); ++i) {
@@ -195,6 +204,15 @@ bool EditableWidget::handleKeyDown(Common::KeyState state) {
 				}
 				dirty = true;
 			}
+		} else {
+			defaultKeyDownHandler(state, dirty, forcecaret, handled);
+		}
+		break;
+
+	case Common::KEYCODE_c:
+		if (state.flags & Common::KBD_CTRL) {
+			if (!getEditString().empty())
+				g_system->setTextInClipboard(getEditString());
 		} else {
 			defaultKeyDownHandler(state, dirty, forcecaret, handled);
 		}
@@ -235,7 +253,7 @@ bool EditableWidget::handleKeyDown(Common::KeyState state) {
 	}
 
 	if (dirty)
-		draw();
+		markAsDirty();
 
 	if (forcecaret)
 		makeCaretVisible();
@@ -256,18 +274,8 @@ void EditableWidget::defaultKeyDownHandler(Common::KeyState &state, bool &dirty,
 }
 
 int EditableWidget::getCaretOffset() const {
-	int caretpos = 0;
-
-	uint last = 0;
-	for (int i = 0; i < _caretPos; ++i) {
-		const uint cur = _editString[i];
-		caretpos += g_gui.getCharWidth(cur, _font) + g_gui.getKerningOffset(last, cur, _font);
-		last = cur;
-	}
-
-	caretpos -= _editScrollOffset;
-
-	return caretpos;
+	Common::String substr(_editString.c_str(), _caretPos);
+	return g_gui.getStringWidth(substr, _font) - _editScrollOffset;
 }
 
 void EditableWidget::drawCaret(bool erase) {
@@ -280,16 +288,30 @@ void EditableWidget::drawCaret(bool erase) {
 	int x = editRect.left;
 	int y = editRect.top;
 
+	if (_align == Graphics::kTextAlignRight) {
+		int strVisibleWidth = g_gui.getStringWidth(_editString, _font) - _editScrollOffset;
+		if (strVisibleWidth > editRect.width()) {
+			_drawAlign = Graphics::kTextAlignLeft;
+			strVisibleWidth = editRect.width();
+		} else {
+			_drawAlign = _align;
+		}
+		x = editRect.right - strVisibleWidth;
+	}
+
 	const int caretOffset = getCaretOffset();
 	x += caretOffset;
 
 	if (y < 0 || y + editRect.height() > _h)
 		return;
 
-	x += getAbsX();
+	if (g_gui.useRTL())
+		x += g_system->getOverlayWidth() - _w - getAbsX() + g_gui.getOverlayOffset();
+	else
+		x += getAbsX();
 	y += getAbsY();
 
-	g_gui.theme()->drawCaretClip(Common::Rect(x, y, x + 1, y + editRect.height()), getBossClipRect(), erase);
+	g_gui.theme()->drawCaret(Common::Rect(x, y, x + 1, y + editRect.height()), erase);
 
 	if (erase) {
 		GUI::EditableWidget::String character;
@@ -318,7 +340,9 @@ void EditableWidget::drawCaret(bool erase) {
 		// possible glitches due to different methods used.
 		width = MIN(editRect.width() - caretOffset, width);
 		if (width > 0) {
-			g_gui.theme()->drawTextClip(Common::Rect(x, y, x + width, y + editRect.height()), getBossClipRect(), character, _state, Graphics::kTextAlignLeft, _inversion, 0, false, _font, ThemeEngine::kFontColorNormal, true, _textDrawableArea);
+			g_gui.theme()->drawText(Common::Rect(x, y, x + width, y + editRect.height()), character,
+			                        _state, _drawAlign, _inversion, 0, false, _font,
+			                        ThemeEngine::kFontColorNormal, true, _textDrawableArea);
 		}
 	}
 

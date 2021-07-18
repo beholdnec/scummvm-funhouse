@@ -70,7 +70,7 @@ MohawkBitmap::~MohawkBitmap() {
 
 void MohawkBitmap::decodeImageData(Common::SeekableReadStream *stream) {
 	_data = stream;
-	_header.colorTable.palette = NULL;
+	_header.colorTable.palette = nullptr;
 
 	// NOTE: Only the bottom 12 bits of width/height/bytesPerRow are
 	// considered valid and bytesPerRow has to be an even number.
@@ -650,7 +650,7 @@ MohawkSurface *MystBitmap::decodeImage(Common::SeekableReadStream *stream) {
 		error("Could not decode Myst bitmap");
 
 	const Graphics::Surface *bmpSurface = bitmapDecoder.getSurface();
-	Graphics::Surface *newSurface = 0;
+	Graphics::Surface *newSurface = nullptr;
 
 	if (bmpSurface->format.bytesPerPixel == 1) {
 		_bitsPerPixel = 8;
@@ -662,7 +662,7 @@ MohawkSurface *MystBitmap::decodeImage(Common::SeekableReadStream *stream) {
 	}
 
 	// Copy the palette to one of our own
-	byte *newPal = 0;
+	byte *newPal = nullptr;
 
 	if (bitmapDecoder.hasPalette()) {
 		const byte *palette = bitmapDecoder.getPalette();
@@ -677,9 +677,7 @@ MohawkSurface *MystBitmap::decodeImage(Common::SeekableReadStream *stream) {
 
 #endif
 
-MohawkSurface *LivingBooksBitmap_v1::decodeImage(Common::SeekableReadStream *stream) {
-	Common::SeekableSubReadStreamEndian *endianStream = (Common::SeekableSubReadStreamEndian *)stream;
-
+MohawkSurface *LivingBooksBitmap_v1::decodeImageLB(Common::SeekableReadStreamEndian *endianStream) {
 	// 12 bytes header for the image
 	_header.format = endianStream->readUint16();
 	_header.bytesPerRow = endianStream->readUint16();
@@ -709,7 +707,7 @@ MohawkSurface *LivingBooksBitmap_v1::decodeImage(Common::SeekableReadStream *str
 		if (lengthBits != LEN_BITS)
 			error("Length bits modified to %d", lengthBits);
 
-		_data = decompressLZ(stream, uncompressedSize);
+		_data = decompressLZ(endianStream, uncompressedSize);
 
 		if (endianStream->pos() != endianStream->size())
 			error("LivingBooksBitmap_v1 decompression failed");
@@ -728,8 +726,8 @@ MohawkSurface *LivingBooksBitmap_v1::decodeImage(Common::SeekableReadStream *str
 		if (!endianStream->isBE())
 			leRLE8 = true;
 
-		_data = stream;
-		stream = NULL;
+		_data = endianStream;
+		endianStream = nullptr;
 	}
 
 	Graphics::Surface *surface = createSurface(_header.width, _header.height);
@@ -740,7 +738,7 @@ MohawkSurface *LivingBooksBitmap_v1::decodeImage(Common::SeekableReadStream *str
 		drawRaw(surface);
 
 	delete _data;
-	delete stream;
+	delete endianStream;
 
 	MohawkSurface *mhkSurface = new MohawkSurface(surface);
 	mhkSurface->setOffsetX(offsetX);

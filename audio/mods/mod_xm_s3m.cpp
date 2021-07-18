@@ -278,6 +278,8 @@ void ModXmS3mStream::tickChannel(Channel &channel) {
 			case 0xF0: /* Tone Porta.*/
 				tonePorta(channel);
 				break;
+			default:
+				break;
 		}
 	}
 	switch (channel.note.effect) {
@@ -374,6 +376,8 @@ void ModXmS3mStream::tickChannel(Channel &channel) {
 		case 0x95: /* Fine Vibrato. */
 			channel.vibratoPhase += channel.vibratoSpeed;
 			vibrato(channel, 1);
+			break;
+		default:
 			break;
 	}
 	autoVibrato(channel);
@@ -567,6 +571,8 @@ void ModXmS3mStream::retrigVolSlide(Channel &channel) {
 			case 0xF:
 				channel.volume = channel.volume << 1;
 				break;
+			default:
+				break;
 		}
 		if (channel.volume < 0) {
 			channel.volume = 0;
@@ -638,6 +644,8 @@ void ModXmS3mStream::trigger(Channel &channel) {
 			if ((channel.note.volume & 0xF) > 0) {
 				channel.tonePortaParam = channel.note.volume & 0xF;
 			}
+			break;
+		default:
 			break;
 	}
 	if (channel.note.key > 0) {
@@ -820,7 +828,7 @@ void ModXmS3mStream::updateChannelRow(Channel &channel, Note note) {
 			tremolo(channel);
 			break;
 		case 0x08: /* Set Panning.*/
-			channel.panning = (channel.note.param < 128) ? (channel.note.param << 1) : 255;
+			channel.panning = channel.note.param & 0xFF;
 			break;
 		case 0x0A:
 		case 0x84: /* Vol Slide. */
@@ -882,6 +890,8 @@ void ModXmS3mStream::updateChannelRow(Channel &channel, Note note) {
 					break;
 				case 0x20:
 					portaDown(channel, 0xE0 | (channel.xfinePortaParam & 0xF));
+					break;
+				default:
 					break;
 			}
 			break;
@@ -949,6 +959,8 @@ void ModXmS3mStream::updateChannelRow(Channel &channel, Note note) {
 			break;
 		case 0xF8: /* Set Panning. */
 			channel.panning = channel.note.param * 17;
+			break;
+		default:
 			break;
 	}
 	autoVibrato(channel);
@@ -1091,35 +1103,37 @@ void ModXmS3mStream::updateRow() {
 			case 0xFE: /* Pattern Delay.*/
 				_tick = _speed + _speed * note.param;
 				break;
+			default:
+				break;
 		}
 	}
 }
 
-int ModXmS3mStream::envelopeNextTick(Envelope &envelope, int tick, int keyOn) {
-	tick++;
-	if (envelope.looped && tick >= envelope.loopEndTick) {
-		tick = envelope.loopStartTick;
+int ModXmS3mStream::envelopeNextTick(Envelope &envelope, int currentTick, int keyOn) {
+	int nextTick = currentTick + 1;
+	if (envelope.looped && nextTick >= envelope.loopEndTick) {
+		nextTick = envelope.loopStartTick;
 	}
-	if (envelope.sustain && keyOn && tick >= envelope.sustainTick) {
-		tick = envelope.sustainTick;
+	if (envelope.sustain && keyOn && nextTick >= envelope.sustainTick) {
+		nextTick = envelope.sustainTick;
 	}
-	return tick;
+	return nextTick;
 }
 
-int ModXmS3mStream::calculateAmpl(Envelope &envelope, int tick) {
+int ModXmS3mStream::calculateAmpl(Envelope &envelope, int currentTick) {
 	int idx, point, dt, da;
 	int ampl = envelope.pointsAmpl[envelope.numPoints - 1];
-	if (tick < envelope.pointsTick[envelope.numPoints - 1]) {
+	if (currentTick < envelope.pointsTick[envelope.numPoints - 1]) {
 		point = 0;
 		for (idx = 1; idx < envelope.numPoints; idx++) {
-			if (envelope.pointsTick[idx] <= tick) {
+			if (envelope.pointsTick[idx] <= currentTick) {
 				point = idx;
 			}
 		}
 		dt = envelope.pointsTick[point + 1] - envelope.pointsTick[point];
 		da = envelope.pointsAmpl[point + 1] - envelope.pointsAmpl[point];
 		ampl = envelope.pointsAmpl[point];
-		ampl += ((da << 24) / dt) * (tick - envelope.pointsTick[point]) >> 24;
+		ampl += ((da << 24) / dt) * (currentTick - envelope.pointsTick[point]) >> 24;
 	}
 	return ampl;
 }

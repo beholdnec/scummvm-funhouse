@@ -65,7 +65,7 @@ SwordEngine::SwordEngine(OSystem *syst)
 	SearchMan.addSubDirectoryMatching(gameDataDir, "english"); // PSX Demo
 	SearchMan.addSubDirectoryMatching(gameDataDir, "italian"); // PSX Demo
 
-	_console = new SwordConsole(this);
+	setDebugger(new SwordConsole(this));
 
 	_mouseState = 0;
 	_resMan = 0;
@@ -89,7 +89,6 @@ SwordEngine::~SwordEngine() {
 	delete _mouse;
 	delete _objectMan;
 	delete _resMan;
-	delete _console;
 }
 
 Common::Error SwordEngine::init() {
@@ -290,9 +289,10 @@ const CdFile SwordEngine::_pcCdFileList[] = {
 	{ "scripts.clu", FLAG_CD1 | FLAG_DEMO | FLAG_IMMED },
 	{ "swordres.rif", FLAG_CD1 | FLAG_DEMO | FLAG_IMMED },
 	{ "text.clu", FLAG_CD1 | FLAG_DEMO },
-	{ "cows.mad", FLAG_DEMO },
+	{ "1m14a.wav", FLAG_DEMO },
 	{ "speech1.clu", FLAG_SPEECH1 },
-	{ "speech2.clu", FLAG_SPEECH2 }
+	{ "speech2.clu", FLAG_SPEECH2 },
+	{ "speech.clu", FLAG_SPEECH | FLAG_DEMO } // Spanish Demo
 #ifdef USE_FLAC
 	, { "speech1.clf", FLAG_SPEECH1 },
 	{ "speech2.clf", FLAG_SPEECH2 }
@@ -441,8 +441,8 @@ void SwordEngine::showFileErrorMsg(uint8 type, bool *fileExists) {
 void SwordEngine::checkCdFiles() { // check if we're running from cd, hdd or what...
 	bool fileExists[30];
 	bool isFullVersion = false; // default to demo version
-	bool missingTypes[8] = { false, false, false, false, false, false, false, false };
-	bool foundTypes[8] = { false, false, false, false, false, false, false, false };
+	bool missingTypes[9] = { false, false, false, false, false, false, false, false, false };
+	bool foundTypes[9] = { false, false, false, false, false, false, false, false, false };
 	bool cd2FilesFound = false;
 	_systemVars.runningFromCd = false;
 	_systemVars.playSpeech = true;
@@ -572,6 +572,9 @@ void SwordEngine::checkCdFiles() { // check if we're running from cd, hdd or wha
 	*/
 	// make the demo flag depend on the Gamesettings for now, and not on what the datafiles look like
 	_systemVars.isDemo = (_features & GF_DEMO) != 0;
+
+	// Spanish demo has proper speech.clu and uses normal sound and var mapping
+	_systemVars.isSpanishDemo = (_systemVars.isDemo && foundTypes[TYPE_SPEECH]) != 0;
 }
 
 Common::Error SwordEngine::go() {
@@ -690,12 +693,6 @@ uint8 SwordEngine::mainLoop() {
 				retCode = _control->runPanel();
 				if (retCode == CONTROL_NOTHING_DONE)
 					_screen->fullRefresh();
-			}
-
-			// Check for Debugger Activation
-			if (_keyPressed.hasFlags(Common::KBD_CTRL) && _keyPressed.keycode == Common::KEYCODE_d) {
-				this->getDebugger()->attach();
-				this->getDebugger()->onFrame();
 			}
 
 			_mouseState = 0;

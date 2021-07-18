@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2016 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2020 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -35,7 +35,7 @@ extern "C" {
 /* === Interface handling === */
 
 /** Returns mt32emu_service_i interface. */
-MT32EMU_EXPORT const mt32emu_service_i mt32emu_get_service_i();
+MT32EMU_EXPORT mt32emu_service_i mt32emu_get_service_i(void);
 
 #if MT32EMU_EXPORTS_TYPE == 2
 #undef MT32EMU_EXPORT
@@ -46,13 +46,13 @@ MT32EMU_EXPORT const mt32emu_service_i mt32emu_get_service_i();
  * Returns the version ID of mt32emu_report_handler_i interface the library has been compiled with.
  * This allows a client to fall-back gracefully instead of silently not receiving expected event reports.
  */
-MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handler_version();
+MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handler_version(void);
 
 /**
  * Returns the version ID of mt32emu_midi_receiver_version_i interface the library has been compiled with.
  * This allows a client to fall-back gracefully instead of silently not receiving expected MIDI messages.
  */
-MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version();
+MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version(void);
 
 /**
  * Returns library version as an integer in format: 0x00MMmmpp, where:
@@ -60,18 +60,25 @@ MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver
  * mm - minor version number
  * pp - patch number
  */
-MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_library_version_int();
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_library_version_int(void);
 
 /**
  * Returns library version as a C-string in format: "MAJOR.MINOR.PATCH".
  */
-MT32EMU_EXPORT const char *mt32emu_get_library_version_string();
+MT32EMU_EXPORT const char *mt32emu_get_library_version_string(void);
 
 /**
  * Returns output sample rate used in emulation of stereo analog circuitry of hardware units for particular analog_output_mode.
  * See comment for mt32emu_analog_output_mode.
  */
 MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode);
+
+/**
+ * Returns the value of analog_output_mode for which the output signal may retain its full frequency spectrum
+ * at the sample rate specified by the target_samplerate argument.
+ * See comment for mt32emu_analog_output_mode.
+ */
+MT32EMU_EXPORT mt32emu_analog_output_mode mt32emu_get_best_analog_output_mode(const double target_samplerate);
 
 /* == Context-dependent functions == */
 
@@ -105,15 +112,48 @@ MT32EMU_EXPORT void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_
 
 /**
  * Allows to override the default maximum number of partials playing simultaneously within the emulation session.
- * This function doesn't immediately change the state of already opened synth. Newly set vale will take effect upon next call of mt32emu_open_synth().
+ * This function doesn't immediately change the state of already opened synth. Newly set value will take effect upon next call of mt32emu_open_synth().
  */
 MT32EMU_EXPORT void mt32emu_set_partial_count(mt32emu_context context, const mt32emu_bit32u partial_count);
 
 /**
  * Allows to override the default mode for emulation of analogue circuitry of the hardware units within the emulation session.
- * This function doesn't immediately change the state of already opened synth. Newly set vale will take effect upon next call of mt32emu_open_synth().
+ * This function doesn't immediately change the state of already opened synth. Newly set value will take effect upon next call of mt32emu_open_synth().
  */
 MT32EMU_EXPORT void mt32emu_set_analog_output_mode(mt32emu_context context, const mt32emu_analog_output_mode analog_output_mode);
+
+/**
+ * Allows to convert the synthesiser output to any desired sample rate. The samplerate conversion
+ * processes the completely mixed stereo output signal as it passes the analogue circuit emulation,
+ * so emulating the synthesiser output signal passing further through an ADC. When the samplerate
+ * argument is set to 0, the default output sample rate is used which depends on the current
+ * mode of analog circuitry emulation. See mt32emu_analog_output_mode.
+ * This function doesn't immediately change the state of already opened synth.
+ * Newly set value will take effect upon next call of mt32emu_open_synth().
+ */
+MT32EMU_EXPORT void mt32emu_set_stereo_output_samplerate(mt32emu_context context, const double samplerate);
+
+/**
+ * Several samplerate conversion quality options are provided which allow to trade-off the conversion speed vs.
+ * the retained passband width. All the options except FASTEST guarantee full suppression of the aliasing noise
+ * in terms of the 16-bit integer samples.
+ * This function doesn't immediately change the state of already opened synth.
+ * Newly set value will take effect upon next call of mt32emu_open_synth().
+ */
+MT32EMU_EXPORT void mt32emu_set_samplerate_conversion_quality(mt32emu_context context, const mt32emu_samplerate_conversion_quality quality);
+
+/**
+ * Selects new type of the wave generator and renderer to be used during subsequent calls to mt32emu_open_synth().
+ * By default, MT32EMU_RT_BIT16S is selected.
+ * See mt32emu_renderer_type for details.
+ */
+MT32EMU_EXPORT void mt32emu_select_renderer_type(mt32emu_context context, const mt32emu_renderer_type renderer_type);
+
+/**
+ * Returns previously selected type of the wave generator and renderer.
+ * See mt32emu_renderer_type for details.
+ */
+MT32EMU_EXPORT mt32emu_renderer_type mt32emu_get_selected_renderer_type(mt32emu_context context);
 
 /**
  * Prepares the emulation context to receive MIDI messages and produce output audio data using aforehand added set of ROMs,
@@ -129,10 +169,27 @@ MT32EMU_EXPORT void mt32emu_close_synth(mt32emu_const_context context);
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_open(mt32emu_const_context context);
 
 /**
- * Returns actual output sample rate used in emulation of stereo analog circuitry of hardware units.
- * See comment for mt32emu_analog_output_mode.
+ * Returns actual sample rate of the fully processed output stereo signal.
+ * If samplerate conversion is used (i.e. when mt32emu_set_stereo_output_samplerate() has been invoked with a non-zero value),
+ * the returned value is the desired output samplerate rounded down to the closest integer.
+ * Otherwise, the output samplerate is choosen depending on the emulation mode of stereo analog circuitry of hardware units.
+ * See comment for mt32emu_analog_output_mode for more info.
  */
 MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context);
+
+/**
+ * Returns the number of samples produced at the internal synth sample rate (32000 Hz)
+ * that correspond to the given number of samples at the output sample rate.
+ * Intended to facilitate audio time synchronisation.
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_convert_output_to_synth_timestamp(mt32emu_const_context context, mt32emu_bit32u output_timestamp);
+
+/**
+ * Returns the number of samples produced at the output sample rate
+ * that correspond to the given number of samples at the internal synth sample rate (32000 Hz).
+ * Intended to facilitate audio time synchronisation.
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_convert_synth_to_output_timestamp(mt32emu_const_context context, mt32emu_bit32u synth_timestamp);
 
 /** All the enqueued events are processed by the synth immediately. */
 MT32EMU_EXPORT void mt32emu_flush_midi_queue(mt32emu_const_context context);
@@ -145,12 +202,31 @@ MT32EMU_EXPORT void mt32emu_flush_midi_queue(mt32emu_const_context context);
 MT32EMU_EXPORT mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, const mt32emu_bit32u queue_size);
 
 /**
+ * Configures the SysEx storage of the internal MIDI event queue.
+ * Supplying 0 in the storage_buffer_size argument makes the SysEx data stored
+ * in multiple dynamically allocated buffers per MIDI event. These buffers are only disposed
+ * when a new MIDI event replaces the SysEx event in the queue, thus never on the rendering thread.
+ * This is the default behaviour.
+ * In contrast, when a positive value is specified, SysEx data will be stored in a single preallocated buffer,
+ * which makes this kind of storage safe for use in a realtime thread. Additionally, the space retained
+ * by a SysEx event, that has been processed and thus is no longer necessary, is disposed instantly.
+ * Note, the queue is flushed and recreated in the process so that its size remains intact.
+ */
+void mt32emu_configure_midi_event_queue_sysex_storage(mt32emu_const_context context, const mt32emu_bit32u storage_buffer_size);
+
+/**
  * Installs custom MIDI receiver object intended for receiving MIDI messages generated by MIDI stream parser.
  * MIDI stream parser is involved when functions mt32emu_parse_stream() and mt32emu_play_short_message() or the likes are called.
  * By default, parsed short MIDI messages and System Exclusive messages are sent to the synth input MIDI queue.
  * This function allows to override default behaviour. If midi_receiver argument is set to NULL, the default behaviour is restored.
  */
 MT32EMU_EXPORT void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instance_data);
+
+/**
+ * Returns current value of the global counter of samples rendered since the synth was created (at the native sample rate 32000 Hz).
+ * This method helps to compute accurate timestamp of a MIDI message to use with the methods below.
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_internal_rendered_sample_count(mt32emu_const_context context);
 
 /* Enqueues a MIDI event for subsequent playback.
  * The MIDI event will be processed not before the specified timestamp.
@@ -253,6 +329,13 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_is_mt32_reverb_compatibility_mode(mt32emu
 /** Returns whether default reverb compatibility mode is the old MT-32 compatibility mode. */
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_default_reverb_mt32_compatible(mt32emu_const_context context);
 
+/**
+ * If enabled, reverb buffers for all modes are keept around allocated all the time to avoid memory
+ * allocating/freeing in the rendering thread, which may be required for realtime operation.
+ * Otherwise, reverb buffers that are not in use are deleted to save memory (the default behaviour).
+ */
+MT32EMU_EXPORT void mt32emu_preallocate_reverb_memory(mt32emu_const_context context, const mt32emu_boolean enabled);
+
 /** Sets new DAC input mode. See mt32emu_dac_input_mode for details. */
 MT32EMU_EXPORT void mt32emu_set_dac_input_mode(mt32emu_const_context context, const mt32emu_dac_input_mode mode);
 /** Returns current DAC input mode. See mt32emu_dac_input_mode for details. */
@@ -267,7 +350,6 @@ MT32EMU_EXPORT mt32emu_midi_delay_mode mt32emu_get_midi_delay_mode(mt32emu_const
  * Sets output gain factor for synth output channels. Applied to all output samples and unrelated with the synth's Master volume,
  * it rather corresponds to the gain of the output analog circuitry of the hardware units. However, together with mt32emu_set_reverb_output_gain()
  * it offers to the user a capability to control the gain of reverb and non-reverb output channels independently.
- * Ignored in MT32EMU_DAC_PURE mode.
  */
 MT32EMU_EXPORT void mt32emu_set_output_gain(mt32emu_const_context context, float gain);
 /** Returns current output gain factor for synth output channels. */
@@ -282,7 +364,6 @@ MT32EMU_EXPORT float mt32emu_get_output_gain(mt32emu_const_context context);
  * corresponds to the level of digital capture. Although, according to the CM-64 PCB schematic,
  * there is a difference in the reverb analogue circuit, and the resulting output gain is 0.68
  * of that for LA32 analogue output. This factor is applied to the reverb output gain.
- * Ignored in MT32EMU_DAC_PURE mode.
  */
 MT32EMU_EXPORT void mt32emu_set_reverb_output_gain(mt32emu_const_context context, float gain);
 /** Returns current output gain factor for reverb wet output channels. */
@@ -294,10 +375,48 @@ MT32EMU_EXPORT void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context co
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_context context);
 
 /**
- * Renders samples to the specified output stream as if they were sampled at the analog stereo output.
- * When mt32emu_analog_output_mode is set to ACCURATE (OVERSAMPLED), the output signal is upsampled to 48 (96) kHz in order
- * to retain emulation accuracy in whole audible frequency spectra. Otherwise, native digital signal sample rate is retained.
- * mt32emu_get_actual_stereo_output_samplerate() can be used to query actual sample rate of the output signal.
+ * Allows to toggle the NiceAmpRamp mode.
+ * In this mode, we want to ensure that amp ramp never jumps to the target
+ * value and always gradually increases or decreases. It seems that real units
+ * do not bother to always check if a newly started ramp leads to a jump.
+ * We also prefer the quality improvement over the emulation accuracy,
+ * so this mode is enabled by default.
+ */
+MT32EMU_EXPORT void mt32emu_set_nice_amp_ramp_enabled(mt32emu_const_context context, const mt32emu_boolean enabled);
+/** Returns whether NiceAmpRamp mode is enabled. */
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_amp_ramp_enabled(mt32emu_const_context context);
+
+/**
+ * Allows to toggle the NicePanning mode.
+ * Despite the Roland's manual specifies allowed panpot values in range 0-14,
+ * the LA-32 only receives 3-bit pan setting in fact. In particular, this
+ * makes it impossible to set the "middle" panning for a single partial.
+ * In the NicePanning mode, we enlarge the pan setting accuracy to 4 bits
+ * making it smoother thus sacrificing the emulation accuracy.
+ * This mode is disabled by default.
+ */
+MT32EMU_EXPORT void mt32emu_set_nice_panning_enabled(mt32emu_const_context context, const mt32emu_boolean enabled);
+/** Returns whether NicePanning mode is enabled. */
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_panning_enabled(mt32emu_const_context context);
+
+/**
+ * Allows to toggle the NicePartialMixing mode.
+ * LA-32 is known to mix partials either in-phase (so that they are added)
+ * or in counter-phase (so that they are subtracted instead).
+ * In some cases, this quirk isn't highly desired because a pair of closely
+ * sounding partials may occasionally cancel out.
+ * In the NicePartialMixing mode, the mixing is always performed in-phase,
+ * thus making the behaviour more predictable.
+ * This mode is disabled by default.
+ */
+MT32EMU_EXPORT void mt32emu_set_nice_partial_mixing_enabled(mt32emu_const_context context, const mt32emu_boolean enabled);
+/** Returns whether NicePartialMixing mode is enabled. */
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_partial_mixing_enabled(mt32emu_const_context context);
+
+/**
+ * Renders samples to the specified output stream as if they were sampled at the analog stereo output at the desired sample rate.
+ * If the output sample rate is not specified explicitly, the default output sample rate is used which depends on the current
+ * mode of analog circuitry emulation. See mt32emu_analog_output_mode.
  * The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes). Uses NATIVE byte ordering.
  */
 MT32EMU_EXPORT void mt32emu_render_bit16s(mt32emu_const_context context, mt32emu_bit16s *stream, mt32emu_bit32u len);

@@ -215,7 +215,7 @@ SkyCompact::SkyCompact() {
 	uint16 diffSize = _cptFile->readUint16LE();
 	uint16 *diffBuf = (uint16 *)malloc(diffSize * sizeof(uint16));
 	_cptFile->read(diffBuf, diffSize * sizeof(uint16));
-	if (SkyEngine::_systemVars.gameVersion == 288) {
+	if (SkyEngine::_systemVars->gameVersion == 288) {
 		uint16 *diffPos = diffBuf;
 		for (cnt = 0; cnt < numDiffs; cnt++) {
 			uint16 cptId = READ_LE_UINT16(diffPos++);
@@ -311,24 +311,55 @@ const char *SkyCompact::nameForType(uint16 type) {
 		return _typeNames[type];
 }
 
-uint16 *SkyCompact::getSub(Compact *cpt, uint16 mode) {
+uint16 SkyCompact::getSub(Compact *cpt, uint16 mode) {
 	switch (mode) {
 	case 0:
-		return &(cpt->baseSub);
+		return cpt->baseSub;
 	case 2:
-		return &(cpt->baseSub_off);
+		return cpt->baseSub_off;
 	case 4:
-		return &(cpt->actionSub);
+		return cpt->actionSub;
 	case 6:
-		return &(cpt->actionSub_off);
+		return cpt->actionSub_off;
 	case 8:
-		return &(cpt->getToSub);
+		return cpt->getToSub;
 	case 10:
-		return &(cpt->getToSub_off);
+		return cpt->getToSub_off;
 	case 12:
-		return &(cpt->extraSub);
+		return cpt->extraSub;
 	case 14:
-		return &(cpt->extraSub_off);
+		return cpt->extraSub_off;
+	default:
+		error("Invalid Mode (%d)", mode);
+	}
+}
+
+void SkyCompact::setSub(Compact *cpt, uint16 mode, uint16 value) {
+	switch (mode) {
+	case 0:
+		cpt->baseSub = value;
+		return;
+	case 2:
+		cpt->baseSub_off = value;
+		return;
+	case 4:
+		cpt->actionSub = value;
+		return;
+	case 6:
+		cpt->actionSub_off = value;
+		return;
+	case 8:
+		cpt->getToSub = value;
+		return;
+	case 10:
+		cpt->getToSub_off = value;
+		return;
+	case 12:
+		cpt->extraSub = value;
+		return;
+	case 14:
+		cpt->extraSub_off = value;
+		return;
 	default:
 		error("Invalid Mode (%d)", mode);
 	}

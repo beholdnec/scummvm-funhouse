@@ -38,21 +38,20 @@ class StaticTextWidget;
 class EditTextWidget;
 class SaveLoadChooser;
 
-Common::String addGameToConf(const GameDescriptor &result);
-
 class LauncherDialog : public Dialog {
 	typedef Common::String String;
 	typedef Common::Array<Common::String> StringArray;
 public:
 	LauncherDialog();
-	~LauncherDialog();
+	~LauncherDialog() override;
 
 	void rebuild();
 
-	virtual void handleCommand(CommandSender *sender, uint32 cmd, uint32 data);
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
 
-	virtual void handleKeyDown(Common::KeyState state);
-	virtual void handleKeyUp(Common::KeyState state);
+	void handleKeyDown(Common::KeyState state) override;
+	void handleKeyUp(Common::KeyState state) override;
+	void handleOtherEvent(const Common::Event &evt) override;
 	bool doGameDetection(const Common::String &path);
 protected:
 	EditTextWidget  *_searchWidget;
@@ -74,7 +73,7 @@ protected:
 
 	String _search;
 
-	virtual void reflowLayout();
+	void reflowLayout() override;
 
 	/**
 	 * Fill the list widget with all currently configured targets, and trigger
@@ -83,18 +82,18 @@ protected:
 	void updateListing();
 
 	void updateButtons();
-	void switchButtonsText(ButtonWidget *button, const char *normalText, const char *shiftedText);
 
 	void build();
 	void clean();
 
-	void open();
-	void close();
+	void open() override;
+	void close() override;
 
 	/**
 	 * Handle "Add game..." button.
 	 */
 	virtual void addGame();
+	void massAddGame();
 
 	/**
 	 * Handle "Remove game..." button.
@@ -105,11 +104,6 @@ protected:
 	 * Handle "Edit game..." button.
 	 */
 	void editGame(int item);
-
-	/**
-	 * Facade for "Load..."/"Record..." buttons.
-	 */
-	void loadGameButtonPressed(int item);
 
 	/**
 	 * Handle "Record..." button.

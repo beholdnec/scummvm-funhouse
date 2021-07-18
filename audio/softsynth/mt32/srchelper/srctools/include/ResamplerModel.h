@@ -1,4 +1,4 @@
-/* Copyright (C) 2015-2017 Sergey V. Mikayev
+/* Copyright (C) 2015-2020 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -14,8 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RESAMPLER_MODEL_H
-#define RESAMPLER_MODEL_H
+#ifndef SRCTOOLS_RESAMPLER_MODEL_H
+#define SRCTOOLS_RESAMPLER_MODEL_H
 
 #include "FloatSampleProvider.h"
 
@@ -60,4 +60,4 @@ void freeResamplerModel(FloatSampleProvider &model, FloatSampleProvider &source)
 
 } // namespace SRCTools
 
-#endif // RESAMPLER_MODEL_H
+#endif // SRCTOOLS_RESAMPLER_MODEL_H

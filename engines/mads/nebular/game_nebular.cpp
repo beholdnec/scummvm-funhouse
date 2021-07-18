@@ -45,8 +45,9 @@ GameNebular::GameNebular(MADSEngine *vm)
 }
 
 ProtectionResult GameNebular::checkCopyProtection() {
-	//if (!ConfMan.getBool("copy_protection"))
-	//	return PROTECTION_SUCCEED;
+	// Only show copy protection dialog if explicitly wanted
+	if (!ConfMan.getBool("copy_protection"))
+		return PROTECTION_SUCCEED;
 
 	CopyProtectionDialog *dlg;
 	bool correctAnswer;
@@ -90,6 +91,8 @@ void GameNebular::startGame() {
 	case 4:
 		// Decompression ending
 		TextView::execute(_vm, "ending4");
+		break;
+	default:
 		break;
 	}
 
@@ -288,6 +291,7 @@ void GameNebular::initializeGlobals() {
 	// Final setup based on selected difficulty level
 	switch (_difficulty) {
 	case DIFFICULTY_HARD:
+	default:
 		_objects.setRoom(OBJ_BLOWGUN, NOWHERE);
 		_objects.setRoom(OBJ_NOTE, NOWHERE);
 
@@ -887,7 +891,7 @@ void GameNebular::step() {
 		else
 			++_globals[kTimebombTimer];
 
-		_globals[kTimebombClock] = (int) _scene._frameStartTime;
+		_globals[kTimebombClock] = (int)_scene._frameStartTime;
 	}
 }
 

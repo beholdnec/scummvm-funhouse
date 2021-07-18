@@ -25,6 +25,7 @@
 #include "common/gui_options.h"
 #include "common/savefile.h"
 #include "sci/engine/features.h"
+#include "sci/engine/file.h"
 #include "sci/engine/guest_additions.h"
 #include "sci/engine/kernel.h"
 #include "sci/engine/savegame.h"
@@ -63,11 +64,9 @@ GuestAdditions::GuestAdditions(EngineState *state, GameFeatures *features, Kerne
 #pragma mark -
 
 void GuestAdditions::syncSoundSettingsFromScummVM() const {
-#ifdef ENABLE_SCI32
 	if (_features->audioVolumeSyncUsesGlobals())
 		syncAudioVolumeGlobalsFromScummVM();
 	else
-#endif
 		syncMasterVolumeFromScummVM();
 }
 
@@ -106,14 +105,17 @@ bool GuestAdditions::shouldSyncAudioToScummVM() const {
 			return true;
 		} else if (gameId == GID_SLATER && objName == "volButton") {
 			return true;
-		} else if (gameId == GID_LSL6 && objName == "menuBar") {
+		} else if (gameId == GID_LSL6 && (objName == "menuBar" ||
+										  objName == "volumeDial")) {
 			return true;
 #ifdef ENABLE_SCI32
 		} else if ((gameId == GID_GK1 || gameId == GID_SQ6) && (objName == "musicBar" ||
 																objName == "soundBar")) {
 			return true;
-		} else if (gameId == GID_PQ4 && (objName == "increaseVolume" ||
-										 objName == "decreaseVolume")) {
+		} else if (gameId == GID_GK2 && objName == "soundSlider") {
+			return true;
+		} else if (gameId == GID_HOYLE5 && objName == "volumeSliderF") {
+			// Hoyle5 has a second control panel with a different slider name
 			return true;
 		} else if (gameId == GID_KQ7 && (objName == "volumeUp" ||
 										 objName == "volumeDown")) {
@@ -121,14 +123,11 @@ bool GuestAdditions::shouldSyncAudioToScummVM() const {
 		} else if (gameId == GID_LSL6HIRES && (objName == "hiResMenu" ||
 											   objName == "volumeDial")) {
 			return true;
+		} else if ((gameId == GID_LSL7 || gameId == GID_TORIN) && (objName == "oMusicScroll" ||
+																   objName == "oSFXScroll" ||
+																   objName == "oAudioScroll")) {
+			return true;
 		} else if (gameId == GID_MOTHERGOOSEHIRES && objName == "MgButtonBar") {
-			return true;
-		} else if (gameId == GID_PQSWAT && (objName == "volumeDownButn" ||
-											objName == "volumeUpButn")) {
-			return true;
-		} else if (gameId == GID_SHIVERS && objName == "spVolume") {
-			return true;
-		} else if (gameId == GID_GK2 && objName == "soundSlider") {
 			return true;
 		} else if (gameId == GID_PHANTASMAGORIA && (objName == "midiVolDown" ||
 													objName == "midiVolUp" ||
@@ -137,9 +136,13 @@ bool GuestAdditions::shouldSyncAudioToScummVM() const {
 			return true;
 		} else if (gameId == GID_PHANTASMAGORIA2 && objName == "foo2") {
 			return true;
-		} else if ((gameId == GID_LSL7 || gameId == GID_TORIN) && (objName == "oMusicScroll" ||
-																   objName == "oSFXScroll" ||
-																   objName == "oAudioScroll")) {
+		} else if (gameId == GID_PQ4 && (objName == "increaseVolume" ||
+										 objName == "decreaseVolume")) {
+			return true;
+		} else if (gameId == GID_PQSWAT && (objName == "volumeDownButn" ||
+											objName == "volumeUpButn")) {
+			return true;
+		} else if (gameId == GID_SHIVERS && objName == "spVolume") {
 			return true;
 #endif
 		}
@@ -157,21 +160,32 @@ void GuestAdditions::sciEngineRunGameHook() {
 
 void GuestAdditions::writeVarHook(const int type, const int index, const reg_t value) {
 	if (type == VAR_GLOBAL) {
+		if (_features->audioVolumeSyncUsesGlobals() && shouldSyncAudioToScummVM()) {
+			syncAudioVolumeGlobalsToScummVM(index, value);
 #ifdef ENABLE_SCI32
-		if (getSciVersion() >= SCI_VERSION_2) {
-			if (_features->audioVolumeSyncUsesGlobals() && shouldSyncAudioToScummVM()) {
-				syncAudioVolumeGlobalsToScummVM(index, value);
-			} else if (g_sci->getGameId() == GID_GK1) {
-				syncGK1StartupVolumeFromScummVM(index, value);
-			} else if (g_sci->getGameId() == GID_RAMA && !g_sci->isDemo() && index == kGlobalVarRamaMusicVolume) {
-				syncRamaVolumeFromScummVM((ConfMan.getInt("music_volume") + 1) * kRamaVolumeMax / Audio::Mixer::kMaxMixerVolume);
-			}
-
-			if (_features->supportsTextSpeed()) {
-				syncTextSpeedToScummVM(index, value);
-			}
+		} else if (g_sci->getGameId() == GID_GK1) {
+			syncGK1StartupVolumeFromScummVM(index, value);
+		} else if (g_sci->getGameId() == GID_HOYLE5 && index == kGlobalVarHoyle5MusicVolume) {
+			syncHoyle5VolumeFromScummVM((ConfMan.getInt("music_volume") + 1) * kHoyle5VolumeMax / Audio::Mixer::kMaxMixerVolume);
+		} else if (g_sci->getGameId() == GID_HOYLE5 && index == kGlobalVarHoyle5ResponseTime && value.getOffset() == 0) {
+			// WORKAROUND: Global 899 contains the response time value,
+			// which may have values between 1 and 15. There is a script
+			// bug when loading values from game.opt, where this variable
+			// may be incorrectly set to 0. This makes the opponent freeze
+			// while playing Backgammon and Bridge. Fix this case here, by
+			// setting the correct minimum value, 1.
+			// TODO: Either make this a script patch, or find out if it's
+			// a bug with ScummVM when reading values from text files.
+			_state->variables[VAR_GLOBAL][index].setOffset(1);
+		} else if (g_sci->getGameId() == GID_RAMA && !g_sci->isDemo() && index == kGlobalVarRamaMusicVolume) {
+			syncRamaVolumeFromScummVM((ConfMan.getInt("music_volume") + 1) * kRamaVolumeMax / Audio::Mixer::kMaxMixerVolume);
 		}
+
+		if (_features->supportsTextSpeed()) {
+			syncTextSpeedToScummVM(index, value);
 #endif
+		}
+
 		syncMessageTypeToScummVM(index, value);
 	}
 }
@@ -188,6 +202,11 @@ bool GuestAdditions::kDoSoundMasterVolumeHook(const int volume) const {
 void GuestAdditions::sciEngineInitGameHook() {
 	if (g_sci->getGameId() == GID_PHANTASMAGORIA2 && Common::checkGameGUIOption(GAMEOPTION_ENABLE_CENSORING, ConfMan.get("guioptions"))) {
 		_state->variables[VAR_GLOBAL][kGlobalVarPhant2CensorshipFlag] = make_reg(0, ConfMan.getBool("enable_censoring"));
+	}
+
+	if (g_sci->getGameId() == GID_KQ7 && Common::checkGameGUIOption(GAMEOPTION_UPSCALE_VIDEOS, ConfMan.get("guioptions"))) {
+		uint16 value = ConfMan.getBool("enable_video_upscale") ? 32 : 0;
+		_state->variables[VAR_GLOBAL][kGlobalVarKQ7UpscaleVideos] = make_reg(0, value);
 	}
 }
 
@@ -382,7 +401,8 @@ void GuestAdditions::patchGameSaveRestoreSCI16() const {
 		uint16 selectorId = patchObjectSave->getFuncSelector(methodNr);
 		Common::String methodName = _kernel->getSelectorName(selectorId);
 		if (methodName == "save") {
-			if (g_sci->getGameId() != GID_FAIRYTALES) {	// Fairy Tales saves automatically without a dialog
+			if (g_sci->getGameId() != GID_FAIRYTALES &&  // Fairy Tales saves automatically without a dialog
+				g_sci->getGameId() != GID_QFG3) { // QFG3 does automatic saving in Glory:save
 					patchKSaveRestore(_segMan, patchObjectSave->getFunction(methodNr), kernelIdSave);
 			}
 			break;
@@ -426,7 +446,7 @@ void GuestAdditions::patchGameSaveRestoreTorin(Script &script) const {
 
 	if (g_sci->isBE()) {
 		SWAP(patchPtr[1], patchPtr[2]);
-		SWAP(patchPtr[8], patchPtr[9]);
+		SWAP(patchPtr[7], patchPtr[8]);
 	}
 }
 
@@ -505,6 +525,10 @@ reg_t GuestAdditions::kScummVMSaveLoad(EngineState *s, int argc, reg_t *argv) co
 
 	if (g_sci->getGameId() == GID_RAMA) {
 		return promptSaveRestoreRama(s, argc, argv);
+	}
+
+	if (g_sci->getGameId() == GID_HOYLE5) {
+		return promptSaveRestoreHoyle5(s, argc, argv);
 	}
 
 	return promptSaveRestoreDefault(s, argc, argv);
@@ -645,12 +669,28 @@ reg_t GuestAdditions::promptSaveRestoreRama(EngineState *s, int argc, reg_t *arg
 	return make_reg(0, saveIndex);
 }
 
-int GuestAdditions::runSaveRestore(const bool isSave, reg_t outDescription, const int forcedSaveNo) const {
-	int saveNo;
-	Common::String descriptionString;
+int GuestAdditions::runSaveRestore(const bool isSave, reg_t outDescription, const int forcedSaveId) const {
+	assert(!(isSave && outDescription.isNull()));
 
-	if (!isSave && forcedSaveNo != -1) {
-		saveNo = forcedSaveNo;
+	Common::String descriptionString;
+	int saveId = runSaveRestore(isSave, descriptionString, forcedSaveId);
+
+	if (!outDescription.isNull()) {
+		if (_segMan->isObject(outDescription)) {
+			outDescription = readSelector(_segMan, outDescription, SELECTOR(data));
+		}
+		SciArray &description = *_segMan->lookupArray(outDescription);
+		description.fromString(descriptionString);
+	}
+
+	return saveId;
+}
+
+int GuestAdditions::runSaveRestore(const bool isSave, Common::String &outDescription, const int forcedSaveId) const {
+	int saveId;
+
+	if (!isSave && forcedSaveId != -1) {
+		saveId = forcedSaveId;
 	} else {
 		const char *title;
 		const char *action;
@@ -663,34 +703,30 @@ int GuestAdditions::runSaveRestore(const bool isSave, reg_t outDescription, cons
 		}
 
 		GUI::SaveLoadChooser dialog(title, action, isSave);
-		saveNo = dialog.runModalWithCurrentTarget();
-		if (saveNo != -1) {
-			descriptionString = dialog.getResultString();
-			if (descriptionString.empty()) {
-				descriptionString = dialog.createDefaultSaveDescription(saveNo - 1);
+		saveId = dialog.runModalWithCurrentTarget();
+		if (saveId != -1) {
+			outDescription = dialog.getResultString();
+			if (outDescription.empty()) {
+				outDescription = dialog.createDefaultSaveDescription(saveId - 1);
 			}
 		}
 	}
 
-	assert(!isSave || !outDescription.isNull());
-	if (!outDescription.isNull()) {
-		if (_segMan->isObject(outDescription)) {
-			outDescription = readSelector(_segMan, outDescription, SELECTOR(data));
-		}
-		SciArray &description = *_segMan->lookupArray(outDescription);
-		description.fromString(descriptionString);
-	}
+	// The autosave slot in ScummVM takes up slot 0, but in SCI the first
+	// non-autosave save game number needs to be 0, so reduce the save
+	// number here to match what would come from the normal SCI save/restore
+	// dialog. Wrap slot 0 around to kMaxShiftedSaveId so that it remains
+	// a legal SCI value.
+	saveId = shiftScummVMToSciSaveId(saveId);
 
-	if (saveNo > 0) {
-		// The autosave slot in ScummVM takes up slot 0, but in SCI the first
-		// non-autosave save game number needs to be 0, so reduce the save
-		// number here to match what would come from the normal SCI save/restore
-		// dialog. There is additional special code for handling the autosave
-		// game inside of kRestoreGame32.
-		saveNo -= kSaveIdShift;
-	}
+	return saveId;
+}
 
-	return saveNo;
+reg_t GuestAdditions::promptSaveRestoreHoyle5(EngineState *s, int argc, reg_t *argv) const {
+	assert(argc == 2);
+	Common::String callerName = s->_segMan->getObjectName(s->r_acc);
+	const bool isSave = (callerName == "Save");
+	return make_reg(0, runSaveRestore(isSave, argc > 0 ? argv[0] : NULL_REG, s->_delayedRestoreGameId));
 }
 
 #endif
@@ -723,6 +759,16 @@ bool GuestAdditions::restoreFromLauncher() const {
 			return false;
 		}
 
+		// Delayed restore should not happen in LSL6 hires or PQ4 until the room number is set.
+		//  LSL6:restore and pq4:restore assume the room number has already been set, but the
+		//  Mac versions of these game add a call to kGetEvent in the games' init method before
+		//  the initial call to newRoom. If the room number isn't set yet then LSL6 doesn't
+		//  allow the restore and PQ4 sends a message to an invalid object.
+		if ((g_sci->getGameId() == GID_LSL6HIRES || g_sci->getGameId() == GID_PQ4) &&
+			_state->variables[VAR_GLOBAL][kGlobalVarCurrentRoomNo] == NULL_REG) {
+			return false;
+		}
+
 		_restoring = true;
 
 		// Any events queued up before the game restore can cause accidental
@@ -743,10 +789,24 @@ bool GuestAdditions::restoreFromLauncher() const {
 			reg_t args[] = { make_reg(0, _state->_delayedRestoreGameId - kSaveIdShift) };
 			invokeSelector(g_sci->getGameObject(), SELECTOR(restore), 1, args);
 		} else {
+			int saveId = _state->_delayedRestoreGameId;
+
 			// When `Game::restore` is invoked, it will call to `Restore::doit`
 			// which will automatically return the `_delayedRestoreGameId` instead
 			// of prompting the user for a save game
 			invokeSelector(g_sci->getGameObject(), SELECTOR(restore));
+
+			// initialize KQ7 Mac's global save state by recording the save id
+			//  and description. this is necessary for subsequent saves to work
+			//  after restoring from launcher.
+			if (g_sci->getGameId() == GID_KQ7 && g_sci->getPlatform() == Common::kPlatformMacintosh) {
+				_state->_kq7MacSaveGameId = saveId;
+
+				SavegameDesc savegameDesc;
+				if (fillSavegameDesc(g_sci->getSavegameName(saveId), savegameDesc)) {
+					_state->_kq7MacSaveGameDescription = savegameDesc.name;
+				}
+			}
 
 			// The normal save game system resets _delayedRestoreGameId with a
 			// call to `EngineState::reset`, but RAMA uses a custom save game
@@ -801,6 +861,7 @@ void GuestAdditions::syncMessageTypeFromScummVM() const {
 		break;
 #endif
 	case kMessageTypeSyncStrategyNone:
+	default:
 		break;
 	}
 }
@@ -822,6 +883,7 @@ void GuestAdditions::syncMessageTypeFromScummVMUsingDefaultStrategy() const {
 		_state->variables[VAR_GLOBAL][kGlobalVarMessageType] = make_reg(0, value);
 	}
 
+#ifdef ENABLE_SCI32
 	if (g_sci->getGameId() == GID_GK1 && value == kMessageTypeSubtitles) {
 		// The narrator speech needs to be forced off if speech has been
 		// disabled in ScummVM, but otherwise the narrator toggle should just
@@ -830,6 +892,34 @@ void GuestAdditions::syncMessageTypeFromScummVMUsingDefaultStrategy() const {
 		// is no equivalent option in the ScummVM GUI
 		_state->variables[VAR_GLOBAL][kGlobalVarGK1NarratorMode] = NULL_REG;
 	}
+
+	if (g_sci->getGameId() == GID_QFG4) {
+		// QFG4 uses a game flag to control the Audio button's state in the control panel.
+		//  This flag must be kept in sync with the standard global 90 speech bit.
+		uint flagNumber = 400;
+		uint globalNumber = kGlobalVarQFG4Flags + (flagNumber / 16);
+		if (value & kMessageTypeSpeech) {
+			_state->variables[VAR_GLOBAL][globalNumber] |= (int16)0x8000;
+		} else {
+			_state->variables[VAR_GLOBAL][globalNumber] &= (int16)~0x8000;
+		}
+	}
+
+	if (g_sci->getGameId() == GID_SQ6) {
+		// The SQ6 control panel buttons for speech and text only update
+		//  their states when clicked so they need synchronization.
+		const reg_t iconSpeech = _segMan->findObjectByName("iconSpeech");
+		if (!iconSpeech.isNull()) {
+			const reg_t iconCel = make_reg(0, (value & kMessageTypeSpeech) ? 2 : 0);
+			writeSelector(_segMan, iconSpeech, SELECTOR(mainCel), iconCel);
+		}
+		const reg_t iconText = _segMan->findObjectByName("iconText");
+		if (!iconText.isNull()) {
+			const reg_t iconCel = make_reg(0, (value & kMessageTypeSubtitles) ? 2 : 0);
+			writeSelector(_segMan, iconText, SELECTOR(mainCel), iconCel);
+		}
+	}
+#endif
 }
 
 #ifdef ENABLE_SCI32
@@ -885,6 +975,7 @@ void GuestAdditions::syncMessageTypeToScummVM(const int index, const reg_t value
 		// LSL6hires synchronisation happens via send_selector
 #endif
 	case kMessageTypeSyncStrategyNone:
+	default:
 		break;
 	}
 }
@@ -902,6 +993,9 @@ void GuestAdditions::syncMessageTypeToScummVMUsingDefaultStrategy(const int inde
 
 		ConfMan.setBool("subtitles", value.toSint16() & kMessageTypeSubtitles);
 		ConfMan.setBool("speech_mute", !(value.toSint16() & kMessageTypeSpeech));
+
+		// need to update sound mixer volumes so that speech_mute will take effect
+		g_sci->updateSoundMixerVolumes();
 	}
 }
 
@@ -978,7 +1072,6 @@ void GuestAdditions::syncMasterVolumeToScummVM(const int16 masterVolume) const {
 	g_sci->updateSoundMixerVolumes();
 }
 
-#ifdef ENABLE_SCI32
 #pragma mark -
 #pragma mark Globals volume sync
 
@@ -989,6 +1082,7 @@ void GuestAdditions::syncAudioVolumeGlobalsFromScummVM() const {
 	// audio for music do not need any extra code since that always runs
 	// straight through the audio mixer, which gets muted directly
 	switch (g_sci->getGameId()) {
+#ifdef ENABLE_SCI32
 	case GID_GK1: {
 		const int16 musicVolume = (ConfMan.getInt("music_volume") + 1) * MUSIC_VOLUME_MAX / Audio::Mixer::kMaxMixerVolume;
 		const int16 dacVolume = (ConfMan.getInt("sfx_volume") + 1) * Audio32::kMaxVolume / Audio::Mixer::kMaxMixerVolume;
@@ -1004,10 +1098,10 @@ void GuestAdditions::syncAudioVolumeGlobalsFromScummVM() const {
 		break;
 	}
 
-	case GID_LSL6HIRES: {
-		const int16 musicVolume = (ConfMan.getInt("music_volume") + 1) * kLSL6HiresUIVolumeMax / Audio::Mixer::kMaxMixerVolume;
-		syncLSL6HiresVolumeFromScummVM(musicVolume);
-		syncLSL6HiresUI(musicVolume);
+	case GID_HOYLE5: {
+		const int16 musicVolume = (ConfMan.getInt("music_volume") + 1) * kHoyle5VolumeMax / Audio::Mixer::kMaxMixerVolume;
+		syncHoyle5VolumeFromScummVM(musicVolume);
+		syncHoyle5UI(musicVolume);
 		break;
 	}
 
@@ -1052,12 +1146,27 @@ void GuestAdditions::syncAudioVolumeGlobalsFromScummVM() const {
 		syncTorinUI(musicVolume, sfxVolume, speechVolume);
 		break;
 	}
+#endif
+
+	case GID_LSL6:
+	case GID_LSL6HIRES:	{
+		const int16 musicVolume = (ConfMan.getInt("music_volume") + 1) * kLSL6UIVolumeMax / Audio::Mixer::kMaxMixerVolume;
+		syncLSL6VolumeFromScummVM(musicVolume);
+		syncLSL6UI(musicVolume);
+		break;
+	}
 
 	default:
 		error("Trying to sync audio volume globals in a game with no implementation");
 	}
 }
 
+void GuestAdditions::syncLSL6VolumeFromScummVM(const int16 musicVolume) const {
+	_state->variables[VAR_GLOBAL][kGlobalVarLSL6MusicVolume] = make_reg(0, musicVolume);
+	g_sci->_soundCmd->setMasterVolume(ConfMan.getBool("mute") ? 0 : (musicVolume * MUSIC_MASTERVOLUME_MAX / kLSL6UIVolumeMax));
+}
+
+#ifdef ENABLE_SCI32
 void GuestAdditions::syncGK1StartupVolumeFromScummVM(const int index, const reg_t value) const {
 	if (index == kGlobalVarGK1Music1 || index == kGlobalVarGK1Music2 ||
 		index == kGlobalVarGK1DAC1 || index == kGlobalVarGK1DAC2 ||
@@ -1136,9 +1245,9 @@ void GuestAdditions::syncGK2VolumeFromScummVM(const int16 musicVolume) const {
 	}
 }
 
-void GuestAdditions::syncLSL6HiresVolumeFromScummVM(const int16 musicVolume) const {
-	_state->variables[VAR_GLOBAL][kGlobalVarLSL6HiresMusicVolume] = make_reg(0, musicVolume);
-	g_sci->_soundCmd->setMasterVolume(ConfMan.getBool("mute") ? 0 : (musicVolume * MUSIC_MASTERVOLUME_MAX / kLSL6HiresUIVolumeMax));
+void GuestAdditions::syncHoyle5VolumeFromScummVM(const int16 musicVolume) const {
+	_state->variables[VAR_GLOBAL][kGlobalVarHoyle5MusicVolume] = make_reg(0, musicVolume);
+	g_sci->_soundCmd->setMasterVolume(ConfMan.getBool("mute") ? 0 : (musicVolume * MUSIC_MASTERVOLUME_MAX / kHoyle5VolumeMax));
 }
 
 void GuestAdditions::syncPhant2VolumeFromScummVM(const int16 masterVolume) const {
@@ -1185,9 +1294,11 @@ void GuestAdditions::syncTorinVolumeFromScummVM(const int16 musicVolume, const i
 		}
 	}
 }
+#endif
 
 void GuestAdditions::syncAudioVolumeGlobalsToScummVM(const int index, const reg_t value) const {
 	switch (g_sci->getGameId()) {
+#ifdef ENABLE_SCI32
 	case GID_GK2:
 		if (index == kGlobalVarGK2MusicVolume) {
 			const int16 musicVolume = value.toSint16() * Audio::Mixer::kMaxMixerVolume / Audio32::kMaxVolume;
@@ -1195,10 +1306,12 @@ void GuestAdditions::syncAudioVolumeGlobalsToScummVM(const int index, const reg_
 		}
 		break;
 
-	case GID_LSL6HIRES:
-		if (index == kGlobalVarLSL6HiresMusicVolume) {
-			const int16 musicVolume = value.toSint16() * Audio::Mixer::kMaxMixerVolume / kLSL6HiresUIVolumeMax;
-			ConfMan.setInt("music_volume", musicVolume);
+	case GID_HOYLE5:
+		if (index == kGlobalVarHoyle5MusicVolume) {
+			const int16 masterVolume = value.toSint16() * Audio::Mixer::kMaxMixerVolume / kHoyle5VolumeMax;
+			ConfMan.setInt("music_volume", masterVolume);
+			ConfMan.setInt("sfx_volume", masterVolume);
+			ConfMan.setInt("speech_volume", masterVolume);
 		}
 		break;
 
@@ -1247,7 +1360,18 @@ void GuestAdditions::syncAudioVolumeGlobalsToScummVM(const int index, const reg_
 			case kGlobalVarTorinSpeechVolume:
 				ConfMan.setInt("speech_volume", volume);
 				break;
+			default:
+				break;
 			}
+		}
+		break;
+#endif
+
+	case GID_LSL6:
+	case GID_LSL6HIRES:
+		if (index == kGlobalVarLSL6MusicVolume) {
+			const int16 musicVolume = value.toSint16() * Audio::Mixer::kMaxMixerVolume / kLSL6UIVolumeMax;
+			ConfMan.setInt("music_volume", musicVolume);
 		}
 		break;
 
@@ -1256,6 +1380,7 @@ void GuestAdditions::syncAudioVolumeGlobalsToScummVM(const int index, const reg_
 	}
 }
 
+#ifdef ENABLE_SCI32
 void GuestAdditions::syncGK1AudioVolumeToScummVM(const reg_t soundObj, int16 volume) const {
 	const Common::String objName = _segMan->getObjectName(soundObj);
 	volume = volume * Audio::Mixer::kMaxMixerVolume / MUSIC_VOLUME_MAX;
@@ -1297,6 +1422,10 @@ void GuestAdditions::syncInGameUI(const int16 musicVolume, const int16 sfxVolume
 
 	case GID_QFG4:
 		syncQFG4UI(musicVolume);
+		break;
+
+	case GID_HOYLE5:
+		syncHoyle5UI(musicVolume);
 		break;
 
 	case GID_SHIVERS:
@@ -1344,19 +1473,51 @@ void GuestAdditions::syncGK2UI() const {
 	}
 }
 
-void GuestAdditions::syncLSL6HiresUI(const int16 musicVolume) const {
+void GuestAdditions::syncHoyle5UI(const int16 musicVolume) const {
+	// Hoyle5 has two control panels with different slider names
+	const reg_t sliders[] = { _segMan->findObjectByName("volumeSlider"),
+							  _segMan->findObjectByName("volumeSliderF") };
+	for (int i = 0; i < ARRAYSIZE(sliders); ++i) {
+		const reg_t sliderId = sliders[i];
+		if (!sliderId.isNull()) {
+			const int16 yPosition = 167 - musicVolume * 145 / 10;
+			writeSelectorValue(_segMan, sliderId, SELECTOR(y), yPosition);
+
+			// There does not seem to be any good way to learn whether the
+			// volume slider is visible (and thus eligible for
+			// kUpdateScreenItem)
+			const reg_t planeId = readSelector(_segMan, sliderId, SELECTOR(plane));
+			if (g_sci->_gfxFrameout->getPlanes().findByObject(planeId) != nullptr) {
+				g_sci->_gfxFrameout->kernelUpdateScreenItem(sliderId);
+			}
+		}
+	}
+}
+#endif
+
+void GuestAdditions::syncLSL6UI(const int16 musicVolume) const {
 	const reg_t musicDialId = _segMan->findObjectByName("volumeDial");
 	if (!musicDialId.isNull()) {
 		writeSelectorValue(_segMan, musicDialId, SELECTOR(curPos), musicVolume);
 		writeSelectorValue(_segMan, musicDialId, SELECTOR(cel), musicVolume);
 		reg_t params[] = { make_reg(0, musicVolume) };
-		invokeSelector(musicDialId, SELECTOR(update), 1, params);
-		if (_segMan->getObject(musicDialId)->isInserted()) {
-			g_sci->_gfxFrameout->kernelUpdateScreenItem(musicDialId);
+		// volumeDial's method is doit in the lo-res version and update in hi-res
+		if (g_sci->getGameId() == GID_LSL6) {
+			invokeSelector(musicDialId, SELECTOR(doit), 1, params);
+		} else {
+			invokeSelector(musicDialId, SELECTOR(update), 1, params);
 		}
+#ifdef ENABLE_SCI32
+		if (g_sci->getGameId() == GID_LSL6HIRES) {
+			if (_segMan->getObject(musicDialId)->isInserted()) {
+				g_sci->_gfxFrameout->kernelUpdateScreenItem(musicDialId);
+			}
+		}
+#endif
 	}
 }
 
+#ifdef ENABLE_SCI32
 void GuestAdditions::syncPhant1UI(const int16 oldMusicVolume, const int16 musicVolume, reg_t &musicGlobal, const int16 oldDacVolume, const int16 dacVolume, reg_t &dacGlobal) const {
 	const reg_t buttonId = _segMan->findObjectByName("dacVolUp");
 	if (buttonId.isNull() || !_segMan->getObject(buttonId)->isInserted()) {

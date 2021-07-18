@@ -24,12 +24,16 @@
 #include "base/plugins.h"
 #include "common/config-manager.h"
 #include "common/file.h"
+#include "common/hashmap.h"
 #include "common/ptr.h"
 #include "common/savefile.h"
 #include "common/system.h"
 #include "common/translation.h"
 #include "graphics/thumbnail.h"
 #include "graphics/surface.h"
+#include "gui/ThemeEval.h"
+#include "gui/widget.h"
+#include "gui/widgets/popup.h"
 
 #include "sci/sci.h"
 #include "sci/engine/kernel.h"
@@ -103,6 +107,8 @@ static const PlainGameDescriptor s_sciGameTitles[] = {
 	{"gk1demo",         "Gabriel Knight: Sins of the Fathers"},
 	{"qfg4demo",        "Quest for Glory IV: Shadows of Darkness"},
 	{"pq4demo",         "Police Quest IV: Open Season"},
+	// === SCI1.1+ games ======================================================
+	{"catdate",         "The Dating Pool"},
 	// === SCI2 games =========================================================
 	{"gk1",             "Gabriel Knight: Sins of the Fathers"},
 	{"pq4",             "Police Quest IV: Open Season"}, // floppy is SCI2, CD SCI2.1
@@ -207,7 +213,7 @@ static const GameIdStrToEnum s_gameIdStrToEnum[] = {
 	{ "qfg4",            GID_QFG4 },
 	{ "qfg4demo",        GID_QFG4DEMO },
 	{ "rama",            GID_RAMA },
-	{ "sci-fanmade",     GID_FANMADE },	// FIXME: Do we really need/want this?
+	{ "sci-fanmade",     GID_FANMADE },
 	{ "shivers",         GID_SHIVERS },
 	//{ "shivers2",        GID_SHIVERS2 },	// Not SCI
 	{ "slater",          GID_SLATER },
@@ -227,76 +233,77 @@ struct OldNewIdTableEntry {
 };
 
 static const OldNewIdTableEntry s_oldNewTable[] = {
-	{ "archive",    "chest",            SCI_VERSION_NONE     },
-	{ "arthur",		"camelot",			SCI_VERSION_NONE     },
-	{ "brain",      "castlebrain",      SCI_VERSION_1_MIDDLE },	// Amiga
-	{ "brain",      "castlebrain",      SCI_VERSION_1_LATE   },
-	{ "demo",		"christmas1988",	SCI_VERSION_NONE     },
-	{ "card",       "christmas1990",    SCI_VERSION_1_EARLY, },
-	{ "card",       "christmas1992",    SCI_VERSION_1_1      },
-	{ "RH Budget",	"cnick-longbow",	SCI_VERSION_NONE     },
+	{ "archive",    "chest",            SCI_VERSION_NONE       },
+	{ "arthur",		"camelot",			SCI_VERSION_NONE       },
+	{ "brain",      "castlebrain",      SCI_VERSION_1_MIDDLE   },	// Amiga
+	{ "brain",      "castlebrain",      SCI_VERSION_1_LATE     },
+	{ "demo",		"christmas1988",	SCI_VERSION_NONE       },
+	{ "card",       "christmas1990",    SCI_VERSION_1_EARLY,   },
+	{ "card",       "christmas1992",    SCI_VERSION_1_1        },
+	{ "RH Budget",	"cnick-longbow",	SCI_VERSION_NONE       },
 	// iceman is the same
-	{ "icedemo",	"iceman",			SCI_VERSION_NONE     },
+	{ "icedemo",	"iceman",			SCI_VERSION_NONE       },
 	// longbow is the same
-	{ "eco",		"ecoquest",			SCI_VERSION_NONE     },
-	{ "eco2",		"ecoquest2",		SCI_VERSION_NONE     },	// EcoQuest 2 demo
-	{ "rain",		"ecoquest2",		SCI_VERSION_NONE     },	// EcoQuest 2 full
-	{ "tales",		"fairytales",		SCI_VERSION_NONE     },
-	{ "fp",			"freddypharkas",	SCI_VERSION_NONE     },
-	{ "emc",		"funseeker",		SCI_VERSION_NONE     },
-	{ "gk",			"gk1",				SCI_VERSION_NONE     },
+	{ "eco",		"ecoquest",			SCI_VERSION_NONE       },
+	{ "eco2",		"ecoquest2",		SCI_VERSION_NONE       },	// EcoQuest 2 demo
+	{ "rain",		"ecoquest2",		SCI_VERSION_NONE       },	// EcoQuest 2 full
+	{ "tales",		"fairytales",		SCI_VERSION_NONE       },
+	{ "fp",			"freddypharkas",	SCI_VERSION_NONE       },
+	{ "emc",		"funseeker",		SCI_VERSION_NONE       },
+	{ "gk",			"gk1",				SCI_VERSION_NONE       },
 	// gk2 is the same
-	{ "gk2demo",	"gk2",				SCI_VERSION_NONE     },
-	{ "hoyledemo",	"hoyle1",			SCI_VERSION_NONE     },
-	{ "cardgames",	"hoyle1",			SCI_VERSION_NONE     },
-	{ "solitare",	"hoyle2",			SCI_VERSION_NONE     },
-	// hoyle3 is the same
-	// hoyle4 is the same
-	{ "brain",      "islandbrain",      SCI_VERSION_1_1      },
-	{ "demo000",	"kq1sci",			SCI_VERSION_NONE     },
-	{ "kq1",		"kq1sci",			SCI_VERSION_NONE     },
-	{ "kq4",		"kq4sci",			SCI_VERSION_NONE     },
+	{ "gk2demo",	"gk2",				SCI_VERSION_NONE       },
+	{ "hoyledemo",	"hoyle1",			SCI_VERSION_NONE       },
+	{ "cardgames",	"hoyle1",			SCI_VERSION_NONE       },
+	{ "solitare",	"hoyle2",			SCI_VERSION_NONE       },
+	{ "hoyle3",	    "hoyle3",			SCI_VERSION_NONE       },
+	{ "hoyle4",	    "hoyle4",			SCI_VERSION_1_1        },
+	{ "hoyle4",	    "hoyle5",			SCI_VERSION_2_1_MIDDLE },
+	{ "brain",      "islandbrain",      SCI_VERSION_1_1        },
+	{ "demo000",	"kq1sci",			SCI_VERSION_NONE       },
+	{ "kq1",		"kq1sci",			SCI_VERSION_NONE       },
+	{ "kq4",		"kq4sci",			SCI_VERSION_NONE       },
 	// kq5 is the same
 	// kq6 is the same
-	{ "kq7cd",		"kq7",				SCI_VERSION_NONE     },
-	{ "quizgame-demo", "kquestions",    SCI_VERSION_NONE     },
-	{ "mm1",		"laurabow",			SCI_VERSION_NONE     },
-	{ "cb1",		"laurabow",			SCI_VERSION_NONE     },
-	{ "lb2",		"laurabow2",		SCI_VERSION_NONE     },
-	{ "rh",			"longbow",			SCI_VERSION_NONE     },
-	{ "ll1",		"lsl1sci",			SCI_VERSION_NONE     },
-	{ "lsl1",		"lsl1sci",			SCI_VERSION_NONE     },
+	{ "kq7cd",		"kq7",				SCI_VERSION_NONE       },
+	{ "quizgame-demo", "kquestions",    SCI_VERSION_NONE       },
+	{ "mm1",		"laurabow",			SCI_VERSION_NONE       },
+	{ "cb1",		"laurabow",			SCI_VERSION_NONE       },
+	{ "lb2",		"laurabow2",		SCI_VERSION_NONE       },
+	{ "rh",			"longbow",			SCI_VERSION_NONE       },
+	{ "ll1",		"lsl1sci",			SCI_VERSION_NONE       },
+	{ "lsl1",		"lsl1sci",			SCI_VERSION_NONE       },
 	// lsl2 is the same
-	{ "lsl3",		"lsl3",				SCI_VERSION_NONE     },
-	{ "ll5",		"lsl5",				SCI_VERSION_NONE     },
+	{ "lsl3",		"lsl3",				SCI_VERSION_NONE       },
+	{ "ll5",		"lsl5",				SCI_VERSION_NONE       },
 	// lsl5 is the same
 	// lsl6 is the same
-	{ "mg",			"mothergoose",		SCI_VERSION_NONE     },
-	{ "twisty",		"pepper",			SCI_VERSION_NONE     },
-	{ "scary",      "phantasmagoria",   SCI_VERSION_NONE     },
+	{ "mg",			"mothergoose",		SCI_VERSION_NONE       },
+	{ "twisty",		"pepper",			SCI_VERSION_NONE       },
+	{ "scary",      "phantasmagoria",   SCI_VERSION_NONE       },
 	// TODO: distinguish the full version of Phantasmagoria from the demo
-	{ "pq1",		"pq1sci",			SCI_VERSION_NONE     },
-	{ "pq",			"pq2",				SCI_VERSION_NONE     },
+	{ "pq1",		"pq1sci",			SCI_VERSION_NONE       },
+	{ "pq",			"pq2",				SCI_VERSION_NONE       },
 	// pq3 is the same
 	// pq4 is the same
-	{ "hq",			"qfg1",				SCI_VERSION_NONE     },	// QFG1 SCI0/EGA
-	{ "glory",      "qfg1",             SCI_VERSION_0_LATE   },	// QFG1 SCI0/EGA
-	{ "trial",		"qfg2",				SCI_VERSION_NONE     },
-	{ "hq2demo",	"qfg2",				SCI_VERSION_NONE     },
+	{ "hq",			"qfg1",				SCI_VERSION_NONE       },	// QFG1 SCI0/EGA
+	{ "glory",      "qfg1",             SCI_VERSION_0_LATE     },	// QFG1 SCI0/EGA
+	{ "trial",		"qfg2",				SCI_VERSION_NONE       },
+	{ "hq2demo",	"qfg2",				SCI_VERSION_NONE       },
 	// rama is the same
 	// TODO: distinguish the full version of rama from the demo
-	{ "thegame",	"slater",			SCI_VERSION_NONE     },
-	{ "sq1demo",	"sq1sci",			SCI_VERSION_NONE     },
-	{ "sq1",		"sq1sci",			SCI_VERSION_NONE     },
+	{ "thegame",	"slater",			SCI_VERSION_NONE       },
+	{ "sq1demo",	"sq1sci",			SCI_VERSION_NONE       },
+	{ "sq1",		"sq1sci",			SCI_VERSION_NONE       },
 	// sq3 is the same
 	// sq4 is the same
 	// sq5 is the same
 	// sq6 is the same
 	// TODO: distinguish the full version of SQ6 from the demo
 	// torin is the same
-
-
-	// TODO: SCI3 IDs
+	{ "l7",			"lsl7",				SCI_VERSION_NONE       },
+	{ "p2",			"phantasmagoria2",	SCI_VERSION_NONE       },
+	{ "lite",		"lighthouse",		SCI_VERSION_NONE       },
 
 	{ "", "", SCI_VERSION_NONE }
 };
@@ -318,6 +325,7 @@ Common::String convertSierraGameId(Common::String sierraId, uint32 *gameFlags, R
 		sierraId == "mg" || sierraId == "pq" ||
 		sierraId == "jones" ||
 		sierraId == "cardgames" || sierraId == "solitare" ||
+		sierraId == "catdate" ||
 		sierraId == "hoyle4")
 		demoThreshold = 40;
 	if (sierraId == "hoyle3")
@@ -379,15 +387,6 @@ Common::String convertSierraGameId(Common::String sierraId, uint32 *gameFlags, R
 		return "qfg3";
 	}
 
-	if (sierraId == "l7")
-		return "lsl7";
-
-	if (sierraId == "p2")
-		return "phantasmagoria2";
-
-	if (sierraId == "lite")
-		return "lighthouse";
-
 	return sierraId;
 }
 
@@ -437,6 +436,16 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 #endif
 
 	{
+		GAMEOPTION_LARRYSCALE,
+		{
+			_s("Use high-quality \"LarryScale\" cel scaling"),
+			_s("Use special cartoon scaler for drawing character sprites"),
+			"enable_larryscale",
+			true
+		}
+	},
+
+	{
 		GAMEOPTION_PREFER_DIGITAL_SFX,
 		{
 			_s("Prefer digital sound effects"),
@@ -455,17 +464,6 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 			false
 		}
 	},
-
-	{
-		GAMEOPTION_FB01_MIDI,
-		{
-			_s("Use IMF/Yamaha FB-01 for MIDI output"),
-			_s("Use an IBM Music Feature card or a Yamaha FB-01 FM synth module for MIDI output"),
-			"native_fb01",
-			false
-		}
-	},
-
 	// Jones in the Fast Lane - CD audio tracks or resource.snd
 	{
 		GAMEOPTION_JONES_CDAUDIO,
@@ -510,7 +508,61 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 		}
 	},
 
+	// KQ7 - Upscale videos to double their size (The in-game "Full screen" video setting)
+	{
+		GAMEOPTION_UPSCALE_VIDEOS,
+	{
+		_s("Upscale videos"),
+		_s("Upscale videos to double their size"),
+		"enable_video_upscale",
+		true
+	}
+	},
 	AD_EXTRA_GUI_OPTIONS_TERMINATOR
+};
+
+struct PopUpOptionsItem {
+	const char *label;
+	int configValue;
+};
+
+#define POPUP_OPTIONS_ITEMS_TERMINATOR { nullptr, 0 }
+
+struct PopUpOptionsMap {
+	const char *guioFlag;
+	const char *label;
+	const char *tooltip;
+	const char *configOption;
+	int defaultState;
+	PopUpOptionsItem items[10];
+};
+
+#define POPUP_OPTIONS_TERMINATOR { nullptr, nullptr, nullptr, nullptr, 0, { POPUP_OPTIONS_ITEMS_TERMINATOR } }
+
+static const PopUpOptionsMap popUpOptionsList[] = {
+	{
+		GAMEOPTION_MIDI_MODE,
+		_s("MIDI mode:"),
+		_s("When using external MIDI devices (e.g. through USB-MIDI), select your device here"),
+		"midi_mode",
+		kMidiModeStandard,
+		{
+			{
+				_s("Standard (GM / MT-32)"),
+				kMidiModeStandard
+			},
+			{
+				_s("Roland D-110 / D-10 / D-20"),
+				kMidiModeD110
+			},
+			{
+				_s("Yamaha FB-01"),
+				kMidiModeFB01
+			},
+			POPUP_OPTIONS_ITEMS_TERMINATOR
+		}
+	},
+	POPUP_OPTIONS_TERMINATOR
 };
 
 /**
@@ -524,7 +576,7 @@ static ADGameDescription s_fallbackDesc = {
 	Common::UNK_LANG,
 	Common::kPlatformDOS,
 	ADGF_NO_FLAGS,
-	GUIO3(GAMEOPTION_PREFER_DIGITAL_SFX, GAMEOPTION_ORIGINAL_SAVELOAD, GAMEOPTION_FB01_MIDI)
+	GUIO3(GAMEOPTION_PREFER_DIGITAL_SFX, GAMEOPTION_ORIGINAL_SAVELOAD, GAMEOPTION_MIDI_MODE)
 };
 
 static char s_fallbackGameIdBuf[256];
@@ -537,38 +589,139 @@ static const char *directoryGlobs[] = {
 	"italian",
 	"msg",
 	"spanish",
+	"patches",
 	0
 };
+
+class OptionsWidget : public GUI::OptionsContainerWidget {
+public:
+	explicit OptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain);
+
+	// OptionsContainerWidget API
+	void load() override;
+	bool save() override;
+
+private:
+	// OptionsContainerWidget API
+	void defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName, const Common::String &overlayedLayout) const override;
+
+	Common::String _guiOptions;
+	Common::HashMap<Common::String, GUI::CheckboxWidget *> _checkboxes;
+	Common::HashMap<Common::String, GUI::PopUpWidget *> _popUps;
+};
+
+OptionsWidget::OptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain) :
+		OptionsContainerWidget(boss, name, "SciOptionsDialog", false, domain) {
+	_guiOptions = ConfMan.get("guioptions", domain);
+
+	for (const ADExtraGuiOptionsMap *entry = optionsList; entry->guioFlag; ++entry)
+		if (checkGameGUIOption(entry->guioFlag, _guiOptions))
+			_checkboxes[entry->option.configOption] = new GUI::CheckboxWidget(widgetsBoss(), _dialogLayout + "." + entry->option.configOption, entry->option.label, entry->option.tooltip);
+
+	for (const PopUpOptionsMap *entry = popUpOptionsList; entry->guioFlag; ++entry)
+		if (checkGameGUIOption(entry->guioFlag, _guiOptions)) {
+			GUI::StaticTextWidget *textWidget = new GUI::StaticTextWidget(widgetsBoss(), _dialogLayout + "." + entry->configOption + "_desc", entry->label, entry->tooltip);
+			textWidget->setAlign(Graphics::kTextAlignRight);
+
+			_popUps[entry->configOption] = new GUI::PopUpWidget(widgetsBoss(), _dialogLayout + "." + entry->configOption);
+
+			for (uint i = 0; entry->items[i].label; ++i)
+				_popUps[entry->configOption]->appendEntry(entry->items[i].label, entry->items[i].configValue);
+		}
+}
+
+void OptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName, const Common::String &overlayedLayout) const {
+	layouts.addDialog(layoutName, overlayedLayout);
+	layouts.addLayout(GUI::ThemeLayout::kLayoutVertical).addPadding(16, 16, 16, 16);
+
+	for (const ADExtraGuiOptionsMap *entry = optionsList; entry->guioFlag; ++entry)
+		layouts.addWidget(entry->option.configOption, "Checkbox");
+
+	for (const PopUpOptionsMap *entry = popUpOptionsList; entry->guioFlag; ++entry) {
+		layouts.addLayout(GUI::ThemeLayout::kLayoutHorizontal).addPadding(0, 0, 0, 0);
+		layouts.addWidget(Common::String(entry->configOption) + "_desc", "OptionsLabel");
+		layouts.addWidget(entry->configOption, "PopUp").closeLayout();
+	}
+
+	layouts.closeLayout().closeDialog();
+}
+
+void OptionsWidget::load() {
+	for (const ADExtraGuiOptionsMap *entry = optionsList; entry->guioFlag; ++entry)
+		if (checkGameGUIOption(entry->guioFlag, _guiOptions))
+			_checkboxes[entry->option.configOption]->setState(ConfMan.getBool(entry->option.configOption, _domain));
+
+	for (const PopUpOptionsMap *entry = popUpOptionsList; entry->guioFlag; ++entry)
+		if (checkGameGUIOption(entry->guioFlag, _guiOptions))
+			_popUps[entry->configOption]->setSelectedTag(ConfMan.getInt(entry->configOption, _domain));
+
+	// If the deprecated native_fb01 option is set, use it to set midi_mode
+	if (ConfMan.hasKey("native_fb01", _domain) && ConfMan.getBool("native_fb01", _domain))
+		_popUps["midi_mode"]->setSelectedTag(kMidiModeFB01);
+}
+
+bool OptionsWidget::save() {
+	for (const ADExtraGuiOptionsMap *entry = optionsList; entry->guioFlag; ++entry)
+		if (checkGameGUIOption(entry->guioFlag, _guiOptions))
+			ConfMan.setBool(entry->option.configOption, _checkboxes[entry->option.configOption]->getState(), _domain);
+
+	for (const PopUpOptionsMap *entry = popUpOptionsList; entry->guioFlag; ++entry)
+		if (checkGameGUIOption(entry->guioFlag, _guiOptions))
+			ConfMan.setInt(entry->configOption, _popUps[entry->configOption]->getSelectedTag(), _domain);
+
+	// Remove deprecated option
+	ConfMan.removeKey("native_fb01", _domain);
+
+	return true;
+}
 
 class SciMetaEngine : public AdvancedMetaEngine {
 public:
 	SciMetaEngine() : AdvancedMetaEngine(Sci::SciGameDescriptions, sizeof(ADGameDescription), s_sciGameTitles, optionsList) {
-		_singleId = "sci";
 		_maxScanDepth = 3;
 		_directoryGlobs = directoryGlobs;
 		_matchFullPaths = true;
 	}
 
-	virtual const char *getName() const {
-		return "SCI [SCI0, SCI01, SCI10, SCI11"
+	const char *getEngineId() const override {
+		return "sci";
+	}
+
+	const char *getName() const override {
+		return "SCI ["
 #ifdef ENABLE_SCI32
-			", SCI32"
+			"all games"
+#else
+			"SCI0, SCI01, SCI10, SCI11"
 #endif
 			"]";
 	}
 
-	virtual const char *getOriginalCopyright() const {
+	const char *getOriginalCopyright() const override {
 		return "Sierra's Creative Interpreter (C) Sierra Online";
 	}
 
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const;
-	const ADGameDescription *fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const;
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const override;
+	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const override;
+	bool hasFeature(MetaEngineFeature f) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	void registerDefaultSettings(const Common::String &target) const override;
+	GUI::OptionsContainerWidget *buildEngineOptionsWidget(GUI::GuiObject *boss, const Common::String &name, const Common::String &target) const override;
 };
+
+void SciMetaEngine::registerDefaultSettings(const Common::String &target) const {
+	AdvancedMetaEngine::registerDefaultSettings(target);
+
+	for (const PopUpOptionsMap *entry = popUpOptionsList; entry->guioFlag; ++entry)
+		ConfMan.registerDefault(entry->configOption, entry->defaultState);
+}
+
+GUI::OptionsContainerWidget *SciMetaEngine::buildEngineOptionsWidget(GUI::GuiObject *boss, const Common::String &name, const Common::String &target) const {
+	return new OptionsWidget(boss, name, target);
+}
 
 Common::Language charToScummVMLanguage(const char c) {
 	switch (c) {
@@ -590,7 +743,7 @@ Common::Language charToScummVMLanguage(const char c) {
 	}
 }
 
-const ADGameDescription *SciMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
+ADDetectedGame SciMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
 	bool foundResMap = false;
 	bool foundRes000 = false;
 
@@ -600,7 +753,7 @@ const ADGameDescription *SciMetaEngine::fallbackDetect(const FileMap &allFiles, 
 	s_fallbackDesc.flags = ADGF_NO_FLAGS;
 	s_fallbackDesc.platform = Common::kPlatformDOS;	// default to PC platform
 	s_fallbackDesc.gameId = "sci";
-	s_fallbackDesc.guiOptions = GUIO3(GAMEOPTION_PREFER_DIGITAL_SFX, GAMEOPTION_ORIGINAL_SAVELOAD, GAMEOPTION_FB01_MIDI);
+	s_fallbackDesc.guiOptions = GUIO3(GAMEOPTION_PREFER_DIGITAL_SFX, GAMEOPTION_ORIGINAL_SAVELOAD, GAMEOPTION_MIDI_MODE);
 
 	if (allFiles.contains("resource.map") || allFiles.contains("Data1")
 	    || allFiles.contains("resmap.000") || allFiles.contains("resmap.001")) {
@@ -647,7 +800,7 @@ const ADGameDescription *SciMetaEngine::fallbackDetect(const FileMap &allFiles, 
 
 	// If these files aren't found, it can't be SCI
 	if (!foundResMap && !foundRes000)
-		return 0;
+		return ADDetectedGame();
 
 	ResourceManager resMan(true);
 	resMan.addAppropriateSourcesForDetection(fslist);
@@ -658,7 +811,7 @@ const ADGameDescription *SciMetaEngine::fallbackDetect(const FileMap &allFiles, 
 	// Is SCI32 compiled in? If not, and this is a SCI32 game,
 	// stop here
 	if (getSciVersionForDetection() >= SCI_VERSION_2)
-		return 0;
+		return ADDetectedGame();
 #endif
 
 	ViewType gameViews = resMan.getViewType();
@@ -667,7 +820,7 @@ const ADGameDescription *SciMetaEngine::fallbackDetect(const FileMap &allFiles, 
 	// Can't be SCI (or unsupported SCI views). Pinball Creep by Sierra also uses resource.map/resource.000 files
 	// but doesn't share SCI format at all
 	if (gameViews == kViewUnknown)
-		return 0;
+		return ADDetectedGame();
 
 	// Set the platform to Amiga if the game is using Amiga views
 	if (gameViews == kViewAmiga)
@@ -678,11 +831,10 @@ const ADGameDescription *SciMetaEngine::fallbackDetect(const FileMap &allFiles, 
 
 	// If we don't have a game id, the game is not SCI
 	if (sierraGameId.empty())
-		return 0;
+		return ADDetectedGame();
 
 	Common::String gameId = convertSierraGameId(sierraGameId, &s_fallbackDesc.flags, resMan);
-	strncpy(s_fallbackGameIdBuf, gameId.c_str(), sizeof(s_fallbackGameIdBuf) - 1);
-	s_fallbackGameIdBuf[sizeof(s_fallbackGameIdBuf) - 1] = 0;	// Make sure string is NULL terminated
+	Common::strlcpy(s_fallbackGameIdBuf, gameId.c_str(), sizeof(s_fallbackGameIdBuf));
 	s_fallbackDesc.gameId = s_fallbackGameIdBuf;
 
 	// Try to determine the game language
@@ -726,7 +878,7 @@ const ADGameDescription *SciMetaEngine::fallbackDetect(const FileMap &allFiles, 
 	const bool isCD = (s_fallbackDesc.flags & ADGF_CD);
 
 	if (!isCD)
-		s_fallbackDesc.guiOptions = GUIO4(GUIO_NOSPEECH, GAMEOPTION_PREFER_DIGITAL_SFX, GAMEOPTION_ORIGINAL_SAVELOAD, GAMEOPTION_FB01_MIDI);
+		s_fallbackDesc.guiOptions = GUIO4(GUIO_NOSPEECH, GAMEOPTION_PREFER_DIGITAL_SFX, GAMEOPTION_ORIGINAL_SAVELOAD, GAMEOPTION_MIDI_MODE);
 
 	if (gameId.hasSuffix("sci")) {
 		s_fallbackDesc.extra = "SCI";
@@ -753,7 +905,7 @@ const ADGameDescription *SciMetaEngine::fallbackDetect(const FileMap &allFiles, 
 			s_fallbackDesc.extra = "CD";
 	}
 
-	return &s_fallbackDesc;
+	return ADDetectedGame(&s_fallbackDesc);
 }
 
 bool SciMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
@@ -781,7 +933,7 @@ bool SciMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool SciEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsLoadingDuringRuntime); // ||
 		//(f == kSupportsSavingDuringRuntime);
 		// We can't allow saving through ScummVM menu, because
@@ -871,7 +1023,14 @@ SaveStateDescriptor SciMetaEngine::querySaveMetaInfos(const char *target, int sl
 
 		descriptor.setDescription(meta.name);
 
-		Graphics::Surface *const thumbnail = Graphics::loadThumbnail(*in);
+		Graphics::Surface *thumbnail;
+		if (!Graphics::loadThumbnail(*in, thumbnail)) {
+			// invalid
+			delete in;
+
+			descriptor.setDescription("*Invalid*");
+			return descriptor;
+		}
 		descriptor.setThumbnail(thumbnail);
 
 		int day = (meta.saveDate >> 24) & 0xFF;
@@ -911,29 +1070,12 @@ Common::Error SciEngine::loadGameState(int slot) {
 	return Common::kNoError;
 }
 
-Common::Error SciEngine::saveGameState(int slot, const Common::String &desc) {
-	Common::String fileName = Common::String::format("%s.%03d", _targetName.c_str(), slot);
-	Common::SaveFileManager *saveFileMan = g_engine->getSaveFileManager();
-	Common::OutSaveFile *out = saveFileMan->openForSaving(fileName);
+Common::Error SciEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	const char *version = "";
-	if (!out) {
-		warning("Opening savegame \"%s\" for writing failed", fileName.c_str());
-		return Common::kWritingFailed;
+	if (gamestate_save(_gamestate, slot, desc, version)) {
+		return Common::kNoError;
 	}
-
-	if (!gamestate_save(_gamestate, out, desc, version)) {
-		warning("Saving the game state to '%s' failed", fileName.c_str());
-		return Common::kWritingFailed;
-	} else {
-		out->finalize();
-		if (out->err()) {
-			warning("Writing the savegame failed");
-			return Common::kWritingFailed;
-		}
-		delete out;
-	}
-
-	return Common::kNoError;
+	return Common::kWritingFailed;
 }
 
 bool SciEngine::canLoadGameStateCurrently() {

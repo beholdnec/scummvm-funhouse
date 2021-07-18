@@ -29,11 +29,14 @@
 
 class OSystem_SDL_SamsungTV : public OSystem_POSIX {
 public:
-	OSystem_SDL_SamsungTV();
-
 	virtual void initBackend();
 	virtual void quit();
 	virtual void fatalError();
+	virtual bool hasFeature(Feature f);
+
+protected:
+	virtual Common::String getDefaultConfigFileName();
+	virtual Common::String getDefaultLogFileName();
 };
 
 #endif

@@ -721,11 +721,14 @@ void Goblin::adjustDest(int16 posX, int16 posY) {
 		case 3:
 			_pressedMapY -= resDelta;
 			break;
+
+		default:
+			break;
 		}
 
 	}
-	_pressedMapX = CLIP((int) _pressedMapX, 0, _vm->_map->getMapWidth() - 1);
-	_pressedMapY = CLIP((int) _pressedMapY, 0, _vm->_map->getMapHeight() - 1);
+	_pressedMapX = CLIP((int)_pressedMapX, 0, _vm->_map->getMapWidth() - 1);
+	_pressedMapY = CLIP((int)_pressedMapY, 0, _vm->_map->getMapHeight() - 1);
 }
 
 void Goblin::adjustTarget() {
@@ -745,8 +748,8 @@ void Goblin::adjustTarget() {
 			_pressedMapX++;
 		}
 	}
-	_pressedMapX = CLIP((int) _pressedMapX, 0, _vm->_map->getMapWidth() - 1);
-	_pressedMapY = CLIP((int) _pressedMapY, 0, _vm->_map->getMapHeight() - 1);
+	_pressedMapX = CLIP((int)_pressedMapX, 0, _vm->_map->getMapWidth() - 1);
+	_pressedMapY = CLIP((int)_pressedMapY, 0, _vm->_map->getMapHeight() - 1);
 }
 
 void Goblin::targetDummyItem(Gob_Object *gobDesc) {
@@ -896,8 +899,8 @@ void Goblin::targetItem() {
 			}
 		}
 	}
-	_pressedMapX = CLIP((int) _pressedMapX, 0, _vm->_map->getMapWidth() - 1);
-	_pressedMapY = CLIP((int) _pressedMapY, 0, _vm->_map->getMapHeight() - 1);
+	_pressedMapX = CLIP((int)_pressedMapX, 0, _vm->_map->getMapWidth() - 1);
+	_pressedMapY = CLIP((int)_pressedMapY, 0, _vm->_map->getMapHeight() - 1);
 }
 
 void Goblin::moveFindItem(int16 posX, int16 posY) {
@@ -1748,6 +1751,9 @@ void Goblin::animate(Mult::Mult_Object *obj) {
 		if (animData->frame >= framesCount)
 			animData->isPaused = 1;
 		break;
+
+	default:
+		break;
 	}
 
 	if ((animData->newState == -1) && (animData->frame >= framesCount)) {
@@ -1873,6 +1879,9 @@ void Goblin::updateLayer1(Mult::Mult_AnimData *animData) {
 	case 23:
 		animData->layer = 21;
 		break;
+
+	default:
+		break;
 	}
 }
 
@@ -1904,6 +1913,9 @@ void Goblin::updateLayer2(Mult::Mult_AnimData *animData) {
 
 	case 23:
 		animData->layer = 24;
+		break;
+
+	default:
 		break;
 	}
 }

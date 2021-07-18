@@ -46,7 +46,7 @@ TabWidget::TabWidget(GuiObject *boss, const String &name)
 }
 
 void TabWidget::init() {
-	setFlags(WIDGET_ENABLED);
+	setFlags(WIDGET_ENABLED | WIDGET_TRACK_MOUSE);
 	_type = kTabWidget;
 	_activeTab = -1;
 	_firstVisibleTab = 0;
@@ -62,15 +62,24 @@ void TabWidget::init() {
 	_bodyLP = g_gui.xmlEval()->getVar("Globals.TabWidget.Body.Padding.Left");
 	_bodyRP = g_gui.xmlEval()->getVar("Globals.TabWidget.Body.Padding.Right");
 
-	_butRP = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButtonPadding.Right", 0);
+	_butRP = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.Padding.Right", 0);
 	_butTP = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.Padding.Top", 0);
 	_butW = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.Width", 10);
 	_butH = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.Height", 10);
 
 	int x = _w - _butRP - _butW * 2 - 2;
 	int y = _butTP - _tabHeight;
-	_navLeft = new ButtonWidget(this, x, y, _butW, _butH, "<", 0, kCmdLeft);
-	_navRight = new ButtonWidget(this, x + _butW + 2, y, _butW, _butH, ">", 0, kCmdRight);
+
+	String leftArrow = g_gui.useRTL() ? ">" : "<";
+	String rightArrow = g_gui.useRTL() ? "<" : ">";
+
+	_navLeft = new ButtonWidget(this, x, y, _butW, _butH, leftArrow, nullptr, kCmdLeft);
+	_navRight = new ButtonWidget(this, x + _butW + 2, y, _butW, _butH, rightArrow, nullptr, kCmdRight);
+
+	_navLeft->setEnabled(false);
+	_navRight->setEnabled(true);
+
+	_lastRead = -1;
 }
 
 TabWidget::~TabWidget() {
@@ -80,10 +89,10 @@ TabWidget::~TabWidget() {
 	// date. So update it now.
 	if (_activeTab != -1)
 		_tabs[_activeTab].firstWidget = _firstWidget;
-	_firstWidget = 0;
+	_firstWidget = nullptr;
 	for (uint i = 0; i < _tabs.size(); ++i) {
 		delete _tabs[i].firstWidget;
-		_tabs[i].firstWidget = 0;
+		_tabs[i].firstWidget = nullptr;
 	}
 	_tabs.clear();
 	delete _navRight;
@@ -103,11 +112,12 @@ uint16 TabWidget::getHeight() const {
 	return _h + _tabHeight;
 }
 
-int TabWidget::addTab(const String &title) {
+int TabWidget::addTab(const String &title, const String &dialogName) {
 	// Add a new tab page
 	Tab newTab;
 	newTab.title = title;
-	newTab.firstWidget = 0;
+	newTab.dialogName = dialogName;
+	newTab.firstWidget = nullptr;
 
 	// Determine the new tab width
 	int newWidth = g_gui.getStringWidth(title) + kTabTitleSpacing;
@@ -132,7 +142,7 @@ void TabWidget::removeTab(int tabID) {
 	if (tabID == _activeTab) {
 		_tabs[tabID].firstWidget = _firstWidget;
 		releaseFocus();
-		_firstWidget = 0;
+		_firstWidget = nullptr;
 	}
 
 	// Dispose the widgets in that tab and then the tab itself
@@ -154,7 +164,7 @@ void TabWidget::removeTab(int tabID) {
 	}
 
 	// Finally trigger a redraw
-	_boss->draw();
+	g_gui.scheduleTopDialogRedraw();
 }
 
 void TabWidget::setActiveTab(int tabID) {
@@ -167,14 +177,14 @@ void TabWidget::setActiveTab(int tabID) {
 		}
 		_activeTab = tabID;
 		_firstWidget = _tabs[tabID].firstWidget;
-		
+
 		// Also ensure the tab is visible in the tab bar
 		if (_firstVisibleTab > tabID)
 			setFirstVisible(tabID, true);
 		while (_lastVisibleTab < tabID)
 			setFirstVisible(_firstVisibleTab + 1, false);
 
-		_boss->draw();
+		g_gui.scheduleTopDialogRedraw();
 	}
 }
 
@@ -184,15 +194,32 @@ void TabWidget::handleCommand(CommandSender *sender, uint32 cmd, uint32 data) {
 
 	switch (cmd) {
 	case kCmdLeft:
+		if (!_navRight->isEnabled()) {
+			_navRight->setEnabled(true);
+		}
+
 		if (_firstVisibleTab > 0) {
 			setFirstVisible(_firstVisibleTab - 1);
+		}
+		if (_firstVisibleTab == 0) {
+			_navLeft->setEnabled(false);
 		}
 		break;
 
 	case kCmdRight:
+		if (!_navLeft->isEnabled()) {
+			_navLeft->setEnabled(true);
+		}
+
 		if (_lastVisibleTab + 1 < (int)_tabs.size()) {
 			setFirstVisible(_firstVisibleTab + 1, false);
 		}
+		if (_lastVisibleTab + 1 == (int)_tabs.size()) {
+			_navRight->setEnabled(false);
+		}
+		break;
+
+	default:
 		break;
 	}
 }
@@ -216,6 +243,31 @@ void TabWidget::handleMouseDown(int x, int y, int button, int clickCount) {
 		setActiveTab(tabID);
 }
 
+void TabWidget::handleMouseMoved(int x, int y, int button) {
+	if (y < 0 || y >= _tabHeight)
+		return;
+
+	if (x < 0)
+		return;
+
+	// Determine which tab the mouse is on
+	int tabID;
+	for (tabID = _firstVisibleTab; tabID <= _lastVisibleTab; ++tabID) {
+		x -= _tabs[tabID]._tabWidth;
+		if (x < 0)
+			break;
+	}
+
+	if (tabID <= _lastVisibleTab) {
+		if (tabID != _lastRead) {
+			read(_tabs[tabID].title);
+			_lastRead = tabID;
+		}
+	}
+	else
+		_lastRead = -1;
+}
+
 bool TabWidget::handleKeyDown(Common::KeyState state) {
 	if (state.hasFlags(Common::KBD_SHIFT) && state.keycode == Common::KEYCODE_TAB)
 		adjustTabs(kTabBackwards);
@@ -228,12 +280,26 @@ bool TabWidget::handleKeyDown(Common::KeyState state) {
 void TabWidget::adjustTabs(int value) {
 	// Determine which tab is next
 	int tabID = _activeTab + value;
+	int lastVis = _lastVisibleTab;
+
 	if (tabID >= (int)_tabs.size())
 		tabID = 0;
 	else if (tabID < 0)
 		tabID = ((int)_tabs.size() - 1);
 
 	setActiveTab(tabID);
+
+	if (_navButtonsVisible) {
+		if (lastVis != _lastVisibleTab) {
+			_navLeft->setEnabled(true);
+			_navRight->setEnabled(true);
+		}
+
+		if (_firstVisibleTab == 0)
+			_navLeft->setEnabled(false);
+		else if (_lastVisibleTab == (int)_tabs.size() - 1)
+			_navRight->setEnabled(false);
+	}
 }
 
 int TabWidget::getFirstVisible() const {
@@ -246,7 +312,7 @@ void TabWidget::setFirstVisible(int tabID, bool adjustIfRoom) {
 
 	computeLastVisibleTab(adjustIfRoom);
 
-	_boss->draw(); // TODO: Necessary?
+	g_gui.scheduleTopDialogRedraw(); // TODO: Necessary?
 }
 
 void TabWidget::reflowLayout() {
@@ -258,9 +324,9 @@ void TabWidget::reflowLayout() {
 	_minTabWidth = g_gui.xmlEval()->getVar("Globals.TabWidget.Tab.Width");
 	_titleVPad = g_gui.xmlEval()->getVar("Globals.TabWidget.Tab.Padding.Top");
 
-	_butRP = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.PaddingRight", 0);
+	_butRP = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.Padding.Right", 0);
 	_butTP = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.Padding.Top", 0);
-	_butW = g_gui.xmlEval()->getVar("GlobalsTabWidget.NavButton.Width", 10);
+	_butW = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.Width", 10);
 	_butH = g_gui.xmlEval()->getVar("Globals.TabWidget.NavButton.Height", 10);
 
 	// If widgets were added or removed in the current tab, without tabs
@@ -271,6 +337,10 @@ void TabWidget::reflowLayout() {
 		_tabs[_activeTab].firstWidget = _firstWidget;
 
 	for (uint i = 0; i < _tabs.size(); ++i) {
+		if (!_tabs[i].dialogName.empty()) {
+			g_gui.xmlEval()->reflowDialogLayout(_tabs[i].dialogName, _tabs[i].firstWidget);
+		}
+
 		Widget *w = _tabs[i].firstWidget;
 		while (w) {
 			w->reflowLayout();
@@ -320,9 +390,13 @@ void TabWidget::drawWidget() {
 		tabs.push_back(_tabs[i].title);
 		widths.push_back(_tabs[i]._tabWidth);
 	}
-	g_gui.theme()->drawDialogBackgroundClip(Common::Rect(_x + _bodyLP, _y + _bodyTP, _x+_w-_bodyRP, _y+_h-_bodyBP+_tabHeight), getBossClipRect(), _bodyBackgroundType);
 
-	g_gui.theme()->drawTabClip(Common::Rect(_x, _y, _x+_w, _y+_h), getBossClipRect(), _tabHeight, widths, tabs, _activeTab - _firstVisibleTab, 0, _titleVPad);
+	g_gui.theme()->drawDialogBackground(
+			Common::Rect(_x + _bodyLP, _y + _bodyTP, _x + _w - _bodyRP, _y + _h - _bodyBP + _tabHeight),
+			_bodyBackgroundType);
+
+	g_gui.theme()->drawTab(Common::Rect(_x, _y, _x + _w, _y + _h), _tabHeight, widths, tabs,
+				_activeTab - _firstVisibleTab, (g_gui.useRTL() && _useRTL));
 }
 
 void TabWidget::draw() {
@@ -331,6 +405,15 @@ void TabWidget::draw() {
 	if (_navButtonsVisible) {
 		_navLeft->draw();
 		_navRight->draw();
+	}
+}
+
+void TabWidget::markAsDirty() {
+	Widget::markAsDirty();
+
+	if (_navButtonsVisible) {
+		_navLeft->markAsDirty();
+		_navRight->markAsDirty();
 	}
 }
 
@@ -363,7 +446,7 @@ Widget *TabWidget::findWidget(int x, int y) {
 void TabWidget::computeLastVisibleTab(bool adjustFirstIfRoom) {
 	int availableWidth = _w;
 	if (_navButtonsVisible)
-		availableWidth -= 2 + _butW * 2;
+		availableWidth -= 2 + _butW * 2 + _butRP;
 
 	_lastVisibleTab = _tabs.size() - 1;
 	for (int i = _firstVisibleTab; i < (int)_tabs.size(); ++i) {

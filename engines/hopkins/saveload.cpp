@@ -77,9 +77,8 @@ void SaveLoadManager::load(const Common::String &file, byte *buf) {
 	delete savefile;
 }
 
-bool SaveLoadManager::readSavegameHeader(Common::InSaveFile *in, hopkinsSavegameHeader &header) {
+WARN_UNUSED_RESULT bool SaveLoadManager::readSavegameHeader(Common::InSaveFile *in, hopkinsSavegameHeader &header, bool skipThumbnail) {
 	char saveIdentBuffer[SAVEGAME_STR_SIZE + 1];
-	header._thumbnail = NULL;
 
 	// Validate the header Id
 	in->read(saveIdentBuffer, SAVEGAME_STR_SIZE + 1);
@@ -96,9 +95,9 @@ bool SaveLoadManager::readSavegameHeader(Common::InSaveFile *in, hopkinsSavegame
 	while ((ch = (char)in->readByte()) != '\0') header._saveName += ch;
 
 	// Get the thumbnail
-	header._thumbnail = Graphics::loadThumbnail(*in);
-	if (!header._thumbnail)
+	if (!Graphics::loadThumbnail(*in, header._thumbnail, skipThumbnail)) {
 		return false;
+	}
 
 	// Read in save date/time
 	header._year = in->readSint16LE();
@@ -151,7 +150,8 @@ Common::Error SaveLoadManager::saveGame(int slot, const Common::String &saveName
 	_vm->_globals->_saveData->_mapCarPosY = _vm->_objectsMan->_mapCarPosY;
 
 	/* Create the savegame */
-	Common::OutSaveFile *savefile = g_system->getSavefileManager()->openForSaving(_vm->generateSaveName(slot));
+	Common::OutSaveFile *savefile = g_system->getSavefileManager()->openForSaving(
+		_vm->getSaveStateName(slot));
 	if (!savefile)
 		return Common::kCreatingFileFailed;
 
@@ -177,7 +177,7 @@ Common::Error SaveLoadManager::saveGame(int slot, const Common::String &saveName
 Common::Error SaveLoadManager::loadGame(int slot) {
 	// Try and open the save file for reading
 	Common::InSaveFile *savefile = g_system->getSavefileManager()->openForLoading(
-		_vm->generateSaveName(slot));
+		_vm->getSaveStateName(slot));
 	if (!savefile)
 		return Common::kReadingFailed;
 
@@ -186,10 +186,10 @@ Common::Error SaveLoadManager::loadGame(int slot) {
 
 	// Read in the savegame header
 	hopkinsSavegameHeader header;
-	readSavegameHeader(savefile, header);
-	if (header._thumbnail)
-		header._thumbnail->free();
-	delete header._thumbnail;
+	if (!readSavegameHeader(savefile, header)) {
+		delete savefile;
+		return Common::kReadingFailed;
+	}
 
 	// Read in the savegame data
 	syncSavegameData(serializer, header._version);
@@ -212,14 +212,14 @@ Common::Error SaveLoadManager::loadGame(int slot) {
 	return Common::kNoError;
 }
 
-bool SaveLoadManager::readSavegameHeader(int slot, hopkinsSavegameHeader &header) {
+WARN_UNUSED_RESULT bool SaveLoadManager::readSavegameHeader(int slot, hopkinsSavegameHeader &header, bool skipThumbnail) {
 	// Try and open the save file for reading
 	Common::InSaveFile *savefile = g_system->getSavefileManager()->openForLoading(
-		_vm->generateSaveName(slot));
+		_vm->getSaveStateName(slot));
 	if (!savefile)
 		return false;
 
-	bool result = readSavegameHeader(savefile, header);
+	bool result = readSavegameHeader(savefile, header, skipThumbnail);
 	delete savefile;
 	return result;
 }

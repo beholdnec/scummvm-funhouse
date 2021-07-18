@@ -100,34 +100,31 @@ class DreamWebSound;
 
 class DreamWebEngine : public Engine {
 private:
-	DreamWebConsole			*_console;
 	DreamWebSound *_sound;
-	bool					_vSyncInterrupt;
+	uint32 _vSyncPrevTick;
 
 protected:
 	// Engine APIs
-	virtual Common::Error run();
-	virtual bool hasFeature(EngineFeature f) const;
-
-	GUI::Debugger *getDebugger() { return _console; }
+	Common::Error run() override;
+	bool hasFeature(EngineFeature f) const override;
+	void pauseEngineIntern(bool pause) override;
 
 public:
 	DreamWebEngine(OSystem *syst, const DreamWebGameDescription *gameDesc);
-	virtual ~DreamWebEngine();
+	~DreamWebEngine() override;
 
-	void setVSyncInterrupt(bool flag);
 	void waitForVSync();
 
-	Common::Error loadGameState(int slot);
-	Common::Error saveGameState(int slot, const Common::String &desc);
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
 
-	bool canLoadGameStateCurrently();
-	bool canSaveGameStateCurrently();
+	bool canLoadGameStateCurrently() override;
+	bool canSaveGameStateCurrently() override;
 
 	uint8 randomNumber() { return _rnd.getRandomNumber(255); }
 
 	void mouseCall(uint16 *x, uint16 *y, uint16 *state); //fill mouse pos and button state
-	void processEvents();
+	void processEvents(bool processSoundEvents = true);
 	void blit(const uint8 *src, int pitch, int x, int y, int w, int h);
 	void cls();
 	bool isCD();
@@ -138,12 +135,10 @@ public:
 
 	Common::String getSavegameFilename(int slot) const;
 
-	void setShakePos(int pos) { _system->setShakePos(pos); }
+	void setShakePos(int pos) { _system->setShakePos(0, pos); }
 	void printUnderMonitor();
 
 	void quit();
-
-	bool loadSpeech(const Common::String &filename);
 
 	Common::Language getLanguage() const;
 	uint8 modifyChar(uint8 c) const;
@@ -238,7 +233,6 @@ protected:
 	Common::List<ObjPos> _exList;
 	Common::List<People> _peopleList;
 	uint8 _zoomSpace[46*40];
-	// _printedList (unused?)
 	Change _listOfChanges[kNumChanges]; // Note: this array is saved
 	uint8 _underTimedText[kUnderTimedTextBufSize];
 	Common::List<Rain> _rainList;
@@ -300,8 +294,6 @@ protected:
 	TextFile _exText;
 
 public:
-	DreamWebEngine(/*DreamWeb::DreamWebEngine *en*/);
-
 	bool _quitRequested;
 	bool _subtitles;
 	bool _foreignRelease;
@@ -316,7 +308,6 @@ public:
 	// misc variables
 	uint8 _speechCount;
 	uint16 _charShift;
-	uint8 _kerning;
 	bool _brightPalette;
 	bool _copyProtection;
 	uint8 _roomLoaded;
@@ -647,10 +638,10 @@ public:
 
 	// from print.cpp
 	uint8 getNextWord(const GraphicsFile &charSet, const uint8 *string, uint8 *totalWidth, uint8 *charCount);
-	void printChar(const GraphicsFile &charSet, uint16 *x, uint16 y, uint8 c, uint8 nextChar, uint8 *width, uint8 *height);
+	void printChar(const GraphicsFile &charSet, uint16 *x, uint16 y, uint8 c, uint8 nextChar, uint8 *width, uint8 *height, bool kerning = false);
 	void printChar(const GraphicsFile &charSet, uint16 x, uint16 y, uint8 c, uint8 nextChar, uint8 *width, uint8 *height);
 	void printBoth(const GraphicsFile &charSet, uint16 *x, uint16 y, uint8 c, uint8 nextChar);
-	uint8 printDirect(const uint8** string, uint16 x, uint16 *y, uint8 maxWidth, bool centered);
+	uint8 printDirect(const uint8** string, uint16 x, uint16 *y, uint8 maxWidth, bool centered, bool kerning = false);
 	uint8 printDirect(const uint8* string, uint16 x, uint16 y, uint8 maxWidth, bool centered);
 	uint8 getNumber(const GraphicsFile &charSet, const uint8 *string, uint16 maxWidth, bool centered, uint16 *offset);
 	uint8 kernChars(uint8 firstChar, uint8 secondChar, uint8 width);
@@ -724,6 +715,7 @@ public:
 	void intro3Text(uint16 nextReelPointer);
 
 	void monks2text();
+	void monks2ShowText(uint8 textIndex, uint8 x, uint8 y);
 	void textForEnd();
 	void textForMonkHelper(uint8 textIndex, uint8 voiceIndex, uint8 x, uint8 y, uint16 countToTimed, uint16 timeCount);
 	void textForMonk();
@@ -757,7 +749,6 @@ public:
 	uint16 readMouseState();
 	void hangOn(uint16 frameCount);
 	void lockMon();
-	uint8 *textUnder();
 	void readKey();
 	void findOrMake(uint8 index, uint8 value, uint8 type);
 	DynObject *getFreeAd(uint8 index);
@@ -784,6 +775,9 @@ public:
 	void loadRoomData(const Room &room, bool skipDat);
 	void useTempCharset(GraphicsFile *charset);
 	void useCharset1();
+	void useCharsetIcons1();
+	void useCharsetTempgraphics();
+	void resetCharset();
 	void printMessage(uint16 x, uint16 y, uint8 index, uint8 maxWidth, bool centered);
 	void printMessage2(uint16 x, uint16 y, uint8 index, uint8 maxWidth, bool centered, uint8 count);
 	bool isItDescribed(const ObjPos *objPos);
@@ -916,7 +910,6 @@ public:
 	void dreamweb();
 	void screenUpdate();
 	void startup1();
-	void readOneBlock();
 	bool checkIfPerson(uint8 x, uint8 y);
 	bool checkIfFree(uint8 x, uint8 y);
 	bool checkIfEx(uint8 x, uint8 y);

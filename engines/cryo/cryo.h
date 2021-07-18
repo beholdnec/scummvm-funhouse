@@ -25,7 +25,6 @@
 
 #include "common/scummsys.h"
 #include "common/config-manager.h"
-#include "engines/advancedDetector.h"
 #include "common/debug.h"
 #include "common/debug-channels.h"
 #include "common/error.h"
@@ -38,6 +37,8 @@
 #include "cryo/eden.h"
 #include "cryo/video.h"
 #include "cryo/debugger.h"
+
+struct ADGameDescription;
 
 namespace Cryo {
 
@@ -54,9 +55,9 @@ enum {
 class CryoEngine : public Engine {
 public:
 	CryoEngine(OSystem *syst, const ADGameDescription *gameDesc);
-	~CryoEngine();
+	~CryoEngine() override;
 
-	virtual Common::Error run();
+	Common::Error run() override;
 
 	// Detection related functions
 	const ADGameDescription *_gameDescription;
@@ -70,7 +71,6 @@ public:
 	Graphics::Surface _screen;
 	EdenGame *_game;
 	HnmPlayer *_video;
-	Debugger *_debugger;
 
 	View *_screenView;
 	volatile int32 _timerTicks;
@@ -87,13 +87,6 @@ public:
 };
 
 extern CryoEngine *g_ed;
-
-// Example console class
-class Console : public GUI::Debugger {
-public:
-	Console(CryoEngine *vm) {}
-	virtual ~Console(void) {}
-};
 
 } // End of namespace Cryo
 

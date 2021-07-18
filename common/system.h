@@ -25,6 +25,7 @@
 
 #include "common/scummsys.h"
 #include "common/noncopyable.h"
+#include "common/array.h" // For OSystem::getGlobalKeymaps()
 #include "common/list.h" // For OSystem::getSupportedFormats()
 #include "graphics/pixelformat.h"
 #include "graphics/mode.h"
@@ -49,14 +50,21 @@ class TaskbarManager;
 #if defined(USE_UPDATES)
 class UpdateManager;
 #endif
+#if defined(USE_TTS)
+class TextToSpeechManager;
+#endif
+#if defined(USE_SYSDIALOGS)
+class DialogManager;
+#endif
 class TimerManager;
 class SeekableReadStream;
 class WriteStream;
-#ifdef ENABLE_KEYMAPPER
 class HardwareInputSet;
 class Keymap;
 class KeymapperDefaultBindings;
-#endif
+class Encoding;
+
+typedef Array<Keymap *> KeymapArray;
 }
 
 class AudioCDManager;
@@ -104,6 +112,7 @@ enum Type {
  * control audio CD playback, and sound output.
  */
 class OSystem : Common::NonCopyable {
+	friend class Common::Encoding;
 protected:
 	OSystem();
 	virtual ~OSystem();
@@ -140,7 +149,7 @@ protected:
 
 	/**
 	 * No default value is provided for _eventManager by OSystem.
-	 * However, BaseBackend::initBackend() does set a default value
+	 * However, EventsBaseBackend::initBackend() does set a default value
 	 * if none has been set before.
 	 *
 	 * @note _eventManager is deleted by the OSystem destructor.
@@ -179,6 +188,24 @@ protected:
 	Common::UpdateManager *_updateManager;
 #endif
 
+#if defined(USE_TTS)
+	/**
+	 * No default value is provided for _textToSpeechManager by OSystem.
+	 *
+	 * @note _textToSpeechManager is deleted by the OSystem destructor.
+	 */
+	Common::TextToSpeechManager *_textToSpeechManager;
+#endif
+
+#if defined(USE_SYSDIALOGS)
+	/**
+	 * No default value is provided for _dialogManager by OSystem.
+	 *
+	 * @note _dialogManager is deleted by the OSystem destructor.
+	 */
+	Common::DialogManager *_dialogManager;
+#endif
+
 	/**
 	 * No default value is provided for _fsFactory by OSystem.
 	 *
@@ -190,9 +217,36 @@ protected:
 	 */
 	FilesystemFactory *_fsFactory;
 
+	/**
+	 * Used by the default clipboard implementation, for backends that don't
+	 * implement clipboard support.
+	 */
+	Common::String _clipboard;
+
+	// WORKAROUND. The 014bef9eab9fb409cfb3ec66830e033e4aaa29a9 triggered a bug
+	// in the osx_intel toolchain. Adding this variable fixes it.
+	bool _dummyUnused;
+
+private:
+	/**
+	 * Indicate if initBackend() has been called.
+	 */
+	bool _backendInitialized;
+
 	//@}
 
 public:
+
+	/**
+	 *
+	 * Destoy this OSystem instance.
+	 */
+	void destroy();
+
+	/**
+	 * The following method should be called once, after g_system is created.
+	 */
+	virtual void init() {}
 
 	/**
 	 * The following method is called once, from main.cpp, after all
@@ -203,6 +257,13 @@ public:
 	 *       implementation.
 	 */
 	virtual void initBackend();
+
+	/**
+	 * Return false if initBackend() has not yet been called and true otherwise.
+	 * Some functionalities such as mutexes cannot be used until the backend
+	 * is initialized.
+	 */
+	bool backendInitialized() const { return _backendInitialized; }
 
 	/**
 	 * Allows the backend to perform engine specific init.
@@ -263,7 +324,12 @@ public:
 		kFeatureFilteringMode,
 
 		/**
-		 * Determine whether a virtual keyboard is too be shown or not.
+		 * Indicate if stretch modes are supported by the backend.
+		 */
+		kFeatureStretchMode,
+
+		/**
+		 * Determine whether a virtual keyboard is to be shown or not.
 		 * This would mostly be implemented by backends for hand held devices,
 		 * like PocketPC, Palms, Symbian phones like the P800, Zaurus, etc.
 		 */
@@ -297,25 +363,6 @@ public:
 		kFeatureIconifyWindow,
 
 		/**
-		 * Setting the state of this feature to true tells the backend to disable
-		 * all key filtering/mapping, in cases where it would be beneficial to do so.
-		 * As an example case, this is used in the AGI engine's predictive dialog.
-		 * When the dialog is displayed this feature is set so that backends with
-		 * phone-like keypad temporarily unmap all user actions which leads to
-		 * comfortable word entry. Conversely, when the dialog exits the feature
-		 * is set to false.
-		 *
-		 * TODO: The word 'beneficial' above is very unclear. Beneficial to
-		 * whom and for what??? Just giving an example is not enough.
-		 *
-		 * TODO: Fingolfin suggests that the way the feature is used can be
-		 * generalized in this sense: Have a keyboard mapping feature, which the
-		 * engine queries for to assign keys to actions ("Here's my default key
-		 * map for these actions, what do you want them set to?").
-		 */
-		kFeatureDisableKeyFiltering,
-
-		/**
 		 * The presence of this feature indicates whether the displayLogFile()
 		 * call is supported.
 		 *
@@ -324,8 +371,11 @@ public:
 		kFeatureDisplayLogFile,
 
 		/**
-		 * The presence of this feature indicates whether the hasTextInClipboard()
-		 * and getTextFromClipboard() calls are supported.
+		 * The presence of this feature indicates whether the system clipboard is
+		 * available. If this feature is not present, the hasTextInClipboard(),
+		 * getTextFromClipboard() and setTextInClipboard() calls can still be used,
+		 * however it should not be used in scenarios where the user is expected to
+		 * copy data outside of the application.
 		 *
 		 * This feature has no associated state.
 		 */
@@ -337,7 +387,7 @@ public:
 		 *
 		 * This feature has no associated state.
 		 */
-		kFeatureOpenUrl	,
+		kFeatureOpenUrl,
 
 		/**
 		* show on-screen control
@@ -367,7 +417,18 @@ public:
 		/**
 		* shaders
 		*/
-		kFeatureShader
+		kFeatureShader,
+
+		/**
+		* Supports for using the native system file browser dialog
+		* through the DialogManager.
+		*/
+		kFeatureSystemBrowserDialog,
+
+		/**
+		* For platforms that should not have a Quit button
+		*/
+		kFeatureNoQuit
 
 	};
 
@@ -490,7 +551,10 @@ public:
 	 * The list is terminated by an all-zero entry.
 	 * @return a list of supported graphics modes
 	 */
-	virtual const GraphicsMode *getSupportedGraphicsModes() const = 0;
+	virtual const GraphicsMode *getSupportedGraphicsModes() const {
+		static const GraphicsMode noGraphicsModes[] = {{"NONE", "Normal", 0}, {nullptr, nullptr, 0 }};
+		return noGraphicsModes;
+    }
 
 	/**
 	 * Return the ID of the 'default' graphics mode. What exactly this means
@@ -500,7 +564,7 @@ public:
 	 *
 	 * @return the ID of the 'default' graphics mode
 	 */
-	virtual int getDefaultGraphicsMode() const = 0;
+	virtual int getDefaultGraphicsMode() const { return 0; }
 
 	/**
 	 * Switch to the specified graphics mode. If switching to the new mode
@@ -509,7 +573,7 @@ public:
 	 * @param mode	the ID of the new graphics mode
 	 * @return true if the switch was successful, false otherwise
 	 */
-	virtual bool setGraphicsMode(int mode) = 0;
+	virtual bool setGraphicsMode(int mode) { return (mode == 0); }
 
 	/**
 	 * Switch to the graphics mode with the given name. If 'name' is unknown,
@@ -527,7 +591,7 @@ public:
 	 * Determine which graphics mode is currently active.
 	 * @return the ID of the active graphics mode
 	 */
-	virtual int getGraphicsMode() const = 0;
+	virtual int getGraphicsMode() const { return 0; }
 
 	/**
 	 * Sets the graphics scale factor to x1. Games with large screen sizes
@@ -587,9 +651,19 @@ public:
 	 * @return a list of supported shaders
 	 */
 	virtual const GraphicsMode *getSupportedShaders() const {
-		static const OSystem::GraphicsMode no_shader[2] = {{"NONE", "Normal (no shader)", 0}, {0, 0, 0}};
+		static const OSystem::GraphicsMode no_shader[2] = {{"NONE", "Normal (no shader)", 0}, {nullptr, nullptr, 0}};
 		return no_shader;
 	}
+
+	/**
+	 * Return the ID of the 'default' shader mode. What exactly this means
+	 * is up to the backend. This mode is set by the client code when no user
+	 * overrides are present (i.e. if no custom shader mode is selected via
+	 * the command line or a config file).
+	 *
+	 * @return the ID of the 'default' shader mode
+	 */
+	virtual int getDefaultShader() const { return 0; }
 
 	/**
 	 * Switch to the specified shader mode. If switching to the new mode
@@ -601,10 +675,72 @@ public:
 	virtual bool setShader(int id) { return false; }
 
 	/**
+	 * Switch to the shader mode with the given name. If 'name' is unknown,
+	 * or if switching to the new mode failed, this method returns false.
+	 *
+	 * @param name	the name of the new shader mode
+	 * @return true if the switch was successful, false otherwise
+	 * @note This is implemented via the setShader(int) method, as well
+	 *       as getSupportedShaders() and getDefaultShader().
+	 *       In particular, backends do not have to overload this!
+	 */
+	bool setShader(const char *name);
+
+	/**
 	 * Determine which shader is currently active.
 	 * @return the ID of the active shader
 	 */
 	virtual int getShader() const { return 0; }
+
+	/**
+	 * Retrieve a list of all stretch modes supported by this backend.
+	 * It is completely up to the backend maintainer to decide what is
+	 * appropriate here and what not.
+	 * The list is terminated by an all-zero entry.
+	 * @return a list of supported stretch modes
+	 */
+	virtual const GraphicsMode *getSupportedStretchModes() const {
+		static const GraphicsMode noStretchModes[] = {{"NONE", "Normal", 0}, {nullptr, nullptr, 0 }};
+		return noStretchModes;
+	}
+
+	/**
+	 * Return the ID of the 'default' stretch mode. What exactly this means
+	 * is up to the backend. This mode is set by the client code when no user
+	 * overrides are present (i.e. if no custom stretch mode is selected via
+	 * the command line or a config file).
+	 *
+	 * @return the ID of the 'default' graphics mode
+	 */
+	virtual int getDefaultStretchMode() const { return 0; }
+
+	/**
+	 * Switch to the specified stretch mode. If switching to the new mode
+	 * failed, this method returns false.
+	 *
+	 * @param mode	the ID of the new graphics mode
+	 * @return true if the switch was successful, false otherwise
+	 */
+	virtual bool setStretchMode(int mode) { return false; }
+
+	/**
+	 * Switch to the stretch mode with the given name. If 'name' is unknown,
+	 * or if switching to the new mode failed, this method returns false.
+	 *
+	 * @param name	the name of the new stretch mode
+	 * @return true if the switch was successful, false otherwise
+	 * @note This is implemented via the setStretchMode(int) method, as well
+	 *       as getSupportedStretchModes() and getDefaultStretchMode().
+	 *       In particular, backends do not have to overload this!
+	 */
+	bool setStretchMode(const char *name);
+
+	/**
+	 * Determine which stretch mode is currently active.
+	 * @return the ID of the active stretch mode
+	 */
+	virtual int getStretchMode() const { return 0; }
+
 
 	/**
 	 * Set the size and color format of the virtual screen. Typical sizes include:
@@ -632,7 +768,7 @@ public:
 	 * @param height	the new virtual screen height
 	 * @param format	the new virtual screen pixel format
 	 */
-	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format = NULL) = 0;
+	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format = nullptr) = 0;
 
 	/**
 	 * Send a list of graphics modes to the backend so it can make a decision
@@ -695,7 +831,8 @@ public:
 		kTransactionModeSwitchFailed = (1 << 2),	/**< Failed switching the GFX graphics mode (setGraphicsMode) */
 		kTransactionSizeChangeFailed = (1 << 3),	/**< Failed switching the screen dimensions (initSize) */
 		kTransactionFormatNotSupported = (1 << 4),	/**< Failed setting the color format */
-		kTransactionFilteringFailed = (1 << 5)		/**< Failed setting the filtering mode */
+		kTransactionFilteringFailed = (1 << 5),		/**< Failed setting the filtering mode */
+		kTransactionStretchModeSwitchFailed = (1 << 6)	/**< Failed setting the stretch mode */
 	};
 
 	/**
@@ -780,10 +917,6 @@ public:
 
 	/**
 	 * Fills the screen with a given color value.
-	 *
-	 * @note We are using uint32 here even though currently
-	 * we only support 8bpp indexed mode. Thus the value should
-	 * be always inside [0, 255] for now.
 	 */
 	virtual void fillScreen(uint32 col) = 0;
 
@@ -794,7 +927,7 @@ public:
 	 * This method could be called very often by engines. Backends are hence
 	 * supposed to only perform any redrawing if it is necessary, and otherwise
 	 * return immediately. See
-	 * <http://wiki.scummvm.org/index.php/HOWTO-Backends#updateScreen.28.29_method>
+	 * <https://wiki.scummvm.org/index.php/HOWTO-Backends#updateScreen.28.29_method>
 	 */
 	virtual void updateScreen() = 0;
 
@@ -806,11 +939,13 @@ public:
 	 * not cause any graphic data to be lost - that is, to restore the original
 	 * view, the game engine only has to call this method again with offset
 	 * equal to zero. No calls to copyRectToScreen are necessary.
-	 * @param shakeOffset	the shake offset
+	 * @param shakeXOffset	the shake x offset
+	 * @param shakeYOffset	the shake y offset
 	 *
-	 * @note This is currently used in the SCUMM, QUEEN and KYRA engines.
+	 * @note This is currently used in the SCUMM, QUEEN, KYRA, SCI, DREAMWEB,
+	 * SUPERNOVA, TEENAGENT, TOLTECS, ULTIMA, and PETKA engines.
 	 */
-	virtual void setShakePos(int shakeOffset) = 0;
+	virtual void setShakePos(int shakeXOffset, int shakeYOffset) = 0;
 
 	/**
 	 * Sets the area of the screen that has the focus.  For example, when a character
@@ -964,7 +1099,7 @@ public:
 	 *                          would be too small to notice otherwise, these are allowed to scale the cursor anyway.
 	 * @param format			pointer to the pixel format which cursor graphic uses (0 means CLUT8)
 	 */
-	virtual void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor, bool dontScale = false, const Graphics::PixelFormat *format = NULL) = 0;
+	virtual void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor, bool dontScale = false, const Graphics::PixelFormat *format = nullptr) = 0;
 
 	/**
 	 * Replace the specified range of cursor the palette with new colors.
@@ -1018,22 +1153,17 @@ public:
 		return _eventManager;
 	}
 
-#ifdef ENABLE_KEYMAPPER
 	/**
 	 * Register hardware inputs with keymapper
-	 * IMPORTANT NOTE: This is part of the WIP Keymapper. If you plan to use
-	 * this, please talk to tsoliman and/or LordHoto.
 	 *
 	 * @return HardwareInputSet with all keys and recommended mappings
 	 *
 	 * See keymapper documentation for further reference.
 	 */
-	virtual Common::HardwareInputSet *getHardwareInputSet() { return 0; }
+	virtual Common::HardwareInputSet *getHardwareInputSet() { return nullptr; }
 
 	/**
 	 * Return a platform-specific global keymap
-	 * IMPORTANT NOTE: This is part of the WIP Keymapper. If you plan to use
-	 * this, please talk to tsoliman and/or LordHoto.
 	 *
 	 * @return Keymap with actions appropriate for the platform
 	 *
@@ -1041,19 +1171,16 @@ public:
 	 *
 	 * See keymapper documentation for further reference.
 	 */
-	virtual Common::Keymap *getGlobalKeymap() { return 0; }
+	virtual Common::KeymapArray getGlobalKeymaps() { return Common::KeymapArray(); }
 
 	/**
 	 * Return platform-specific default keybindings
-	 * IMPORTANT NOTE: This is part of the WIP Keymapper. If you plan to use
-	 * this, please talk to tsoliman and/or LordHoto.
 	 *
 	 * @return KeymapperDefaultBindings populated with keybindings
 	 *
 	 * See keymapper documentation for further reference.
 	 */
-	virtual Common::KeymapperDefaultBindings *getKeymapperDefaultBindings() { return 0; }
-#endif
+	virtual Common::KeymapperDefaultBindings *getKeymapperDefaultBindings() { return nullptr; }
 	//@}
 
 
@@ -1230,6 +1357,28 @@ public:
 	}
 #endif
 
+#if defined(USE_TTS)
+	/**
+	 * Returns the TextToSpeechManager, used to handle text to speech features.
+	 *
+	 * @return the TextToSpeechManager for the current architecture
+	 */
+	virtual Common::TextToSpeechManager *getTextToSpeechManager() {
+		return _textToSpeechManager;
+	}
+#endif
+
+#if defined(USE_SYSDIALOGS)
+	/**
+	 * Returns the DialogManager, used to handle system dialogs.
+	 *
+	 * @return the DialogManager for the current architecture
+	 */
+	virtual Common::DialogManager *getDialogManager() {
+		return _dialogManager;
+	}
+#endif
+
 	/**
 	 * Returns the FilesystemFactory object, depending on the current architecture.
 	 *
@@ -1322,7 +1471,7 @@ public:
 	 *
 	 * @return true if there is text in the clipboard, false otherwise
 	 */
-	virtual bool hasTextInClipboard() { return false; }
+	virtual bool hasTextInClipboard() { return !_clipboard.empty(); }
 
 	/**
 	 * Returns clipboard contents as a String.
@@ -1333,7 +1482,18 @@ public:
 	 *
 	 * @return clipboard contents ("" if hasTextInClipboard() == false)
 	 */
-	virtual Common::String getTextFromClipboard() { return ""; }
+	virtual Common::String getTextFromClipboard() { return _clipboard; }
+
+	/**
+	 * Set the content of the clipboard to the given string.
+	 *
+	 * The kFeatureClipboardSupport feature flag can be used to
+	 * test whether this call has been implemented by the active
+	 * backend.
+	 *
+	 * @return true if the text was properly set in the clipboard, false otherwise
+	 */
+	virtual bool setTextInClipboard(const Common::String &text) { _clipboard = text; return true; }
 
 	/**
 	 * Open the given Url in the default browser (if available on the target
@@ -1367,7 +1527,31 @@ public:
 	 */
 	virtual Common::String getSystemLanguage() const;
 
+	/**
+	 * Returns whether connection's limited (if available on the target system).
+	 *
+	 * Returns true if connection seems limited.
+	 */
+	virtual bool isConnectionLimited();
+
 	//@}
+
+protected:
+
+	/**
+	 * This allows derived classes to implement encoding conversion using platform
+	 * specific API.
+	 * This method shouldn't be called directly. Use Common::Encoding instead.
+	 *
+	 * @param to Encoding to convert the string to
+	 * @param from Encoding to convert the string from
+	 * @param string The string that should be converted
+	 * @param length Size of the string in bytes
+	 *
+	 * @return Converted string, which must be freed by the caller (using free()
+	 * and not delete[]), or nullptr if the conversion isn't possible.
+	 */
+	virtual char *convertEncoding(const char *to, const char *from, const char *string, size_t length) { return nullptr; }
 };
 
 

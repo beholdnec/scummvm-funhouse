@@ -310,6 +310,8 @@ void GameModule::initCrystalColorsPuzzle() {
 			case 'Y':
 				correctColorNum = 2;
 				break;
+			default:
+				break;
 			}
 			do {
 				misalignedColorNum = _vm->_rnd->getRandomNumber(6 - 1);
@@ -336,6 +338,8 @@ uint32 GameModule::handleMessage(int messageNum, const MessageParam &param, Enti
 	case 0x1009:
 		_moduleResult = param.asInteger();
 		_done = true;
+		break;
+	default:
 		break;
 	}
 	return messageResult;
@@ -711,7 +715,9 @@ void GameModule::updateModule() {
 			createModule(2600, 1);
 			break;
 		case 2600:
-			if (_moduleResult == 1)
+			if (_vm->isDemo() && !_vm->isBigDemo())
+				createModule(9999, -1);
+			else if (_moduleResult == 1)
 				createModule(2500, 0);
 			else
 				createModule(1200, 1);
@@ -788,6 +794,8 @@ void GameModule::updateModule() {
 			break;
 		case 9999:
 			createModuleByHash(getGlobalVar(V_MODULE_NAME));
+			break;
+		default:
 			break;
 		}
 	}

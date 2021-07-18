@@ -54,6 +54,7 @@ namespace Graphics {
 
 struct TransparentSurface;
 struct Surface;
+class MacWindowManager;
 
 struct NinePatchMark {
 	int offset;
@@ -68,7 +69,7 @@ public:
 	Common::Array<NinePatchMark *> _m;
 	int _fix;
 
-	NinePatchSide() : _fix(0) {}
+	NinePatchSide() : _fix(0) { _m.clear(); }
 	~NinePatchSide();
 
 	bool init(Graphics::TransparentSurface *bmp, bool vertical);
@@ -88,7 +89,7 @@ public:
 	NinePatchBitmap(Graphics::TransparentSurface *bmp, bool owns_bitmap);
 	~NinePatchBitmap();
 
-	void blit(Graphics::Surface &target, int dx, int dy, int dw, int dh, byte *palette = NULL, byte numColors = 0);
+	void blit(Graphics::Surface &target, int dx, int dy, int dw, int dh, byte *palette = NULL, int numColors = 0, MacWindowManager *wm = NULL);
 	void blitClip(Graphics::Surface &target, Common::Rect clip, int dx, int dy, int dw, int dh);
 
 	int getWidth() { return _width; }
@@ -106,7 +107,7 @@ private:
 	byte getColorIndex(uint32 target, byte *palette);
 	uint32 grayscale(uint32 color);
 	uint32 grayscale(byte r, byte g, byte b);
-	byte closestGrayscale(uint32 color, byte* palette, byte paletteLength);
+	byte closestGrayscale(uint32 color, byte* palette, int paletteLength);
 };
 
 } // end of namespace Graphics

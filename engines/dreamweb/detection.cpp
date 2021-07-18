@@ -71,24 +71,27 @@ public:
 	AdvancedMetaEngine(DreamWeb::gameDescriptions,
 	sizeof(DreamWeb::DreamWebGameDescription), dreamWebGames,
 	gameGuiOptions) {
-		_singleId = "dreamweb";
 		_guiOptions = GUIO1(GUIO_NOMIDI);
 	}
 
-	virtual const char *getName() const {
-		return "DreamWeb engine";
+	const char *getEngineId() const override {
+		return "dreamweb";
 	}
 
-	virtual const char *getOriginalCopyright() const {
+	const char *getName() const override {
+		return "DreamWeb";
+	}
+
+	const char *getOriginalCopyright() const override {
 		return "DreamWeb (C) Creative Reality";
 	}
 
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	bool hasFeature(MetaEngineFeature f) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 };
 
 bool DreamWebMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -108,7 +111,7 @@ bool DreamWebMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool DreamWeb::DreamWebEngine::hasFeature(EngineFeature f) const {
 	switch(f) {
-	case kSupportsRTL:
+	case kSupportsReturnToLauncher:
 		return true;
 	case kSupportsSubtitleOptions:
 		return _gameDescription->desc.flags & ADGF_CD;
@@ -198,7 +201,12 @@ SaveStateDescriptor DreamWebMetaEngine::querySaveMetaInfos(const char *target, i
 			uint32 saveDate = in->readUint32LE();
 			uint32 saveTime = in->readUint32LE();
 			uint32 playTime = in->readUint32LE();
-			Graphics::Surface *thumbnail = Graphics::loadThumbnail(*in);
+			Graphics::Surface *thumbnail;
+			if (!Graphics::loadThumbnail(*in, thumbnail)) {
+				warning("Missing or broken thumbnail - skipping");
+				delete in;
+				return desc;
+			}
 
 			int day = (saveDate >> 24) & 0xFF;
 			int month = (saveDate >> 16) & 0xFF;
@@ -231,7 +239,7 @@ Common::Error DreamWebEngine::loadGameState(int slot) {
 	return Common::kNoError;
 }
 
-Common::Error DreamWebEngine::saveGameState(int slot, const Common::String &desc) {
+Common::Error DreamWebEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	return Common::kNoError;
 }
 

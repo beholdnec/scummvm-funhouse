@@ -48,7 +48,6 @@ Common::Platform CruiseEngine::getPlatform() const {
 }
 
 static const PlainGameDescriptor cruiseGames[] = {
-	{"cruise", "Cinematique evo.2 engine game"},
 	{"cruise", "Cruise for a Corpse"},
 	{0, 0}
 };
@@ -196,24 +195,27 @@ static const CRUISEGameDescription gameDescriptions[] = {
 class CruiseMetaEngine : public AdvancedMetaEngine {
 public:
 	CruiseMetaEngine() : AdvancedMetaEngine(Cruise::gameDescriptions, sizeof(Cruise::CRUISEGameDescription), cruiseGames) {
-		_singleId = "cruise";
 		_guiOptions = GUIO2(GUIO_NOSPEECH, GUIO_NOMIDI);
 	}
 
-	virtual const char *getName() const {
-		return "CruisE";
+	const char *getEngineId() const override {
+		return "cruise";
 	}
 
-	virtual const char *getOriginalCopyright() const {
-		return "Cruise for a Corpse (C) Delphine Software";
+	const char *getName() const override {
+		return "Cinematique evo 2";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual int getMaximumSaveSlot() const { return 99; }
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	virtual SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
+	const char *getOriginalCopyright() const override {
+		return "Cinematique evo 2 (C) Delphine Software";
+	}
+
+	bool hasFeature(MetaEngineFeature f) const override;
+	int getMaximumSaveSlot() const override { return 99; }
+	SaveStateList listSaves(const char *target) const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 };
 
 bool CruiseMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -241,9 +243,8 @@ SaveStateList CruiseMetaEngine::listSaves(const char *target) const {
 			Common::InSaveFile *in = saveFileMan->openForLoading(*file);
 			if (in) {
 				Cruise::CruiseSavegameHeader header;
-				Cruise::readSavegameHeader(in, header);
-				saveList.push_back(SaveStateDescriptor(slotNum, header.saveName));
-				delete header.thumbnail;
+				if (Cruise::readSavegameHeader(in, header))
+					saveList.push_back(SaveStateDescriptor(slotNum, header.saveName));
 				delete in;
 			}
 		}
@@ -264,7 +265,11 @@ SaveStateDescriptor CruiseMetaEngine::querySaveMetaInfos(const char *target, int
 
 	if (f) {
 		Cruise::CruiseSavegameHeader header;
-		Cruise::readSavegameHeader(f, header);
+		if (!Cruise::readSavegameHeader(f, header, false)) {
+			delete f;
+			return SaveStateDescriptor();
+		}
+
 		delete f;
 
 		// Create the return descriptor

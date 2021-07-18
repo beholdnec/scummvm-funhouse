@@ -38,8 +38,8 @@
 #include "backends/platform/psp/powerman.h"
 #include "backends/platform/psp/rtc.h"
 
-#include "backends/saves/psp/psp-saves.h"
-#include "backends/timer/default/default-timer.h"
+#include "backends/saves/default/default-saves.h"
+#include "backends/timer/psp/timer.h"
 #include "graphics/surface.h"
 #include "audio/mixer_intern.h"
 
@@ -50,19 +50,20 @@
 
 #define	SAMPLES_PER_SEC	44100
 
-static int timer_handler(int t) {
-	DefaultTimerManager *tm = (DefaultTimerManager *)g_system->getTimerManager();
-	tm->handler();
-	return t;
-}
-
 OSystem_PSP::~OSystem_PSP() {}
 
 #define PSP_SCREEN_WIDTH 480
 #define PSP_SCREEN_HEIGHT 272
 
+#define PSP_DEFAULT_SAVE_PATH "ms0:/scummvm_savegames"
+
 void OSystem_PSP::initBackend() {
 	DEBUG_ENTER_FUNC();
+
+	ConfMan.registerDefault("aspect_ratio", false);
+	ConfMan.registerDefault("gfx_mode", "Fit to Screen");
+	ConfMan.registerDefault("kbdmouse_speed", 3);
+	ConfMan.registerDefault("joystick_deadzone", 3);
 
 	// Instantiate real time clock
 	PspRtc::instance();
@@ -88,14 +89,12 @@ void OSystem_PSP::initBackend() {
 	_imageViewer.setInputHandler(&_inputHandler);
 	_imageViewer.setDisplayManager(&_displayManager);
 
-	_savefileManager = new PSPSaveFileManager;
+	_savefileManager = new DefaultSaveFileManager(PSP_DEFAULT_SAVE_PATH);
 
-	_timerManager = new DefaultTimerManager();
+	_timerManager = new PspTimerManager();
 
 	PSP_DEBUG_PRINT("calling keyboard.load()\n");
 	_keyboard.load();	// Load virtual keyboard files into memory
-
-	setTimerCallback(&timer_handler, 10);
 
 	setupMixer();
 
@@ -109,7 +108,8 @@ void OSystem_PSP::engineDone() {
 }
 
 bool OSystem_PSP::hasFeature(Feature f) {
-	return (f == kFeatureOverlaySupportsAlpha || f == kFeatureCursorPalette);
+	return (f == kFeatureOverlaySupportsAlpha || f == kFeatureCursorPalette || 
+			f == kFeatureKbdMouseSpeed || f == kFeatureJoystickDeadzone);
 }
 
 void OSystem_PSP::setFeatureState(Feature f, bool enable) {
@@ -140,13 +140,6 @@ bool OSystem_PSP::setGraphicsMode(int mode) {
 	_displayManager.waitUntilRenderFinished();
 	_pendingUpdate = false;
 	return _displayManager.setGraphicsMode(mode);
-}
-
-bool OSystem_PSP::setGraphicsMode(const char *name) {
-	DEBUG_ENTER_FUNC();
-	_displayManager.waitUntilRenderFinished();
-	_pendingUpdate = false;
-	return _displayManager.setGraphicsMode(name);
 }
 
 int OSystem_PSP::getGraphicsMode() const {
@@ -230,11 +223,11 @@ void OSystem_PSP::updateScreen() {
 	_pendingUpdate = !_displayManager.renderAll();	// if we didn't update, we have a pending update
 }
 
-void OSystem_PSP::setShakePos(int shakeOffset) {
+void OSystem_PSP::setShakePos(int shakeXOffset, int shakeYOffset) {
 	DEBUG_ENTER_FUNC();
 	_displayManager.waitUntilRenderFinished();
 	_pendingUpdate = false;
-	_screen.setShakePos(shakeOffset);
+	_screen.setShakePos(shakeXOffset, shakeYOffset);
 }
 
 void OSystem_PSP::showOverlay() {
@@ -308,7 +301,7 @@ void OSystem_PSP::setMouseCursor(const void *buf, uint w, uint h, int hotspotX, 
 	_displayManager.waitUntilRenderFinished();
 	_pendingUpdate = false;
 
-	PSP_DEBUG_PRINT("pbuf[%p], w[%u], h[%u], hotspot:X[%d], Y[%d], keycolor[%d], scale[%d], pformat[%p]\n", buf, w, h, hotspotX, hotspotY, keycolor, cursorTargetScale, format);
+	PSP_DEBUG_PRINT("pbuf[%p], w[%u], h[%u], hotspot:X[%d], Y[%d], keycolor[%d], scale[%d], pformat[%p]\n", buf, w, h, hotspotX, hotspotY, keycolor, !dontScale, format);
 	if (format) {
 		PSP_DEBUG_PRINT("format: bpp[%d], rLoss[%d], gLoss[%d], bLoss[%d], aLoss[%d], rShift[%d], gShift[%d], bShift[%d], aShift[%d]\n", format->bytesPerPixel, format->rLoss, format->gLoss, format->bLoss, format->aLoss, format->rShift, format->gShift, format->bShift, format->aShift);
 	}
@@ -355,12 +348,6 @@ uint32 OSystem_PSP::getMillis(bool skipRecord) {
 
 void OSystem_PSP::delayMillis(uint msecs) {
 	PspThread::delayMillis(msecs);
-}
-
-void OSystem_PSP::setTimerCallback(TimerProc callback, int interval) {
-	_pspTimer.setCallback((PspTimer::CallbackFunc)callback);
-	_pspTimer.setIntervalMs(interval);
-	_pspTimer.start();
 }
 
 OSystem::MutexRef OSystem_PSP::createMutex(void) {
@@ -411,7 +398,7 @@ void OSystem_PSP::setupMixer(void) {
 		return;
 	}
 	samplesPerSec = _audio.getFrequency();	// may have been changed by audio system
-	_mixer = new Audio::MixerImpl(this, samplesPerSec);
+	_mixer = new Audio::MixerImpl(samplesPerSec);
 	assert(_mixer);
 	_mixer->setReady(true);
 	_audio.unpause();

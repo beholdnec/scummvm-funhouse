@@ -311,7 +311,6 @@ enum GameObjectTypes {
 
 enum ScriptTimings {
 	kScriptTimeTicksPerSecond = (728L/10L),
-	kScriptTimeTicksPerSecondIHNM = 72,
 	kRepeatSpeedTicks = (728L/10L)/3,
 	kNormalFadeDuration = 320, // 64 steps, 5 msec each
 	kQuickFadeDuration = 64,  // 64 steps, 1 msec each
@@ -458,7 +457,8 @@ public:
 class ByteArrayReadStreamEndian : public Common::MemoryReadStreamEndian {
 public:
 	ByteArrayReadStreamEndian(const ByteArray & byteArray, bool bigEndian = false)
-		: Common::MemoryReadStreamEndian(byteArray.getBuffer(), byteArray.size(), bigEndian) {
+		: Common::MemoryReadStreamEndian(byteArray.getBuffer(), byteArray.size(), bigEndian),
+		ReadStreamEndian(bigEndian) {
 	}
 };
 
@@ -467,15 +467,13 @@ class SagaEngine : public Engine {
 
 public:
 	// Engine APIs
-	virtual Common::Error run();
-	bool hasFeature(EngineFeature f) const;
-	void syncSoundSettings();
-	void pauseEngineIntern(bool pause);
-
-	GUI::Debugger *getDebugger();
+	Common::Error run() override;
+	bool hasFeature(EngineFeature f) const override;
+	void syncSoundSettings() override;
+	void pauseEngineIntern(bool pause) override;
 
 	SagaEngine(OSystem *syst, const SAGAGameDescription *gameDesc);
-	~SagaEngine();
+	~SagaEngine() override;
 
 	void save(const char *fileName, const char *saveName);
 	void load(const char *fileName);
@@ -484,6 +482,9 @@ public:
 	}
 	void fillSaveList();
 	char *calcSaveFileName(uint slotNumber);
+	virtual Common::String getSaveStateName(int slot) const override {
+		return Common::String::format("%s.s%02u", _targetName.c_str(), slot);
+	}
 
 	SaveFileData *getSaveFile(uint idx);
 	uint getNewSaveSlotNumber() const;
@@ -586,10 +587,7 @@ public:
 	}
 
 	inline int ticksToMSec(int tick) const {
-		if (getGameId() == GID_ITE)
-			return tick * 1000 / kScriptTimeTicksPerSecond;
-		else
-			return tick * 1000 / kScriptTimeTicksPerSecondIHNM;
+		return tick * 1000 / kScriptTimeTicksPerSecond;
 	}
 
  private:
@@ -633,10 +631,10 @@ public:
 	const ADGameFileDescription *getFilesDescriptions() const;
 
 	const Common::Rect &getDisplayClip() const { return _displayClip;}
-	Common::Error loadGameState(int slot);
-	Common::Error saveGameState(int slot, const Common::String &desc);
-	bool canLoadGameStateCurrently();
-	bool canSaveGameStateCurrently();
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	bool canLoadGameStateCurrently() override;
+	bool canSaveGameStateCurrently() override;
 	const GameDisplayInfo &getDisplayInfo();
 
 	const char *getTextString(int textStringId);

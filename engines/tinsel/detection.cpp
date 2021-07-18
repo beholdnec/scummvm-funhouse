@@ -74,7 +74,6 @@ bool TinselEngine::isV1CD() const {
 } // End of namespace Tinsel
 
 static const PlainGameDescriptor tinselGames[] = {
-	{"tinsel", "Tinsel engine game"},
 	{"dw", "Discworld"},
 	{"dw2", "Discworld 2: Missing Presumed ...!?"},
 	{0, 0}
@@ -85,24 +84,28 @@ static const PlainGameDescriptor tinselGames[] = {
 class TinselMetaEngine : public AdvancedMetaEngine {
 public:
 	TinselMetaEngine() : AdvancedMetaEngine(Tinsel::gameDescriptions, sizeof(Tinsel::TinselGameDescription), tinselGames) {
-		_singleId = "tinsel";
 	}
 
-	virtual const char *getName() const {
+	const char *getEngineId() const  override{
+		return "tinsel";
+	}
+
+	const char *getName() const override {
 		return "Tinsel";
 	}
 
-	virtual const char *getOriginalCopyright() const {
+	const char *getOriginalCopyright() const override {
 		return "Tinsel (C) Psygnosis";
 	}
 
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	const ADGameDescription *fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const override;
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
+	bool hasFeature(MetaEngineFeature f) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	void removeSaveState(const char *target, int slot) const override;
 };
 
 bool TinselMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -110,7 +113,10 @@ bool TinselMetaEngine::hasFeature(MetaEngineFeature f) const {
 		(f == kSupportsListSaves) ||
 		(f == kSupportsLoadingDuringStartup) ||
 		(f == kSupportsDeleteSave) ||
-		(f == kSimpleSavesNames);
+		(f == kSimpleSavesNames) ||
+		(f == kSavesSupportMetaInfo) ||
+		(f == kSavesSupportPlayTime) ||
+		(f == kSavesSupportCreationDate);
 }
 
 bool Tinsel::TinselEngine::hasFeature(EngineFeature f) const {
@@ -124,9 +130,47 @@ bool Tinsel::TinselEngine::hasFeature(EngineFeature f) const {
 		// global variables (static and non-static) which are never
 		// explicitly re-initialized when the engine is started
 		// for a second time.
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 #endif
 		(f == kSupportsLoadingDuringRuntime);
+}
+
+SaveStateDescriptor TinselMetaEngine::querySaveMetaInfos(const char *target, int slot) const {
+	Common::String fileName;
+	fileName = Common::String::format("%s.%03u", target, slot);
+
+	Common::InSaveFile *file = g_system->getSavefileManager()->openForLoading(fileName);
+
+	if (!file) {
+		return SaveStateDescriptor();
+	}
+
+	file->readUint32LE();		// skip id
+	file->readUint32LE();		// skip size
+	uint32 ver = file->readUint32LE();
+	char saveDesc[Tinsel::SG_DESC_LEN];
+	file->read(saveDesc, sizeof(saveDesc));
+
+	saveDesc[Tinsel::SG_DESC_LEN - 1] = 0;
+	SaveStateDescriptor desc(slot, saveDesc);
+
+	int8 tm_year = file->readUint16LE();
+	int8 tm_mon = file->readSByte();
+	int8 tm_mday = file->readSByte();
+	int8 tm_hour = file->readSByte();
+	int8 tm_min = file->readSByte();
+	file->readSByte(); // skip secs
+
+	desc.setSaveDate(1900 + tm_year, 1 + tm_mon, tm_mday);
+	desc.setSaveTime(tm_hour, tm_min);
+
+	if (ver >= 3) {
+		uint32 playTime = file->readUint32LE(); // playTime in seconds
+		desc.setPlayTime(playTime);
+	}
+
+	delete file;
+	return desc;
 }
 
 namespace Tinsel {
@@ -185,7 +229,7 @@ typedef Common::Array<const ADGameDescription *> ADGameDescList;
  * Fallback detection scans the list of Discworld 2 targets to see if it can detect an installation
  * where the files haven't been renamed (i.e. don't have the '1' just before the extension)
  */
-const ADGameDescription *TinselMetaEngine::fallbackDetect(const FileMap &allFilesXXX, const Common::FSList &fslist) const {
+ADDetectedGame TinselMetaEngine::fallbackDetect(const FileMap &allFilesXXX, const Common::FSList &fslist) const {
 	Common::String extra;
 	FileMap allFiles;
 	SizeMD5Map filesSizeMD5;
@@ -194,7 +238,7 @@ const ADGameDescription *TinselMetaEngine::fallbackDetect(const FileMap &allFile
 	const Tinsel::TinselGameDescription *g;
 
 	if (fslist.empty())
-		return NULL;
+		return ADDetectedGame();
 
 	// TODO: The following code is essentially a slightly modified copy of the
 	// complete code of function detectGame() in engines/advancedDetector.cpp.
@@ -262,7 +306,7 @@ const ADGameDescription *TinselMetaEngine::fallbackDetect(const FileMap &allFile
 		}
 	}
 
-	ADGameDescList matched;
+	ADDetectedGame matched;
 	int maxFilesMatched = 0;
 
 	// MD5 based matching
@@ -310,22 +354,15 @@ const ADGameDescription *TinselMetaEngine::fallbackDetect(const FileMap &allFile
 			for (fileDesc = g->desc.filesDescriptions; fileDesc->fileName; fileDesc++)
 				curFilesMatched++;
 
-			if (curFilesMatched > maxFilesMatched) {
+			if (curFilesMatched >= maxFilesMatched) {
 				maxFilesMatched = curFilesMatched;
 
-				matched.clear();	// Remove any prior, lower ranked matches.
-				matched.push_back((const ADGameDescription *)g);
-			} else if (curFilesMatched == maxFilesMatched) {
-				matched.push_back((const ADGameDescription *)g);
+				matched = ADDetectedGame(&g->desc);
 			}
 		}
 	}
 
-	// We didn't find a match
-	if (matched.empty())
-		return NULL;
-
-	return *matched.begin();
+	return matched;
 }
 
 int TinselMetaEngine::getMaximumSaveSlot() const { return 99; }
@@ -403,7 +440,7 @@ Common::Error TinselEngine::loadGameState(int slot) {
 }
 
 #if 0
-Common::Error TinselEngine::saveGameState(int slot, const Common::String &desc) {
+Common::Error TinselEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	Common::String saveName = _vm->getSavegameFilename((int16)(slot + 1));
 	char saveDesc[SG_DESC_LEN];
 	Common::strlcpy(saveDesc, desc, SG_DESC_LEN);

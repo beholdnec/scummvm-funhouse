@@ -42,7 +42,7 @@ class GfxScreen;
 class GfxPalette : public Common::Serializable {
 public:
 	GfxPalette(ResourceManager *resMan, GfxScreen *screen);
-	~GfxPalette();
+	~GfxPalette() override;
 
 	bool isMerging();
 	bool isUsing16bitColorMatch();
@@ -52,8 +52,8 @@ public:
 	bool setAmiga();
 	void modifyAmigaPalette(const SciSpan<const byte> &data);
 	void setEGA();
-	void set(Palette *sciPal, bool force, bool forceRealMerge = false);
-	bool insert(Palette *newPalette, Palette *destPalette);
+	void set(Palette *sciPal, bool force, bool forceRealMerge = false, bool includeFirstColor = true);
+	bool insert(Palette *newPalette, Palette *destPalette, bool includeFirstColor = false);
 	bool merge(Palette *pFrom, bool force, bool forceRealMerge);
 	uint16 matchColor(byte r, byte g, byte b);
 	void getSys(Palette *pal);
@@ -88,9 +88,11 @@ public:
 	void palVaryPrepareForTransition();
 	void palVaryProcess(int signal, bool setPalette);
 
+	void delayForPalVaryWorkaround();
+
 	Palette _sysPalette;
 
-	void saveLoadWithSerializer(Common::Serializer &s);
+	void saveLoadWithSerializer(Common::Serializer &s) override;
 	void palVarySaveLoadPalette(Common::Serializer &s, Palette *palette);
 
 	byte findMacIconBarColor(byte r, byte g, byte b);
@@ -122,6 +124,7 @@ protected:
 	uint16 _palVaryTicks;
 	int _palVaryPaused;
 	int _palVarySignal;
+	bool _palVaryZeroTick;
 	uint16 _totalScreenColors;
 
 	void loadMacIconBarPalette();

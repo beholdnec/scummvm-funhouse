@@ -27,6 +27,7 @@
 #include "backends/platform/ios7/ios7_common.h"
 #include "backends/base-backend.h"
 #include "common/events.h"
+#include "common/str.h"
 #include "audio/mixer_intern.h"
 #include "backends/fs/posix/posix-fs-factory.h"
 #include "graphics/colormasks.h"
@@ -73,7 +74,7 @@ protected:
 	// For use with the mouse texture
 	uint16  _gamePaletteRGBA5551[256];
 
-	struct timeval _startTime;
+	CFTimeInterval _startTime;
 	uint32 _timeSuspended;
 
 	bool _mouseCursorPaletteEnabled;
@@ -109,7 +110,7 @@ protected:
 	bool _fullScreenOverlayIsDirty;
 	int _screenChangeCount;
 
-	char *_lastErrorMessage;
+	Common::String _lastErrorMessage;
 
 #ifdef IPHONE_SANDBOXED
 	Common::String _chrootBasePath;
@@ -123,7 +124,7 @@ public:
 	static OSystem_iOS7 *sharedInstance();
 
 	virtual void initBackend();
-	
+
 	virtual void engineInit();
 	virtual void engineDone();
 
@@ -160,7 +161,7 @@ public:
 	virtual void updateScreen();
 	virtual Graphics::Surface *lockScreen();
 	virtual void unlockScreen();
-	virtual void setShakePos(int shakeOffset);
+	virtual void setShakePos(int shakeXOffset, int shakeYOffset);
 
 	virtual void showOverlay();
 	virtual void hideOverlay();
@@ -205,14 +206,29 @@ public:
 	virtual void logMessage(LogMessageType::Type type, const char *message);
 	virtual void fatalError() override;
 
+	virtual bool hasTextInClipboard();
+	virtual Common::String getTextFromClipboard();
+	virtual bool setTextInClipboard(const Common::String &text);
+
+	virtual bool openUrl(const Common::String &url);
+
+	virtual Common::String getSystemLanguage() const;
+
+	virtual bool isConnectionLimited();
+
 protected:
 	void initVideoContext();
 	void updateOutputSurface();
+	void setShowKeyboard(bool);
+	bool isKeyboardShown() const;
 
 	void internUpdateScreen();
 	void dirtyFullScreen();
 	void dirtyFullOverlayScreen();
 	void suspendLoop();
+	void saveState();
+	void restoreState();
+	void clearState();
 	void drawDirtyRect(const Common::Rect &dirtyRect);
 	void updateMouseTexture();
 	static void AQBufferCallback(void *in, AudioQueueRef inQ, AudioQueueBufferRef outQB);
@@ -224,6 +240,9 @@ protected:
 	void handleEvent_orientationChanged(int orientation);
 	void handleEvent_applicationSuspended();
 	void handleEvent_applicationResumed();
+	void handleEvent_applicationSaveState();
+	void handleEvent_applicationRestoreState();
+	void handleEvent_applicationClearState();
 
 	bool handleEvent_mouseDown(Common::Event &event, int x, int y);
 	bool handleEvent_mouseUp(Common::Event &event, int x, int y);

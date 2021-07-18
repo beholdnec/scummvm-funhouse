@@ -49,7 +49,7 @@ bool ObArray::load(MfcArchive &file) {
 	debugC(5, kDebugLoading, "ObArray::load()");
 	int count = file.readCount();
 
-	resize(count);
+	reserve(count);
 
 	for (int i = 0; i < count; i++) {
 		CObject *t = file.readClass<CObject>();
@@ -66,7 +66,7 @@ bool DWordArray::load(MfcArchive &file) {
 
 	debugC(9, kDebugLoading, "DWordArray::count: %d", count);
 
-	resize(count);
+	reserve(count);
 
 	for (int i = 0; i < count; i++) {
 		int32 t = file.readSint32LE();
@@ -151,7 +151,7 @@ void MemoryObject::loadFile(const Common::String &filename) {
 		if (g_fp->_currArchive != _libHandle && _libHandle)
 			g_fp->_currArchive = _libHandle;
 
-		Common::ScopedPtr<Common::SeekableReadStream> s(g_fp->_currArchive->createReadStreamForMember(filename));
+		Common::SeekableReadStream *s = g_fp->_currArchive->createReadStreamForMember(filename);
 
 		if (s) {
 			assert(s->size() > 0);
@@ -244,22 +244,6 @@ int MfcArchive::readCount() {
 		count = readUint32LE();
 
 	return count;
-}
-
-double MfcArchive::readDouble() {
-	// FIXME: This is utterly cruel and unportable
-	// Some articles on the matter:
-	// http://randomascii.wordpress.com/2013/02/07/float-precision-revisited-nine-digit-float-portability/
-	// http://randomascii.wordpress.com/2012/01/11/tricks-with-the-floating-point-format/
-
-	union {
-		byte b[8];
-		double d;
-	} tmp;
-
-	read(&tmp.b, 8);
-
-	return tmp.d;
 }
 
 enum {
@@ -544,6 +528,45 @@ byte *transCyrillic(const Common::String &str) {
 	tmp[i] = 0;
 
 	return tmp;
+}
+
+void FullpipeEngine::loadGameObjH() {
+	Common::File file;
+
+	if (!file.open("gameobj.h"))
+		return;
+
+	while(true) {
+		Common::String s = file.readLine();
+
+		if (file.eos())
+			break;
+
+		if (!s.hasPrefix("#define ")) {
+			warning("Bad read: <%s>", s.c_str());
+			continue;
+		}
+
+		int cnt = 0;
+		const char *ptr = &s.c_str()[8]; // Skip '#define ''
+
+		while (*ptr && *ptr != ' ') {
+			cnt++;
+			ptr++;
+		}
+
+		Common::String val(&s.c_str()[8], cnt);
+		int key = strtol(ptr, NULL, 10);
+
+		_gameObjH[(uint16)key] = val;
+	}
+}
+
+Common::String FullpipeEngine::gameIdToStr(uint16 id) {
+	if (_gameObjH.contains(id))
+		return _gameObjH[id];
+
+	return Common::String::format("%d", id);
 }
 
 } // End of namespace Fullpipe

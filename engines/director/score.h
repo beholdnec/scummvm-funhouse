@@ -23,139 +23,139 @@
 #ifndef DIRECTOR_SCORE_H
 #define DIRECTOR_SCORE_H
 
-#include "common/substream.h"
-#include "common/rect.h"
-#include "director/archive.h"
-#include "director/cast.h"
-#include "director/images.h"
-#include "director/stxt.h"
+//#include "graphics/macgui/macwindowmanager.h"
 
 namespace Graphics {
+	struct Surface;
 	class ManagedSurface;
 	class Font;
+	class MacWindow;
+	struct ZoomBox;
+}
+
+namespace Common {
+	class ReadStreamEndian;
+	class SeekableReadStreamEndian;
 }
 
 namespace Director {
 
+class Window;
 class Archive;
-struct CastInfo;
 class DirectorEngine;
 class DirectorSound;
 class Frame;
 struct Label;
-class Lingo;
+class Movie;
+struct Resource;
+class Cursor;
+class Channel;
 class Sprite;
+class CastMember;
 
-enum ScriptType {
-	kMovieScript = 0,
-	kSpriteScript = 1,
-	kFrameScript = 2,
-	kCastScript = 3,
-	kGlobalScript = 4,
-	kNoneScript = -1,
-	kMaxScriptType = 4
+enum RenderMode {
+	kRenderModeNormal,
+	kRenderForceUpdate,
+	kRenderUpdateStageOnly,
+	kRenderNoUnrender,
+	kRenderNoWindowRender
 };
-
-const char *scriptType2str(ScriptType scr);
 
 class Score {
 public:
-	Score(DirectorEngine *vm);
+	Score(Movie *movie);
 	~Score();
 
-	static Common::Rect readRect(Common::ReadStreamEndian &stream);
+	Movie *getMovie() const { return _movie; }
+
+	void loadFrames(Common::SeekableReadStreamEndian &stream);
+	void loadLabels(Common::SeekableReadStreamEndian &stream);
+	void loadActions(Common::SeekableReadStreamEndian &stream);
+
 	static int compareLabels(const void *a, const void *b);
-	void loadArchive();
-	void setStartToLabel(Common::String label);
+	uint16 getLabel(Common::String &label);
+	Common::String *getLabelList();
+	Common::String *getFrameLabel(uint id);
+	void setStartToLabel(Common::String &label);
 	void gotoLoop();
 	void gotoNext();
 	void gotoPrevious();
-	void startLoop();
-	void setArchive(Archive *archive);
-	Archive *getArchive() const { return _movieArchive; };
-	void loadConfig(Common::SeekableSubReadStreamEndian &stream);
-	void loadCastDataVWCR(Common::SeekableSubReadStreamEndian &stream);
-	void loadCastData(Common::SeekableSubReadStreamEndian &stream, uint16 id, Resource *res);
-	void loadCastInfo(Common::SeekableSubReadStreamEndian &stream, uint16 id);
-	void setCurrentFrame(uint16 frameId) { _currentFrame = frameId; }
-	uint16 getCurrentFrame() { return _currentFrame; }
-	Common::String getMacName() const { return _macName; }
-	Sprite *getSpriteById(uint16 id);
-	void setSpriteCasts();
-	void loadSpriteImages(bool isSharedCast);
-	void copyCastStxts();
-	Graphics::ManagedSurface *getSurface() { return _surface; }
+	void startPlay();
+	void step();
+	void stopPlay();
 
-	void loadCastInto(Sprite *sprite, int castId);
-	Common::Rect getCastMemberInitialRect(int castId);
-	void setCastMemberModified(int castId);
+	void setCurrentFrame(uint16 frameId) { _nextFrame = frameId; }
+	uint16 getCurrentFrame() { return _currentFrame; }
+	int getNextFrame() { return _nextFrame; }
+
+	int getCurrentPalette();
+	int resolvePaletteId(int id);
+
+	Channel *getChannelById(uint16 id);
+	Sprite *getSpriteById(uint16 id);
+
+	void setSpriteCasts();
 
 	int getPreviousLabelNumber(int referenceFrame);
 	int getCurrentLabelNumber();
 	int getNextLabelNumber(int referenceFrame);
 
+	uint16 getSpriteIDFromPos(Common::Point pos);
+	uint16 getMouseSpriteIDFromPos(Common::Point pos);
+	uint16 getActiveSpriteIDFromPos(Common::Point pos);
+	bool checkSpriteIntersection(uint16 spriteId, Common::Point pos);
+	Common::List<Channel *> getSpriteIntersections(const Common::Rect &r);
+
+	bool renderTransition(uint16 frameId);
+	void renderFrame(uint16 frameId, RenderMode mode = kRenderModeNormal);
+	void renderSprites(uint16 frameId, RenderMode mode = kRenderModeNormal);
+	void renderCursor(Common::Point pos);
+
 private:
 	void update();
-	void readVersion(uint32 rid);
-	void loadPalette(Common::SeekableSubReadStreamEndian &stream);
-	void loadFrames(Common::SeekableSubReadStreamEndian &stream);
-	void loadLabels(Common::SeekableSubReadStreamEndian &stream);
-	void loadActions(Common::SeekableSubReadStreamEndian &stream);
-	void loadScriptText(Common::SeekableSubReadStreamEndian &stream);
-	void loadFileInfo(Common::SeekableSubReadStreamEndian &stream);
-	void loadFontMap(Common::SeekableSubReadStreamEndian &stream);
-	void dumpScript(const char *script, ScriptType type, uint16 id);
-	Common::String getString(Common::String str);
-	Common::Array<Common::String> loadStrings(Common::SeekableSubReadStreamEndian &stream, uint32 &entryType, bool hasHeader = true);
+
+	void playSoundChannel(uint16 frameId);
+
+	void screenShot();
 
 	bool processImmediateFrameScript(Common::String s, int id);
 
 public:
+	Common::Array<Channel *> _channels;
 	Common::Array<Frame *> _frames;
-	Common::HashMap<int, CastType> _castTypes;
-	Common::HashMap<uint16, CastInfo *> _castsInfo;
-	Common::HashMap<Common::String, int> _castsNames;
 	Common::SortedArray<Label *> *_labels;
 	Common::HashMap<uint16, Common::String> _actions;
 	Common::HashMap<uint16, bool> _immediateActions;
-	Common::HashMap<uint16, Common::String> _fontMap;
-	Graphics::ManagedSurface *_surface;
-	Graphics::ManagedSurface *_trailSurface;
-	Graphics::Font *_font;
-	Archive *_movieArchive;
-	Common::Rect _movieRect;
-	uint16 _currentMouseDownSpriteId;
 
-	bool _stopPlay;
+	byte _currentFrameRate;
+
+	byte _puppetTempo;
+	bool _puppetPalette;
+	int _lastPalette;
+
+	PlayState _playState;
 	uint32 _nextFrameTime;
+	int _waitForChannel;
+	bool _waitForClick;
+	bool _waitForClickCursor;
+	bool _cursorDirty;
+	int _activeFade;
+	Cursor *_currentCursor;
 
-	Common::HashMap<int, ButtonCast *> *_loadedButtons;
-	Common::HashMap<int, TextCast *> *_loadedText;
-	//Common::HashMap<int, SoundCast *> _loadedSound;
-	Common::HashMap<int, BitmapCast *> *_loadedBitmaps;
-	Common::HashMap<int, ShapeCast *> *_loadedShapes;
-	Common::HashMap<int, ScriptCast *> *_loadedScripts;
-	Common::HashMap<int, const Stxt *> *_loadedStxts;
+	int _numChannelsDisplayed;
+
+	uint16 _framesRan; // used by kDebugFewFramesOnly
 
 private:
-	uint16 _versionMinor;
-	uint16 _versionMajor;
-	Common::String _macName;
-	Common::String _createdBy;
-	Common::String _changedBy;
-	Common::String _script;
-	Common::String _directory;
-	byte _currentFrameRate;
-	uint16 _castArrayStart;
-	uint16 _currentFrame;
-	Common::String _currentLabel;
-	uint32 _flags;
-	uint16 _castArrayEnd;
-	uint16 _movieScriptCount;
-	uint16 _stageColor;
-	Lingo *_lingo;
-	DirectorSound *_soundManager;
 	DirectorEngine *_vm;
+	Lingo *_lingo;
+	Movie *_movie;
+	Window *_window;
+
+	uint16 _currentFrame;
+	uint16 _nextFrame;
+	int _currentLabel;
+	DirectorSound *_soundManager;
 };
 
 } // End of namespace Director

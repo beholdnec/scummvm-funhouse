@@ -31,6 +31,7 @@
 
 #include "common/archive.h"
 #include "common/str.h"
+#include "common/str-array.h"
 #include "common/fs.h"
 #include "common/file.h"
 #include "common/language.h"
@@ -42,8 +43,12 @@ public:
 
 	bool closeFile(Common::SeekableReadStream *File);
 	bool hasFile(const Common::String &filename);
+	int listMatchingPackageMembers(Common::ArchiveMemberList &list, const Common::String &pattern);
+	int listMatchingFiles(Common::StringArray &list, const Common::String &pattern);
 	Common::SeekableReadStream *openFile(const Common::String &filename, bool absPathWarning = true, bool keepTrackOf = true);
+	Common::WriteStream *openFileForWrite(const Common::String &filename);
 	byte *readWholeFile(const Common::String &filename, uint32 *size = nullptr, bool mustExist = true);
+	uint32 getPackageVersion(const Common::String &filename);
 
 	BaseFileManager(Common::Language lang, bool detectionMode = false);
 	virtual ~BaseFileManager();
@@ -61,6 +66,7 @@ private:
 	bool registerPackages();
 	void initResources();
 	Common::SeekableReadStream *openFileRaw(const Common::String &filename);
+	Common::WriteStream *openFileForWriteRaw(const Common::String &filename);
 	Common::SeekableReadStream *openPkgFile(const Common::String &filename);
 	Common::FSList _packagePaths;
 	bool registerPackage(Common::FSNode package, const Common::String &filename = "", bool searchSignature = false);
@@ -69,6 +75,8 @@ private:
 	Common::Array<Common::SeekableReadStream *> _openFiles;
 	Common::Language _language;
 	Common::Archive *_resources;
+	Common::HashMap<Common::String, uint32> _versions;
+
 	// This class is intentionally not a subclass of Base, as it needs to be used by
 	// the detector too, without launching the entire engine:
 };

@@ -22,6 +22,7 @@
 
 #include "common/str.h"
 #include "common/system.h"
+#include "common/translation.h"
 #include "gui/message.h"
 #include "gui/gui-manager.h"
 #include "gui/ThemeEval.h"
@@ -35,10 +36,13 @@ enum {
 };
 
 
+
 // TODO: The default button should be visibly distinct from the alternate button
 
-MessageDialog::MessageDialog(const Common::String &message, const char *defaultButton, const char *altButton)
+MessageDialog::MessageDialog(const Common::String &message, const char *defaultButton, const char *altButton, Graphics::TextAlign alignment, const char *url)
 	: Dialog(30, 20, 260, 124) {
+
+	_url = url;
 
 	const int screenW = g_system->getOverlayWidth();
 	const int screenH = g_system->getOverlayHeight();
@@ -79,7 +83,7 @@ MessageDialog::MessageDialog(const Common::String &message, const char *defaultB
 	// Each line is represented by one static text item.
 	for (int i = 0; i < lineCount; i++) {
 		new StaticTextWidget(this, 10, 10 + i * kLineHeight, maxlineWidth, kLineHeight,
-								lines[i], Graphics::kTextAlignCenter);
+								lines[i], alignment);
 	}
 
 	if (defaultButton && altButton) {
@@ -90,10 +94,10 @@ MessageDialog::MessageDialog(const Common::String &message, const char *defaultB
 	}
 
 	if (defaultButton)
-		new ButtonWidget(this, okButtonPos, _h - buttonHeight - 8, buttonWidth, buttonHeight, defaultButton, 0, kOkCmd, Common::ASCII_RETURN);	// Confirm dialog
+		new ButtonWidget(this, okButtonPos, _h - buttonHeight - 8, buttonWidth, buttonHeight, defaultButton, nullptr, kOkCmd, Common::ASCII_RETURN);	// Confirm dialog
 
 	if (altButton)
-		new ButtonWidget(this, cancelButtonPos, _h - buttonHeight - 8, buttonWidth, buttonHeight, altButton, 0, kCancelCmd, Common::ASCII_ESCAPE);	// Cancel dialog
+		new ButtonWidget(this, cancelButtonPos, _h - buttonHeight - 8, buttonWidth, buttonHeight, altButton, nullptr, kCancelCmd, Common::ASCII_ESCAPE);	// Cancel dialog
 }
 
 void MessageDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data) {
@@ -102,7 +106,14 @@ void MessageDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data
 		setResult(kMessageOK);
 		close();
 	} else if (cmd == kCancelCmd) {
-		setResult(kMessageCancel);
+		if (_url) {
+			if (g_system->hasFeature(OSystem::kFeatureOpenUrl))
+				g_system->openUrl(_url);
+
+			setResult(kMessageOK);
+		} else {
+			setResult(kMessageCancel);
+		}
 		close();
 	} else {
 		Dialog::handleCommand(sender, cmd, data);
@@ -110,7 +121,7 @@ void MessageDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data
 }
 
 TimedMessageDialog::TimedMessageDialog(const Common::String &message, uint32 duration)
-	: MessageDialog(message, 0, 0) {
+	: MessageDialog(message, nullptr, nullptr) {
 	_timer = g_system->getMillis() + duration;
 }
 
@@ -119,5 +130,10 @@ void TimedMessageDialog::handleTickle() {
 	if (g_system->getMillis() > _timer)
 		close();
 }
+
+MessageDialogWithURL::MessageDialogWithURL(const Common::String &message, const char *url, const char *defaultButton, Graphics::TextAlign alignment)
+		: MessageDialog(message, defaultButton, _s("Open URL"), alignment, url) {
+}
+
 
 } // End of namespace GUI

@@ -95,6 +95,16 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::ES_ESP, Common::kPlatformDOS, ADGF_NO_FLAGS , GUIO1(GAMEOPTION_COLOR_BLIND_DEFAULT_OFF)
 	},
 
+	{
+		"soltys", "Russian fan-translation v1.0",
+		{
+			{"vol.cat", 0, "e9f6069c9c4d4156a8dbe004a9c1960d", 50176},
+			{"vol.dat", 0, "f9ae2e7f8f7cac91378cdafca43faf1e", 8749623},
+			AD_LISTEND
+		},
+		Common::RU_RUS, Common::kPlatformDOS, ADGF_NO_FLAGS , GUIO1(GAMEOPTION_COLOR_BLIND_DEFAULT_OFF)
+	},
+
 	AD_TABLE_END_MARKER
 };
 
@@ -115,33 +125,31 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 class CGEMetaEngine : public AdvancedMetaEngine {
 public:
 	CGEMetaEngine() : AdvancedMetaEngine(CGE::gameDescriptions, sizeof(ADGameDescription), CGEGames, optionsList) {
-		_singleId = "soltys";
 	}
 
-	virtual const char *getName() const {
+	const char *getEngineId() const override {
+		return "cge";
+	}
+
+	const char *getName() const override {
 		return "CGE";
 	}
 
-	virtual const char *getOriginalCopyright() const {
+	const char *getOriginalCopyright() const override {
 		return "Soltys (C) 1994-1996 L.K. Avalon";
 	}
 
-	virtual const ADGameDescription *fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const;
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual SaveStateList listSaves(const char *target) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
-	virtual void removeSaveState(const char *target, int slot) const;
-};
-
-static const ADFileBasedFallback fileBasedFallback[] = {
-	{ &gameDescriptions[0], { "vol.cat", "vol.dat", 0 } },
-	{ 0, { 0 } }
+	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const override;
+	bool hasFeature(MetaEngineFeature f) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	int getMaximumSaveSlot() const override;
+	SaveStateList listSaves(const char *target) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	void removeSaveState(const char *target, int slot) const override;
 };
 
 static ADGameDescription s_fallbackDesc = {
-	"Soltys",
+	"soltys",
 	"Unknown version",
 	AD_ENTRY1(0, 0), // This should always be AD_ENTRY1(0, 0) in the fallback descriptor
 	Common::UNK_LANG,
@@ -150,38 +158,40 @@ static ADGameDescription s_fallbackDesc = {
 	GUIO1(GAMEOPTION_COLOR_BLIND_DEFAULT_OFF)
 };
 
-const ADGameDescription *CGEMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
-	ADFilePropertiesMap filesProps;
+static const ADFileBasedFallback fileBasedFallback[] = {
+	{ &s_fallbackDesc, { "vol.cat", "vol.dat", 0 } },
+	{ 0, { 0 } }
+};
 
-	const ADGameDescription *game;
-	game = detectGameFilebased(allFiles, fslist, CGE::fileBasedFallback, &filesProps);
+ADDetectedGame CGEMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
+	ADDetectedGame game = detectGameFilebased(allFiles, fslist, CGE::fileBasedFallback);
 
-	if (!game)
-		return nullptr;
+	if (!game.desc)
+		return ADDetectedGame();
 
 	SearchMan.addDirectory("CGEMetaEngine::fallbackDetect", fslist.begin()->getParent());
 	ResourceManager *resman;
 	resman = new ResourceManager();
-	bool result = resman->exist("CGE.SAY");
+	bool sayFileFound = resman->exist("CGE.SAY");
 	delete resman;
 
 	SearchMan.remove("CGEMetaEngine::fallbackDetect");
 
-	if (!result)
-		return nullptr;
+	if (!sayFileFound)
+		return ADDetectedGame();
 
-	reportUnknown(fslist.begin()->getParent(), filesProps);
-	return &s_fallbackDesc;
+	return game;
 }
 
 bool CGEMetaEngine::hasFeature(MetaEngineFeature f) const {
 	return
-	    (f == kSupportsListSaves) ||
-	    (f == kSupportsLoadingDuringStartup) ||
-	    (f == kSupportsDeleteSave) ||
-	    (f == kSavesSupportMetaInfo) ||
-	    (f == kSavesSupportThumbnail) ||
-	    (f == kSavesSupportCreationDate) ||
+		(f == kSupportsListSaves) ||
+		(f == kSupportsLoadingDuringStartup) ||
+		(f == kSupportsDeleteSave) ||
+		(f == kSavesSupportMetaInfo) ||
+		(f == kSavesSupportThumbnail) ||
+		(f == kSavesSupportCreationDate) ||
+		(f == kSavesSupportPlayTime) ||
 		(f == kSimpleSavesNames);
 }
 
@@ -221,10 +231,6 @@ SaveStateList CGEMetaEngine::listSaves(const char *target) const {
 					// Valid savegame
 					if (CGE::CGEEngine::readSavegameHeader(file, header)) {
 						saveList.push_back(SaveStateDescriptor(slotNum, header.saveName));
-						if (header.thumbnail) {
-							header.thumbnail->free();
-							delete header.thumbnail;
-						}
 					}
 				} else {
 					// Must be an original format savegame
@@ -253,7 +259,7 @@ SaveStateDescriptor CGEMetaEngine::querySaveMetaInfos(const char *target, int sl
 		f->read(buffer, kSavegameStrSize + 1);
 
 		bool hasHeader = !strncmp(buffer, CGE::savegameStr, kSavegameStrSize + 1) &&
-			CGE::CGEEngine::readSavegameHeader(f, header);
+			CGE::CGEEngine::readSavegameHeader(f, header, false);
 		delete f;
 
 		if (!hasHeader) {
@@ -266,6 +272,10 @@ SaveStateDescriptor CGEMetaEngine::querySaveMetaInfos(const char *target, int sl
 			desc.setThumbnail(header.thumbnail);
 			desc.setSaveDate(header.saveYear, header.saveMonth, header.saveDay);
 			desc.setSaveTime(header.saveHour, header.saveMinutes);
+
+			if (header.playTime) {
+				desc.setPlayTime(header.playTime * 1000);
+			}
 
 			// Slot 0 is used for the 'automatic save on exit' save in Soltys, thus
 			// we prevent it from being deleted or overwritten by accident.

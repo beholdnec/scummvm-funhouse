@@ -23,6 +23,9 @@
 
 // Allow use of stuff in <time.h>
 #define FORBIDDEN_SYMBOL_EXCEPTION_time_h
+// Allow use of stuff in <nds.h>
+#define FORBIDDEN_SYMBOL_EXCEPTION_printf
+#define FORBIDDEN_SYMBOL_EXCEPTION_unistd_h
 
 #include "common/scummsys.h"
 #include "common/system.h"
@@ -127,7 +130,7 @@ void OSystem_DS::initBackend() {
 		DS::startSound(11025, 4096);
 	}
 
-	_mixer = new Audio::MixerImpl(this, DS::getSoundFrequency());
+	_mixer = new Audio::MixerImpl(DS::getSoundFrequency());
 	_mixer->setReady(true);
 
 	/* TODO/FIXME: The NDS should use a custom AudioCD manager instance!
@@ -157,28 +160,6 @@ bool OSystem_DS::getFeatureState(Feature f) {
 	if (f == kFeatureCursorPalette)
 		return !_disableCursorPalette;
 	return false;
-}
-
-const OSystem::GraphicsMode *OSystem_DS::getSupportedGraphicsModes() const {
-	return s_supportedGraphicsModes;
-}
-
-
-int OSystem_DS::getDefaultGraphicsMode() const {
-	return 0;
-}
-
-bool OSystem_DS::setGraphicsMode(int mode) {
-	return true;
-}
-
-bool OSystem_DS::setGraphicsMode(const char *name) {
-	consolePrintf("Set gfx mode %s\n", name);
-	return true;
-}
-
-int OSystem_DS::getGraphicsMode() const {
-	return -1;
 }
 
 void OSystem_DS::initSize(uint width, uint height, const Graphics::PixelFormat *format) {
@@ -492,8 +473,8 @@ void OSystem_DS::updateScreen() {
 	}
 }
 
-void OSystem_DS::setShakePos(int shakeOffset) {
-	DS::setShakePos(shakeOffset);
+void OSystem_DS::setShakePos(int shakeXOffset, int shakeYOffset) {
+	DS::setShakePos(shakeXOffset, shakeYOffset);
 }
 
 void OSystem_DS::showOverlay() {

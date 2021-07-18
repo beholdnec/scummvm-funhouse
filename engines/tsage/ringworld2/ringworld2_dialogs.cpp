@@ -20,8 +20,6 @@
  *
  */
 
-#include "common/translation.h"
-
 #include "tsage/tsage.h"
 #include "tsage/core.h"
 #include "tsage/dialogs.h"
@@ -181,6 +179,8 @@ int RightClickDialog::execute() {
 	case 5:
 		// Options dialog
 		result = 1;
+		break;
+	default:
 		break;
 	}
 

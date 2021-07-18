@@ -1,4 +1,4 @@
-/* Copyright (C) 2015-2017 Sergey V. Mikayev
+/* Copyright (C) 2015-2020 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -14,8 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LINEAR_RESAMPLER_H
-#define LINEAR_RESAMPLER_H
+#ifndef SRCTOOLS_LINEAR_RESAMPLER_H
+#define SRCTOOLS_LINEAR_RESAMPLER_H
 
 #include "ResamplerStage.h"
 
@@ -39,4 +39,4 @@ private:
 
 } // namespace SRCTools
 
-#endif // LINEAR_RESAMPLER_H
+#endif // SRCTOOLS_LINEAR_RESAMPLER_H

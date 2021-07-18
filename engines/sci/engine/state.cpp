@@ -88,6 +88,9 @@ void EngineState::reset(bool isRestoring) {
 
 	_delayedRestoreGameId = -1;
 
+	_kq7MacSaveGameId = -1;
+	_kq7MacSaveGameDescription.clear();
+
 	executionStackBase = 0;
 	_executionStackPosChanged = false;
 	stack_base = 0;
@@ -117,8 +120,6 @@ void EngineState::reset(bool isRestoring) {
 
 	scriptStepCounter = 0;
 	scriptGCInterval = GC_INTERVAL;
-
-	_videoState.reset();
 }
 
 void EngineState::speedThrottler(uint32 neededSleep) {
@@ -136,14 +137,26 @@ void EngineState::speedThrottler(uint32 neededSleep) {
 	}
 }
 
-int EngineState::wait(int16 ticks) {
+uint16 EngineState::wait(uint16 ticks) {
 	uint32 time = g_system->getMillis();
-	const int tickDelta = ((long)time - (long)lastWaitTime) * 60 / 1000;
-	lastWaitTime = time;
 
+	uint32 ms = ticks * 1000 / 60;
+	uint32 duration = time - lastWaitTime;
+	if (ms > duration) {
+		uint32 sleepTime = ms - duration;
+		sleepTime *= g_debug_sleeptime_factor;
+		g_sci->sleep(sleepTime);
+		time += sleepTime;
+	}
+
+	uint16 tickDelta = (uint16)(((long)time - lastWaitTime) * 60 / 1000);
+	lastWaitTime = time;
+	return tickDelta;
+}
+
+void EngineState::sleep(uint16 ticks) {
 	ticks *= g_debug_sleeptime_factor;
 	g_sci->sleep(ticks * 1000 / 60);
-	return tickDelta;
 }
 
 void EngineState::initGlobals() {
@@ -254,7 +267,11 @@ Common::String SciEngine::getSciLanguageString(const Common::String &str, kLangu
 						fullWidth += 0x0D; // CR
 						textPtr += 2;
 						continue;
+					default:
+						break;
 					}
+				default:
+					break;
 				}
 
 				textPtr++;

@@ -20,7 +20,6 @@
  *
  */
 
-#include "audio/softsynth/fmtowns_pc98/towns_midi.h"
 #include "audio/musicplugin.h"
 #include "common/translation.h"
 #include "common/error.h"
@@ -48,8 +47,8 @@ MusicDevices TownsEmuMusicPlugin::getDevices() const {
 }
 
 Common::Error TownsEmuMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
-	*mididriver = new MidiDriver_TOWNS(g_system->getMixer());
-	return Common::kNoError;
+	*mididriver = 0;
+	return Common::kUnknownError;
 }
 
 class PC98EmuMusicPlugin : public MusicPluginObject {
@@ -73,14 +72,40 @@ MusicDevices PC98EmuMusicPlugin::getDevices() const {
 }
 
 Common::Error PC98EmuMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
-	//*mididriver = /**/
-	return Common::kNoError;
+	*mididriver = 0;
+	return Common::kUnknownError;
+}
+
+class SegaCDSoundPlugin : public MusicPluginObject {
+public:
+	const char *getName() const {
+		return _s("SegaCD Audio");
+	}
+
+	const char *getId() const {
+		return "segacd";
+	}
+
+	MusicDevices getDevices() const;
+	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
+};
+
+MusicDevices SegaCDSoundPlugin::getDevices() const {
+	MusicDevices devices;
+	devices.push_back(MusicDevice(this, "", MT_SEGACD));
+	return devices;
+}
+
+Common::Error SegaCDSoundPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+	*mididriver = 0;
+	return Common::kUnknownError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(TOWNS)
 	//REGISTER_PLUGIN_DYNAMIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuMusicPlugin);
-	//REGISTER_PLUGIN_DYNAMIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(PC98, PLUGIN_TYPE_MUSIC, PC98EmuMusicPlugin);
 //#else
 	REGISTER_PLUGIN_STATIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuMusicPlugin);
 	REGISTER_PLUGIN_STATIC(PC98, PLUGIN_TYPE_MUSIC, PC98EmuMusicPlugin);
+	REGISTER_PLUGIN_STATIC(SEGACD, PLUGIN_TYPE_MUSIC, SegaCDSoundPlugin);
 //#endif

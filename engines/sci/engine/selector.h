@@ -135,6 +135,10 @@ struct SelectorCache {
 	Selector setStep;
 	Selector setMotion;
 	Selector cycleSpeed;
+	Selector owner;
+
+	Selector curPos; // for LSL6 volume sync
+	Selector update; // for LSL6 volume sync
 
 #ifdef ENABLE_SCI32
 	Selector data; // Used by Array()/String()
@@ -169,8 +173,6 @@ struct SelectorCache {
 	Selector reSyncVol; // for Torin volume sync on restore
 	Selector set; // for LSL6hires subtitle sync
 	Selector clear; // for LSL6hires subtitle sync
-	Selector curPos; // for LSL6hires volume sync
-	Selector update; // for LSL6hires volume sync
 	Selector show; // for GK1 volume sync
 	Selector position; // for GK1 volume sync
 	Selector musicVolume; // for GK1 volume sync
@@ -194,6 +196,7 @@ struct SelectorCache {
 	Selector dispose; // for RAMA save/load save from launcher
 	Selector masterVolume; // for RAMA volume sync
 	Selector setCel; // for RAMA volume sync
+	Selector value; // for QFG4 import dialog
 #endif
 };
 

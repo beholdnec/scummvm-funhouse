@@ -24,6 +24,7 @@
 #include "mohawk/myst.h"
 #include "mohawk/myst_state.h"
 
+#include "common/config-manager.h"
 #include "common/debug.h"
 #include "common/serializer.h"
 #include "common/system.h"
@@ -41,10 +42,11 @@ MystSaveMetadata::MystSaveMetadata() {
 	saveHour = 0;
 	saveMinute = 0;
 	totalPlayTime = 0;
+	autoSave = false;
 }
 
 bool MystSaveMetadata::sync(Common::Serializer &s) {
-	static const Common::Serializer::Version kCurrentVersion = 1;
+	static const Common::Serializer::Version kCurrentVersion = 2;
 
 	if (!s.syncVersion(kCurrentVersion)) {
 		return false;
@@ -57,11 +59,21 @@ bool MystSaveMetadata::sync(Common::Serializer &s) {
 	s.syncAsByte(saveMinute);
 	s.syncString(saveDescription);
 	s.syncAsUint32LE(totalPlayTime);
+	s.syncAsByte(autoSave, 2);
 
 	return true;
 }
 
-MystGameState::MystGameState(MohawkEngine_Myst *vm, Common::SaveFileManager *saveFileMan) : _vm(vm), _saveFileMan(saveFileMan) {
+const int MystGameState::kAutoSaveSlot = 0;
+
+MystGameState::MystGameState(MohawkEngine_Myst *vm, Common::SaveFileManager *saveFileMan) :
+		_vm(vm),
+		_saveFileMan(saveFileMan) {
+
+	reset();
+}
+
+void MystGameState::reset() {
 	// Most of the variables are zero at game start.
 	memset(&_globals, 0, sizeof(_globals));
 	memset(&_myst, 0, sizeof(_myst));
@@ -78,8 +90,10 @@ MystGameState::MystGameState(MohawkEngine_Myst *vm, Common::SaveFileManager *sav
 	// Unknown
 	_globals.u0 = 2;
 	// Current Age / Stack - Start in Myst
-	_globals.currentAge = 7;
+	_globals.currentAge = kMystStart;
+	_globals.heldPage = kNoPage;
 	_globals.u1 = 1;
+	_globals.ending = kDniNotVisited;
 
 	// Library Bookcase Door - Default to Up
 	_myst.libraryBookcaseDoor = 1;
@@ -121,13 +135,13 @@ bool MystGameState::load(int slot) {
 
 	// Set our default cursor
 	_vm->_cursor->showCursor();
-	if (_globals.heldPage == 0 || _globals.heldPage > 13)
+	if (_globals.heldPage == kNoPage)
 		_vm->setMainCursor(kDefaultMystCursor);
-	else if (_globals.heldPage < 7)
+	else if (_globals.heldPage < kRedLibraryPage) //A blue page is held
 		_vm->setMainCursor(kBluePageCursor);
-	else if (_globals.heldPage < 13)
+	else if (_globals.heldPage < kWhitePage) //A red page is held
 		_vm->setMainCursor(kRedPageCursor);
-	else // if (globals.heldPage == 13)
+	else
 		_vm->setMainCursor(kWhitePageCursor);
 
 	return true;
@@ -178,14 +192,14 @@ void MystGameState::loadMetadata(int slot) {
 	delete metadataFile;
 }
 
-bool MystGameState::save(int slot, const Common::String &desc) {
+bool MystGameState::save(int slot, const Common::String &desc, const Graphics::Surface *thumbnail, bool autoSave) {
 	if (!saveState(slot)) {
 		return false;
 	}
 
-	updateMetadateForSaving(desc);
+	updateMetadateForSaving(desc, autoSave);
 
-	return saveMetadata(slot);
+	return saveMetadata(slot, thumbnail);
 }
 
 bool MystGameState::saveState(int slot) {
@@ -199,7 +213,7 @@ bool MystGameState::saveState(int slot) {
 	debugC(kDebugSaveLoad, "Saving game to '%s'", filename.c_str());
 
 	Common::Serializer s(nullptr, saveFile);
-	syncGameState(s, _vm->getFeatures() & GF_ME);
+	syncGameState(s, _vm->isGameVariant(GF_ME));
 	saveFile->finalize();
 	delete saveFile;
 
@@ -214,7 +228,7 @@ Common::String MystGameState::buildMetadataFilename(int slot) {
 	return Common::String::format("myst-%03d.mym", slot);
 }
 
-void MystGameState::updateMetadateForSaving(const Common::String &desc) {
+void MystGameState::updateMetadateForSaving(const Common::String &desc, bool autoSave) {
 	// Update save creation info
 	TimeDate t;
 	g_system->getTimeAndDate(t);
@@ -225,9 +239,10 @@ void MystGameState::updateMetadateForSaving(const Common::String &desc) {
 	_metadata.saveMinute = t.tm_min;
 	_metadata.saveDescription = desc;
 	_metadata.totalPlayTime = _vm->getTotalPlayTime();
+	_metadata.autoSave = autoSave;
 }
 
-bool MystGameState::saveMetadata(int slot) {
+bool MystGameState::saveMetadata(int slot, const Graphics::Surface *thumbnail) {
 	// Write the metadata to a separate file so that the save files
 	// are still compatible with the original engine
 	Common::String metadataFilename = buildMetadataFilename(slot);
@@ -241,7 +256,11 @@ bool MystGameState::saveMetadata(int slot) {
 	_metadata.sync(m);
 
 	// Append a thumbnail
-	Graphics::saveThumbnail(*metadataFile);
+	if (thumbnail) {
+		Graphics::saveThumbnail(*metadataFile, *thumbnail);
+	} else {
+		Graphics::saveThumbnail(*metadataFile);
+	}
 
 	metadataFile->finalize();
 	delete metadataFile;
@@ -250,11 +269,25 @@ bool MystGameState::saveMetadata(int slot) {
 }
 
 SaveStateDescriptor MystGameState::querySaveMetaInfos(int slot) {
+	SaveStateDescriptor desc;
+	desc.setWriteProtectedFlag(slot == kAutoSaveSlot);
+
+	// Open the save file
+	Common::String filename = buildSaveFilename(slot);
+	Common::InSaveFile *saveFile = g_system->getSavefileManager()->openForLoading(filename);
+	if (!saveFile) {
+		return desc;
+	}
+	delete saveFile;
+
+	// There is a save in the slot
+	desc.setSaveSlot(slot);
+
 	// Open the metadata file
-	Common::String filename = buildMetadataFilename(slot);
+	filename = buildMetadataFilename(slot);
 	Common::InSaveFile *metadataFile = g_system->getSavefileManager()->openForLoading(filename);
 	if (!metadataFile) {
-		return SaveStateDescriptor();
+		return desc;
 	}
 
 	Common::Serializer m(metadataFile, nullptr);
@@ -263,16 +296,24 @@ SaveStateDescriptor MystGameState::querySaveMetaInfos(int slot) {
 	Mohawk::MystSaveMetadata metadata;
 	if (!metadata.sync(m)) {
 		delete metadataFile;
-		return SaveStateDescriptor();
+		return desc;
 	}
 
 	// Set the save description
-	SaveStateDescriptor desc;
 	desc.setDescription(metadata.saveDescription);
 	desc.setSaveDate(metadata.saveYear, metadata.saveMonth, metadata.saveDay);
 	desc.setSaveTime(metadata.saveHour, metadata.saveMinute);
 	desc.setPlayTime(metadata.totalPlayTime);
-	desc.setThumbnail(Graphics::loadThumbnail(*metadataFile));
+	desc.setAutosave(metadata.autoSave);
+	if (metadata.autoSave) // Allow non-saves to be deleted, but not autosaves
+		desc.setDeletableFlag(slot != kAutoSaveSlot);
+
+	Graphics::Surface *thumbnail;
+	if (!Graphics::loadThumbnail(*metadataFile, thumbnail)) {
+		delete metadataFile;
+		return desc;
+	}
+	desc.setThumbnail(thumbnail);
 
 	delete metadataFile;
 
@@ -487,11 +528,11 @@ void MystGameState::deleteSave(int slot) {
 	g_system->getSavefileManager()->removeSavefile(metadataFilename);
 }
 
-void MystGameState::addZipDest(uint16 stack, uint16 view) {
+void MystGameState::addZipDest(MystStack stack, uint16 view) {
 	ZipDests *zipDests = nullptr;
 
 	// The demo has no zip dest storage
-	if (_vm->getFeatures() & GF_DEMO)
+	if (_vm->isGameVariant(GF_DEMO))
 		return;
 
 	// Select stack
@@ -531,13 +572,13 @@ void MystGameState::addZipDest(uint16 stack, uint16 view) {
 		(*zipDests)[firstEmpty] = view;
 }
 
-bool MystGameState::isReachableZipDest(uint16 stack, uint16 view) {
+bool MystGameState::isReachableZipDest(MystStack stack, uint16 view) {
 	// Zip mode enabled
-	if (!_globals.zipMode)
+	if (!ConfMan.getBool("zip_mode"))
 		return false;
 
 	// The demo has no zip dest storage
-	if (_vm->getFeatures() & GF_DEMO)
+	if (_vm->isGameVariant(GF_DEMO))
 		return false;
 
 	// Select stack

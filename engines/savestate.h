@@ -43,6 +43,12 @@ struct Surface;
  * Saves are writable and deletable by default.
  */
 class SaveStateDescriptor {
+private:
+	enum SaveType {
+		kSaveTypeUndetermined,
+		kSaveTypeRegular,
+		kSaveTypeAutosave
+	};
 public:
 	SaveStateDescriptor();
 	SaveStateDescriptor(int s, const Common::String &d);
@@ -177,6 +183,23 @@ public:
 	 */
 	const Common::String &getPlayTime() const { return _playTime; }
 
+	/**
+	 * Returns the time the game was played before the save state was created
+	 * in milliseconds.
+	 *
+	 * It defaults to 0.
+	 */
+	uint32 getPlayTimeMSecs() const { return _playTimeMSecs; }
+
+	/**
+	 * Sets whether the save is an autosave
+	 */
+	void setAutosave(bool autosave);
+
+	/**
+	 * Returns true whether the save is an autosave
+	 */
+	bool isAutosave() const;
 private:
 	/**
 	 * The saveslot id, as it would be passed to the "-x" command line switch.
@@ -220,9 +243,20 @@ private:
 	Common::String _playTime;
 
 	/**
+	 * The time the game was played before the save state was created
+	 * in milliseconds.
+	 */
+	uint32 _playTimeMSecs;
+
+	/**
 	 * The thumbnail of the save state.
 	 */
 	Common::SharedPtr<Graphics::Surface> _thumbnail;
+
+	/**
+	 * Save file type
+	 */
+	SaveType _saveType;
 };
 
 /** List of savestates. */

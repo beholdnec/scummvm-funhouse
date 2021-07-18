@@ -42,8 +42,6 @@ static const PlainGameDescriptor groovieGames[] = {
 	{"tlc", "Tender Loving Care"},
 #endif
 
-	// Unknown
-	{"groovie", "Groovie engine game"},
 	{0, 0}
 };
 
@@ -106,7 +104,7 @@ static const GroovieGameDescription gameDescriptions[] = {
 			{
 				{ "script.grv", 0, "d1b8033b40aa67c076039881eccce90d", 16659},
 				{ "intro.gjd", 0, NULL, 31711554},
-				{ NULL, 0, NULL, 0}
+				AD_LISTEND
 			},
 			Common::RU_RUS, Common::kPlatformDOS, ADGF_NO_FLAGS,
 			GUIO5(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT, GAMEOPTION_T7G_FAST_MOVIE_SPEED)
@@ -120,7 +118,7 @@ static const GroovieGameDescription gameDescriptions[] = {
 			{
 				{ "script.grv", 0, "d1b8033b40aa67c076039881eccce90d", 16659},
 				{ "SeventhGuest", 0, NULL, -1},
-				{ NULL, 0, NULL, 0}
+				AD_LISTEND
 			},
 			Common::EN_ANY, Common::kPlatformIOS, ADGF_NO_FLAGS,
 			GUIO3(GUIO_NOMIDI, GUIO_NOASPECT, GAMEOPTION_T7G_FAST_MOVIE_SPEED)
@@ -135,6 +133,17 @@ static const GroovieGameDescription gameDescriptions[] = {
 			"11h", "",
 			AD_ENTRY1s("disk.1", "5c0428cd3659fc7bbcd0aa16485ed5da", 227),
 			Common::EN_ANY, Common::kPlatformDOS, ADGF_UNSTABLE,
+			GUIO4(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT)
+		},
+		kGroovieV2, 1
+	},
+
+	// The 11th Hour Windows English
+	{
+		{
+			"11h", "",
+			AD_ENTRY1s("disk.1", "4c1d0549f544f052fba2b7a9aebd1077", 220),
+			Common::EN_ANY, Common::kPlatformWindows, ADGF_UNSTABLE,
 			GUIO4(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT)
 		},
 		kGroovieV2, 1
@@ -322,8 +331,6 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 class GroovieMetaEngine : public AdvancedMetaEngine {
 public:
 	GroovieMetaEngine() : AdvancedMetaEngine(gameDescriptions, sizeof(GroovieGameDescription), groovieGames, optionsList) {
-		_singleId = "groovie";
-
 		// Use kADFlagUseExtraAsHint in order to distinguish the 11th hour from
 		// its "Making of" as well as the Clandestiny Trailer; they all share
 		// the same MD5.
@@ -340,21 +347,25 @@ public:
 		_directoryGlobs = directoryGlobs;
 	}
 
-	const char *getName() const {
+	const char *getEngineId() const override {
+		return "groovie";
+	}
+
+	const char *getName() const override {
 		return "Groovie";
 	}
 
-	const char *getOriginalCopyright() const {
+	const char *getOriginalCopyright() const override {
 		return "Groovie Engine (C) 1990-1996 Trilobyte";
 	}
 
-	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const override;
 
-	bool hasFeature(MetaEngineFeature f) const;
-	SaveStateList listSaves(const char *target) const;
-	int getMaximumSaveSlot() const;
-	void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	bool hasFeature(MetaEngineFeature f) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 };
 
 bool GroovieMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const {

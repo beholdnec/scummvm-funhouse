@@ -66,7 +66,6 @@ void AgiEngine::wait(uint32 msec, bool busy) {
 
 	do {
 		processScummVMEvents();
-		_console->onFrame();
 		_system->updateScreen();
 		_system->delayMillis(10);
 	} while (_system->getMillis() < endTime);
@@ -91,21 +90,22 @@ int AgiEngine::agiInit() {
 
 	// clear all resources and events
 	for (i = 0; i < MAX_DIRECTORY_ENTRIES; i++) {
-		memset(&_game.views[i], 0, sizeof(struct AgiView));
-		memset(&_game.pictures[i], 0, sizeof(struct AgiPicture));
-		memset(&_game.logics[i], 0, sizeof(struct AgiLogic));
-		memset(&_game.sounds[i], 0, sizeof(class AgiSound *)); // _game.sounds contains pointers now
-		memset(&_game.dirView[i], 0, sizeof(struct AgiDir));
-		memset(&_game.dirPic[i], 0, sizeof(struct AgiDir));
-		memset(&_game.dirLogic[i], 0, sizeof(struct AgiDir));
-		memset(&_game.dirSound[i], 0, sizeof(struct AgiDir));
+		_game.views[i].reset();
+		_game.pictures[i].reset();
+		_game.logics[i].reset();
+		_game.sounds[i] = nullptr; // _game.sounds contains pointers now
+		_game.dirView[i].reset();
+		_game.dirPic[i].reset();
+		_game.dirLogic[i].reset();
+		_game.dirSound[i].reset();
 	}
 
 	// clear view table
-	for (i = 0; i < SCREENOBJECTS_MAX; i++)
-		memset(&_game.screenObjTable[i], 0, sizeof(struct ScreenObjEntry));
+	for (i = 0; i < SCREENOBJECTS_MAX; i++) {
+		_game.screenObjTable[i].reset();
+	}
 
-	memset(&_game.addToPicView, 0, sizeof(struct ScreenObjEntry));
+	_game.addToPicView.reset();
 
 	_words->clearEgoWords();
 
@@ -136,6 +136,9 @@ int AgiEngine::agiInit() {
 		debug("Emulating Sierra AGI v%x.002.%03x",
 		      (int)(getVersion() >> 12) & 0xF,
 		      (int)(getVersion()) & 0xFFF);
+		break;
+	default:
+		warning("Unknown AGI Emulation Version %x", (int)(getVersion() >> 12));
 		break;
 	}
 
@@ -214,7 +217,7 @@ int AgiEngine::agiDeinit() {
 	agiUnloadResources();    // unload resources in memory
 	_loader->unloadResource(RESOURCETYPE_LOGIC, 0);
 	ec = _loader->deinit();
-	unloadObjects();
+	_objects.clear();
 	_words->unloadDictionary();
 
 	clearImageStack();
@@ -334,7 +337,7 @@ void AgiBase::initRenderMode() {
 		break;
 	}
 
-	if (getFeatures() & (GF_AGI256 | GF_AGI256_2)) {
+	if (getFeatures() & GF_AGI256) {
 		// If current game is AGI256, switch (force) to VGA render mode
 		_renderMode = Common::kRenderVGA;
 	}
@@ -359,10 +362,7 @@ AgiEngine::AgiEngine(OSystem *syst, const AGIGameDescription *gameDesc) : AgiBas
 	DebugMan.addDebugChannel(kDebugLevelText, "Text", "Text output debugging");
 	DebugMan.addDebugChannel(kDebugLevelSavegame, "Savegame", "Saving & restoring game debugging");
 
-
-	memset(&_game, 0, sizeof(struct AgiGame));
 	memset(&_debug, 0, sizeof(struct AgiDebug));
-	memset(&_mouse, 0, sizeof(struct Mouse));
 
 	_game.mouseEnabled = true;
 	_game.mouseHidden = false;
@@ -386,8 +386,6 @@ AgiEngine::AgiEngine(OSystem *syst, const AGIGameDescription *gameDesc) : AgiBas
 
 	memset(&_stringdata, 0, sizeof(struct StringData));
 
-	_objects = NULL;
-
 	_restartGame = false;
 
 	_firstSlot = 0;
@@ -401,8 +399,6 @@ AgiEngine::AgiEngine(OSystem *syst, const AGIGameDescription *gameDesc) : AgiBas
 
 	_setVolumeBrokenFangame = false; // for further study see AgiEngine::setVolumeViaScripts()
 
-	_lastSaveTime = 0;
-
 	_playTimeInSecondsAdjust = 0;
 	_lastUsedPlayTimeInCycles = 0;
 	_lastUsedPlayTimeInSeconds = 0;
@@ -410,7 +406,6 @@ AgiEngine::AgiEngine(OSystem *syst, const AGIGameDescription *gameDesc) : AgiBas
 
 	memset(_keyQueue, 0, sizeof(_keyQueue));
 
-	_console = nullptr;
 	_font = nullptr;
 	_gfx = nullptr;
 	_sound = nullptr;
@@ -466,7 +461,7 @@ void AgiEngine::initialize() {
 
 	initRenderMode();
 
-	_console = new Console(this);
+	setDebugger(new Console(this));
 	_words = new Words(this);
 	_font = new GfxFont(this);
 	_gfx = new GfxMgr(this, _font);
@@ -487,8 +482,6 @@ void AgiEngine::initialize() {
 	_text->charAttrib_Set(15, 0);
 
 	_game.name[0] = '\0';
-
-	_lastSaveTime = 0;
 
 	debugC(2, kDebugLevelMain, "Detect game");
 
@@ -532,7 +525,6 @@ AgiEngine::~AgiEngine() {
 	delete _gfx;
 	delete _font;
 	delete _words;
-	delete _console;
 }
 
 Common::Error AgiBase::init() {
@@ -707,6 +699,25 @@ void AgiEngine::artificialDelayTrigger_DrawPicture(int16 newPictureNr) {
 		}
 	}
 	_artificialDelayCurrentPicture = newPictureNr;
+}
+
+void AgiGame::setAppleIIgsSpeedLevel(int i) {
+	appleIIgsSpeedLevel = i;
+	_vm->setVar(VM_VAR_WINDOW_AUTO_CLOSE_TIMER, 6);
+	switch (i) {
+	case 0:
+		_vm->_text->messageBox("Fastest speed.");
+		break;
+	case 1:
+		_vm->_text->messageBox("Fast speed.");
+		break;
+	case 2:
+		_vm->_text->messageBox("Normal speed.");
+		break;
+	case 3:
+		_vm->_text->messageBox("Slow speed.");
+		break;
+	}
 }
 
 } // End of namespace Agi

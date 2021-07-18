@@ -34,34 +34,11 @@ namespace Common {
 template<class T> class Array;
 class SeekableReadStream;
 
-/** The default Windows PE resources. */
-enum PEResourceType {
-	kPECursor =       0x01,
-	kPEBitmap =       0x02,
-	kPEIcon =         0x03,
-	kPEMenu =         0x04,
-	kPEDialog =       0x05,
-	kPEString =       0x06,
-	kPEFontDir =      0x07,
-	kPEFont =         0x08,
-	kPEAccelerator =  0x09,
-	kPERCData =       0x0A,
-	kPEMessageTable = 0x0B,
-	kPEGroupCursor =  0x0C,
-	kPEGroupIcon =    0x0E,
-	kPEVersion =      0x10,
-	kPEDlgInclude =   0x11,
-	kPEPlugPlay =     0x13,
-	kPEVXD =          0x14,
-	kPEAniCursor =    0x15,
-	kPEAniIcon =      0x16
-};
-
 /**
  * A class able to load resources from a Windows Portable Executable, such
  * as cursors, bitmaps, and sounds.
  */
-class PEResources {
+class PEResources : WinResources {
 public:
 	PEResources();
 	~PEResources();
@@ -70,24 +47,24 @@ public:
 	void clear();
 
 	/** Load from an EXE file. */
-	bool loadFromEXE(const String &fileName);
+	using WinResources::loadFromEXE;
 
 	bool loadFromEXE(File *stream);
 
 	/** Return a list of resource types. */
 	const Array<WinResourceID> getTypeList() const;
 
-	/** Return a list of names for a given type. */
-	const Array<WinResourceID> getNameList(const WinResourceID &type) const;
+	/** Return a list of IDs for a given type. */
+	const Array<WinResourceID> getIDList(const WinResourceID &type) const;
 
-	/** Return a list of languages for a given type and name. */
-	const Array<WinResourceID> getLangList(const WinResourceID &type, const WinResourceID &name) const;
+	/** Return a list of languages for a given type and ID. */
+	const Array<WinResourceID> getLangList(const WinResourceID &type, const WinResourceID &id) const;
 
 	/** Return a stream to the specified resource, taking the first language found (or 0 if non-existent). */
-	File *getResource(const WinResourceID &type, const WinResourceID &name);
+	File *getResource(const WinResourceID &type, const WinResourceID &id);
 
 	/** Return a stream to the specified resource (or 0 if non-existent). */
-	File *getResource(const WinResourceID &type, const WinResourceID &name, const WinResourceID &lang);
+	File *getResource(const WinResourceID &type, const WinResourceID &id, const WinResourceID &lang);
 
 	/** Returns true if the resources is empty */
 	bool empty() const { return _sections.empty(); }
@@ -103,7 +80,7 @@ private:
 	File *_exe;
 
 	void parseResourceLevel(Section &section, uint32 offset, int level);
-	WinResourceID _curType, _curName, _curLang;
+	WinResourceID _curType, _curID, _curLang;
 
 	struct Resource {
 		uint32 offset;
@@ -111,8 +88,8 @@ private:
 	};
 
 	typedef HashMap<WinResourceID, Resource, WinResourceID_Hash, WinResourceID_EqualTo> LangMap;
-	typedef HashMap<WinResourceID,  LangMap, WinResourceID_Hash, WinResourceID_EqualTo> NameMap;
-	typedef HashMap<WinResourceID,  NameMap, WinResourceID_Hash, WinResourceID_EqualTo> TypeMap;
+	typedef HashMap<WinResourceID,  LangMap, WinResourceID_Hash, WinResourceID_EqualTo> IDMap;
+	typedef HashMap<WinResourceID,    IDMap, WinResourceID_Hash, WinResourceID_EqualTo> TypeMap;
 
 	TypeMap _resources;
 };

@@ -92,8 +92,10 @@ bool SavegameManager::loadSavegame(const Common::String &filename) {
 	if (!strncmp(&buffer[0], &SAVEGAME_ID[0], 4)) {
 		// Yes, it is, so skip over the savegame header
 		SavegameHeader header;
-		readSavegameHeader(stream, header);
-		delete header.thumbnail;
+		if (!readSavegameHeader(stream, header)) {
+			delete stream;
+			return false;
+		}
 	} else {
 		stream->seek(0);
 	}
@@ -145,7 +147,7 @@ Common::Error SavegameManager::saveGame(int n, const Common::String &saveName) {
 	if (g_vm->_saveStruct._currPlace == ROOM26)
 		g_vm->_saveStruct._currPlace = LANDING;
 
-	Common::String filename = _vm->generateSaveFilename(n);
+	Common::String filename = _vm->getSaveStateName(n);
 	f = g_system->getSavefileManager()->openForSaving(filename);
 
 	// Write out the savegame header
@@ -170,11 +172,11 @@ Common::Error SavegameManager::saveGame(int n, const Common::String &saveName) {
 }
 
 Common::Error SavegameManager::loadGame(int slot) {
-	return loadGame(_vm->generateSaveFilename(slot));
+	return loadGame(_vm->getSaveStateName(slot));
 }
 
 Common::Error SavegameManager::saveGame(int slot) {
-	return saveGame(slot, _vm->generateSaveFilename(slot));
+	return saveGame(slot, _vm->getSaveStateName(slot));
 }
 
 void SavegameManager::writeSavegameHeader(Common::OutSaveFile *out, const Common::String &saveName) {
@@ -208,9 +210,7 @@ void SavegameManager::writeSavegameHeader(Common::OutSaveFile *out, const Common
 	out->writeSint16LE(td.tm_min);
 }
 
-bool SavegameManager::readSavegameHeader(Common::InSaveFile *in, SavegameHeader &header) {
-	header.thumbnail = NULL;
-
+WARN_UNUSED_RESULT bool SavegameManager::readSavegameHeader(Common::InSaveFile *in, SavegameHeader &header, bool skipThumbnail) {
 	// Get the savegame version
 	header.version = in->readByte();
 
@@ -221,9 +221,9 @@ bool SavegameManager::readSavegameHeader(Common::InSaveFile *in, SavegameHeader 
 		header.saveName += ch;
 
 	// Get the thumbnail
-	header.thumbnail = Graphics::loadThumbnail(*in);
-	if (!header.thumbnail)
+	if (!Graphics::loadThumbnail(*in, header.thumbnail, skipThumbnail)) {
 		return false;
+	}
 
 	// Read in save date/time
 	header.saveYear = in->readSint16LE();
@@ -240,7 +240,6 @@ SaveStateList SavegameManager::listSaves(const Common::String &target) {
 	pattern += ".###";
 
 	Common::StringArray files = g_system->getSavefileManager()->listSavefiles(pattern);
-	sort(files.begin(), files.end());	// Sort (hopefully ensuring we are sorted numerically..)
 
 	SaveStateList saveList;
 	for (Common::StringArray::const_iterator file = files.begin(); file != files.end(); ++file) {
@@ -264,7 +263,6 @@ SaveStateList SavegameManager::listSaves(const Common::String &target) {
 				validFlag = readSavegameHeader(in, header);
 
 				if (validFlag) {
-					delete header.thumbnail;
 					saveDescription = header.saveName;
 				}
 			} else if (file->size() == 497) {
@@ -282,6 +280,7 @@ SaveStateList SavegameManager::listSaves(const Common::String &target) {
 		}
 	}
 
+	Common::sort(saveList.begin(), saveList.end(), SaveStateDescriptorSlotComparator());
 	return saveList;
 }
 
@@ -311,7 +310,10 @@ SaveStateDescriptor SavegameManager::querySaveMetaInfos(const Common::String &fi
 		} else {
 			// Get the savegame header information
 			SavegameHeader header;
-			readSavegameHeader(f, header);
+			if (!readSavegameHeader(f, header, false)) {
+				delete f;
+				return SaveStateDescriptor();
+			}
 			delete f;
 
 			// Create the return descriptor

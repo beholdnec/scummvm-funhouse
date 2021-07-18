@@ -757,6 +757,9 @@ void Inter_v2::o2_setGoblinState() {
 				(_vm->_scenery->_animBottom - _vm->_scenery->_animTop);
 		*(obj.pPosX) = obj.goblinX * _vm->_map->getTilesWidth();
 		break;
+
+	default:
+		break;
 	}
 }
 
@@ -872,13 +875,13 @@ void Inter_v2::o2_scroll() {
 	int16 curX;
 	int16 curY;
 
-	startX = CLIP((int) _vm->_game->_script->readValExpr(), 0,
+	startX = CLIP((int)_vm->_game->_script->readValExpr(), 0,
 			_vm->_video->_surfWidth - _vm->_width);
-	startY = CLIP((int) _vm->_game->_script->readValExpr(), 0,
+	startY = CLIP((int)_vm->_game->_script->readValExpr(), 0,
 			_vm->_video->_surfHeight - _vm->_height);
-	endX = CLIP((int) _vm->_game->_script->readValExpr(), 0,
+	endX = CLIP((int)_vm->_game->_script->readValExpr(), 0,
 			_vm->_video->_surfWidth - _vm->_width);
-	endY = CLIP((int) _vm->_game->_script->readValExpr(), 0,
+	endY = CLIP((int)_vm->_game->_script->readValExpr(), 0,
 			_vm->_video->_surfHeight - _vm->_height);
 	stepX = _vm->_game->_script->readValExpr();
 	stepY = _vm->_game->_script->readValExpr();
@@ -886,10 +889,10 @@ void Inter_v2::o2_scroll() {
 	curX = startX;
 	curY = startY;
 	while (!_vm->shouldQuit() && ((curX != endX) || (curY != endY))) {
-		curX = stepX > 0 ? MIN(curX + stepX, (int) endX) :
-			MAX(curX + stepX, (int) endX);
-		curY = stepY > 0 ? MIN(curY + stepY, (int) endY) :
-			MAX(curY + stepY, (int) endY);
+		curX = stepX > 0 ? MIN(curX + stepX, (int)endX) :
+			MAX(curX + stepX, (int)endX);
+		curY = stepY > 0 ? MIN(curY + stepY, (int)endY) :
+			MAX(curY + stepY, (int)endY);
 
 		_vm->_draw->_scrollOffsetX = curX;
 		_vm->_draw->_scrollOffsetY = curY;
@@ -1054,6 +1057,9 @@ void Inter_v2::o2_assign(OpFuncParams &params) {
 			else
 				WRITE_VARO_STR(dest, _vm->_game->_script->getResultStr());
 			break;
+
+		default:
+			break;
 		}
 	}
 }
@@ -1113,6 +1119,9 @@ void Inter_v2::o2_printText(OpFuncParams &params) {
 			case TYPE_ARRAY_STR:
 				sprintf(buf + i, "%s",
 						GET_VARO_STR(_vm->_game->_script->readVarIndex()));
+				break;
+
+			default:
 				break;
 			}
 			_vm->_game->_script->skip(1);
@@ -1282,6 +1291,9 @@ void Inter_v2::o2_getTotTextItemPart(OpFuncParams &params) {
 					case 3:
 					case 4:
 						totData += 2;
+						break;
+
+					default:
 						break;
 					}
 				}

@@ -35,8 +35,8 @@ class MohawkEngine_Myst;
 
 class MystConsole : public GUI::Debugger {
 public:
-	MystConsole(MohawkEngine_Myst *vm);
-	virtual ~MystConsole(void);
+	explicit MystConsole(MohawkEngine_Myst *vm);
+	~MystConsole() override;
 
 private:
 	MohawkEngine_Myst *_vm;
@@ -66,8 +66,8 @@ class MohawkEngine_Riven;
 
 class RivenConsole : public GUI::Debugger {
 public:
-	RivenConsole(MohawkEngine_Riven *vm);
-	virtual ~RivenConsole(void);
+	explicit RivenConsole(MohawkEngine_Riven *vm);
+	~RivenConsole() override;
 
 private:
 	MohawkEngine_Riven *_vm;
@@ -89,14 +89,15 @@ private:
 	bool Cmd_GetRMAP(int argc, const char **argv);
 	bool Cmd_Combos(int argc, const char **argv);
 	bool Cmd_SliderState(int argc, const char **argv);
+	bool Cmd_QuickTest(int argc, const char **argv);
 };
 
 #endif
 
 class LivingBooksConsole : public GUI::Debugger {
 public:
-	LivingBooksConsole(MohawkEngine_LivingBooks *vm);
-	virtual ~LivingBooksConsole(void);
+	explicit LivingBooksConsole(MohawkEngine_LivingBooks *vm);
+	~LivingBooksConsole() override;
 
 private:
 	MohawkEngine_LivingBooks *_vm;
@@ -105,6 +106,7 @@ private:
 	bool Cmd_StopSound(int argc, const char **argv);
 	bool Cmd_DrawImage(int argc, const char **argv);
 	bool Cmd_ChangePage(int argc, const char **argv);
+	bool Cmd_ChangeCursor(int argc, const char **argv);
 };
 
 #ifdef ENABLE_CSTIME
@@ -114,7 +116,7 @@ class MohawkEngine_CSTime;
 class CSTimeConsole : public GUI::Debugger {
 public:
 	CSTimeConsole(MohawkEngine_CSTime *vm);
-	virtual ~CSTimeConsole(void);
+	~CSTimeConsole(void) override;
 
 private:
 	MohawkEngine_CSTime *_vm;

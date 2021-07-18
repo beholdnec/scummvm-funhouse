@@ -56,8 +56,8 @@ class Sc2 : public CObject {
 
  public:
 	Sc2();
-	virtual ~Sc2();
-	virtual bool load(MfcArchive &file);
+	~Sc2() override;
+	bool load(MfcArchive &file) override;
 };
 
 typedef Common::Array<Sc2> Sc2Array;
@@ -73,7 +73,7 @@ bool preloadCallback(PreloadItem &pre, int flag);
 
 class PreloadItems : public Common::Array<PreloadItem>, public CObject {
  public:
-	virtual bool load(MfcArchive &file);
+	bool load(MfcArchive &file) override;
 };
 
 struct FullpipeSavegameHeader {
@@ -84,7 +84,7 @@ struct FullpipeSavegameHeader {
 	uint32 date;
 	uint16 time;
 	uint32 playtime;
-	Common::SharedPtr<Graphics::Surface> thumbnail;
+	Graphics::Surface *thumbnail;
 };
 
 struct SaveHeader {
@@ -98,9 +98,9 @@ struct SaveHeader {
 class GameLoader : public CObject {
  public:
 	GameLoader();
-	virtual ~GameLoader();
+	~GameLoader() override;
 
-	virtual bool load(MfcArchive &file);
+	bool load(MfcArchive &file) override;
 	bool loadScene(int sceneId);
 	bool gotoScene(int sceneId, int entranceId);
 	bool preloadScene(int sceneId, int entranceId);
@@ -142,7 +142,7 @@ class GameLoader : public CObject {
 };
 
 const char *getSavegameFile(int saveGameIdx);
-bool readSavegameHeader(Common::InSaveFile *in, FullpipeSavegameHeader &header);
+WARN_UNUSED_RESULT bool readSavegameHeader(Common::InSaveFile *in, FullpipeSavegameHeader &header, bool skipThumbnail = true);
 void parseSavegameHeader(Fullpipe::FullpipeSavegameHeader &header, SaveStateDescriptor &desc);
 
 Inventory2 *getGameLoaderInventory();

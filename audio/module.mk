@@ -11,7 +11,7 @@ MODULE_OBJS := \
 	midiparser.o \
 	midiplayer.o \
 	miles_adlib.o \
-	miles_mt32.o \
+	miles_midi.o \
 	mixer.o \
 	mpu401.o \
 	musicplugin.o \
@@ -46,9 +46,11 @@ MODULE_OBJS := \
 	softsynth/opl/dbopl.o \
 	softsynth/opl/dosbox.o \
 	softsynth/opl/mame.o \
+	softsynth/fmtowns_pc98/pc98_audio.o \
+	softsynth/fmtowns_pc98/pcm_common.o \
+	softsynth/fmtowns_pc98/sega_audio.o \
 	softsynth/fmtowns_pc98/towns_audio.o \
 	softsynth/fmtowns_pc98/towns_euphony.o \
-	softsynth/fmtowns_pc98/towns_midi.o \
 	softsynth/fmtowns_pc98/towns_pc98_driver.o \
 	softsynth/fmtowns_pc98/towns_pc98_fmsynth.o \
 	softsynth/fmtowns_pc98/towns_pc98_plugins.o \
@@ -58,11 +60,36 @@ MODULE_OBJS := \
 	softsynth/eas.o \
 	softsynth/pcspk.o \
 	softsynth/sid.o \
-	softsynth/wave6581.o
+	softsynth/wave6581.o \
+	soundfont/rawfile.o \
+	soundfont/rifffile.o \
+	soundfont/sf2file.o \
+	soundfont/synthfile.o \
+	soundfont/vgmcoll.o \
+	soundfont/vgminstrset.o \
+	soundfont/vgmitem.o \
+	soundfont/vgmsamp.o \
+	soundfont/vab/psxspu.o \
+	soundfont/vab/vab.o
+
+ifndef DISABLE_NUKED_OPL
+MODULE_OBJS += \
+	softsynth/opl/nuked.o
+endif
+
+ifdef USE_A52
+MODULE_OBJS += \
+	decoders/ac3.o
+endif
 
 ifdef USE_ALSA
 MODULE_OBJS += \
 	alsa_opl.o
+endif
+
+ifdef ENABLE_OPL2LPT
+MODULE_OBJS += \
+	opl2lpt.o
 endif
 
 ifndef USE_ARM_SOUND_ASM

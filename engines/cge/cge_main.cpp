@@ -22,7 +22,7 @@
 
 /*
  * This code is based on original Soltys source code
- * Copyright (c) 1994-1995 Janus B. Wisniewski and L.K. Avalon
+ * Copyright (c) 1994-1995 Janusz B. Wisniewski and L.K. Avalon
  */
 
 #include "common/scummsys.h"
@@ -206,7 +206,7 @@ bool CGEEngine::loadGame(int slotNumber, SavegameHeader *header, bool tiny) {
 
 	} else {
 		// Open up the savegame file
-		Common::String slotName = generateSaveName(slotNumber);
+		Common::String slotName = getSaveStateName(slotNumber);
 		Common::InSaveFile *saveFile = g_system->getSavefileManager()->openForLoading(slotName);
 
 		// Read the data into a data buffer
@@ -243,9 +243,7 @@ bool CGEEngine::loadGame(int slotNumber, SavegameHeader *header, bool tiny) {
 			return true;
 		}
 
-		// Delete the thumbnail
-		saveHeader.thumbnail->free();
-		delete saveHeader.thumbnail;
+		g_engine->setTotalPlayTime(saveHeader.playTime * 1000);
 	}
 
 	// Get in the savegame
@@ -259,20 +257,12 @@ bool CGEEngine::loadGame(int slotNumber, SavegameHeader *header, bool tiny) {
  * Returns true if a given savegame exists
  */
 bool CGEEngine::savegameExists(int slotNumber) {
-	Common::String slotName = generateSaveName(slotNumber);
+	Common::String slotName = getSaveStateName(slotNumber);
 
 	Common::InSaveFile *saveFile = g_system->getSavefileManager()->openForLoading(slotName);
 	bool result = saveFile != NULL;
 	delete saveFile;
 	return result;
-}
-
-/**
- * Support method that generates a savegame name
- * @param slot		Slot number
- */
-Common::String CGEEngine::generateSaveName(int slot) {
-	return Common::String::format("%s.%03d", _targetName.c_str(), slot);
 }
 
 Common::Error CGEEngine::loadGameState(int slot) {
@@ -300,7 +290,7 @@ void CGEEngine::resetGame() {
 	_commandHandler->reset();
 }
 
-Common::Error CGEEngine::saveGameState(int slot, const Common::String &desc) {
+Common::Error CGEEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	sceneDown();
 	_hero->park();
 	_oldLev = _lev;
@@ -325,7 +315,7 @@ Common::Error CGEEngine::saveGameState(int slot, const Common::String &desc) {
 
 void CGEEngine::saveGame(int slotNumber, const Common::String &desc) {
 	// Set up the serializer
-	Common::String slotName = generateSaveName(slotNumber);
+	Common::String slotName = getSaveStateName(slotNumber);
 	Common::OutSaveFile *saveFile = g_system->getSavefileManager()->openForSaving(slotName);
 
 	// Write out the ScummVM savegame header
@@ -371,6 +361,8 @@ void CGEEngine::writeSavegameHeader(Common::OutSaveFile *out, SavegameHeader &he
 	out->writeSint16LE(td.tm_mday);
 	out->writeSint16LE(td.tm_hour);
 	out->writeSint16LE(td.tm_min);
+
+	out->writeUint32LE(g_engine->getTotalPlayTime() / 1000);
 }
 
 void CGEEngine::syncGame(Common::SeekableReadStream *readStream, Common::WriteStream *writeStream, bool tiny) {
@@ -378,7 +370,7 @@ void CGEEngine::syncGame(Common::SeekableReadStream *readStream, Common::WriteSt
 
 	if (s.isSaving()) {
 		for (int i = 0; i < kPocketNX; i++) {
-			register Sprite *pocSpr = _pocket[i];
+			Sprite *pocSpr = _pocket[i];
 			_pocref[i] = (pocSpr) ? pocSpr->_ref : -1;
 		}
 
@@ -417,15 +409,23 @@ void CGEEngine::syncGame(Common::SeekableReadStream *readStream, Common::WriteSt
 			}
 
 			for (int i = 0; i < kPocketNX; i++) {
-				register int r = _pocref[i];
+				int r = _pocref[i];
 				_pocket[i] = (r < 0) ? NULL : _vga->_spareQ->locate(r);
 			}
 		}
 	}
 }
 
-bool CGEEngine::readSavegameHeader(Common::InSaveFile *in, SavegameHeader &header) {
-	header.thumbnail = nullptr;
+WARN_UNUSED_RESULT bool CGEEngine::readSavegameHeader(Common::InSaveFile *in, SavegameHeader &header, bool skipThumbnail) {
+	header.version     = 0;
+	header.saveName.clear();
+	header.thumbnail   = nullptr;
+	header.saveYear    = 0;
+	header.saveMonth   = 0;
+	header.saveDay     = 0;
+	header.saveHour    = 0;
+	header.saveMinutes = 0;
+	header.playTime    = 0;
 
 	// Get the savegame version
 	header.version = in->readByte();
@@ -433,22 +433,25 @@ bool CGEEngine::readSavegameHeader(Common::InSaveFile *in, SavegameHeader &heade
 		return false;
 
 	// Read in the string
-	header.saveName.clear();
 	char ch;
 	while ((ch = (char)in->readByte()) != '\0')
 		header.saveName += ch;
 
 	// Get the thumbnail
-	header.thumbnail = Graphics::loadThumbnail(*in);
-	if (!header.thumbnail)
+	if (!Graphics::loadThumbnail(*in, header.thumbnail, skipThumbnail)) {
 		return false;
+	}
 
 	// Read in save date/time
-	header.saveYear = in->readSint16LE();
-	header.saveMonth = in->readSint16LE();
-	header.saveDay = in->readSint16LE();
-	header.saveHour = in->readSint16LE();
+	header.saveYear    = in->readSint16LE();
+	header.saveMonth   = in->readSint16LE();
+	header.saveDay     = in->readSint16LE();
+	header.saveHour    = in->readSint16LE();
 	header.saveMinutes = in->readSint16LE();
+
+	if (header.version >= 3) {
+		header.playTime = in->readUint32LE();
+	}
 
 	return true;
 }
@@ -930,6 +933,8 @@ void CGEEngine::optionTouch(int opt, uint16 mask) {
 		if (mask & kMouseLeftUp)
 			quit();
 		break;
+	default:
+		break;
 	}
 }
 
@@ -1054,22 +1059,23 @@ void CGEEngine::loadSprite(const char *fname, int ref, int scene, int col = 0, i
 
 
 			switch (i) {
-			case  0 : // Name - will be taken in Expand routine
+			default:
+			case 0: // Name - will be taken in Expand routine
 				break;
-			case  1 : // Type
+			case 1: // Type
 				if ((type = takeEnum(Type, strtok(NULL, " \t,;/"))) < 0)
 					error("Bad line %d [%s]", lcnt, fname);
 				break;
-			case  2 : // Phase
+			case 2: // Phase
 				shpcnt++;
 				break;
-			case  3 : // East
+			case 3: // East
 				east = (atoi(strtok(NULL, " \t,;/")) != 0);
 				break;
-			case 11 : // Portable
+			case 11: // Portable
 				port = (atoi(strtok(NULL, " \t,;/")) != 0);
 				break;
-			case 12 : // Transparent
+			case 12: // Transparent
 				tran = (atoi(strtok(NULL, " \t,;/")) != 0);
 				break;
 			}

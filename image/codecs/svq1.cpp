@@ -56,16 +56,16 @@ SVQ1Decoder::SVQ1Decoder(uint16 width, uint16 height) {
 	_last[2] = 0;
 
 	// Setup Variable Length Code Tables
-	_blockType = new Common::Huffman(0, 4, s_svq1BlockTypeCodes, s_svq1BlockTypeLengths);
+	_blockType = new HuffmanDecoder(0, 4, s_svq1BlockTypeCodes, s_svq1BlockTypeLengths);
 
 	for (int i = 0; i < 6; i++) {
-		_intraMultistage[i] = new Common::Huffman(0, 8, s_svq1IntraMultistageCodes[i], s_svq1IntraMultistageLengths[i]);
-		_interMultistage[i] = new Common::Huffman(0, 8, s_svq1InterMultistageCodes[i], s_svq1InterMultistageLengths[i]);
+		_intraMultistage[i] = new HuffmanDecoder(0, 8, s_svq1IntraMultistageCodes[i], s_svq1IntraMultistageLengths[i]);
+		_interMultistage[i] = new HuffmanDecoder(0, 8, s_svq1InterMultistageCodes[i], s_svq1InterMultistageLengths[i]);
 	}
 
-	_intraMean = new Common::Huffman(0, 256, s_svq1IntraMeanCodes, s_svq1IntraMeanLengths);
-	_interMean = new Common::Huffman(0, 512, s_svq1InterMeanCodes, s_svq1InterMeanLengths);
-	_motionComponent = new Common::Huffman(0, 33, s_svq1MotionComponentCodes, s_svq1MotionComponentLengths);
+	_intraMean = new HuffmanDecoder(0, 256, s_svq1IntraMeanCodes, s_svq1IntraMeanLengths);
+	_interMean = new HuffmanDecoder(0, 512, s_svq1InterMeanCodes, s_svq1InterMeanLengths);
+	_motionComponent = new HuffmanDecoder(0, 33, s_svq1MotionComponentCodes, s_svq1MotionComponentLengths);
 }
 
 SVQ1Decoder::~SVQ1Decoder() {
@@ -657,6 +657,8 @@ bool SVQ1Decoder::svq1MotionInterBlock(Common::BitStream32BEMSB *ss, byte *curre
 	case 3:
 		putPixels16XY2C(dst, src, pitch, 16);
 		break;
+	default:
+		break;
 	}
 
 	return true;
@@ -737,6 +739,8 @@ bool SVQ1Decoder::svq1MotionInter4vBlock(Common::BitStream32BEMSB *ss, byte *cur
 		case 3:
 			putPixels8XY2C(dst, src, pitch, 8);
 			break;
+		default:
+			break;
 		}
 
 		// select next block
@@ -788,6 +792,8 @@ bool SVQ1Decoder::svq1DecodeDeltaBlock(Common::BitStream32BEMSB *ss, byte *curre
 		break;
 	case SVQ1_BLOCK_INTRA:
 		resultValid = svq1DecodeBlockIntra(ss, current, pitch);
+		break;
+	default:
 		break;
 	}
 

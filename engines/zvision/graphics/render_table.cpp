@@ -20,10 +20,11 @@
  *
  */
 
-#include "common/scummsys.h"
 #include "zvision/graphics/render_table.h"
+
+#include "common/math.h"
 #include "common/rect.h"
-#include "graphics/colormasks.h"
+#include "common/scummsys.h"
 
 namespace ZVision {
 
@@ -60,6 +61,8 @@ void RenderTable::setRenderState(RenderState newState) {
 		break;
 	case FLAT:
 		// Intentionally left empty
+		break;
+	default:
 		break;
 	}
 }
@@ -135,16 +138,24 @@ void RenderTable::generateRenderTable() {
 	case ZVision::RenderTable::FLAT:
 		// Intentionally left empty
 		break;
+	default:
+		break;
 	}
 }
 
 void RenderTable::generatePanoramaLookupTable() {
-	memset(_internalBuffer, 0, _numRows * _numColumns * sizeof(uint16));
+	for (uint y = 0; y < _numRows; y++) {
+		for (uint x = 0; x < _numColumns; x++) {
+			uint32 index = y * _numColumns + x;
+			_internalBuffer[index].x = 0;
+			_internalBuffer[index].y = 0;
+		}
+	}
 
 	float halfWidth = (float)_numColumns / 2.0f;
 	float halfHeight = (float)_numRows / 2.0f;
 
-	float fovInRadians = (_panoramaOptions.fieldOfView * M_PI / 180.0f);
+	float fovInRadians = Common::deg2rad<float>(_panoramaOptions.fieldOfView);
 	float cylinderRadius = halfHeight / tan(fovInRadians);
 
 	for (uint x = 0; x < _numColumns; ++x) {
@@ -176,7 +187,7 @@ void RenderTable::generateTiltLookupTable() {
 	float halfWidth = (float)_numColumns / 2.0f;
 	float halfHeight = (float)_numRows / 2.0f;
 
-	float fovInRadians = (_tiltOptions.fieldOfView * M_PI / 180.0f);
+	float fovInRadians = Common::deg2rad<float>(_tiltOptions.fieldOfView);
 	float cylinderRadius = halfWidth / tan(fovInRadians);
 	_tiltOptions.gap = cylinderRadius * atan2((float)(halfHeight / cylinderRadius), 1.0f) * _tiltOptions.linearScale;
 

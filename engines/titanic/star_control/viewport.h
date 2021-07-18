@@ -23,8 +23,8 @@
 #ifndef TITANIC_VIEWPORT_H
 #define TITANIC_VIEWPORT_H
 
-#include "titanic/star_control/base_stars.h" // Includes StarMode enum
-#include "titanic/star_control/fpose.h" // Includes FMatrix and FVector
+#include "titanic/star_control/base_stars.h"
+#include "titanic/star_control/fpose.h"
 
 class SimpleFile;
 
@@ -35,16 +35,16 @@ namespace Titanic {
  * For starview it should be white
  * For skyview it should be pink
  */
-enum StarColor { WHITE = 0, PINK = 2 };	
+enum StarColor { WHITE = 0, PINK = 2 };
 
 /**
  * Implements the viewport functionality for viewing the star field in
  * a given position and orientation.
- * CStarCamera is a big user of this class
+ * CCamera is a big user of this class
  */
 class CViewport {
 private:
-	double _fieldC;
+	double _spin;
 	double _centerYAngleDegrees;
 	double _centerZAngleDegrees;
 	int _width;
@@ -58,8 +58,8 @@ private:
 	void reset();
 public:
 	FVector _position;
-	double _field10;
-	double _field14;
+	double _frontClip;
+	double _backClip;
 	StarColor _starColor;	// Used in CBaseStars::draw
 	double _valArray[2];	// has value 0.0 or 30.0
 	double _isZero;
@@ -111,14 +111,14 @@ public:
 	 * The view has changed between starview and skyview
 	 * Change the enum that tracks the color of the stars
 	 * Also change the X coordinate pixel offset used for star drawing
-	 */	
+	 */
 	void changeStarColorPixel(StarMode mode, double pixelOffSet);
 	void reposition(double factor);
 
 	/**
 	 * Applys a rotation matrix to the current
 	 * orientation
-	 */	
+	 */
 	void changeOrientation(const FMatrix &matrix);
 
 	FPose getPose();
@@ -141,22 +141,33 @@ public:
 	 */
 	const FMatrix &getOrientation() const;
 
-	void setC(double v);
-	void set10(double v);
-	void set14(double v);
+	/**
+	 * Assigns a roll angle about the view direction
+	 */
+	void SetRoleAngle(double angle);
+
+	/**
+	 * Assign a near clip plane distance
+	 */
+	void setFrontClip(double dist);
+
+	/**
+	 * Assign a far clipping plane distance
+	 */
+	void setBackClip(double dist);
 
 	/**
 	 * Sets the center vector y angle
 	 * The actual center y value doesn't
-	 * change untill reset is called 
-	 */		
+	 * change untill reset is called
+	 */
 	void setCenterYAngle(double angleDegrees);
 
 	/**
 	 * Sets the center vector z angle
 	 * The actual center z value doesn't
-	 * change untill reset is called 
-	 */	
+	 * change untill reset is called
+	 */
 	void setCenterZAngle(double angleDegrees);
 };
 

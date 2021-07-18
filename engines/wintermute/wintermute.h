@@ -24,9 +24,8 @@
 #define WINTERMUTE_WINTERMUTE_H
 
 #include "engines/engine.h"
-#include "engines/advancedDetector.h"
 #include "gui/debugger.h"
-#include "engines/wintermute/game_description.h"
+#include "common/fs.h"
 
 namespace Wintermute {
 
@@ -34,6 +33,9 @@ class Console;
 class BaseGame;
 class SystemClassRegistry;
 class DebuggerController;
+struct WMEGameDescription;
+
+const int INT_MAX_VALUE = 0x7fffffff;
 
 // our engine debug channels
 enum {
@@ -45,26 +47,32 @@ enum {
 	kWintermuteDebugGeneral = 1 << 5
 };
 
+enum WintermuteGameFeatures {
+ 	/** A game with low-spec resources. */
+ 	GF_LOWSPEC_ASSETS       = 1 << 0,
+ 	GF_IGNORE_SD_FILES      = 1 << 1,
+ 	GF_IGNORE_HD_FILES      = 1 << 2,
+ 	GF_3D                   = 1 << 3
+};
+
 class WintermuteEngine : public Engine {
 public:
 	WintermuteEngine(OSystem *syst, const WMEGameDescription *desc);
 	WintermuteEngine();
-	~WintermuteEngine();
+	~WintermuteEngine() override;
 
 	virtual Wintermute::Console *getConsole() { return _debugger; }
-	void trigDebugger() { _trigDebug = true; }
 
-	virtual Common::Error run();
-	virtual bool hasFeature(EngineFeature f) const;
+	Common::Error run() override;
+	bool hasFeature(EngineFeature f) const override;
 	Common::SaveFileManager *getSaveFileMan() { return _saveFileMan; }
-	virtual Common::Error loadGameState(int slot);
-	virtual bool canLoadGameStateCurrently();
-	virtual Common::Error saveGameState(int slot, const Common::String &desc);
-	virtual bool canSaveGameStateCurrently();
+	Common::Error loadGameState(int slot) override;
+	bool canLoadGameStateCurrently() override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	bool canSaveGameStateCurrently() override;
 	// For detection-purposes:
 	static bool getGameInfo(const Common::FSList &fslist, Common::String &name, Common::String &caption);
 private:
-	bool _trigDebug;
 	int init();
 	void deinit();
 	int messageLoop();

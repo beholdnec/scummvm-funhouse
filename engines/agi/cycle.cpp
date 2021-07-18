@@ -88,6 +88,8 @@ void AgiEngine::newRoom(int16 newRoomNr) {
 	case 4:
 		screenObjEgo->xPos = SCRIPT_WIDTH - screenObjEgo->xSize;
 		break;
+	default:
+		break;
 	}
 
 	uint16 agiVersion = getVersion();
@@ -288,6 +290,14 @@ uint16 AgiEngine::processAGIEvents() {
 		}
 	}
 
+	// WORKAROUND: For Apple II gs we added a Speed menu; here the user choose some speed setting from the menu
+	if (getPlatform() == Common::kPlatformApple2GS && _game.appleIIgsSpeedControllerSlot != 0xffff)
+		for (int i = 0; i < 4; i++)
+			if (_game.controllerOccured[_game.appleIIgsSpeedControllerSlot + i]) {
+				_game.controllerOccured[_game.appleIIgsSpeedControllerSlot + i] = false;
+				_game.setAppleIIgsSpeedLevel(i);
+			}
+
 	_gfx->updateScreen();
 
 	return key;
@@ -319,13 +329,6 @@ int AgiEngine::playGame() {
 
 	_game.gfxMode = true;
 	_text->promptRow_Set(22);
-
-	// We run AGIMOUSE always as a side effect
-	//if (getFeatures() & GF_AGIMOUSE)
-		debug(1, "Using AGI Mouse 1.0 protocol");
-
-	if (getFeatures() & GF_AGIPAL)
-		debug(1, "Running AGIPAL game");
 
 	debug(0, "Running AGI script.\n");
 
@@ -361,7 +364,7 @@ int AgiEngine::playGame() {
 
 		inGameTimerUpdate();
 
-		uint16 timeDelay = getVar(VM_VAR_TIME_DELAY);
+		uint8 timeDelay = getVar(VM_VAR_TIME_DELAY);
 
 		if (getPlatform() == Common::kPlatformApple2GS) {
 			timeDelay++;
@@ -396,14 +399,18 @@ int AgiEngine::playGame() {
 					}
 					appleIIgsDelayRoomOverwrite++;
 				}
-
-				if (timeDelayOverwrite == -99) {
-					// use default time delay in case no room specific one was found
-					timeDelayOverwrite = appleIIgsDelayOverwrite->defaultTimeDelayOverwrite;
-				}
-			} else {
-				timeDelayOverwrite = appleIIgsDelayOverwrite->defaultTimeDelayOverwrite;
 			}
+
+			if (timeDelayOverwrite == -99) {
+				// use default time delay in case no room specific one was found ...
+				if (_game.appleIIgsSpeedLevel == 2)
+					// ... and the user set the speed to "Normal" ...
+					timeDelayOverwrite = appleIIgsDelayOverwrite->defaultTimeDelayOverwrite;
+				else
+					// ... otherwise, use the speed the user requested (either from menu, or from text parser)
+					timeDelayOverwrite = _game.appleIIgsSpeedLevel;
+			}
+
 
 			if (timeDelayOverwrite >= 0) {
 				if (timeDelayOverwrite != timeDelay) {
@@ -452,10 +459,6 @@ int AgiEngine::playGame() {
 			setFlag(VM_FLAG_SAID_ACCEPTED_INPUT, false);
 			setVar(VM_VAR_WORD_NOT_FOUND, 0);
 			setVar(VM_VAR_KEY, 0);
-		}
-
-		if (shouldPerformAutoSave(_lastSaveTime)) {
-			saveGame(getSavegameFilename(0), "Autosave");
 		}
 
 	} while (!(shouldQuit() || _restartGame));

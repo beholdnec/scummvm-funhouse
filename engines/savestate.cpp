@@ -23,16 +23,19 @@
 #include "engines/savestate.h"
 #include "graphics/surface.h"
 #include "common/textconsole.h"
+#include "common/translation.h"
 
 SaveStateDescriptor::SaveStateDescriptor()
 	// FIXME: default to 0 (first slot) or to -1 (invalid slot) ?
 	: _slot(-1), _description(), _isDeletable(true), _isWriteProtected(false),
-	  _isLocked(false), _saveDate(), _saveTime(), _playTime(), _thumbnail() {
+	  _isLocked(false), _saveDate(), _saveTime(), _playTime(), _playTimeMSecs(0),
+	_thumbnail(), _saveType(kSaveTypeUndetermined) {
 }
 
 SaveStateDescriptor::SaveStateDescriptor(int s, const Common::String &d)
 	: _slot(s), _description(d), _isDeletable(true), _isWriteProtected(false),
-	  _isLocked(false), _saveDate(), _saveTime(), _playTime(), _thumbnail() {
+	  _isLocked(false), _saveDate(), _saveTime(), _playTime(), _playTimeMSecs(0),
+	_thumbnail(), _saveType(kSaveTypeUndetermined) {
 }
 
 void SaveStateDescriptor::setThumbnail(Graphics::Surface *t) {
@@ -51,10 +54,24 @@ void SaveStateDescriptor::setSaveTime(int hour, int min) {
 }
 
 void SaveStateDescriptor::setPlayTime(int hours, int minutes) {
+	_playTimeMSecs = ((hours * 60 + minutes) * 60) * 1000;
 	_playTime = Common::String::format("%.2d:%.2d", hours, minutes);
 }
 
 void SaveStateDescriptor::setPlayTime(uint32 msecs) {
+	_playTimeMSecs = msecs;
 	uint minutes = msecs / 60000;
 	setPlayTime(minutes / 60, minutes % 60);
+}
+
+void SaveStateDescriptor::setAutosave(bool autosave) {
+	_saveType = autosave ? kSaveTypeAutosave : kSaveTypeRegular;
+}
+
+bool SaveStateDescriptor::isAutosave() const {
+	if (_saveType != kSaveTypeUndetermined) {
+		return _saveType == kSaveTypeAutosave;
+	} else {
+		return _description == _("Autosave");
+	}
 }

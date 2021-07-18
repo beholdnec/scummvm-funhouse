@@ -1130,7 +1130,7 @@ void Ringworld2Game::start() {
 
 	if (ConfMan.hasKey("save_slot")) {
 		slot = ConfMan.getInt("save_slot");
-		Common::String file = g_vm->generateSaveName(slot);
+		Common::String file = g_vm->getSaveStateName(slot);
 		Common::InSaveFile *in = g_vm->_system->getSavefileManager()->openForLoading(file);
 		if (in)
 			delete in;
@@ -1222,6 +1222,13 @@ void Ringworld2Game::processEvent(Event &event) {
 			// F4 - Restart
 			restartGame();
 			R2_GLOBALS._events.setCursorFromFlag();
+			break;
+
+		case Common::KEYCODE_F5:
+			// F5 - Save
+			saveGame();
+			R2_GLOBALS._events.setCursorFromFlag();
+			event.handled = true;
 			break;
 
 		case Common::KEYCODE_F7:

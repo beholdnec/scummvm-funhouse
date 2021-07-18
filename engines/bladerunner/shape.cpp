@@ -32,100 +32,102 @@
 
 namespace BladeRunner {
 
-Shape::Shape(BladeRunnerEngine *vm)
-	: _vm(vm), _data(nullptr) {
-}
+bool Shape::load(Common::SeekableReadStream *stream) {
+	_width = stream->readUint32LE();
+	_height = stream->readUint32LE();
+	uint32 size = stream->readUint32LE();
 
-Shape::~Shape() {
-	delete[] _data;
-}
-
-bool Shape::readFromContainer(const Common::String &container, int index) {
-	Common::ScopedPtr<Common::SeekableReadStream> stream(_vm->getResourceStream(container));
-	if (!stream) {
-		debug("Shape::readFromContainer failed to open '%s'", container.c_str());
+	if (size != (uint32)(_width * _height * 2)) {
+		warning("Shape::load size mismatch (w %d, h %d, sz %d)", _width, _height, size);
 		return false;
-	}
-
-	uint32 count = stream->readUint32LE();
-	if (index < 0 || (uint32)index >= count) {
-		debug("Shape::readFromContainer invalid index %d (count %u)", index, count);
-		return false;
-	}
-
-	uint32 size = 0, width = 0, height = 0;
-	for (int i = 0; i <= index; ++i) {
-		width  = stream->readUint32LE();
-		height = stream->readUint32LE();
-		size   = stream->readUint32LE();
-
-		if (size != width * height * 2) {
-			debug("Shape::readFromContainer size mismatch (w %d, h %d, sz %d)", width, height, size);
-			return false;
-		}
-
-		if (i != index) {
-			stream->skip(size);
-		}
 	}
 
 	// Enfoce a reasonable size limit
-	if (width >= 2048 || height >= 2048) {
-		warning("Shape::readFromContainer shape too big (%d, %d)", width, height);
+	if (_width >= 2048 || _height >= 2048) {
+		warning("Shape::load shape too big (%d, %d)", _width, _height);
 	}
 
-	_width  = width;
-	_height = height;
-	_data   = new byte[size];
+	_data = new byte[size];
 
 	if (stream->read(_data, size) != size) {
-		debug("Shape::readFromContainer error reading shape %d (w %d, h %d, sz %d)", index, width, height, size);
+		warning("Shape::load error reading shape (w %d, h %d, sz %d)", _width, _height, size);
 		return false;
 	}
 
 	return true;
 }
 
-void Shape::draw(Graphics::Surface &surface, int x, int y) {
-	// debug("x=%d, y=%d", x, y);
-	// debug("w=%d, h=%d", _width, _height);
+Shape::~Shape() {
+	delete[] _data;
+}
 
+void Shape::draw(Graphics::Surface &surface, int x, int y) const {
 	int src_x = CLIP(-x, 0, _width);
 	int src_y = CLIP(-y, 0, _height);
-
-	// debug("src_x=%d, src_y=%d", src_x, src_y);
 
 	int dst_x = CLIP<int>(x, 0, surface.w);
 	int dst_y = CLIP<int>(y, 0, surface.h);
 
-	// debug("dst_x=%d, dst_y=%d", dst_x, dst_y);
-
 	int rect_w = MIN(CLIP(_width + x, 0, _width), surface.w - x);
 	int rect_h = MIN(CLIP(_height + y, 0, _height), surface.h - y);
-
-	// debug("rect_w=%d, rect_h=%d", rect_w, rect_h);
 
 	if (rect_w == 0 || rect_h == 0) {
 		return;
 	}
 
-	byte *src_p = _data + 2 * (src_y * _width + src_x);
-	byte *dst_p = (byte*)surface.getBasePtr(dst_x, dst_y);
+	const uint8 *src_p = _data + 2 * (src_y * _width + src_x);
 
 	for (int yi = 0; yi != rect_h; ++yi) {
 		for (int xi = 0; xi != rect_w; ++xi) {
-			uint16 color = READ_LE_UINT16(src_p);
-			if ((color & 0x8000) == 0) {
-				*(uint16*)dst_p = color;
-			}
-
+			uint16 shpColor = READ_LE_UINT16(src_p);
 			src_p += 2;
-			dst_p += 2;
-		}
 
+			uint8 a, r, g, b;
+			getGameDataColor(shpColor, a, r, g, b);
+
+			if (!a) {
+				// Ignore the alpha in the output as it is inversed in the input
+				void *dstPtr = surface.getBasePtr(CLIP(dst_x + xi, 0, surface.w - 1), CLIP(dst_y + yi, 0, surface.h - 1));
+				drawPixel(surface, dstPtr, surface.format.RGBToColor(r, g, b));
+			}
+		}
 		src_p += 2 * (_width - rect_w);
-		dst_p += surface.pitch - 2 * rect_w;
 	}
 }
+
+Shapes::Shapes(BladeRunnerEngine *vm) {
+	_vm = vm;
+}
+
+Shapes::~Shapes() {
+	unload();
+}
+
+bool Shapes::load(const Common::String &container) {
+	unload();
+
+	Common::ScopedPtr<Common::SeekableReadStream> stream(_vm->getResourceStream(container));
+	if (!stream) {
+		warning("Shape::open failed to open '%s'", container.c_str());
+		return false;
+	}
+
+	uint32 count = stream->readUint32LE();
+
+	_shapes.resize(count);
+
+	for (uint32 i = 0; i < count; ++i) {
+		if (!_shapes[i].load(stream.get())) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void Shapes::unload() {
+	_shapes.clear();
+}
+
 
 } // End of namespace BladeRunner

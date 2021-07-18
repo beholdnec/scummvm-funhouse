@@ -31,14 +31,26 @@
 #include "common/random.h"
 #include "common/rect.h"
 
+#include "graphics/surface.h"
+
+namespace Common {
+class Keymap;
+}
+
+namespace GUI {
+class GuiObject;
+class OptionsContainerWidget;
+}
+
 namespace Mohawk {
 
 struct MohawkGameDescription;
 class MohawkArchive;
 class RivenGraphics;
 class RivenConsole;
+struct RivenLanguage;
 class RivenSaveLoad;
-class RivenOptionsDialog;
+class RivenOptionsWidget;
 class RivenStack;
 class RivenCard;
 class RivenHotspot;
@@ -79,11 +91,11 @@ typedef Common::HashMap<Common::String, uint32, Common::IgnoreCase_Hash, Common:
 
 class MohawkEngine_Riven : public MohawkEngine {
 protected:
-	Common::Error run();
+	Common::Error run() override;
 
 public:
 	MohawkEngine_Riven(OSystem *syst, const MohawkGameDescription *gamedesc);
-	virtual ~MohawkEngine_Riven();
+	~MohawkEngine_Riven() override;
 
 	RivenVideoManager *_video;
 	RivenSoundManager *_sound;
@@ -95,43 +107,60 @@ public:
 	// Display debug rectangles around the hotspots
 	bool _showHotspots;
 
-	GUI::Debugger *getDebugger();
+	bool canLoadGameStateCurrently() override;
+	bool canSaveGameStateCurrently() override;
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	Common::String getSaveStateName(int slot) const override {
+		return Common::String::format("riven-%03d.rvn", slot);
+	}
 
-	bool canLoadGameStateCurrently();
-	bool canSaveGameStateCurrently();
-	Common::Error loadGameState(int slot);
-	void loadGameStateAndDisplayError(int slot);
-	Common::Error saveGameState(int slot, const Common::String &desc);
-	bool hasFeature(EngineFeature f) const;
+	static const RivenLanguage *listLanguages();
+	static const RivenLanguage *getLanguageDesc(Common::Language language);
+	Common::Language getLanguage() const override;
 
+	bool hasFeature(EngineFeature f) const override;
+	static void registerDefaultSettings();
+	void applyGameSettings() override;
+	static Common::Array<Common::Keymap *> initKeymaps(const char *target);
+
+	bool isInteractive() const;
 	void doFrame();
+	void processInput();
 
 private:
 	// Datafiles
 	MohawkArchive *_extrasFile; // We need a separate handle for the extra data
 	const char **listExpectedDatafiles() const;
+	void loadLanguageDatafile(char prefix, uint16 stackId);
 	bool checkDatafiles();
 
-	RivenConsole *_console;
 	RivenSaveLoad *_saveLoad;
-	RivenOptionsDialog *_optionsDialog;
 	InstallerArchive _installerArchive;
 
 	// Stack/Card-related functions and variables
 	RivenCard *_card;
 	RivenStack *_stack;
 
+	int _menuSavedCard;
+	int _menuSavedStack;
+	Common::ScopedPtr<Graphics::Surface, Graphics::SurfaceDeleter> _menuThumbnail;
+
 	bool _gameEnded;
+	uint32 _lastSaveTime;
+	Common::Language _currentLanguage;
 
 	// Variables
 	void initVars();
 
 	void pauseEngineIntern(bool) override;
+
 public:
 	// Stack/card/script funtions
 	RivenStack *constructStackById(uint16 id);
 	void changeToCard(uint16 dest);
 	void changeToStack(uint16 stackId);
+	void reloadCurrentCard();
 	RivenCard *getCard() const { return _card; }
 	RivenStack *getStack() const { return _stack; }
 
@@ -145,11 +174,15 @@ public:
 	uint32 &getStackVar(uint32 index);
 
 	// Miscellaneous
+	Common::Array<uint16> getResourceIDList(uint32 type) const;
 	Common::SeekableReadStream *getExtrasResource(uint32 tag, uint16 id);
 	bool _activatedPLST;
 	bool _activatedSLST;
-	void runLoadDialog();
 	void delay(uint32 ms);
+	void runOptionsDialog();
+
+	// Save / Load
+	virtual bool canSaveAutosaveCurrently() override;
 
 	/**
 	 * Has the game ended, or has the user requested to quit?
@@ -160,6 +193,18 @@ public:
 	 * End the game gracefully
 	 */
 	void setGameEnded();
+
+	// Main menu handling
+	void goToMainMenu();
+	void resumeFromMainMenu();
+	bool isInMainMenu() const;
+	bool isGameStarted() const;
+	void startNewGame();
+};
+
+struct RivenLanguage {
+	Common::Language language;
+	const char *archiveSuffix;
 };
 
 } // End of namespace Mohawk

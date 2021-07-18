@@ -43,8 +43,8 @@ ChooserDialog::ChooserDialog(const String &title, String dialogId)
 	_list->setEditable(false);
 
 	// Buttons
-	new ButtonWidget(this, dialogId + ".Cancel", _("Cancel"), 0, kCloseCmd);
-	_chooseButton = new ButtonWidget(this, dialogId + ".Choose", _("Choose"), 0, kChooseCmd);
+	new ButtonWidget(this, dialogId + ".Cancel", _("Cancel"), nullptr, kCloseCmd);
+	_chooseButton = new ButtonWidget(this, dialogId + ".Choose", _("Choose"), nullptr, kChooseCmd);
 	_chooseButton->setEnabled(false);
 }
 
@@ -64,7 +64,7 @@ void ChooserDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data
 		break;
 	case kListSelectionChangedCmd:
 		_chooseButton->setEnabled(item >= 0);
-		_chooseButton->draw();
+		_chooseButton->markAsDirty();
 		break;
 	case kCloseCmd:
 		setResult(-1);

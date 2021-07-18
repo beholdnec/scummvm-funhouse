@@ -33,7 +33,6 @@ class Kernel;
 class Script;
 class SegManager;
 
-#ifdef ENABLE_SCI32
 enum {
 	// The in-game volumes for Phant2 use a volume range smaller than the
 	// actual master volume because movie volume needs to be controllable from
@@ -44,10 +43,10 @@ enum {
 	kPhant2VolumeMax       = 85,
 
 	kRamaVolumeMax         = 16,
-	kLSL6HiresUIVolumeMax  = 13,
+	kLSL6UIVolumeMax       = 13,
+	kHoyle5VolumeMax       = 8,
 	kLSL6HiresSubtitleFlag = 105
 };
-#endif
 
 /**
  * The GuestAdditions class hooks into the SCI virtual machine to provide
@@ -256,15 +255,23 @@ private:
 	reg_t promptSaveRestoreRama(EngineState *s, int argc, reg_t *argv) const;
 
 	/**
+	 * Prompts for a save game and returns it to game scripts using Hoyle 5's
+	 * custom SRDialog class semantics.
+	 */
+	reg_t promptSaveRestoreHoyle5(EngineState *s, int argc, reg_t *argv) const;
+
+public:
+	/**
 	 * Prompts the user to save or load a game.
 	 *
 	 * @param isSave If true, the prompt is for saving.
 	 * @param outDescription Will be filled with the save game description.
 	 * Optional for loads, required for saves.
-	 * @param forcedSaveNo During delayed restore, force the returned save game
-	 * number to this value.
+	 * @param forcedSaveId During delayed restore, force the returned save game
+	 * id to this value.
 	 */
-	int runSaveRestore(const bool isSave, const reg_t outDescription, const int forcedSaveNo = -1) const;
+	int runSaveRestore(const bool isSave, const reg_t outDescription, const int forcedSaveId = -1) const;
+	int runSaveRestore(const bool isSave, Common::String &outDescription, const int forcedSaveId = -1) const;
 #endif
 
 #pragma mark -
@@ -363,7 +370,6 @@ private:
 	 */
 	void syncMasterVolumeToScummVM(const int16 masterVolume) const;
 
-#ifdef ENABLE_SCI32
 #pragma mark -
 #pragma mark Globals volume sync
 
@@ -374,6 +380,9 @@ private:
 	 */
 	void syncAudioVolumeGlobalsFromScummVM() const;
 
+	void syncLSL6VolumeFromScummVM(const int16 musicVolume) const;
+
+#ifdef ENABLE_SCI32
 	/**
 	 * Synchronises audio volume settings from ScummVM to GK1 at game startup
 	 * time.
@@ -387,10 +396,11 @@ private:
 	void syncGK1VolumeFromScummVM(const int16 musicVolume, const int16 dacVolume) const;
 
 	void syncGK2VolumeFromScummVM(const int16 musicVolume) const;
-	void syncLSL6HiresVolumeFromScummVM(const int16 musicVolume) const;
+	void syncHoyle5VolumeFromScummVM(const int16 musicVolume) const;
 	void syncPhant2VolumeFromScummVM(const int16 masterVolume) const;
 	void syncRamaVolumeFromScummVM(const int16 musicVolume) const;
 	void syncTorinVolumeFromScummVM(const int16 musicVolume, const int16 sfxVolume, const int16 speechVolume) const;
+#endif
 
 	/**
 	 * Synchronises audio volume settings from a game to ScummVM, for games
@@ -398,6 +408,7 @@ private:
 	 */
 	void syncAudioVolumeGlobalsToScummVM(const int index, const reg_t value) const;
 
+#ifdef ENABLE_SCI32
 	/**
 	 * Synchronises audio volume settings from GK1 to ScummVM.
 	 */
@@ -416,7 +427,10 @@ private:
 
 	void syncGK1UI() const;
 	void syncGK2UI() const;
-	void syncLSL6HiresUI(const int16 musicVolume) const;
+	void syncHoyle5UI(const int16 musicVolume) const;
+#endif
+	void syncLSL6UI(const int16 musicVolume) const;
+#ifdef ENABLE_SCI32
 	void syncMGDXUI(const int16 musicVolume) const;
 	void syncPhant1UI(const int16 oldMusicVolume, const int16 musicVolume, reg_t &musicGlobal, const int16 oldDacVolume, const int16 dacVolume, reg_t &dacGlobal) const;
 	void syncPhant2UI(const int16 masterVolume) const;

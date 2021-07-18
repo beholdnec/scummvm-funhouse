@@ -64,7 +64,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::RU_RUS,
 		Common::kPlatformWindows,
 		ADGF_DROPPLATFORM,
-		GUIO1(GUIO_NONE)
+		GUIO1(GUIO_NOMIDI)
 	},
 
 	// Full Pipe German version
@@ -75,7 +75,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::DE_DEU,
 		Common::kPlatformWindows,
 		ADGF_DROPPLATFORM,
-		GUIO1(GUIO_NONE)
+		GUIO1(GUIO_NOMIDI)
 	},
 
 	// Full Pipe Estonian version
@@ -86,7 +86,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::ET_EST,
 		Common::kPlatformWindows,
 		ADGF_DROPPLATFORM,
-		GUIO1(GUIO_NONE)
+		GUIO1(GUIO_NOMIDI)
 	},
 
 	// Full Pipe English version
@@ -97,7 +97,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::EN_ANY,
 		Common::kPlatformWindows,
 		ADGF_DROPPLATFORM,
-		GUIO1(GUIO_NONE)
+		GUIO1(GUIO_NOMIDI)
 	},
 
 	// Full Pipe Russian Demo version
@@ -108,7 +108,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::RU_RUS,
 		Common::kPlatformWindows,
 		ADGF_DROPPLATFORM | ADGF_DEMO,
-		GUIO1(GUIO_NONE)
+		GUIO1(GUIO_NOMIDI)
 	},
 
 	// Full Pipe German Demo version
@@ -119,7 +119,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::DE_DEU,
 		Common::kPlatformWindows,
 		ADGF_DROPPLATFORM | ADGF_DEMO,
-		GUIO1(GUIO_NONE)
+		GUIO1(GUIO_NOMIDI)
 	},
 
 	AD_TABLE_END_MARKER
@@ -130,23 +130,26 @@ static const ADGameDescription gameDescriptions[] = {
 class FullpipeMetaEngine : public AdvancedMetaEngine {
 public:
 	FullpipeMetaEngine() : AdvancedMetaEngine(Fullpipe::gameDescriptions, sizeof(ADGameDescription), fullpipeGames) {
-		_singleId = "fullpipe";
 	}
 
-	virtual const char *getName() const {
-		return "Fullpipe Engine";
+	const char *getEngineId() const override {
+		return "fullpipe";
 	}
 
-	virtual const char *getOriginalCopyright() const {
-		return "Fullpipe Engine (C) Pipe Studio";
+	const char *getName() const override {
+		return "Full Pipe";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual int getMaximumSaveSlot() const { return 99; }
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	virtual SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
+	const char *getOriginalCopyright() const override {
+		return "Full Pipe (C) Pipe Studio";
+	}
+
+	bool hasFeature(MetaEngineFeature f) const override;
+	int getMaximumSaveSlot() const override { return 99; }
+	SaveStateList listSaves(const char *target) const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 };
 
 bool FullpipeMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -163,7 +166,7 @@ bool FullpipeMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool Fullpipe::FullpipeEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsLoadingDuringRuntime) ||
 		(f == kSupportsSavingDuringRuntime);
 }
@@ -184,11 +187,13 @@ SaveStateList FullpipeMetaEngine::listSaves(const char *target) const {
 			Common::ScopedPtr<Common::InSaveFile> in(saveFileMan->openForLoading(*file));
 			if (in) {
 				Fullpipe::FullpipeSavegameHeader header;
-				Fullpipe::readSavegameHeader(in.get(), header);
+				if (!Fullpipe::readSavegameHeader(in.get(), header)) {
+					continue;
+				}
 
 				SaveStateDescriptor desc;
 
-				parseSavegameHeader(header, desc);
+				Fullpipe::parseSavegameHeader(header, desc);
 
 				desc.setSaveSlot(slotNum);
 
@@ -212,12 +217,14 @@ SaveStateDescriptor FullpipeMetaEngine::querySaveMetaInfos(const char *target, i
 
 	if (f) {
 		Fullpipe::FullpipeSavegameHeader header;
-		Fullpipe::readSavegameHeader(f.get(), header);
+		if (!Fullpipe::readSavegameHeader(f.get(), header, false)) {
+			return SaveStateDescriptor();
+		}
 
 		// Create the return descriptor
 		SaveStateDescriptor desc;
 
-		parseSavegameHeader(header, desc);
+		Fullpipe::parseSavegameHeader(header, desc);
 
 		desc.setSaveSlot(slot);
 		desc.setThumbnail(header.thumbnail);

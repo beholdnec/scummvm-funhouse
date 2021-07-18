@@ -105,7 +105,7 @@ Logic::~Logic() {
 void Logic::initScreen0() {
 	fnEnterSection(0, 0, 0);
 	_skyMusic->startMusic(2);
-	SkyEngine::_systemVars.currentMusic = 2;
+	SkyEngine::_systemVars->currentMusic = 2;
 }
 
 void Logic::parseSaveData(uint32 *data) {
@@ -182,12 +182,13 @@ void Logic::logicScript() {
 
 	for (;;) {
 		uint16 mode = _compact->mode; // get pointer to current script
-		uint16 *scriptNo = SkyCompact::getSub(_compact, mode);
-		uint16 *offset   = SkyCompact::getSub(_compact, mode + 2);
+		uint16 scriptNo = SkyCompact::getSub(_compact, mode);
+		uint16 offset   = SkyCompact::getSub(_compact, mode + 2);
 
-		*offset = script(*scriptNo, *offset);
+		offset = script(scriptNo, offset);
+		SkyCompact::setSub(_compact, mode + 2, offset);
 
-		if (!*offset) // script finished
+		if (!offset) // script finished
 			_compact->mode -= 4;
 		else if (_compact->mode == mode)
 			return;
@@ -294,7 +295,7 @@ void Logic::arAnim() {
 				// tell it it is waiting for us
 				cpt->waitingFor = (uint16)(_scriptVariables[CUR_ID] & 0xffff);
 				// restart current script
-				*SkyCompact::getSub(_compact, _compact->mode + 2) = 0;
+				SkyCompact::setSub(_compact, _compact->mode + 2, 0);
 				_compact->logic = L_SCRIPT;
 				logicScript();
 				return;
@@ -337,7 +338,7 @@ void Logic::arAnim() {
 
 	// changed so restart the current script
 	// *not suitable for base initiated ARing
-	*SkyCompact::getSub(_compact, _compact->mode + 2) = 0;
+	SkyCompact::setSub(_compact, _compact->mode + 2, 0);
 
 	_compact->logic = L_SCRIPT;
 	logicScript();
@@ -414,8 +415,8 @@ void Logic::arTurn() {
 void Logic::alt() {
 	/// change the current script
 	_compact->logic = L_SCRIPT;
-	*SkyCompact::getSub(_compact, _compact->mode) = _compact->alt;
-	*SkyCompact::getSub(_compact, _compact->mode + 2) = 0;
+	SkyCompact::setSub(_compact, _compact->mode, _compact->alt);
+	SkyCompact::setSub(_compact, _compact->mode + 2, 0);
 	logicScript();
 }
 
@@ -540,7 +541,7 @@ void Logic::talk() {
 	if (_skyMouse->wasClicked())
 		for (int i = 0; i < ARRAYSIZE(clickTable); i++)
 			if (clickTable[i] == (uint16)_scriptVariables[CUR_ID]) {
-				if ((SkyEngine::_systemVars.systemFlags & SF_ALLOW_SPEECH) && (!_skySound->speechFinished()))
+				if ((SkyEngine::_systemVars->systemFlags & SF_ALLOW_SPEECH) && (!_skySound->speechFinished()))
 					_skySound->stopSpeech();
 				if ((_compact->spTextId > 0) &&
 					(_compact->spTextId < 0xFFFF)) {
@@ -633,7 +634,7 @@ void Logic::stopped() {
 	// we are free, continue processing the script
 
 	// restart script one level below
-	*SkyCompact::getSub(_compact, _compact->mode - 2) = 0;
+	SkyCompact::setSub(_compact, _compact->mode - 2, 0);
 	_compact->waitingFor = 0xffff;
 
 	_compact->logic = L_SCRIPT;
@@ -647,7 +648,7 @@ void Logic::choose() {
 
 	fnNoHuman(0, 0, 0); // kill mouse again
 
-	SkyEngine::_systemVars.systemFlags &= ~SF_CHOOSING; // restore save/restore
+	SkyEngine::_systemVars->systemFlags &= ~SF_CHOOSING; // restore save/restore
 
 	_compact->logic = L_SCRIPT; // and continue script
 	logicScript();
@@ -782,11 +783,8 @@ void Logic::runGetOff() {
 void Logic::stopAndWait() {
 	_compact->mode += 4;
 
-	uint16 *scriptNo = SkyCompact::getSub(_compact, _compact->mode);
-	uint16 *offset   = SkyCompact::getSub(_compact, _compact->mode + 2);
-
-	*scriptNo = _compact->stopScript;
-	*offset   = 0;
+	SkyCompact::setSub(_compact, _compact->mode, _compact->stopScript);
+	SkyCompact::setSub(_compact, _compact->mode + 2, 0);
 
 	_compact->logic = L_SCRIPT;
 	logicScript();
@@ -1160,7 +1158,7 @@ void Logic::initScriptVariables() {
 	_scriptVariables[SC40_LOCKER_4_FLAG] = 1;
 	_scriptVariables[SC40_LOCKER_5_FLAG] = 1;
 
-	if (SkyEngine::_systemVars.gameVersion == 288)
+	if (SkyEngine::_systemVars->gameVersion == 288)
 		memcpy(_scriptVariables + 352, forwardList1b288, sizeof(forwardList1b288));
 	else
 		memcpy(_scriptVariables + 352, forwardList1b, sizeof(forwardList1b));
@@ -1320,6 +1318,8 @@ uint16 Logic::script(uint16 scriptNo, uint16 offset) {
 					case 1:
 						a = pop();
 						// fall through
+					default:
+						break;
 					}
 
 					uint16 mcode = *scriptData++ / 4; // get mcode number
@@ -1407,7 +1407,7 @@ bool Logic::fnCacheFast(uint32 a, uint32 b, uint32 c) {
 
 bool Logic::fnDrawScreen(uint32 a, uint32 b, uint32 c) {
 	debug(5, "Call: fnDrawScreen(%X, %X)",a,b);
-	SkyEngine::_systemVars.currentPalette = a;
+	SkyEngine::_systemVars->currentPalette = a;
 	_skyScreen->fnDrawScreen(a, b);
 
 	if (Logic::_scriptVariables[SCREEN] == 32) {
@@ -1457,24 +1457,24 @@ bool Logic::fnInteract(uint32 targetId, uint32 b, uint32 c) {
 	_compact->logic = L_SCRIPT;
 	Compact *cpt = _skyCompact->fetchCpt(targetId);
 
-	*SkyCompact::getSub(_compact, _compact->mode) = cpt->actionScript;
-	*SkyCompact::getSub(_compact, _compact->mode + 2) = 0;
+	SkyCompact::setSub(_compact, _compact->mode, cpt->actionScript);
+	SkyCompact::setSub(_compact, _compact->mode + 2, 0);
 
 	return false;
 }
 
 bool Logic::fnStartSub(uint32 scr, uint32 b, uint32 c) {
 	_compact->mode += 4;
-	*SkyCompact::getSub(_compact, _compact->mode) = (uint16)(scr & 0xffff);
-	*SkyCompact::getSub(_compact, _compact->mode + 2) = (uint16)(scr >> 16);
+	SkyCompact::setSub(_compact, _compact->mode, scr & 0xffff);
+	SkyCompact::setSub(_compact, _compact->mode + 2, scr >> 16);
 	return false;
 }
 
 bool Logic::fnTheyStartSub(uint32 mega, uint32 scr, uint32 c) {
 	Compact *cpt = _skyCompact->fetchCpt(mega);
 	cpt->mode += 4;
-	*SkyCompact::getSub(cpt, cpt->mode) = (uint16)(scr & 0xffff);
-	*SkyCompact::getSub(cpt, cpt->mode + 2) = (uint16)(scr >> 16);
+	SkyCompact::setSub(cpt, cpt->mode, scr & 0xffff);
+	SkyCompact::setSub(cpt, cpt->mode + 2, scr >> 16);
 	return true;
 }
 
@@ -1558,8 +1558,8 @@ bool Logic::fnGetTo(uint32 targetPlaceId, uint32 mode, uint32 c) {
 		getToTable += 2;
 
 	// get new script
-	*SkyCompact::getSub(_compact, _compact->mode) = *(getToTable + 1);
-	*SkyCompact::getSub(_compact, _compact->mode + 2) = 0;
+	SkyCompact::setSub(_compact, _compact->mode, *(getToTable + 1));
+	SkyCompact::setSub(_compact, _compact->mode + 2, 0);
 
 	return false; // drop out of script
 }
@@ -1746,7 +1746,7 @@ bool Logic::fnChooser(uint32 a, uint32 b, uint32 c) {
 	// setup the text questions to be clicked on
 	// read from TEXT1 until 0
 
-	SkyEngine::_systemVars.systemFlags |= SF_CHOOSING; // can't save/restore while choosing
+	SkyEngine::_systemVars->systemFlags |= SF_CHOOSING; // can't save/restore while choosing
 
 	_scriptVariables[THE_CHOSEN_ONE] = 0; // clear result
 
@@ -2233,7 +2233,7 @@ bool Logic::fnCustomJoey(uint32 id, uint32 b, uint32 c) {
 
 bool Logic::fnSetPalette(uint32 a, uint32 b, uint32 c) {
 	_skyScreen->setPaletteEndian((uint8 *)_skyCompact->fetchCpt(a));
-	SkyEngine::_systemVars.currentPalette = a;
+	SkyEngine::_systemVars->currentPalette = a;
 	return true;
 }
 
@@ -2312,19 +2312,19 @@ bool Logic::fnEnterSection(uint32 sectionNo, uint32 b, uint32 c) {
 		_skyControl->showGameQuitMsg();
 
 	_scriptVariables[CUR_SECTION] = sectionNo;
-	SkyEngine::_systemVars.currentMusic = 0;
+	SkyEngine::_systemVars->currentMusic = 0;
 
 	if (sectionNo == 5) //linc section - has different mouse icons
 		_skyMouse->replaceMouseCursors(60302);
 
-	if ((sectionNo != _currentSection) || (SkyEngine::_systemVars.systemFlags & SF_GAME_RESTORED)) {
+	if ((sectionNo != _currentSection) || (SkyEngine::_systemVars->systemFlags & SF_GAME_RESTORED)) {
 		_currentSection = sectionNo;
 
 		sectionNo++;
 		_skyMusic->loadSection((byte)sectionNo);
 		_skySound->loadSection((byte)sectionNo);
 		_skyGrid->loadGrids();
-		SkyEngine::_systemVars.systemFlags &= ~SF_GAME_RESTORED;
+		SkyEngine::_systemVars->systemFlags &= ~SF_GAME_RESTORED;
 	}
 
 	return true;
@@ -2355,8 +2355,14 @@ bool Logic::fnWaitSwingEnd(uint32 a, uint32 b, uint32 c) {
 	return true;
 }
 
+/**
+ * This function is called by the script logic
+ * even when the intro sequence has completed without skipping it.
+ * This means that it (also) gets called at the point after the intro
+ * when Foster in on the top level of the factory and finished his monologue.
+*/
 bool Logic::fnSkipIntroCode(uint32 a, uint32 b, uint32 c) {
-	SkyEngine::_systemVars.pastIntro = true;
+	SkyEngine::_systemVars->pastIntro = true;
 	return true;
 }
 
@@ -2452,15 +2458,15 @@ bool Logic::fnStopFx(uint32 a, uint32 b, uint32 c) {
 }
 
 bool Logic::fnStartMusic(uint32 a, uint32 b, uint32 c) {
-	if (!(SkyEngine::_systemVars.systemFlags & SF_MUS_OFF))
+	if (!(SkyEngine::_systemVars->systemFlags & SF_MUS_OFF))
 		_skyMusic->startMusic((uint16)a);
-	SkyEngine::_systemVars.currentMusic = (uint16)a;
+	SkyEngine::_systemVars->currentMusic = (uint16)a;
 	return true;
 }
 
 bool Logic::fnStopMusic(uint32 a, uint32 b, uint32 c) {
 	_skyMusic->startMusic(0);
-	SkyEngine::_systemVars.currentMusic = 0;
+	SkyEngine::_systemVars->currentMusic = 0;
 	return true;
 }
 
@@ -2470,7 +2476,7 @@ bool Logic::fnFadeDown(uint32 a, uint32 b, uint32 c) {
 }
 
 bool Logic::fnFadeUp(uint32 a, uint32 b, uint32 c) {
-	SkyEngine::_systemVars.currentPalette = a;
+	SkyEngine::_systemVars->currentPalette = a;
 	_skyScreen->fnFadeUp(a,b);
 	return true;
 }
@@ -2524,7 +2530,7 @@ void Logic::stdSpeak(Compact *target, uint32 textNum, uint32 animNum, uint32 bas
 	_skyScreen->setFocusRectangle(Common::Rect::center(x, y, 192, 128));
 
 
-	if ((SkyEngine::_systemVars.systemFlags & SF_ALLOW_TEXT) || !speechFileFound) {
+	if ((SkyEngine::_systemVars->systemFlags & SF_ALLOW_TEXT) || !speechFileFound) {
 		// form the text sprite, if player wants subtitles or
 		// if we couldn't find the speech file
 		DisplayedText textInfo;

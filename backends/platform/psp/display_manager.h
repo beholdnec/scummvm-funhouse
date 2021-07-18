@@ -105,8 +105,8 @@ class DisplayManager {
 public:
 	enum GraphicsModeID {			///> Possible output formats onscreen
 		ORIGINAL_RESOLUTION,
-		KEEP_ASPECT_RATIO,
-		STRETCHED_FULL_SCREEN
+		FIT_TO_SCREEN,
+		STRETCH_TO_SCREEN
 	};
 	DisplayManager() : _screen(0), _cursor(0), _overlay(0), _keyboard(0),
 					  _imageViewer(0), _lastUpdateTime(0), _graphicsMode(0) {}
@@ -116,9 +116,8 @@ public:
 	bool renderAll();	// return true if rendered or nothing dirty. False otherwise
 	void waitUntilRenderFinished();
 	bool setGraphicsMode(int mode);
-	bool setGraphicsMode(const char *name);
 	int getGraphicsMode() const { return _graphicsMode; }
-	uint32 getDefaultGraphicsMode() const { return STRETCHED_FULL_SCREEN; }
+	uint32 getDefaultGraphicsMode() const { return FIT_TO_SCREEN; }
 	const OSystem::GraphicsMode* getSupportedGraphicsModes() const { return _supportedModes; }
 
 	// Setters for pointers

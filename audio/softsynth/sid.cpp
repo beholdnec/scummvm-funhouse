@@ -951,6 +951,8 @@ RESID_INLINE void EnvelopeGenerator::updateClock(cycle_count delta_t) {
 				//
 				--envelope_counter &= 0xff;
 				break;
+			default:
+				break;
 			}
 
 			// Check for change of exponential counter period.
@@ -979,6 +981,8 @@ RESID_INLINE void EnvelopeGenerator::updateClock(cycle_count delta_t) {
 				// When the envelope counter is changed to zero, it is frozen at zero.
 				// This has been verified by sampling ENV3.
 				hold_zero = true;
+				break;
+			default:
 				break;
 			}
 		}
@@ -1427,7 +1431,7 @@ int SID::updateClock(cycle_count& delta_t, short* buf, int n, int interleave) {
 class C64MusicPlugin : public NullMusicPlugin {
 public:
 	const char *getName() const {
-		return _s("C64 Audio Emulator");
+		return _s("C64 Audio emulator");
 	}
 
 	const char *getId() const {

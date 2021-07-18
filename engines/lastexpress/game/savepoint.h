@@ -58,7 +58,7 @@ struct SavePoint {
 	EntityIndex entity2;
 	union {
 		uint32 intValue;
-		char charValue[5];
+		char charValue[7]; // "MUS%03d" with terminating zero
 	} param;
 
 	SavePoint() {
@@ -66,6 +66,7 @@ struct SavePoint {
 		action = kActionNone;
 		entity2 = kEntityPlayer;
 		param.intValue = 0;
+		param.charValue[6] = 0;
 	}
 
 	Common::String toString() {
@@ -97,7 +98,7 @@ public:
 	};
 
 	SavePoints(LastExpressEngine *engine);
-	~SavePoints();
+	~SavePoints() override;
 
 	// Savepoints
 	void push(EntityIndex entity2, EntityIndex entity1, ActionIndex action, uint32 param = 0);
@@ -117,7 +118,7 @@ public:
 	void callAndProcess();
 
 	// Serializable
-	void saveLoadWithSerializer(Common::Serializer &s);
+	void saveLoadWithSerializer(Common::Serializer &s) override;
 
 	/**
 	 * Convert this object into a string representation.

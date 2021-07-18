@@ -107,12 +107,12 @@ void InitLUT(Graphics::PixelFormat format) {
 	hqx_low2bits = (3 << format.rShift) | (3 << format.gShift) | (3 << format.bShift),
 	hqx_low3bits = (7 << format.rShift) | (7 << format.gShift) | (7 << format.bShift),
 
-	hqx_highbits = format.RGBToColor(255,255,255) ^ hqx_lowbits;
+	hqx_highbits = format.RGBToColor(255, 255, 255) ^ hqx_lowbits;
 
 	// FIXME: The following code only does the right thing
 	// if the color order is RGB or BGR, i.e., green is in the middle.
-	hqx_greenMask = format.RGBToColor(0,255,0);
-	hqx_redBlueMask = format.RGBToColor(255,0,255);
+	hqx_greenMask   = format.RGBToColor(  0, 255,   0);
+	hqx_redBlueMask = format.RGBToColor(255,   0, 255);
 
 	hqx_green_redBlue_Mask = (hqx_greenMask << 16) | hqx_redBlueMask;
 #endif
@@ -145,10 +145,10 @@ void InitScalers(uint32 BitFormat) {
 #endif
 
 	// Build dotmatrix lookup table for the DotMatrix scaler.
-	g_dotmatrix[0] = g_dotmatrix[10] = format.RGBToColor(0, 63, 0);
-	g_dotmatrix[1] = g_dotmatrix[11] = format.RGBToColor(0, 0, 63);
-	g_dotmatrix[2] = g_dotmatrix[8] = format.RGBToColor(63, 0, 0);
-	g_dotmatrix[4] = g_dotmatrix[6] =
+	g_dotmatrix[0] = g_dotmatrix[10] = format.RGBToColor( 0, 63,  0);
+	g_dotmatrix[1] = g_dotmatrix[11] = format.RGBToColor( 0,  0, 63);
+	g_dotmatrix[2] = g_dotmatrix[ 8] = format.RGBToColor(63,  0,  0);
+	g_dotmatrix[4] = g_dotmatrix[ 6] =
 		g_dotmatrix[12] = g_dotmatrix[14] = format.RGBToColor(63, 63, 63);
 }
 
@@ -251,52 +251,6 @@ void Normal3x(const uint8 *srcPtr, uint32 srcPitch, uint8 *dstPtr, uint32 dstPit
 		srcPtr += srcPitch;
 		dstPtr += dstPitch3;
 	}
-}
-
-#define interpolate_1_1		interpolate16_1_1<ColorMask>
-#define interpolate_1_1_1_1	interpolate16_1_1_1_1<ColorMask>
-
-/**
- * Trivial nearest-neighbor 1.5x scaler.
- */
-template<typename ColorMask>
-void Normal1o5xTemplate(const uint8 *srcPtr, uint32 srcPitch, uint8 *dstPtr, uint32 dstPitch,
-							int width, int height) {
-	uint8 *r;
-	const uint32 dstPitch2 = dstPitch * 2;
-	const uint32 dstPitch3 = dstPitch * 3;
-	const uint32 srcPitch2 = srcPitch * 2;
-
-	assert(IS_ALIGNED(dstPtr, 2));
-	while (height > 0) {
-		r = dstPtr;
-		for (int i = 0; i < width; i += 2, r += 6) {
-			uint16 color0 = *(((const uint16 *)srcPtr) + i);
-			uint16 color1 = *(((const uint16 *)srcPtr) + i + 1);
-			uint16 color2 = *(((const uint16 *)(srcPtr + srcPitch)) + i);
-			uint16 color3 = *(((const uint16 *)(srcPtr + srcPitch)) + i + 1);
-
-			*(uint16 *)(r + 0) = color0;
-			*(uint16 *)(r + 2) = interpolate_1_1(color0, color1);
-			*(uint16 *)(r + 4) = color1;
-			*(uint16 *)(r + 0 + dstPitch) = interpolate_1_1(color0, color2);
-			*(uint16 *)(r + 2 + dstPitch) = interpolate_1_1_1_1(color0, color1, color2, color3);
-			*(uint16 *)(r + 4 + dstPitch) = interpolate_1_1(color1, color3);
-			*(uint16 *)(r + 0 + dstPitch2) = color2;
-			*(uint16 *)(r + 2 + dstPitch2) = interpolate_1_1(color2, color3);
-			*(uint16 *)(r + 4 + dstPitch2) = color3;
-		}
-		srcPtr += srcPitch2;
-		dstPtr += dstPitch3;
-		height -= 2;
-	}
-}
-
-void Normal1o5x(const uint8 *srcPtr, uint32 srcPitch, uint8 *dstPtr, uint32 dstPitch, int width, int height) {
-	if (gBitFormat == 565)
-		Normal1o5xTemplate<Graphics::ColorMasks<565> >(srcPtr, srcPitch, dstPtr, dstPitch, width, height);
-	else
-		Normal1o5xTemplate<Graphics::ColorMasks<555> >(srcPtr, srcPitch, dstPtr, dstPitch, width, height);
 }
 
 /**

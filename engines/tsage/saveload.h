@@ -99,10 +99,10 @@ public:
 class SavedObject : public Serialisable {
 public:
 	SavedObject();
-	virtual ~SavedObject();
+	~SavedObject() override;
 
 	virtual Common::String getClassName() { return "SavedObject"; }
-	virtual void synchronize(Serializer &s) {}
+	void synchronize(Serializer &s) override {}
 
 	static SavedObject *createInstance(const Common::String &className);
 };
@@ -221,7 +221,7 @@ public:
 
 	Common::Error save(int slot, const Common::String &saveName);
 	Common::Error restore(int slot);
-	static bool readSavegameHeader(Common::InSaveFile *in, tSageSavegameHeader &header);
+	WARN_UNUSED_RESULT static bool readSavegameHeader(Common::InSaveFile *in, tSageSavegameHeader &header, bool skipThumbnail = true);
 	static void writeSavegameHeader(Common::OutSaveFile *out, tSageSavegameHeader &header);
 
 	void addListener(SaveListener *obj);

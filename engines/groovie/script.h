@@ -23,6 +23,8 @@
 #ifndef GROOVIE_SCRIPT_H
 #define GROOVIE_SCRIPT_H
 
+#include "groovie/groovie.h"
+
 #include "common/random.h"
 #include "common/rect.h"
 
@@ -43,7 +45,6 @@ enum EngineVersion {
 
 class CellGame;
 class Debugger;
-class GroovieEngine;
 
 class Script {
 	friend class Debugger;
@@ -59,6 +60,8 @@ public:
 
 	bool loadScript(Common::String scriptfile);
 	void directGameLoad(int slot);
+	void directGameSave(int slot, const Common::String &desc);
+	bool canDirectSave() const;
 	void step();
 
 	void setMouseClick(uint8 button);
@@ -81,7 +84,7 @@ private:
 	Common::String _savedScriptFile;
 
 	// Save names
-	Common::String _saveNames[10];
+	Common::String _saveNames[MAX_SAVES];
 
 	// Code
 	byte *_code;
@@ -143,7 +146,7 @@ private:
 
 	void loadgame(uint slot);
 	void savegame(uint slot);
-	bool playvideofromref(uint32 fileref);
+	bool playvideofromref(uint32 fileref, bool loopUntilAudioDone = false);
 	void printString(Graphics::Surface *surface, const char *str);
 
 	// Opcodes

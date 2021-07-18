@@ -156,6 +156,7 @@ static const byte fragment14[] = {OP_LIBCALL | OPSIZE8, 58,
 		OP_IMM, FRAGMENT_DWORD((42 << 23)), OP_ONE, OP_ZERO, OP_LIBCALL | OPSIZE8, 44,
 		OP_LIBCALL | OPSIZE8, 97, OP_JUMP | OPSIZE16, FRAGMENT_WORD(2220)
 };
+static const byte fragment15[] = { OP_JMPFALSE | OPSIZE16, FRAGMENT_WORD(154) };
 
 #undef FRAGMENT_WORD
 
@@ -225,6 +226,9 @@ const WorkaroundEntry workaroundList[] = {
 	// DW1 PSX DEMO: Alters a script in the PSX DW1 demo to show the Idle animation scene rather than
 	// quitting the game when no user input happens for a while
 	{TINSEL_V1, true, true, Common::kPlatformPSX, 0, 2186, sizeof(fragment14), fragment14},
+
+	// DW1-GRA: Fixes hang in Temple, when trying to use items on the big hammer
+	{TINSEL_V1, false, false, Common::kPlatformUnknown, 276915849, 0x98, sizeof(fragment15), fragment15},
 
 	{TINSEL_V0, false, false, Common::kPlatformUnknown, 0, 0, 0, NULL}
 };
@@ -466,10 +470,10 @@ void RegisterGlobals(int num) {
 
 void FreeGlobals() {
 	free(g_pGlobals);
-	g_pGlobals = NULL;
+	g_pGlobals= nullptr;
 
 	free(g_icList);
-	g_icList = NULL;
+	g_icList= nullptr;
 }
 
 /**
@@ -487,9 +491,9 @@ void syncGlobInfo(Common::Serializer &s) {
 void INT_CONTEXT::syncWithSerializer(Common::Serializer &s) {
 	if (s.isLoading()) {
 		// Null out the pointer fields
-		pProc = NULL;
-		code = NULL;
-		pinvo = NULL;
+		pProc= nullptr;
+		code= nullptr;
+		pinvo= nullptr;
 	}
 	// Write out used fields
 	s.syncAsUint32LE(GSort);
@@ -527,7 +531,7 @@ static int32 GetBytes(const byte *scriptCode, const WorkaroundEntry* &wkEntry, i
 		if (ip >= wkEntry->numBytes) {
 			// Finished the workaround
 			ip = wkEntry->ip;
-			wkEntry = NULL;
+			wkEntry= nullptr;
 		} else {
 			code = wkEntry->script;
 		}
@@ -602,7 +606,7 @@ void Interpret(CORO_PARAM, INT_CONTEXT *ic) {
 				}
 			}
 			if (wkEntry->script == NULL)
-				wkEntry = NULL;
+				wkEntry= nullptr;
 		}
 
 		byte opcode = (byte)GetBytes(ic->code, wkEntry, ip, 0);
@@ -720,7 +724,7 @@ void Interpret(CORO_PARAM, INT_CONTEXT *ic) {
 		case OP_JUMP:	// unconditional jump
 
 			ip = Fetch(opcode, ic->code, wkEntry, ip);
-			wkEntry = NULL;					// In case a jump occurs from a workaround
+			wkEntry= nullptr;					// In case a jump occurs from a workaround
 			break;
 
 		case OP_JMPFALSE:	// conditional jump
@@ -729,7 +733,7 @@ void Interpret(CORO_PARAM, INT_CONTEXT *ic) {
 			if (ic->stack[ic->sp--] == 0) {
 				// condition satisfied - do the jump
 				ip = tmp;
-				wkEntry = NULL;					// In case a jump occurs from a workaround
+				wkEntry= nullptr;					// In case a jump occurs from a workaround
 			}
 			break;
 
@@ -739,7 +743,7 @@ void Interpret(CORO_PARAM, INT_CONTEXT *ic) {
 			if (ic->stack[ic->sp--] != 0) {
 				// condition satisfied - do the jump
 				ip = tmp;
-				wkEntry = NULL;					// In case a jump occurs from a workaround
+				wkEntry= nullptr;					// In case a jump occurs from a workaround
 			}
 			break;
 
@@ -769,6 +773,8 @@ void Interpret(CORO_PARAM, INT_CONTEXT *ic) {
 
 			case OP_LOR:    tmp = (tmp || tmp2); break;
 			case OP_LAND:   tmp = (tmp && tmp2); break;
+
+			default: break;
 			}
 
 			ic->stack[ic->sp] = tmp;
@@ -799,6 +805,7 @@ void Interpret(CORO_PARAM, INT_CONTEXT *ic) {
 			case OP_AND:    tmp &= tmp2; break;
 			case OP_OR:     tmp |= tmp2; break;
 			case OP_EOR:    tmp ^= tmp2; break;
+			default: break;
 			}
 			ic->stack[ic->sp] = tmp;
 			break;

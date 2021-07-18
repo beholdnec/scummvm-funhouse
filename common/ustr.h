@@ -24,8 +24,12 @@
 #define COMMON_USTR_H
 
 #include "common/scummsys.h"
+#include "common/str-enc.h"
 
 namespace Common {
+
+class String;
+class UnicodeBiDiText;
 
 /**
  * Very simple string class for UTF-32 strings in ScummVM. The main intention
@@ -100,23 +104,49 @@ public:
 	/** Construct a copy of the given string. */
 	U32String(const U32String &str);
 
+	/** Construct a copy of the given unicode BiDi converted string. */
+	U32String(const UnicodeBiDiText &txt);
+
+	/** Construct a new string from the given NULL-terminated C string. */
+	explicit U32String(const char *str);
+
+	/** Construct a new string containing exactly len characters read from address str. */
+	U32String(const char *str, uint32 len);
+
+	/** Construct a new string containing the characters between beginP (including) and endP (excluding). */
+	U32String(const char *beginP, const char *endP);
+
+	/** Construct a copy of the given string. */
+	U32String(const String &str);
+
 	~U32String();
 
 	U32String &operator=(const U32String &str);
+	U32String &operator=(const String &str);
+	U32String &operator=(const value_type *str);
+	U32String &operator=(const char *str);
 	U32String &operator+=(const U32String &str);
 	U32String &operator+=(value_type c);
-
-	/**
-	 * Equivalence comparison operator.
-	 * @see equals
-	 */
-	bool operator==(const U32String &x) const { return equals(x); }
+	bool operator==(const U32String &x) const;
+	bool operator==(const String &x) const;
+	bool operator==(const value_type *x) const;
+	bool operator==(const char *x) const;
+	bool operator!=(const U32String &x) const;
+	bool operator!=(const String &x) const;
+	bool operator!=(const value_type *x) const;
+	bool operator!=(const char *x) const;
 
 	/**
 	 * Compares whether two U32String are the same based on memory comparison.
 	 * This does *not* do comparison based on canonical equivalence.
 	 */
 	bool equals(const U32String &x) const;
+
+	/**
+	 * Compares whether two U32String are the same based on memory comparison.
+	 * This does *not* do comparison based on canonical equivalence.
+	 */
+	bool equals(const String &x) const;
 
 	bool contains(value_type x) const;
 
@@ -130,12 +160,26 @@ public:
 		return _str[idx];
 	}
 
+	/** Set character c at position p, replacing the previous character there. */
+	void setChar(value_type c, uint32 p) {
+		_str[p] = c;
+	}
+
+	/** Insert character c before position p. */
+	void insertChar(value_type c, uint32 p);
+
 	/**
 	 * Removes the value at position p from the string.
 	 * Using this on decomposed characters will not remove the whole
 	 * character!
 	 */
 	void deleteChar(uint32 p);
+
+	/** Remove the last character from the string. */
+	void deleteLastChar();
+
+	/** Remove all characters from position p to the p + len. If len = String::npos, removes all characters to the end */
+	void erase(uint32 p, uint32 len = npos);
 
 	/** Clears the string, making it empty. */
 	void clear();
@@ -156,6 +200,7 @@ public:
 	 */
 	void toUppercase();
 
+	uint32 find(value_type x, uint32 pos = 0) const;
 	uint32 find(const U32String &str, uint32 pos = 0) const;
 
 	typedef value_type *        iterator;
@@ -182,14 +227,23 @@ public:
 	const_iterator end() const {
 		return begin() + size();
 	}
+
+    /** Python-like method **/
+    String encode(CodePage page = kUtf8) const;
+
 private:
 	void makeUnique();
 	void ensureCapacity(uint32 new_size, bool keep_old);
 	void incRefCount() const;
 	void decRefCount(int *oldRefCount);
 	void initWithCStr(const value_type *str, uint32 len);
+	void initWithCStr(const char *str, uint32 len);
+
+	void encodeUTF8(String &dst) const;
+	void encodeOneByte(String &dst, CodePage page) const;
 };
 
+U32String operator+(const U32String &x, const U32String &y);
 } // End of namespace Common
 
 #endif

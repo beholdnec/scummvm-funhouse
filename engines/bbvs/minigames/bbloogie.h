@@ -30,7 +30,7 @@ namespace Bbvs {
 class MinigameBbLoogie : public Minigame {
 public:
 	MinigameBbLoogie(BbvsEngine *vm) : Minigame(vm) {};
-	bool run(bool fromMainGame);
+	bool run(bool fromMainGame) override;
 public:
 
 	struct Obj {
@@ -81,6 +81,8 @@ public:
 	int _prevPrincipalStatus;
 	int _principalCtr, _principalFirstFrameIndex, _principalLastFrameIndex;
 	bool _principalAngry;
+
+	char _prefix[20];
 
 	const ObjAnimation *getAnimation(int animIndex);
 

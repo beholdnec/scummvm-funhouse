@@ -253,15 +253,14 @@ int16 DialogueManager::selectAnswerN() {
 
 	_selection = _balloonMan->hitTestDialogueBalloon(_mousePos.x, _mousePos.y);
 
-	VisibleAnswer *oldAnswer = (_oldSelection == NO_ANSWER_SELECTED) ? NULL : &_visAnswers[_oldSelection];
-	VisibleAnswer *answer = &_visAnswers[_selection];
-
 	if (_selection != _oldSelection) {
 		if (_oldSelection != NO_ANSWER_SELECTED) {
+			VisibleAnswer *oldAnswer = &_visAnswers[_oldSelection];
 			_balloonMan->setBalloonText(oldAnswer->_balloon, oldAnswer->_a->_text, BalloonManager::kUnselectedColor);
 		}
 
 		if (_selection != NO_ANSWER_SELECTED) {
+			VisibleAnswer *answer = &_visAnswers[_selection];
 			_balloonMan->setBalloonText(answer->_balloon, answer->_a->_text, BalloonManager::kSelectedColor);
 			_gfx->setItemFrame(_faceId, answer->_a->speakerMood());
 		}
@@ -438,7 +437,7 @@ public:
 		return testAnswerFlags(a);
 	}
 
-	virtual void addVisibleAnswers(Question *q) {
+	void addVisibleAnswers(Question *q) override {
 		_askPassword = false;
 		_numVisAnswers = 0;
 		for (int i = 0; i < NUM_ANSWERS && q->_answers[i]; i++) {
@@ -459,7 +458,7 @@ public:
 		resetPassword();
 	}
 
-	virtual int16 selectAnswer() {
+	int16 selectAnswer() override {
 		int ans = NO_ANSWER_SELECTED;
 		if (_askPassword) {
 			ans = askPassword();
@@ -495,7 +494,7 @@ public:
 		return testAnswerFlags(a);
 	}
 
-	virtual void addVisibleAnswers(Question *q) {
+	void addVisibleAnswers(Question *q) override {
 		_numVisAnswers = 0;
 		for (int i = 0; i < NUM_ANSWERS && q->_answers[i]; i++) {
 			Answer *a = q->_answers[i];
@@ -508,7 +507,7 @@ public:
 		}
 	}
 
-	virtual int16 selectAnswer() {
+	int16 selectAnswer() override {
 		int16 ans = NO_ANSWER_SELECTED;
 		if (_numVisAnswers == 1) {
 			ans = selectAnswer1();

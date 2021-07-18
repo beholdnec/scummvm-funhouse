@@ -41,6 +41,10 @@
 #include "backends/cloud/storage.h"
 #endif
 
+namespace Common {
+class RemapWidget;
+}
+
 namespace GUI {
 class LauncherDialog;
 
@@ -57,22 +61,23 @@ class RadiobuttonGroup;
 class RadiobuttonWidget;
 
 class OptionsDialog : public Dialog {
-	typedef Common::Array<CheckboxWidget *> CheckboxWidgetList;
-
 public:
 	OptionsDialog(const Common::String &domain, int x, int y, int w, int h);
 	OptionsDialog(const Common::String &domain, const Common::String &name);
-	~OptionsDialog();
+	~OptionsDialog() override;
 
 	void init();
 
-	void open();
+	void open() override;
 	virtual void apply();
-	void close();
-	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data);
+	void close() override;
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
+	void handleTickle() override;
+	void handleOtherEvent(const Common::Event &event) override;
+
 	const Common::String& getDomain() const { return _domain; }
 
-	virtual void reflowLayout();
+	void reflowLayout() override;
 
 protected:
 	/** Config domain this dialog is used to edit. */
@@ -81,13 +86,15 @@ protected:
 	ButtonWidget *_soundFontButton;
 	StaticTextWidget *_soundFont;
 	ButtonWidget *_soundFontClearButton;
-	
+
 	virtual void build();
 	virtual void clean();
 	void rebuild();
 
 
 	void addControlControls(GuiObject *boss, const Common::String &prefix);
+	void addKeyMapperControls(GuiObject *boss, const Common::String &prefix, const Common::Array<Common::Keymap *> &keymaps, const Common::String &domain);
+	void addAchievementsControls(GuiObject *boss, const Common::String &prefix, const Common::AchievementsInfo &info);
 	void addGraphicControls(GuiObject *boss, const Common::String &prefix);
 	void addShaderControls(GuiObject *boss, const Common::String &prefix);
 	void addAudioControls(GuiObject *boss, const Common::String &prefix);
@@ -97,14 +104,16 @@ protected:
 	// The default value is the launcher's non-scaled talkspeed value. When SCUMM uses the widget,
 	// it uses its own scale
 	void addSubtitleControls(GuiObject *boss, const Common::String &prefix, int maxSliderVal = 255);
-	void addEngineControls(GuiObject *boss, const Common::String &prefix, const ExtraGuiOptions &engineOptions);
 
 	void setGraphicSettingsState(bool enabled);
+	void setShaderSettingsState(bool enabled);
 	void setAudioSettingsState(bool enabled);
 	void setMIDISettingsState(bool enabled);
 	void setMT32SettingsState(bool enabled);
 	void setVolumeSettingsState(bool enabled);
 	void setSubtitleSettingsState(bool enabled);
+
+	virtual void setupGraphicsTab();
 
 	bool loadMusicDeviceSetting(PopUpWidget *popup, Common::String setting, MusicType preferredType = MT_AUTO);
 	void saveMusicDeviceSetting(PopUpWidget *popup, Common::String setting);
@@ -115,7 +124,7 @@ protected:
 	int _pathsTabId;
 
 private:
-	
+
 	//
 	// Control controls
 	//
@@ -133,17 +142,24 @@ private:
 	StaticTextWidget *_joystickDeadzoneLabel;
 
 	//
+	// KeyMapper controls
+	//
+	Common::RemapWidget *_keymapperWidget;
+
+	//
 	// Graphics controls
 	//
 	bool _enableGraphicSettings;
 	StaticTextWidget *_gfxPopUpDesc;
 	PopUpWidget *_gfxPopUp;
+	StaticTextWidget *_stretchPopUpDesc;
+	PopUpWidget *_stretchPopUp;
 	CheckboxWidget *_fullscreenCheckbox;
 	CheckboxWidget *_filteringCheckbox;
 	CheckboxWidget *_aspectCheckbox;
 	StaticTextWidget *_renderModePopUpDesc;
 	PopUpWidget *_renderModePopUp;
-	
+
 	//
 	// Shader controls
 	//
@@ -225,29 +241,24 @@ protected:
 	//
 	Common::String _guioptions;
 	Common::String _guioptionsString;
-
-	//
-	// Engine-specific controls
-	//
-	CheckboxWidgetList _engineCheckboxes;
 };
 
 
-class GlobalOptionsDialog : public OptionsDialog {
+class GlobalOptionsDialog : public OptionsDialog, public CommandSender {
 public:
 	GlobalOptionsDialog(LauncherDialog *launcher);
-	~GlobalOptionsDialog();
+	~GlobalOptionsDialog() override;
 
-	virtual void apply();
-	void close();
-	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data);
-	void handleTickle();
+	void apply() override;
+	void close() override;
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
+	void handleTickle() override;
 
-	virtual void reflowLayout();
+	void reflowLayout() override;
 
 protected:
-	virtual void build();
-	virtual void clean();
+	void build() override;
+	void clean() override;
 
 	Common::String _newTheme;
 	LauncherDialog *_launcher;
@@ -257,6 +268,9 @@ protected:
 #ifdef USE_FLUIDSYNTH
 	FluidSynthSettingsDialog *_fluidSynthSettingsDialog;
 #endif
+
+	void addMIDIControls(GuiObject *boss, const Common::String &prefix);
+
 	StaticTextWidget *_savePath;
 	ButtonWidget	 *_savePathClearButton;
 	StaticTextWidget *_themePath;
@@ -265,7 +279,10 @@ protected:
 	ButtonWidget	 *_extraPathClearButton;
 #ifdef DYNAMIC_MODULES
 	StaticTextWidget *_pluginsPath;
+	ButtonWidget	 *_pluginsPathClearButton;
 #endif
+
+	void addPathsControls(GuiObject *boss, const Common::String &prefix, bool lowres);
 
 	//
 	// Misc controls
@@ -277,49 +294,91 @@ protected:
 	PopUpWidget *_autosavePeriodPopUp;
 	StaticTextWidget *_guiLanguagePopUpDesc;
 	PopUpWidget *_guiLanguagePopUp;
+	CheckboxWidget *_guiLanguageUseGameLanguageCheckbox;
+	CheckboxWidget *_useSystemDialogsCheckbox;
+
 
 #ifdef USE_UPDATES
 	StaticTextWidget *_updatesPopUpDesc;
 	PopUpWidget *_updatesPopUp;
 #endif
 
+	void addMiscControls(GuiObject *boss, const Common::String &prefix, bool lowres);
+
 #ifdef USE_CLOUD
+#ifdef USE_LIBCURL
 	//
 	// Cloud controls
 	//
 	uint32 _selectedStorageIndex;
 	StaticTextWidget *_storagePopUpDesc;
-	PopUpWidget *_storagePopUp;
+	PopUpWidget      *_storagePopUp;
+	StaticTextWidget *_storageDisabledHint;
+	ButtonWidget	 *_storageEnableButton;
 	StaticTextWidget *_storageUsernameDesc;
 	StaticTextWidget *_storageUsername;
 	StaticTextWidget *_storageUsedSpaceDesc;
 	StaticTextWidget *_storageUsedSpace;
+	StaticTextWidget *_storageSyncHint;
 	StaticTextWidget *_storageLastSyncDesc;
 	StaticTextWidget *_storageLastSync;
-	ButtonWidget	 *_storageConnectButton;
-	ButtonWidget	 *_storageRefreshButton;
+	ButtonWidget	 *_storageSyncSavesButton;
+	StaticTextWidget *_storageDownloadHint;
 	ButtonWidget	 *_storageDownloadButton;
+	StaticTextWidget *_storageDisconnectHint;
+	ButtonWidget	 *_storageDisconnectButton;
+
+	bool _connectingStorage;
+	StaticTextWidget *_storageWizardNotConnectedHint;
+	StaticTextWidget *_storageWizardOpenLinkHint;
+	StaticTextWidget *_storageWizardLink;
+	StaticTextWidget *_storageWizardCodeHint;
+	EditTextWidget   *_storageWizardCodeBox;
+	ButtonWidget	 *_storageWizardPasteButton;
+	ButtonWidget	 *_storageWizardConnectButton;
+	StaticTextWidget *_storageWizardConnectionStatusHint;
+	bool _redrawCloudTab;
+
+	void addCloudControls(GuiObject *boss, const Common::String &prefix, bool lowres);
+	void setupCloudTab();
+	void shiftWidget(Widget *widget, const char *widgetName, int32 xOffset, int32 yOffset);
+
+	void storageConnectionCallback(Networking::ErrorResponse response);
+	void storageSavesSyncedCallback(Cloud::Storage::BoolResponse response);
+	void storageErrorCallback(Networking::ErrorResponse response);
+#endif // USE_LIBCURL
+
+#ifdef USE_SDL_NET
+	//
+	// LAN controls
+	//
 	ButtonWidget	 *_runServerButton;
 	StaticTextWidget *_serverInfoLabel;
 	ButtonWidget	 *_rootPathButton;
 	StaticTextWidget *_rootPath;
 	ButtonWidget	 *_rootPathClearButton;
 	StaticTextWidget *_serverPortDesc;
-	EditTextWidget *_serverPort;
+	EditTextWidget   *_serverPort;
 	ButtonWidget	 *_serverPortClearButton;
-	bool _redrawCloudTab;
-#ifdef USE_SDL_NET
+	StaticTextWidget *_featureDescriptionLine1;
+	StaticTextWidget *_featureDescriptionLine2;
 	bool _serverWasRunning;
-#endif
 
-	void setupCloudTab();
+	void addNetworkControls(GuiObject *boss, const Common::String &prefix, bool lowres);
+	void reflowNetworkTabLayout();
+#endif // USE_SDL_NET
 
-#ifdef USE_LIBCURL
-	void storageInfoCallback(Cloud::Storage::StorageInfoResponse response);
-	void storageListDirectoryCallback(Cloud::Storage::ListDirectoryResponse response);
-	void storageErrorCallback(Networking::ErrorResponse response);
-#endif
 #endif // USE_CLOUD
+	//
+	// Accessibility controls
+	//
+#ifdef USE_TTS
+	bool _enableTTS;
+	CheckboxWidget *_ttsCheckbox;
+	PopUpWidget *_ttsVoiceSelectionPopUp;
+
+	void addAccessibilityControls(GuiObject *boss, const Common::String &prefix);
+#endif
 };
 
 } // End of namespace GUI

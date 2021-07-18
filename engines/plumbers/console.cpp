@@ -20,14 +20,11 @@
  *
  */
 
-#include "gui/debugger.h"
-
-#include "plumbers/plumbers.h"
 #include "plumbers/console.h"
 
 namespace Plumbers {
 
-Console::Console(Plumbers::PlumbersGame *vm) : _vm(vm) {
+Console::Console() {
 	_allowSkip = false;
 	 registerCmd("allowSkip", WRAP_METHOD(Console, Cmd_allowSkip));
 }

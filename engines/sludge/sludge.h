@@ -40,8 +40,13 @@ extern SludgeEngine *g_sludge;
 
 class CursorManager;
 class EventManager;
+class FatalMsgManager;
+class FloorManager;
 class GraphicsManager;
+class PeopleManager;
+class RegionManager;
 class SoundManager;
+class SpeechManager;
 class TextManager;
 
 class SludgeConsole;
@@ -62,7 +67,7 @@ enum {
 class SludgeEngine: public Engine {
 protected:
 	// Engine APIs
-	virtual Common::Error run();
+	Common::Error run() override;
 
 public:
 	// global String variables
@@ -70,9 +75,6 @@ public:
 	Common::String launchNext;
 	Common::String loadNow;
 	Common::String gamePath;
-	Common::String bundleFolder;
-	Common::String fatalMessage;
-	Common::String fatalInfo;
 
 	// timer
 	Timer _timer;
@@ -86,9 +88,14 @@ public:
 	SoundManager *_soundMan;
 	TextManager *_txtMan;
 	CursorManager *_cursorMan;
+	SpeechManager *_speechMan;
+	RegionManager *_regionMan;
+	PeopleManager *_peopleMan;
+	FloorManager *_floorMan;
+	FatalMsgManager *_fatalMan;
 
 	SludgeEngine(OSystem *syst, const SludgeGameDescription *gameDesc);
-	virtual ~SludgeEngine();
+	~SludgeEngine() override;
 
 	uint getLanguageID() const;
 	const char *getGameId() const;
@@ -103,7 +110,6 @@ public:
 	const SludgeGameDescription *_gameDescription;
 
 private:
-	SludgeConsole *_console;
 	Common::RandomSource *_rnd;
 	Graphics::PixelFormat *_pixelFormat;
 	Graphics::PixelFormat *_origFormat;

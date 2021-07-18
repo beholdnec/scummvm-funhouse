@@ -43,6 +43,8 @@ namespace Video {
  *
  * Video decoder used in engines:
  *  - chewy
+ *  - petka
+ *  - prince
  *  - tucker
  */
 class FlicDecoder : public VideoDecoder {
@@ -90,8 +92,8 @@ protected:
 		int _curFrame;
 		bool _atRingFrame;
 
-		uint16 _offsetFrame1;
-		uint16 _offsetFrame2;
+		uint32 _offsetFrame1;
+		uint32 _offsetFrame2;
 		byte *_palette;
 		mutable bool _dirtyPalette;
 

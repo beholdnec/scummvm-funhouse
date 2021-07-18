@@ -50,24 +50,11 @@
 	// To assure that including the respective system headers gives us all
 	// required definitions we set Win7 as minimum version we target.
 	// See: https://msdn.microsoft.com/en-us/library/windows/desktop/aa383745%28v=vs.85%29.aspx#macros_for_conditional_declarations
+	#include <sdkddkver.h>
 	#undef _WIN32_WINNT
 	#define _WIN32_WINNT _WIN32_WINNT_WIN7
 
-	// TODO: We might not need to include this file, the MSDN docs are
-	// not really helpful to decide whether we require it or not.
-	//
-	// Casing of the name is a bit of a mess. MinGW64 seems to use all
-	// lowercase, while MSDN docs suggest "SdkDdkVer.h". We are stuck with
-	// what MinGW64 uses...
-	#include <sdkddkver.h>
-
-	// We need certain functions that are excluded by default
-	#undef NONLS
-	#undef NOICONS
 	#include <windows.h>
-	#if defined(ARRAYSIZE)
-		#undef ARRAYSIZE
-	#endif
 #endif
 
 #include <shlobj.h>
@@ -75,17 +62,17 @@
 #include "common/scummsys.h"
 
 #include "backends/taskbar/win32/win32-taskbar.h"
+#include "backends/platform/sdl/win32/win32-window.h"
+#include "backends/platform/sdl/win32/win32_wrapper.h"
 
-#include "common/config-manager.h"
 #include "common/textconsole.h"
-#include "common/file.h"
 
 // System.Title property key, values taken from http://msdn.microsoft.com/en-us/library/bb787584.aspx
 const PROPERTYKEY PKEY_Title = { /* fmtid = */ { 0xF29F85E0, 0x4FF9, 0x1068, { 0xAB, 0x91, 0x08, 0x00, 0x2B, 0x27, 0xB3, 0xD9 } }, /* propID = */ 2 };
 
-Win32TaskbarManager::Win32TaskbarManager(SdlWindow *window) : _window(window), _taskbar(NULL), _count(0), _icon(NULL) {
+Win32TaskbarManager::Win32TaskbarManager(SdlWindow_Win32 *window) : _window(window), _taskbar(NULL), _count(0), _icon(NULL) {
 	// Do nothing if not running on Windows 7 or later
-	if (!confirmWindowsVersion(10, 0) && !confirmWindowsVersion(6, 1))
+	if (!Win32::confirmWindowsVersion(6, 1))
 		return;
 
 	CoInitialize(NULL);
@@ -126,12 +113,12 @@ void Win32TaskbarManager::setOverlayIcon(const Common::String &name, const Commo
 		return;
 
 	if (name.empty()) {
-		_taskbar->SetOverlayIcon(getHwnd(), NULL, L"");
+		_taskbar->SetOverlayIcon(_window->getHwnd(), NULL, L"");
 		return;
 	}
 
 	// Compute full icon path
-	Common::String path = getIconPath(name);
+	Common::String path = getIconPath(name, ".ico");
 	if (path.empty())
 		return;
 
@@ -142,26 +129,26 @@ void Win32TaskbarManager::setOverlayIcon(const Common::String &name, const Commo
 	}
 
 	// Sets the overlay icon
-	LPWSTR desc = ansiToUnicode(description.c_str());
-	_taskbar->SetOverlayIcon(getHwnd(), pIcon, desc);
+	LPWSTR desc = Win32::ansiToUnicode(description.c_str());
+	_taskbar->SetOverlayIcon(_window->getHwnd(), pIcon, desc);
 
 	DestroyIcon(pIcon);
 
-	delete[] desc;
+	free(desc);
 }
 
 void Win32TaskbarManager::setProgressValue(int completed, int total) {
 	if (_taskbar == NULL)
 		return;
 
-	_taskbar->SetProgressValue(getHwnd(), completed, total);
+	_taskbar->SetProgressValue(_window->getHwnd(), completed, total);
 }
 
 void Win32TaskbarManager::setProgressState(TaskbarProgressState state) {
 	if (_taskbar == NULL)
 		return;
 
-	_taskbar->SetProgressState(getHwnd(), (TBPFLAG)state);
+	_taskbar->SetProgressState(_window->getHwnd(), (TBPFLAG)state);
 }
 
 void Win32TaskbarManager::setCount(int count) {
@@ -169,7 +156,7 @@ void Win32TaskbarManager::setCount(int count) {
 		return;
 
 	if (count == 0) {
-		_taskbar->SetOverlayIcon(getHwnd(), NULL, L"");
+		_taskbar->SetOverlayIcon(_window->getHwnd(), NULL, L"");
 		return;
 	}
 
@@ -276,9 +263,9 @@ void Win32TaskbarManager::setCount(int count) {
 	}
 
 	// Sets the overlay icon
-	LPWSTR desc = ansiToUnicode(Common::String::format("Found games: %d", count).c_str());
-	_taskbar->SetOverlayIcon(getHwnd(), _icon, desc);
-	delete[] desc;
+	LPWSTR desc = Win32::ansiToUnicode(Common::String::format("Found games: %d", count).c_str());
+	_taskbar->SetOverlayIcon(_window->getHwnd(), _icon, desc);
+	free(desc);
 }
 
 void Win32TaskbarManager::addRecent(const Common::String &name, const Common::String &description) {
@@ -297,22 +284,22 @@ void Win32TaskbarManager::addRecent(const Common::String &name, const Common::St
 	// Create a shell link.
 	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC, IID_IShellLinkW, reinterpret_cast<void **> (&link)))) {
 		// Convert game name and description to Unicode.
-		LPWSTR game = ansiToUnicode(name.c_str());
-		LPWSTR desc = ansiToUnicode(description.c_str());
+		LPWSTR game = Win32::ansiToUnicode(name.c_str());
+		LPWSTR desc = Win32::ansiToUnicode(description.c_str());
 
 		// Set link properties.
 		link->SetPath(path);
 		link->SetArguments(game);
 
-		Common::String iconPath = getIconPath(name);
+		Common::String iconPath = getIconPath(name, ".ico");
 		if (iconPath.empty()) {
 			link->SetIconLocation(path, 0); // No game-specific icon available
 		} else {
-			LPWSTR icon = ansiToUnicode(iconPath.c_str());
+			LPWSTR icon = Win32::ansiToUnicode(iconPath.c_str());
 
 			link->SetIconLocation(icon, 0);
 
-			delete[] icon;
+			free(icon);
 		}
 
 		// The link's display name must be set via property store.
@@ -332,8 +319,8 @@ void Win32TaskbarManager::addRecent(const Common::String &name, const Common::St
 		// SHAddToRecentDocs will cause the games to be added to the Recent list, allowing the user to pin them.
 		SHAddToRecentDocs(SHARD_LINK, link);
 		link->Release();
-		delete[] game;
-		delete[] desc;
+		free(game);
+		free(desc);
 	}
 }
 
@@ -344,100 +331,6 @@ void Win32TaskbarManager::notifyError() {
 
 void Win32TaskbarManager::clearError() {
 	setProgressState(kTaskbarNoProgress);
-}
-
-Common::String Win32TaskbarManager::getIconPath(Common::String target) {
-	// We first try to look for a iconspath configuration variable then
-	// fallback to the extra path
-	//
-	// Icons can be either in a subfolder named "icons" or directly in the path
-
-	Common::String iconsPath = ConfMan.get("iconspath");
-	Common::String extraPath = ConfMan.get("extrapath");
-
-#define TRY_ICON_PATH(path) { \
-	Common::FSNode node((path)); \
-	if (node.exists()) \
-		return (path); \
-}
-
-	if (!iconsPath.empty()) {
-		TRY_ICON_PATH(iconsPath + "/" + target + ".ico");
-		TRY_ICON_PATH(iconsPath + "/" + ConfMan.get("gameid") + ".ico");
-		TRY_ICON_PATH(iconsPath + "/icons/" + target + ".ico");
-		TRY_ICON_PATH(iconsPath + "/icons/" + ConfMan.get("gameid") + ".ico");
-	}
-
-	if (!extraPath.empty()) {
-		TRY_ICON_PATH(extraPath + "/" + target + ".ico");
-		TRY_ICON_PATH(extraPath + "/" + ConfMan.get("gameid") + ".ico");
-		TRY_ICON_PATH(extraPath + "/icons/" + target + ".ico");
-		TRY_ICON_PATH(extraPath + "/icons/" + ConfMan.get("gameid") + ".ico");
-	}
-
-	return "";
-}
-
-// VerSetConditionMask and VerifyVersionInfo didn't appear until Windows 2000,
-// so we need to check for them at runtime
-LONGLONG VerSetConditionMaskFunc(ULONGLONG dwlConditionMask, DWORD dwTypeMask, BYTE dwConditionMask) {
-	typedef BOOL (WINAPI *VerSetConditionMaskFunction)(ULONGLONG conditionMask, DWORD typeMask, BYTE conditionOperator);
-
-	VerSetConditionMaskFunction verSetConditionMask = (VerSetConditionMaskFunction)GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "VerSetConditionMask");
-	if (verSetConditionMask == NULL)
-		return 0;
-
-	return verSetConditionMask(dwlConditionMask, dwTypeMask, dwConditionMask);
-}
-
-BOOL VerifyVersionInfoFunc(LPOSVERSIONINFOEXA lpVersionInformation, DWORD dwTypeMask, DWORDLONG dwlConditionMask) {
-   typedef BOOL (WINAPI *VerifyVersionInfoFunction)(LPOSVERSIONINFOEXA versionInformation, DWORD typeMask, DWORDLONG conditionMask);
-
-   VerifyVersionInfoFunction verifyVersionInfo = (VerifyVersionInfoFunction)GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "VerifyVersionInfoA");
-   if (verifyVersionInfo == NULL)
-      return FALSE;
-
-   return verifyVersionInfo(lpVersionInformation, dwTypeMask, dwlConditionMask);
-}
-
-bool Win32TaskbarManager::confirmWindowsVersion(uint majorVersion, uint minorVersion) {
-	OSVERSIONINFOEX versionInfo;
-	DWORDLONG conditionMask = 0;
-
-	ZeroMemory(&versionInfo, sizeof(OSVERSIONINFOEX));
-	versionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-	versionInfo.dwMajorVersion = majorVersion;
-	versionInfo.dwMinorVersion = minorVersion;
-
-	conditionMask = VerSetConditionMaskFunc(conditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-	conditionMask = VerSetConditionMaskFunc(conditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-	return VerifyVersionInfoFunc(&versionInfo, VER_MAJORVERSION | VER_MINORVERSION, conditionMask);
-}
-
-LPWSTR Win32TaskbarManager::ansiToUnicode(const char *s) {
-	DWORD size = MultiByteToWideChar(0, 0, s, -1, NULL, 0);
-
-	if (size > 0) {
-		LPWSTR result = new WCHAR[size];
-		if (MultiByteToWideChar(0, 0, s, -1, result, size) != 0)
-			return result;
-	}
-
-	return NULL;
-}
-
-HWND Win32TaskbarManager::getHwnd() {
-	SDL_SysWMinfo wmi;
-	if (_window->getSDLWMInformation(&wmi)) {
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-		return wmi.info.win.window;
-#else
-		return wmi.window;
-#endif
-	} else {
-		return NULL;
-	}
 }
 
 #endif

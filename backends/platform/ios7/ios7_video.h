@@ -48,6 +48,9 @@ typedef struct {
 	Common::List<InternalEvent> _events;
 	NSLock *_eventLock;
 	SoftKeyboard *_keyboardView;
+	BOOL _keyboardVisible;
+
+	UIBackgroundTaskIdentifier _backgroundSaveStateTask;
 
 	EAGLContext *_context;
 	GLuint _viewRenderbuffer;
@@ -63,7 +66,8 @@ typedef struct {
 
 	GLuint _screenSizeSlot;
 	GLuint _textureSlot;
-	GLuint _shakeSlot;
+	GLuint _shakeXSlot;
+	GLuint _shakeYSlot;
 
 	GLuint _positionSlot;
 	GLuint _textureCoordSlot;
@@ -83,7 +87,8 @@ typedef struct {
 	GLint _mouseWidth, _mouseHeight;
 	GLfloat _mouseScaleX, _mouseScaleY;
 
-	int _scaledShakeOffsetY;
+	int _scaledShakeXOffset;
+	int _scaledShakeYOffset;
 
 	UITouch *_firstTouch;
 	UITouch *_secondTouch;
@@ -120,9 +125,19 @@ typedef struct {
 
 - (void)deviceOrientationChanged:(UIDeviceOrientation)orientation;
 
-- (void)applicationSuspend;
+- (void)showKeyboard;
+- (void)hideKeyboard;
+- (BOOL)isKeyboardShown;
 
+- (void)applicationSuspend;
 - (void)applicationResume;
+
+- (void)saveApplicationState;
+- (void)clearApplicationState;
+- (void)restoreApplicationState;
+
+- (void) beginBackgroundSaveStateTask;
+- (void) endBackgroundSaveStateTask;
 
 - (bool)fetchEvent:(InternalEvent *)event;
 

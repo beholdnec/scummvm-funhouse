@@ -36,15 +36,14 @@
 #include "common/mutex.h"
 #include "common/array.h"
 #include "common/memstream.h"
-#include "backends/keymapper/keymapper.h"
-#include "backends/mixer/sdl/sdl-mixer.h"
+#include "backends/mixer/mixer.h"
 #include "common/hashmap.h"
 #include "common/hash-str.h"
 #include "backends/timer/sdl/sdl-timer.h"
 #include "common/config-manager.h"
 #include "common/recorderfile.h"
 #include "backends/saves/recorder/recorder-saves.h"
-#include "backends/mixer/nullmixer/nullsdl-mixer.h"
+#include "backends/mixer/null/null-mixer.h"
 #include "backends/saves/default/default-saves.h"
 
 
@@ -65,10 +64,10 @@ class WriteStream;
  *
  * TODO: Add more documentation.
  */
-class EventRecorder : private Common::EventSource, public Common::Singleton<EventRecorder>, private Common::DefaultEventMapper {
+class EventRecorder : private Common::EventSource, public Common::Singleton<EventRecorder>, private Common::EventObserver {
 	friend class Common::Singleton<SingletonBaseType>;
 	EventRecorder();
-	~EventRecorder();
+	~EventRecorder() override;
 public:
 	/** Specify operation mode of Event Recorder */
 	enum RecordMode {
@@ -143,10 +142,10 @@ public:
 		_needRedraw = redraw;
 	}
 
-	void registerMixerManager(SdlMixerManager *mixerManager);
+	void registerMixerManager(MixerManager *mixerManager);
 	void registerTimerManager(DefaultTimerManager *timerManager);
 
-	SdlMixerManager *getMixerManager();
+	MixerManager *getMixerManager();
 	DefaultTimerManager *getTimerManager();
 
 	void deleteRecord(const Common::String& fileName);
@@ -176,9 +175,8 @@ public:
 	void switchFastMode();
 
 private:
-	virtual Common::List<Common::Event> mapEvent(const Common::Event &ev, Common::EventSource *source);
-	bool notifyPoll();
-	bool pollEvent(Common::Event &ev);
+	bool pollEvent(Common::Event &ev) override;
+	bool notifyEvent(const Common::Event &event) override;
 	bool _initialized;
 	volatile uint32 _fakeTimer;
 	bool _savedState;
@@ -189,10 +187,10 @@ private:
 	Common::String _name;
 
 	Common::SaveFileManager *_realSaveManager;
-	SdlMixerManager *_realMixerManager;
+	MixerManager *_realMixerManager;
 	DefaultTimerManager *_timerManager;
 	RecorderSaveFileManager _fakeSaveManager;
-	NullSdlMixerManager *_fakeMixerManager;
+	NullMixerManager *_fakeMixerManager;
 	GUI::OnScreenDialog *_controlPanel;
 	Common::RecorderEvent _nextEvent;
 
@@ -215,7 +213,7 @@ private:
 	bool checkGameHash(const ADGameDescription *desc);
 
 	void checkForKeyCode(const Common::Event &event);
-	bool allowMapping() const { return false; }
+	bool allowMapping() const override { return false; }
 
 	volatile uint32 _lastMillis;
 	uint32 _lastScreenshotTime;

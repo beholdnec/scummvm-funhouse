@@ -30,6 +30,7 @@
 #include "common/translation.h"
 
 #include "gui/widgets/list.h"
+#include "gui/gui-manager.h"
 #include "gui/message.h"
 
 namespace GUI {
@@ -43,7 +44,7 @@ FileBrowserDialog::FileBrowserDialog(const char *title, const char *fileExtensio
 
 	_fileMask = "*.";
 	_fileMask += fileExtension;
-	_fileList = NULL;
+	_fileList = nullptr;
 
 	new StaticTextWidget(this, "FileBrowser.Headline", title ? title :
 					mode == kFBModeLoad ? _("Choose file for loading") : _("Enter filename for saving"));
@@ -61,8 +62,8 @@ FileBrowserDialog::FileBrowserDialog(const char *title, const char *fileExtensio
 	_backgroundType = GUI::ThemeEngine::kDialogBackgroundPlain;
 
 	// Buttons
-	new ButtonWidget(this, "FileBrowser.Cancel", _("Cancel"), 0, kCloseCmd);
-	new ButtonWidget(this, "FileBrowser.Choose", _("Choose"), 0, kChooseCmd);
+	new ButtonWidget(this, "FileBrowser.Cancel", _("Cancel"), nullptr, kCloseCmd);
+	new ButtonWidget(this, "FileBrowser.Choose", _("Choose"), nullptr, kChooseCmd);
 }
 
 void FileBrowserDialog::open() {
@@ -88,7 +89,7 @@ void FileBrowserDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 
 		break;
 	case kListSelectionChangedCmd:
 		_fileName->setEditString(_fileList->getList().operator[](_fileList->getSelected()).c_str());
-		_fileName->draw();
+		_fileName->markAsDirty();
 		break;
 	case kListItemActivatedCmd:
 	case kListItemDoubleClickedCmd:
@@ -108,7 +109,7 @@ void FileBrowserDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 
 void FileBrowserDialog::normalieFileName() {
 	Common::String filename = _fileName->getEditString();
 
-	if (filename.matchString(_fileMask))
+	if (filename.matchString(_fileMask, true))
 		return;
 
 	_fileName->setEditString(filename + "." + _fileExt);
@@ -154,7 +155,7 @@ void FileBrowserDialog::updateListing() {
 	_fileList->scrollTo(0);
 
 	// Finally, redraw
-	draw();
+	g_gui.scheduleTopDialogRedraw();
 }
 
 } // End of namespace GUI

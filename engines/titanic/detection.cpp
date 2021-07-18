@@ -30,7 +30,6 @@
 #include "common/memstream.h"
 #include "engines/advancedDetector.h"
 #include "common/system.h"
-#include "graphics/colormasks.h"
 #include "graphics/surface.h"
 
 namespace Titanic {
@@ -62,20 +61,24 @@ public:
 		_maxScanDepth = 3;
 	}
 
-	virtual const char *getName() const {
-		return "Titanic Engine";
+	const char *getEngineId() const override {
+		return "titanic";
 	}
 
-	virtual const char *getOriginalCopyright() const {
-		return "Titanic Engine (c) The Digital Village";
+	const char *getName() const override {
+		return "Starship Titanic";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	const char *getOriginalCopyright() const override {
+		return "Starship Titanic (C) The Digital Village";
+	}
+
+	bool hasFeature(MetaEngineFeature f) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 };
 
 bool TitanicMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -92,7 +95,7 @@ bool TitanicMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool Titanic::TitanicEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsLoadingDuringRuntime) ||
 		(f == kSupportsSavingDuringRuntime);
 }
@@ -128,11 +131,6 @@ SaveStateList TitanicMetaEngine::listSaves(const char *target) const {
 				if (Titanic::CProjectItem::readSavegameHeader(&cf, header))
 					saveList.push_back(SaveStateDescriptor(slot, header._saveName));
 
-				if (header._thumbnail) {
-					header._thumbnail->free();
-					delete header._thumbnail;
-				}
-
 				cf.close();
 			}
 		}
@@ -161,7 +159,10 @@ SaveStateDescriptor TitanicMetaEngine::querySaveMetaInfos(const char *target, in
 		file.open(f);
 
 		Titanic::TitanicSavegameHeader header;
-		Titanic::CProjectItem::readSavegameHeader(&file, header);
+		if (!Titanic::CProjectItem::readSavegameHeader(&file, header, false)) {
+			file.close();
+			return SaveStateDescriptor();
+		}
 
 		file.close();
 

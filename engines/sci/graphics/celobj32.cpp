@@ -31,6 +31,9 @@
 #include "sci/graphics/text32.h"
 #include "sci/engine/workarounds.h"
 #include "sci/util.h"
+#include "graphics/larryScale.h"
+#include "common/config-manager.h"
+#include "common/gui_options.h"
 
 namespace Sci {
 #pragma mark CelScaler
@@ -154,6 +157,9 @@ struct SCALER_Scale {
 #endif
 	const byte *_row;
 	READER _reader;
+	// If _sourceBuffer is set, it contains the full (possibly scaled) source
+	// image and takes precedence over _reader.
+	Common::SharedPtr<Buffer> _sourceBuffer;
 	int16 _x;
 	static int16 _valuesX[kCelScalerTableSize];
 	static int16 _valuesY[kCelScalerTableSize];
@@ -167,7 +173,8 @@ struct SCALER_Scale {
 	// The maximum width of the scaled object may not be as wide as the source
 	// data it requires if downscaling, so just always make the reader
 	// decompress an entire line of source data when scaling
-	_reader(celObj, celObj._width) {
+	_reader(celObj, celObj._width),
+	_sourceBuffer() {
 #ifndef NDEBUG
 		assert(_minX <= _maxX);
 #endif
@@ -196,43 +203,98 @@ struct SCALER_Scale {
 
 		const CelScalerTable &table = CelObj::_scaler->getScalerTable(scaleX, scaleY);
 
-		if (g_sci->_gfxFrameout->getScriptWidth() == kLowResX) {
-			const int16 unscaledX = (scaledPosition.x / scaleX).toInt();
-			if (FLIP) {
-				const int lastIndex = celObj._width - 1;
-				for (int16 x = targetRect.left; x < targetRect.right; ++x) {
-					_valuesX[x] = lastIndex - (table.valuesX[x] - unscaledX);
-				}
-			} else {
-				for (int16 x = targetRect.left; x < targetRect.right; ++x) {
-					_valuesX[x] = table.valuesX[x] - unscaledX;
-				}
-			}
+		const bool useLarryScale = Common::checkGameGUIOption(GAMEOPTION_LARRYSCALE, ConfMan.get("guioptions")) && ConfMan.getBool("enable_larryscale");
+		if (useLarryScale) {
+			// LarryScale is an alternative, high-quality cel scaler implemented
+			// for ScummVM. Due to the nature of smooth upscaling, it does *not*
+			// respect the global scaling pattern. Instead, it simply scales the
+			// cel to the extent of targetRect.
 
-			const int16 unscaledY = (scaledPosition.y / scaleY).toInt();
+			class Copier: public Graphics::RowReader, public Graphics::RowWriter {
+				READER &_souceReader;
+				Buffer &_targetBuffer;
+			public:
+				Copier(READER& souceReader, Buffer& targetBuffer) :
+					_souceReader(souceReader),
+					_targetBuffer(targetBuffer) {}
+				const Graphics::LarryScaleColor* readRow(int y) override {
+					return _souceReader.getRow(y);
+				}
+				void writeRow(int y, const Graphics::LarryScaleColor* row) override {
+					memcpy(_targetBuffer.getBasePtr(0, y), row, _targetBuffer.w);
+				}
+			};
+
+			// Scale the cel using LarryScale and write it to _sourceBuffer
+			// scaledImageRect is not necessarily identical to targetRect
+			// because targetRect may be cropped to render only a segment.
+			Common::Rect scaledImageRect(
+				scaledPosition.x,
+				scaledPosition.y,
+				scaledPosition.x + (celObj._width * scaleX).toInt(),
+				scaledPosition.y + (celObj._height * scaleY).toInt());
+			_sourceBuffer = Common::SharedPtr<Buffer>(new Buffer(), Graphics::SurfaceDeleter());
+			_sourceBuffer->create(
+				scaledImageRect.width(), scaledImageRect.height(),
+				Graphics::PixelFormat::createFormatCLUT8());
+			Copier copier(_reader, *_sourceBuffer);
+			Graphics::larryScale(
+				celObj._width, celObj._height, celObj._skipColor, copier,
+				scaledImageRect.width(), scaledImageRect.height(), copier);
+
+			// Set _valuesX and _valuesY to reference the scaled image without additional scaling
+			for (int16 x = targetRect.left; x < targetRect.right; ++x) {
+				const int16 unsafeValue = FLIP
+					? scaledImageRect.right - x - 1
+					: x - scaledImageRect.left;
+				_valuesX[x] = CLIP<int16>(unsafeValue, 0, scaledImageRect.width() - 1);
+			}
 			for (int16 y = targetRect.top; y < targetRect.bottom; ++y) {
-				_valuesY[y] = table.valuesY[y] - unscaledY;
+				const int16 unsafeValue = y - scaledImageRect.top;
+				_valuesY[y] = CLIP<int16>(unsafeValue, 0, scaledImageRect.height() - 1);
 			}
 		} else {
-			if (FLIP) {
-				const int lastIndex = celObj._width - 1;
-				for (int16 x = targetRect.left; x < targetRect.right; ++x) {
-					_valuesX[x] = lastIndex - table.valuesX[x - scaledPosition.x];
+			const bool useGlobalScaling = g_sci->_gfxFrameout->getScriptWidth() == kLowResX;
+			if (useGlobalScaling) {
+				const int16 unscaledX = (scaledPosition.x / scaleX).toInt();
+				if (FLIP) {
+					const int lastIndex = celObj._width - 1;
+					for (int16 x = targetRect.left; x < targetRect.right; ++x) {
+						_valuesX[x] = lastIndex - (table.valuesX[x] - unscaledX);
+					}
+				} else {
+					for (int16 x = targetRect.left; x < targetRect.right; ++x) {
+						_valuesX[x] = table.valuesX[x] - unscaledX;
+					}
+				}
+
+				const int16 unscaledY = (scaledPosition.y / scaleY).toInt();
+				for (int16 y = targetRect.top; y < targetRect.bottom; ++y) {
+					_valuesY[y] = table.valuesY[y] - unscaledY;
 				}
 			} else {
-				for (int16 x = targetRect.left; x < targetRect.right; ++x) {
-					_valuesX[x] = table.valuesX[x - scaledPosition.x];
+				if (FLIP) {
+					const int lastIndex = celObj._width - 1;
+					for (int16 x = targetRect.left; x < targetRect.right; ++x) {
+						_valuesX[x] = lastIndex - table.valuesX[x - scaledPosition.x];
+					}
+				} else {
+					for (int16 x = targetRect.left; x < targetRect.right; ++x) {
+						_valuesX[x] = table.valuesX[x - scaledPosition.x];
+					}
 				}
-			}
 
-			for (int16 y = targetRect.top; y < targetRect.bottom; ++y) {
-				_valuesY[y] = table.valuesY[y - scaledPosition.y];
+				for (int16 y = targetRect.top; y < targetRect.bottom; ++y) {
+					_valuesY[y] = table.valuesY[y - scaledPosition.y];
+				}
 			}
 		}
 	}
 
 	inline void setTarget(const int16 x, const int16 y) {
-		_row = _reader.getRow(_valuesY[y]);
+		_row = _sourceBuffer
+			? static_cast<const byte *>( _sourceBuffer->getBasePtr(0, _valuesY[y]))
+			: _reader.getRow(_valuesY[y]);
 		_x = x;
 		assert(_x >= _minX && _x <= _maxX);
 	}
@@ -375,13 +437,34 @@ public:
 #pragma mark CelObj - Remappers
 
 /**
+ * Translation for pixels from Mac pic and view cels to the PC palette.
+ * The Mac OS palette required 0 to be white and 255 to be black, which is the
+ * opposite of the PC palette. Mac cels use the Mac palette but the colors in
+ * scripts are constant between versions. SSCI handles this with many Mac-only
+ * translations throughout the interpreter. We use the PC palette and translate
+ * the cel pixels here, similar to the SCI16 code in GfxView::unpackCel. The
+ * difference is that in SCI32 we decompress while drawing, while in SCI16 cels
+ * are unpacked to a buffer first, making that translation code simpler.
+ */
+inline byte translateMacColor(bool isMacSource, byte color) {
+	if (isMacSource) {
+		if (color == 0) {
+			return 255;
+		} else if (color == 255) {
+			return 0;
+		}
+	}
+	return color;
+}
+
+/**
  * Pixel mapper for a CelObj with transparent pixels and no
  * remapping data.
  */
 struct MAPPER_NoMD {
-	inline void draw(byte *target, const byte pixel, const uint8 skipColor) const {
+	inline void draw(byte *target, const byte pixel, const uint8 skipColor, const bool isMacSource) const {
 		if (pixel != skipColor) {
-			*target = pixel;
+			*target = translateMacColor(isMacSource, pixel);
 		}
 	}
 };
@@ -391,8 +474,8 @@ struct MAPPER_NoMD {
  * no remapping data.
  */
 struct MAPPER_NoMDNoSkip {
-	inline void draw(byte *target, const byte pixel, const uint8) const {
-		*target = pixel;
+	inline void draw(byte *target, const byte pixel, const uint8, const bool isMacSource) const {
+		*target = translateMacColor(isMacSource, pixel);
 	}
 };
 
@@ -401,14 +484,14 @@ struct MAPPER_NoMDNoSkip {
  * remapping data, and remapping enabled.
  */
 struct MAPPER_Map {
-	inline void draw(byte *target, const byte pixel, const uint8 skipColor) const {
+	inline void draw(byte *target, const byte pixel, const uint8 skipColor, const bool isMacSource) const {
 		if (pixel != skipColor) {
 			// For some reason, SSCI never checks if the source pixel is *above*
 			// the range of remaps, so we do not either.
 			if (pixel < g_sci->_gfxRemap32->getStartColor()) {
-				*target = pixel;
+				*target = translateMacColor(isMacSource, pixel);
 			} else if (g_sci->_gfxRemap32->remapEnabled(pixel)) {
-				*target = g_sci->_gfxRemap32->remapColor(pixel, *target);
+				*target = g_sci->_gfxRemap32->remapColor(translateMacColor(isMacSource, pixel), *target);
 			}
 		}
 	}
@@ -419,11 +502,11 @@ struct MAPPER_Map {
  * remapping data, and remapping disabled.
  */
 struct MAPPER_NoMap {
-	inline void draw(byte *target, const byte pixel, const uint8 skipColor) const {
+	inline void draw(byte *target, const byte pixel, const uint8 skipColor, const bool isMacSource) const {
 		// For some reason, SSCI never checks if the source pixel is *above* the
 		// range of remaps, so we do not either.
 		if (pixel != skipColor && pixel < g_sci->_gfxRemap32->getStartColor()) {
-			*target = pixel;
+			*target = translateMacColor(isMacSource, pixel);
 		}
 	}
 };
@@ -651,11 +734,13 @@ struct RENDERER {
 	MAPPER &_mapper;
 	SCALER &_scaler;
 	const uint8 _skipColor;
+	const bool _isMacSource;
 
-	RENDERER(MAPPER &mapper, SCALER &scaler, const uint8 skipColor) :
+	RENDERER(MAPPER &mapper, SCALER &scaler, const uint8 skipColor, const bool isMacSource) :
 	_mapper(mapper),
 	_scaler(scaler),
-	_skipColor(skipColor) {}
+	_skipColor(skipColor),
+	_isMacSource(isMacSource) {}
 
 	inline void draw(Buffer &target, const Common::Rect &targetRect, const Common::Point &scaledPosition) const {
 		byte *targetPixel = (byte *)target.getPixels() + target.w * targetRect.top + targetRect.left;
@@ -673,7 +758,7 @@ struct RENDERER {
 			_scaler.setTarget(targetRect.left, targetRect.top + y);
 
 			for (int16 x = 0; x < targetWidth; ++x) {
-				_mapper.draw(targetPixel++, _scaler.read(), _skipColor);
+				_mapper.draw(targetPixel++, _scaler.read(), _skipColor, _isMacSource);
 			}
 
 			targetPixel += skipStride;
@@ -686,7 +771,7 @@ void CelObj::render(Buffer &target, const Common::Rect &targetRect, const Common
 
 	MAPPER mapper;
 	SCALER scaler(*this, targetRect.left - scaledPosition.x + targetRect.width(), scaledPosition);
-	RENDERER<MAPPER, SCALER, false> renderer(mapper, scaler, _skipColor);
+	RENDERER<MAPPER, SCALER, false> renderer(mapper, scaler, _skipColor, _isMacSource);
 	renderer.draw(target, targetRect, scaledPosition);
 }
 
@@ -696,10 +781,10 @@ void CelObj::render(Buffer &target, const Common::Rect &targetRect, const Common
 	MAPPER mapper;
 	SCALER scaler(*this, targetRect, scaledPosition, scaleX, scaleY);
 	if (_drawBlackLines) {
-		RENDERER<MAPPER, SCALER, true> renderer(mapper, scaler, _skipColor);
+		RENDERER<MAPPER, SCALER, true> renderer(mapper, scaler, _skipColor, _isMacSource);
 		renderer.draw(target, targetRect, scaledPosition);
 	} else {
-		RENDERER<MAPPER, SCALER, false> renderer(mapper, scaler, _skipColor);
+		RENDERER<MAPPER, SCALER, false> renderer(mapper, scaler, _skipColor, _isMacSource);
 		renderer.draw(target, targetRect, scaledPosition);
 	}
 }
@@ -795,9 +880,8 @@ void CelObj::drawUncompHzFlipNoMDNoSkip(Buffer &target, const Common::Rect &targ
 void CelObj::scaleDrawNoMD(Buffer &target, const Ratio &scaleX, const Ratio &scaleY, const Common::Rect &targetRect, const Common::Point &scaledPosition) const {
 	// In SSCI the checks are > because their rects are BR-inclusive; our checks
 	// are >= because our rects are BR-exclusive
-	if (g_sci->_features->hasEmptyScaleDrawHack() &&
-		(targetRect.left >= targetRect.right ||
-		 targetRect.top >= targetRect.bottom)) {
+	if (targetRect.left >= targetRect.right ||
+		 targetRect.top >= targetRect.bottom) {
 		return;
 	}
 
@@ -810,9 +894,8 @@ void CelObj::scaleDrawNoMD(Buffer &target, const Ratio &scaleX, const Ratio &sca
 void CelObj::scaleDrawUncompNoMD(Buffer &target, const Ratio &scaleX, const Ratio &scaleY, const Common::Rect &targetRect, const Common::Point &scaledPosition) const {
 	// In SSCI the checks are > because their rects are BR-inclusive; our checks
 	// are >= because our rects are BR-exclusive
-	if (g_sci->_features->hasEmptyScaleDrawHack() &&
-		(targetRect.left >= targetRect.right ||
-		 targetRect.top >= targetRect.bottom)) {
+	if (targetRect.left >= targetRect.right ||
+		 targetRect.top >= targetRect.bottom) {
 		return;
 	}
 
@@ -883,6 +966,7 @@ CelObjView::CelObjView(const GuiResourceId viewId, const int16 loopNo, const int
 	_info.loopNo = loopNo;
 	_info.celNo = celNo;
 	_mirrorX = false;
+	_isMacSource = (g_sci->getPlatform() == Common::kPlatformMacintosh);
 	_compressionType = kCelCompressionInvalid;
 	_transparent = true;
 
@@ -966,19 +1050,7 @@ CelObjView::CelObjView(const GuiResourceId viewId, const int16 loopNo, const int
 		error("Cel is less than 0 on loop 0");
 	}
 
-	// HACK: Phantasmagoria view 64001 contains a bad palette that overwrites
-	// parts of the palette used by the background picture in room 6400, causing
-	// the black shadows to become tan, and many of the other background colors
-	// to end up a little bit off. View 64001 renders fine using the existing
-	// palette created by the background image, so here we just ignore the
-	// embedded palette entirely.
-	if (g_sci->getGameId() == GID_PHANTASMAGORIA &&
-		_info.type == kCelTypeView && _info.resourceId == 64001) {
-
-		_hunkPaletteOffset = 0;
-	} else {
-		_hunkPaletteOffset = data.getUint32SEAt(8);
-	}
+	_hunkPaletteOffset = data.getUint32SEAt(8);
 	_celHeaderOffset = loopHeader.getUint32SEAt(12) + (data[13] * _info.celNo);
 
 	const SciSpan<const byte> celHeader = data.subspan(_celHeaderOffset);
@@ -1101,6 +1173,7 @@ CelObjPic::CelObjPic(const GuiResourceId picId, const int16 celNo) {
 	_info.loopNo = 0;
 	_info.celNo = celNo;
 	_mirrorX = false;
+	_isMacSource = (g_sci->getPlatform() == Common::kPlatformMacintosh);
 	_compressionType = kCelCompressionInvalid;
 	_transparent = true;
 	_remap = false;
@@ -1226,6 +1299,7 @@ CelObjMem::CelObjMem(const reg_t bitmapObject) {
 	_info.type = kCelTypeMem;
 	_info.bitmap = bitmapObject;
 	_mirrorX = false;
+	_isMacSource = false;
 	_compressionType = kCelCompressionNone;
 	_celHeaderOffset = 0;
 	_transparent = true;
@@ -1269,6 +1343,7 @@ CelObjColor::CelObjColor(const uint8 color, const int16 width, const int16 heigh
 	_yResolution = g_sci->_gfxFrameout->getScriptHeight();
 	_hunkPaletteOffset = 0;
 	_mirrorX = false;
+	_isMacSource = false;
 	_remap = false;
 	_width = width;
 	_height = height;

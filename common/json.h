@@ -53,7 +53,7 @@
 #include "common/str.h"
 
 // Win32 incompatibilities
-#if defined(WIN32) && !defined(__GNUC__)
+#if (defined(WIN32) && !defined(__GNUC__))
 static inline bool isnan(double x) {
 	return x != x;
 }
@@ -65,7 +65,7 @@ static inline bool isinf(double x) {
 
 // Simple function to check a string 's' has at least 'n' characters
 static inline bool simplejson_wcsnlen(const char *s, size_t n) {
-	if (s == 0)
+	if (s == nullptr)
 		return false;
 
 	const char *save = s;
@@ -130,6 +130,8 @@ protected:
 
 private:
 	static String stringifyString(const String &str);
+	static uint32 decodeUtf8Char(String::const_iterator &begin, const String::const_iterator &end);
+	static uint8 decodeUtf8Byte(uint8 state, uint32 &codepoint, uint8 byte);
 	String stringifyImpl(size_t const indentDepth) const;
 	static String indent(size_t depth);
 
@@ -155,6 +157,7 @@ public:
 protected:
 	static bool skipWhitespace(const char **data);
 	static bool extractString(const char **data, String &str);
+	static uint32 parseUnicode(const char **data);
 	static double parseInt(const char **data);
 	static double parseDecimal(const char **data);
 private:

@@ -177,6 +177,20 @@ Common::Error BbvsEngine::run() {
 	_spriteModule = new SpriteModule();
 	_sound = new SoundMan();
 
+	if (isLoogieDemo()) {
+		Minigame *minigame = new MinigameBbLoogie(this);
+
+		minigame->run(true);
+
+		delete minigame;
+		delete _sound;
+		delete _spriteModule;
+		delete _gameModule;
+		delete _screen;
+
+		return Common::kNoError;
+	}
+
 	allocSnapshot();
 
 	newGame();
@@ -218,7 +232,7 @@ Common::Error BbvsEngine::run() {
 
 bool BbvsEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsLoadingDuringRuntime) ||
 		(f == kSupportsSavingDuringRuntime);
 }
@@ -460,6 +474,8 @@ bool BbvsEngine::update(int mouseX, int mouseY, uint mouseButtons, Common::KeyCo
 		updateCommon();
 		break;
 
+	default:
+		break;
 	}
 
 	return true;
@@ -578,6 +594,8 @@ void BbvsEngine::updateVerbs() {
 		break;
 	case kVerbShowInv:
 		_mouseCursorSpriteIndex = _gameModule->getGuiSpriteIndex(8);
+		break;
+	default:
 		break;
 	}
 

@@ -24,6 +24,7 @@
 #define MASSADD_DIALOG_H
 
 #include "gui/dialog.h"
+#include "gui/widgets/list.h"
 #include "common/fs.h"
 #include "common/hashmap.h"
 #include "common/stack.h"
@@ -39,18 +40,18 @@ public:
 	MassAddDialog(const Common::FSNode &startDir);
 
 	//void open();
-	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data);
-	void handleTickle();
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
+	void handleTickle() override;
 
 	Common::String getFirstAddedTarget() const {
 		if (!_games.empty())
-			return _games.front().gameid();
+			return _games.front().gameId;
 		return Common::String();
 	}
 
 private:
 	Common::Stack<Common::FSNode>  _scanStack;
-	GameList _games;
+	DetectedGames _games;
 
 	/**
 	 * Map each path occuring in the config file to the target(s) using that path.

@@ -48,7 +48,7 @@ namespace Sci {
 // GUI-options, primarily used by detection_tables.h
 #define GAMEOPTION_PREFER_DIGITAL_SFX       GUIO_GAMEOPTIONS1
 #define GAMEOPTION_ORIGINAL_SAVELOAD        GUIO_GAMEOPTIONS2
-#define GAMEOPTION_FB01_MIDI                GUIO_GAMEOPTIONS3
+#define GAMEOPTION_MIDI_MODE                GUIO_GAMEOPTIONS3
 #define GAMEOPTION_JONES_CDAUDIO            GUIO_GAMEOPTIONS4
 #define GAMEOPTION_KQ6_WINDOWS_CURSORS      GUIO_GAMEOPTIONS5
 #define GAMEOPTION_SQ4_SILVER_CURSORS       GUIO_GAMEOPTIONS6
@@ -58,6 +58,8 @@ namespace Sci {
 #define GAMEOPTION_ENABLE_BLACK_LINED_VIDEO GUIO_GAMEOPTIONS9
 #define GAMEOPTION_HQ_VIDEO                 GUIO_GAMEOPTIONS10
 #define GAMEOPTION_ENABLE_CENSORING         GUIO_GAMEOPTIONS11
+#define GAMEOPTION_LARRYSCALE               GUIO_GAMEOPTIONS12
+#define GAMEOPTION_UPSCALE_VIDEOS           GUIO_GAMEOPTIONS13
 
 struct EngineState;
 class Vocabulary;
@@ -126,7 +128,7 @@ enum kDebugLevels {
 	kDebugLevelResMan        = 1 << 19,
 	kDebugLevelOnStartup     = 1 << 20,
 	kDebugLevelDebugMode     = 1 << 21,
-	kDebugLevelScriptPatcher = 1 << 22,
+	kDebugLevelPatcher       = 1 << 22,
 	kDebugLevelWorkarounds   = 1 << 23,
 	kDebugLevelVideo         = 1 << 24,
 	kDebugLevelGame          = 1 << 25
@@ -208,14 +210,13 @@ enum SciGameId {
 	GID_SQ5,
 	GID_SQ6,
 	GID_TORIN,
-
-	GID_FANMADE	// FIXME: Do we really need/want this?
+	GID_FANMADE
 };
 
 /**
  * SCI versions
  * For more information, check here:
- * http://wiki.scummvm.org/index.php/Sierra_Game_Versions#SCI_Games
+ * https://wiki.scummvm.org/index.php/Sierra_Game_Versions#SCI_Games
  */
 enum SciVersion {
 	SCI_VERSION_NONE,
@@ -224,13 +225,13 @@ enum SciVersion {
 	SCI_VERSION_01, // KQ1 and multilingual games (S.old.*)
 	SCI_VERSION_1_EGA_ONLY, // SCI 1 EGA with parser (i.e. QFG2 only)
 	SCI_VERSION_1_EARLY, // KQ5 floppy, SQ4 floppy, XMAS card 1990, Fairy tales, Jones floppy
-	SCI_VERSION_1_MIDDLE, // LSL1, Jones CD
+	SCI_VERSION_1_MIDDLE, // LSL1, Jones CD, LSL3 & SQ3 multilingual Amiga
 	SCI_VERSION_1_LATE, // Dr. Brain 1, EcoQuest 1, Longbow, PQ3, SQ1, LSL5, KQ5 CD
 	SCI_VERSION_1_1, // Dr. Brain 2, EcoQuest 1 CD, EcoQuest 2, KQ6, QFG3, SQ4CD, XMAS 1992 and many more
 	SCI_VERSION_2, // GK1, PQ4 floppy, QFG4 floppy
 	SCI_VERSION_2_1_EARLY, // GK2 demo, KQ7 1.4/1.51, LSL6 hires, PQ4CD, QFG4CD
 	SCI_VERSION_2_1_MIDDLE, // GK2, Hoyle 5, KQ7 2.00b, MUMG Deluxe, Phantasmagoria 1, PQ:SWAT, Shivers 1, SQ6, Torin
-	SCI_VERSION_2_1_LATE, // demos of LSL7, Lighthouse, RAMA
+	SCI_VERSION_2_1_LATE, // demos and Mac versions of LSL7, Lighthouse, RAMA
 	SCI_VERSION_3 // LSL7, Lighthouse, RAMA, Phantasmagoria 2
 };
 
@@ -246,31 +247,38 @@ enum kLanguage {
 	K_LANG_PORTUGUESE = 351
 };
 
+/** MIDI devices */
+enum kMidiMode {
+	kMidiModeStandard,
+	kMidiModeFB01,
+	kMidiModeD110
+};
+
 class SciEngine : public Engine {
 	friend class Console;
 public:
 	SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gameId);
-	~SciEngine();
+	~SciEngine() override;
 
 	// Engine APIs
-	virtual Common::Error run();
-	bool hasFeature(EngineFeature f) const;
-	void pauseEngineIntern(bool pause);
-	virtual GUI::Debugger *getDebugger();
+	Common::Error run() override;
+	bool hasFeature(EngineFeature f) const override;
+	void pauseEngineIntern(bool pause) override;
+	void severeError();
 	Console *getSciDebugger();
-	Common::Error loadGameState(int slot);
-	Common::Error saveGameState(int slot, const Common::String &desc);
-	bool canLoadGameStateCurrently();
-	bool canSaveGameStateCurrently();
-	void syncSoundSettings(); ///< from ScummVM to the game
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	bool canLoadGameStateCurrently() override;
+	bool canSaveGameStateCurrently() override;
+	void syncSoundSettings() override; ///< from ScummVM to the game
 	void updateSoundMixerVolumes();
 	uint32 getTickCount();
 	void setTickCount(const uint32 ticks);
 
 	const SciGameId &getGameId() const { return _gameId; }
 	const char *getGameIdStr() const;
-	int getResourceVersion() const;
 	Common::Language getLanguage() const;
+	bool isLanguageRTL() const;		// true if language's direction is from Right To Left
 	Common::Platform getPlatform() const;
 	bool isDemo() const;
 	bool isCD() const;
@@ -279,7 +287,9 @@ public:
 	/** Returns true if the game's original platform is big-endian. */
 	bool isBE() const;
 
+	bool hasParser() const;
 	bool hasMacIconBar() const;
+	bool hasMacSaveRestoreDialogs() const;
 
 	inline ResourceManager *getResMan() const { return _resMan; }
 	inline ScriptPatcher *getScriptPatcher() const { return _scriptPatcher; }
@@ -310,12 +320,15 @@ public:
 	 */
 	int inQfGImportRoom() const;
 
+	/* Shows a ScummVM message box explaining how to import Qfg saved character files */
+	void showQfgImportMessageBox() const;
+
 	void sleep(uint32 msecs);
 
 	void scriptDebug();
 	bool checkExportBreakpoint(uint16 script, uint16 pubfunct);
 	bool checkSelectorBreakpoint(BreakpointType breakpointType, reg_t send_obj, int selector);
-	bool checkAddressBreakpoint(const reg32_t &address);
+	bool checkAddressBreakpoint(const reg_t &address);
 
 public:
 	bool checkKernelBreakpoint(const Common::String &name);
@@ -344,6 +357,10 @@ public:
 
 	// Initializes ports and paint16 for non-sci32 games, also sets default palette
 	void initGraphics();
+
+	// Suggest to download the GK2 subtitles patch
+	// in the future, we might refactor it to something more generic, if needed
+	void suggestDownloadGK2SubTitlesPatch();
 
 public:
 	GfxAnimate *_gfxAnimate; // Animate for 16-bit gfx

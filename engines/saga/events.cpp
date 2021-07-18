@@ -176,7 +176,7 @@ int Events::handleContinuous(Event *event) {
 			rect.setWidth(w);
 			rect.setHeight(h);
 
-			_vm->_render->getBackGroundSurface()->transitionDissolve( maskBuffer, rect, 1, event_pc);
+			_vm->_render->getBackGroundSurface()->transitionDissolve(maskBuffer, rect, 1, event_pc);
 			_vm->_render->setFullRefresh(true);
 			break;
 		default:
@@ -489,6 +489,8 @@ int Events::handleOneShot(Event *event) {
 		case kEventThreadWake:
 			_vm->_script->wakeUpThreads(event->param);
 			break;
+		default:
+			break;
 		}
 		break;
 	case kCursorEvent:
@@ -604,6 +606,8 @@ void Events::initializeEvent(Event &event) {
 		event.time += event.duration;
 		break;
 	case kEvTInterval:
+		break;
+	default:
 		break;
 	}
 }

@@ -25,6 +25,7 @@
 
 #include "common/scummsys.h"
 #include "common/mutex.h"
+#include "common/serializer.h"
 #include "common/textconsole.h"
 #include "common/util.h"
 
@@ -48,7 +49,6 @@ enum {
 
 struct imuseDigTable;
 struct imuseComiTable;
-class Serializer;
 class ScummEngine_v7;
 struct Track;
 
@@ -123,7 +123,7 @@ private:
 
 public:
 	IMuseDigital(ScummEngine_v7 *scumm, Audio::Mixer *mixer, int fps);
-	virtual ~IMuseDigital();
+	~IMuseDigital() override;
 
 	void setAudioNames(int32 num, char *names);
 
@@ -133,10 +133,10 @@ public:
 	void startMusic(const char *soundName, int soundId, int hookId, int volume);
 	void startMusicWithOtherPos(const char *soundName, int soundId, int hookId, int volume, Track *otherTrack);
 	void startSfx(int soundId, int priority);
-	void startSound(int sound)
+	void startSound(int sound) override
 		{ error("IMuseDigital::startSound(int) should be never called"); }
 
-	void saveOrLoad(Serializer *ser);
+	void saveLoadEarly(Common::Serializer &ser);
 	void resetState();
 	void setRadioChatterSFX(bool state) {
 		_radioChatterSFX = state;
@@ -148,19 +148,20 @@ public:
 	void setFade(int soundId, int destVolume, int delay60HzTicks);
 	int getCurMusicSoundId();
 	void setHookId(int soundId, int hookId);
-	void setMusicVolume(int vol) {}
-	void stopSound(int sound);
-	void stopAllSounds();
+	void setMusicVolume(int vol) override {}
+	void stopSound(int sound) override;
+	void stopAllSounds() override;
 	void pause(bool pause);
 	void parseScriptCmds(int cmd, int soundId, int sub_cmd, int d, int e, int f, int g, int h);
 	void refreshScripts();
 	void flushTracks();
-	int getSoundStatus(int sound) const;
+	int getSoundStatus(int sound) const override;
 	int32 getCurMusicPosInMs();
 	int32 getCurVoiceLipSyncWidth();
 	int32 getCurVoiceLipSyncHeight();
 	int32 getCurMusicLipSyncWidth(int syncId);
 	int32 getCurMusicLipSyncHeight(int syncId);
+	int32 getSoundElapsedTimeInMs(int soundId);
 };
 
 } // End of namespace Scumm

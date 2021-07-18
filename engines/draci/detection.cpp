@@ -84,23 +84,26 @@ const ADGameDescription gameDescriptions[] = {
 class DraciMetaEngine : public AdvancedMetaEngine {
 public:
 	DraciMetaEngine() : AdvancedMetaEngine(Draci::gameDescriptions, sizeof(ADGameDescription), draciGames) {
-		_singleId = "draci";
 	}
 
-	virtual const char *getName() const {
-		return "Draci";
+	const char *getEngineId() const override {
+		return "draci";
 	}
 
-	virtual const char *getOriginalCopyright() const {
-		return "Copyright (C) 1995 NoSense";
+	const char *getName() const override {
+		return "Draci Historie";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual int getMaximumSaveSlot() const { return 99; }
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	virtual SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
+	const char *getOriginalCopyright() const override {
+		return "Draci Historie (C) 1995 NoSense";
+	}
+
+	bool hasFeature(MetaEngineFeature f) const override;
+	int getMaximumSaveSlot() const override { return 99; }
+	SaveStateList listSaves(const char *target) const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 };
 
 bool DraciMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -132,10 +135,6 @@ SaveStateList DraciMetaEngine::listSaves(const char *target) const {
 				Draci::DraciSavegameHeader header;
 				if (Draci::readSavegameHeader(in, header)) {
 					saveList.push_back(SaveStateDescriptor(slotNum, header.saveName));
-					if (header.thumbnail) {
-						header.thumbnail->free();
-						delete header.thumbnail;
-					}
 				}
 				delete in;
 			}
@@ -157,7 +156,11 @@ SaveStateDescriptor DraciMetaEngine::querySaveMetaInfos(const char *target, int 
 
 	if (f) {
 		Draci::DraciSavegameHeader header;
-		Draci::readSavegameHeader(f, header);
+		if (!Draci::readSavegameHeader(f, header, false)) {
+			delete f;
+			return SaveStateDescriptor();
+		}
+
 		delete f;
 
 		// Create the return descriptor

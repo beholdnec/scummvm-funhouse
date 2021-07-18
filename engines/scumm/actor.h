@@ -25,7 +25,7 @@
 #define SCUMM_ACTOR_H
 
 #include "common/scummsys.h"
-#include "scumm/saveload.h"
+#include "common/serializer.h"
 #include "scumm/scumm.h"
 
 
@@ -82,7 +82,7 @@ enum {
 	kNewInavlidBox = 0
 };
 
-class Actor : public Serializable {
+class Actor : public Common::Serializable {
 public:
 	static byte kInvalidBox;
 
@@ -151,6 +151,20 @@ protected:
 		Common::Point point3;
 		int32 deltaXFactor, deltaYFactor;
 		uint16 xfrac, yfrac;
+
+		void reset() {
+			dest.x = dest.y = 0;
+			destbox = 0;
+			destdir = 0;
+			cur.x = cur.y = 0;
+			curbox = 0;
+			next.x = next.y = 0;
+			point3.x = point3.y = 0;
+			deltaXFactor = 0;
+			deltaYFactor = 0;
+			xfrac = 0;
+			yfrac = 0;
+		}
 	};
 
 
@@ -167,7 +181,7 @@ protected:
 public:
 
 	Actor(ScummEngine *scumm, int id);
-	virtual ~Actor() {}
+	~Actor() override {}
 
 //protected:
 	virtual void hideActor();
@@ -300,8 +314,7 @@ public:
 
 	void classChanged(int cls, bool value);
 
-	// Used by the save/load system:
-	virtual void saveLoadWithSerializer(Serializer *ser);
+	void saveLoadWithSerializer(Common::Serializer &ser) override;
 
 protected:
 	bool isInClass(int cls);
@@ -315,10 +328,10 @@ class Actor_v3 : public Actor {
 public:
 	Actor_v3(ScummEngine *scumm, int id) : Actor(scumm, id) {}
 
-	virtual void walkActor();
+	void walkActor() override;
 
 protected:
-	virtual void setupActorScale();
+	void setupActorScale() override;
 	void findPathTowardsOld(byte box, byte box2, byte box3, Common::Point &p2, Common::Point &p3);
 };
 
@@ -326,13 +339,13 @@ class Actor_v2 : public Actor_v3 {
 public:
 	Actor_v2(ScummEngine *scumm, int id) : Actor_v3(scumm, id) {}
 
-	virtual void initActor(int mode);
-	virtual void walkActor();
-	virtual AdjustBoxResult adjustXYToBeInBox(int dstX, int dstY);
+	void initActor(int mode) override;
+	void walkActor() override;
+	AdjustBoxResult adjustXYToBeInBox(int dstX, int dstY) override;
 
 protected:
-	virtual bool isPlayer();
-	virtual void prepareDrawActorCostume(BaseCostumeRenderer *bcr);
+	bool isPlayer() override;
+	void prepareDrawActorCostume(BaseCostumeRenderer *bcr) override;
 };
 
 enum ActorV0MiscFlags {
@@ -375,7 +388,7 @@ public:
 	byte _walkMaxXYCountInc;
 
 	Common::Point _tmp_Pos;
-	Common::Point _tmp_Dest;
+	Common::Point _tmp_NewPos;
 	byte _tmp_WalkBox;
 	bool _tmp_NewWalkBoxEntered;
 
@@ -394,35 +407,34 @@ private:
 public:
 	Actor_v0(ScummEngine *scumm, int id) : Actor_v2(scumm, id) {}
 
-	void initActor(int mode);
+	void initActor(int mode) override;
 	void animateActor(int anim);
-	void animateCostume();
+	void animateCostume() override;
 
 	void limbFrameCheck(int limb);
 
 	void directionUpdate();
 	void speakCheck();
-	void setDirection(int direction);
-	void startAnimActor(int f);
+	void setDirection(int direction) override;
+	void startAnimActor(int f) override;
 
 	bool calcWalkDistances();
-	void walkActor();
+	void walkActor() override;
 	void actorSetWalkTo();
-	byte actorWalkX();
-	byte actorWalkY();
+	byte actorWalkXCalculate();
+	byte actorWalkYCalculate();
 	byte updateWalkbox();
 
 	void walkBoxQueueReset();
 	bool walkBoxQueuePrepare();
 
-	AdjustBoxResult adjustXYToBeInBox(int dstX, int dstY);
+	AdjustBoxResult adjustXYToBeInBox(int dstX, int dstY) override;
 	AdjustBoxResult adjustPosInBorderWalkbox(AdjustBoxResult box);
 
-	void setTmpFromActor();
-	void setActorFromTmp();
+	void setActorToTempPosition();
+	void setActorToOriginalPosition();
 
-	// Used by the save/load system:
-	virtual void saveLoadWithSerializer(Serializer *ser);
+	void saveLoadWithSerializer(Common::Serializer &ser) override;
 };
 
 

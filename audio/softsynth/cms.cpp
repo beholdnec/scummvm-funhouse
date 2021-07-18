@@ -179,6 +179,7 @@ void CMSEmulator::update(int chip, int16 *buffer, int length) {
 		case 1: saa->noise[ch].freq = 15625.0 * 2; break;
 		case 2: saa->noise[ch].freq =  7812.5 * 2; break;
 		case 3: saa->noise[ch].freq = saa->channels[ch * 3].freq; break;
+		default: break;
 		}
 	}
 
@@ -347,7 +348,7 @@ void CMSEmulator::portWriteIntern(int chip, int offset, int data) {
 class CMSMusicPlugin : public NullMusicPlugin {
 public:
 	const char *getName() const {
-		return _s("Creative Music System Emulator");
+		return _s("Creative Music System emulator");
 	}
 
 	const char *getId() const {

@@ -42,7 +42,6 @@
 #include "common/debug-channels.h"
 #include "common/error.h"
 #include "common/fs.h"
-#include "common/timer.h"
 
 #include "engines/util.h"
 
@@ -57,7 +56,7 @@ LastExpressEngine::LastExpressEngine(OSystem *syst, const ADGameDescription *gd)
 	Engine(syst), _gameDescription(gd),
 	_debugger(NULL), _random("lastexpress"), _cursor(NULL),
 	_font(NULL), _logic(NULL), _menu(NULL),
-	_frameCounter(0), _lastFrameCount(0),
+	_lastFrameCount(0),
 	_graphicsMan(NULL), _resMan(NULL),
 	_sceneMan(NULL), _soundMan(NULL),
 	_eventMouse(NULL), _eventTick(NULL),
@@ -71,7 +70,6 @@ LastExpressEngine::LastExpressEngine(OSystem *syst, const ADGameDescription *gd)
 	SearchMan.addSubDirectoryMatching(gameDataDir, "data");
 
 	// Initialize the custom debug levels
-	DebugMan.addDebugChannel(kLastExpressDebugAll, "All", "Debug everything");
 	DebugMan.addDebugChannel(kLastExpressDebugGraphics, "Graphics", "Debug graphics & animation/sequence playback");
 	DebugMan.addDebugChannel(kLastExpressDebugResource, "Resource", "Debug resource management");
 	DebugMan.addDebugChannel(kLastExpressDebugCursor, "Cursor", "Debug cursor handling");
@@ -84,8 +82,6 @@ LastExpressEngine::LastExpressEngine(OSystem *syst, const ADGameDescription *gd)
 }
 
 LastExpressEngine::~LastExpressEngine() {
-	_timer->removeTimerProc(&soundTimer);
-
 	// Delete the remaining objects
 	SAFE_DELETE(_cursor);
 	SAFE_DELETE(_font);
@@ -95,7 +91,7 @@ LastExpressEngine::~LastExpressEngine() {
 	SAFE_DELETE(_resMan);
 	SAFE_DELETE(_sceneMan);
 	SAFE_DELETE(_soundMan);
-	SAFE_DELETE(_debugger);
+	//_debugger is deleted by Engine
 
 	// Cleanup event handlers
 	SAFE_DELETE(_eventMouse);
@@ -119,6 +115,7 @@ Common::Error LastExpressEngine::run() {
 
 	// Create debugger. It requires GFX to be initialized
 	_debugger = new Debugger(this);
+	setDebugger(_debugger);
 
 	// Start the resource and graphics managers
 	_resMan = new ResourceManager(isDemo());
@@ -144,9 +141,8 @@ Common::Error LastExpressEngine::run() {
 	// Game logic
 	_logic = new Logic(this);
 
-	// Start sound manager and setup timer
+	// Sound manager
 	_soundMan = new SoundManager(this);
-	_timer->installTimerProc(&soundTimer, 17000, this, "lastexpressSound");
 
 	// Menu
 	_menu = new Menu(this);
@@ -161,6 +157,11 @@ Common::Error LastExpressEngine::run() {
 	}
 
 	return Common::kNoError;
+}
+
+uint32 LastExpressEngine::getFrameCounter() const {
+	// the original game has a timer running at 60Hz incrementing a dedicated variable
+	return (uint64)_system->getMillis() * 60 / 1000;
 }
 
 void LastExpressEngine::pollEvents() {
@@ -195,19 +196,12 @@ bool LastExpressEngine::handleEvents() {
 		_debugger->attach();
 	}
 
-	// Show the debugger if required
-	_debugger->onFrame();
-
 	// Handle input
 	Common::Event ev;
 	while (_eventMan->pollEvent(ev)) {
 		switch (ev.type) {
 
 		case Common::EVENT_KEYDOWN:
-			// CTRL-D: Attach the debugger
-			if ((ev.kbd.flags & Common::KBD_CTRL) && ev.kbd.keycode == Common::KEYCODE_d)
-				_debugger->attach();
-
 			//// DEBUG: Quit game on escape
 			//if (ev.kbd.keycode == Common::KEYCODE_ESCAPE)
 			//	quitGame();
@@ -222,10 +216,13 @@ bool LastExpressEngine::handleEvents() {
 			getGameLogic()->getGameState()->getGameFlags()->mouseLeftClick = true;
 			getGameLogic()->getGameState()->getGameFlags()->mouseLeftPressed = (ev.type == Common::EVENT_LBUTTONDOWN) ? true : false;
 
-			// Adjust frameInterval flag
-			if (_frameCounter < _lastFrameCount + 30)
-				getGameLogic()->getGameState()->getGameFlags()->frameInterval = true;
-			_lastFrameCount = _frameCounter;
+			{
+				// Adjust frameInterval flag
+				uint32 frameCounter = getFrameCounter();
+				if (frameCounter < _lastFrameCount + 30)
+					getGameLogic()->getGameState()->getGameFlags()->frameInterval = true;
+				_lastFrameCount = frameCounter;
+			}
 
 			if (_eventMouse && _eventMouse->isValid())
 				(*_eventMouse)(ev);
@@ -273,21 +270,6 @@ bool LastExpressEngine::handleEvents() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
-/// Timer
-///////////////////////////////////////////////////////////////////////////////////
-void LastExpressEngine::soundTimer(void *refCon) {
-	((LastExpressEngine *)refCon)->handleSoundTimer();
-}
-
-void LastExpressEngine::handleSoundTimer() {
-	if (_frameCounter & 1)
-		if (_soundMan)
-			_soundMan->getQueue()->handleTimer();
-
-	_frameCounter++;
-}
-
-///////////////////////////////////////////////////////////////////////////////////
 /// Event Handling
 ///////////////////////////////////////////////////////////////////////////////////
 void LastExpressEngine::backupEventHandlers() {
@@ -328,7 +310,7 @@ void LastExpressEngine::setEventHandlers(EventHandler::EventFunction *mouse, Eve
 /// Misc Engine
 ///////////////////////////////////////////////////////////////////////////////////
 bool LastExpressEngine::hasFeature(EngineFeature f) const {
-	return (f == kSupportsRTL);
+	return (f == kSupportsReturnToLauncher);
 }
 
 } // End of namespace LastExpress

@@ -20,8 +20,8 @@
  *
  */
 
-#include "wordcompletion.h"
 #include "osystem_ds.h"
+#include "wordcompletion.h"
 #include "engines/agi/agi.h"	// Caution for #define for NUM_CHANNELS, causes problems in mixer_intern.h
 
 #ifdef ENABLE_AGI
@@ -104,7 +104,7 @@ bool findWordCompletions(const char *input) {
 	if (wordBufferPtrPos == 0)
 		return false;
 
-	OSystem_DS *system = (OSystem_DS *) g_system;
+	OSystem_DS *system = dynamic_cast<OSystem_DS *>(g_system);
 	system->clearAutoComplete();
 
 	int start = 0;

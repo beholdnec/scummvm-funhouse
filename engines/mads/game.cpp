@@ -476,7 +476,7 @@ void Game::synchronize(Common::Serializer &s, bool phase1) {
 
 void Game::loadGame(int slotNumber) {
 	_saveFile = g_system->getSavefileManager()->openForLoading(
-		_vm->generateSaveName(slotNumber));
+		_vm->getSaveStateName(slotNumber));
 
 	Common::Serializer s(_saveFile, nullptr);
 
@@ -484,11 +484,6 @@ void Game::loadGame(int slotNumber) {
 	MADSSavegameHeader header;
 	if (!readSavegameHeader(_saveFile, header))
 		error("Invalid savegame");
-
-	if (header._thumbnail) {
-		header._thumbnail->free();
-		delete header._thumbnail;
-	}
 
 	// Load most of the savegame data with the exception of scene specific info
 	synchronize(s, true);
@@ -510,7 +505,7 @@ void Game::loadGame(int slotNumber) {
 
 void Game::saveGame(int slotNumber, const Common::String &saveName) {
 	Common::OutSaveFile *out = g_system->getSavefileManager()->openForSaving(
-		_vm->generateSaveName(slotNumber));
+		_vm->getSaveStateName(slotNumber));
 
 	MADSSavegameHeader header;
 	header._saveName = saveName;
@@ -527,9 +522,8 @@ void Game::saveGame(int slotNumber, const Common::String &saveName) {
 const char *const SAVEGAME_STR = "MADS";
 #define SAVEGAME_STR_SIZE 4
 
-bool Game::readSavegameHeader(Common::InSaveFile *in, MADSSavegameHeader &header) {
+WARN_UNUSED_RESULT bool Game::readSavegameHeader(Common::InSaveFile *in, MADSSavegameHeader &header, bool skipThumbnail) {
 	char saveIdentBuffer[SAVEGAME_STR_SIZE + 1];
-	header._thumbnail = nullptr;
 
 	// Validate the header Id
 	in->read(saveIdentBuffer, SAVEGAME_STR_SIZE + 1);
@@ -546,9 +540,9 @@ bool Game::readSavegameHeader(Common::InSaveFile *in, MADSSavegameHeader &header
 	while ((ch = (char)in->readByte()) != '\0') header._saveName += ch;
 
 	// Get the thumbnail
-	header._thumbnail = Graphics::loadThumbnail(*in);
-	if (!header._thumbnail)
+	if (!Graphics::loadThumbnail(*in, header._thumbnail, skipThumbnail)) {
 		return false;
+	}
 
 	// Read in save date/time
 	header._year = in->readSint16LE();
@@ -623,6 +617,9 @@ void Game::syncTimers(SyncType slaveType, int slaveId, SyncType masterType, int 
 	case SYNC_PLAYER:
 		syncTime = _player._priorTimer;
 		break;
+
+	default:
+		break;
 	}
 
 
@@ -641,6 +638,10 @@ void Game::syncTimers(SyncType slaveType, int slaveId, SyncType masterType, int 
 
 	case SYNC_CLOCK:
 		error("syncTimer is trying to force _frameStartTime");
+		break;
+
+	default:
+		break;
 	}
 }
 

@@ -201,6 +201,7 @@ bool AVIDecoder::parseNextChunk() {
 	case ID_STRH:
 		handleStreamHeader(size);
 		break;
+	case ID_HDRL: // Header list.. what's it doing here? Probably ok to ignore?
 	case ID_STRD: // Extra stream info, safe to ignore
 	case ID_VEDT: // Unknown, safe to ignore
 	case ID_JUNK: // Alignment bytes, should be ignored
@@ -266,8 +267,11 @@ void AVIDecoder::handleStreamHeader(uint32 size) {
 	sHeader.size = size;
 	sHeader.streamType = _fileStream->readUint32BE();
 
-	if (sHeader.streamType == ID_MIDS || sHeader.streamType == ID_TXTS)
+	if (sHeader.streamType == ID_MIDS)
 		error("Unhandled MIDI/Text stream");
+
+	if (sHeader.streamType == ID_TXTS)
+		warning("Unsupported Text stream detected");
 
 	sHeader.streamHandler = _fileStream->readUint32BE();
 	sHeader.flags = _fileStream->readUint32LE();
@@ -987,7 +991,8 @@ bool AVIDecoder::AVIVideoTrack::rewind() {
 }
 
 Image::Codec *AVIDecoder::AVIVideoTrack::createCodec() {
-	return Image::createBitmapCodec(_bmInfo.compression, _bmInfo.width, _bmInfo.height, _bmInfo.bitCount);
+	return Image::createBitmapCodec(_bmInfo.compression, _vidsHeader.streamHandler, _bmInfo.width,
+									_bmInfo.height, _bmInfo.bitCount);
 }
 
 void AVIDecoder::AVIVideoTrack::forceTrackEnd() {

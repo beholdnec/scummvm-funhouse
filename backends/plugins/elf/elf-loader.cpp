@@ -50,8 +50,7 @@ DLObject::DLObject() :
 
 DLObject::~DLObject() {
 	discardSymtab();
-	ELFMemMan.pluginDeallocate(_segment);
-	_segment = 0;
+	discardSegment();
 }
 
 // Expel the symbol table from memory
@@ -65,16 +64,23 @@ void DLObject::discardSymtab() {
 	_symbol_cnt = 0;
 }
 
-// Unload all objects from memory
-void DLObject::unload() {
-	discardSymtab();
-
-	ELFMemMan.pluginDeallocate(_segment);
+void DLObject::discardSegment() {
+	if (_segment) {
+		// Restore default protection before returning memory
+		protectMemory(_segment, _segmentSize, PF_R | PF_W);
+		deallocateMemory(_segment, _segmentSize);
+	}
 
 	_segment = 0;
 	_segmentSize = 0;
 	_segmentOffset = 0;
 	_segmentVMA = 0;
+}
+
+// Unload all objects from memory
+void DLObject::unload() {
+	discardSymtab();
+	discardSegment();
 }
 
 bool DLObject::readElfHeader(Elf32_Ehdr *ehdr) {
@@ -163,7 +169,7 @@ bool DLObject::readProgramHeaders(Elf32_Ehdr *ehdr, Elf32_Phdr *phdr, Elf32_Half
 }
 
 bool DLObject::loadSegment(Elf32_Phdr *phdr) {
-	_segment = (byte *)ELFMemMan.pluginAllocate(phdr->p_align, phdr->p_memsz);
+	_segment = (byte *)allocateMemory(phdr->p_align, phdr->p_memsz);
 
 	if (!_segment) {
 		warning("elfloader: Out of memory.");
@@ -305,6 +311,9 @@ void DLObject::relocateSymbols(ptrdiff_t offset) {
 	for (uint32 c = _symbol_cnt; c--; s++) {
 		// Make sure we don't relocate special valued symbols
 		if (s->st_shndx < SHN_LOPROC) {
+			if (s->st_value < _segmentVMA)
+				s->st_value = _segmentVMA;	// deal with symbols referring to sections, which start before the VMA
+
 			s->st_value += offset;
 
 			if (s->st_value < Elf32_Addr(_segment) ||
@@ -402,6 +411,8 @@ bool DLObject::load() {
 		return false;
 	}
 
+	protectMemory(_segment, _segmentSize, phdr.p_flags);
+
 	return true;
 }
 
@@ -486,6 +497,14 @@ void *DLObject::symbol(const char *name) {
 	// We didn't find the symbol
 	warning("elfloader: Symbol \"%s\" not found.", name);
 	return 0;
+}
+
+void *DLObject::allocateMemory(uint32 align, uint32 size) {
+	return ELFMemMan.pluginAllocate(align, size);
+}
+
+void DLObject::deallocateMemory(void *ptr, uint32 size) {
+	ELFMemMan.pluginDeallocate(ptr);
 }
 
 #endif /* defined(DYNAMIC_MODULES) && defined(USE_ELF_LOADER) */

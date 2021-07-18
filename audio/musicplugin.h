@@ -42,10 +42,10 @@ class MusicDevice {
 public:
 	MusicDevice(MusicPluginObject const *musicPlugin, Common::String name, MusicType mt);
 
-	Common::String &getName() { return _name; }
-	Common::String &getMusicDriverName() { return _musicDriverName; }
-	Common::String &getMusicDriverId() { return _musicDriverId; }
-	MusicType getMusicType() { return _type; }
+	const Common::String &getName() const { return _name; }
+	const Common::String &getMusicDriverName() const { return _musicDriverName; }
+	const Common::String &getMusicDriverId() const { return _musicDriverId; }
+	MusicType getMusicType() const { return _type; }
 
 	/**
 	 * Returns a user readable string that contains the name of the current
@@ -112,11 +112,6 @@ public:
 	virtual Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const = 0;
 };
 
-
-// Music plugins
-
-typedef PluginSubclass<MusicPluginObject> MusicPlugin;
-
 /**
  * Singleton class which manages all Music plugins.
  */
@@ -125,7 +120,7 @@ private:
 	friend class Common::Singleton<SingletonBaseType>;
 
 public:
-	const MusicPlugin::List &getPlugins() const;
+	const PluginList &getPlugins() const;
 };
 
 /** Convenience shortcut for accessing the Music manager. */

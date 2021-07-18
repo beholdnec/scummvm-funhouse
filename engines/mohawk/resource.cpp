@@ -32,7 +32,7 @@ namespace Mohawk {
 // Base Archive code
 
 Archive::Archive() {
-	_stream = 0;
+	_stream = nullptr;
 }
 
 Archive::~Archive() {
@@ -57,7 +57,7 @@ bool Archive::openFile(const Common::String &fileName) {
 
 void Archive::close() {
 	_types.clear();
-	delete _stream; _stream = 0;
+	delete _stream; _stream = nullptr;
 }
 
 bool Archive::hasResource(uint32 tag, uint16 id) const {
@@ -154,6 +154,25 @@ Common::Array<uint16> Archive::getResourceIDList(uint32 type) const {
 	return idList;
 }
 
+void Archive::offsetResourceIDs(uint32 type, uint16 startId, int16 increment) {
+	if (!_types.contains(type)) {
+		return;
+	}
+
+	const ResourceMap &oldResMap = _types[type];
+	ResourceMap newResMap;
+
+	for (ResourceMap::const_iterator it = oldResMap.begin(); it != oldResMap.end(); it++) {
+		if (it->_key >= startId) {
+			newResMap[it->_key + increment] = it->_value;
+		} else {
+			newResMap[it->_key] = it->_value;
+		}
+	}
+
+	_types[type] = newResMap;
+}
+
 // Mohawk Archive code
 
 struct FileTableEntry {
@@ -164,6 +183,7 @@ struct FileTableEntry {
 };
 
 struct NameTableEntry {
+	uint16 offset;
 	uint16 index;
 	Common::String name;
 };
@@ -244,14 +264,15 @@ bool MohawkArchive::openStream(Common::SeekableReadStream *stream) {
 		debug(3, "Names = %04x", nameTable.size());
 
 		for (uint16 j = 0; j < nameTable.size(); j++) {
-			uint16 offset = stream->readUint16BE();
-			nameTable[j].index = stream->readUint16BE();
+			nameTable[j].offset = stream->readUint16BE();
+			nameTable[j].index  = stream->readUint16BE();
 
-			debug(4, "Entry[%02x]: Name List Offset = %04x  Index = %04x", j, offset, nameTable[j].index);
+			debug(4, "Entry[%02x]: Name List Offset = %04x  Index = %04x", j, nameTable[j].offset, nameTable[j].index);
+		}
 
+		for (uint16 j = 0; j < nameTable.size(); j++) {
 			// Name List
-			uint32 pos = stream->pos();
-			stream->seek(absOffset + stringTableOffset + offset);
+			stream->seek(absOffset + stringTableOffset + nameTable[j].offset);
 			char c = (char)stream->readByte();
 			while (c != 0) {
 				nameTable[j].name += c;
@@ -259,9 +280,6 @@ bool MohawkArchive::openStream(Common::SeekableReadStream *stream) {
 			}
 
 			debug(3, "Name = \'%s\'", nameTable[j].name.c_str());
-
-			// Get back to next entry
-			stream->seek(pos);
 		}
 
 		// Resource Table

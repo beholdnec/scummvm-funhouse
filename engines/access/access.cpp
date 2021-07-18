@@ -28,6 +28,7 @@
 #include "graphics/scaler.h"
 #include "graphics/thumbnail.h"
 #include "access/access.h"
+#include "access/debugger.h"
 
 namespace Access {
 
@@ -44,7 +45,6 @@ AccessEngine::AccessEngine(OSystem *syst, const AccessGameDescription *gameDesc)
 	_animation = nullptr;
 	_bubbleBox = nullptr;
 	_char = nullptr;
-	_debugger = nullptr;
 	_events = nullptr;
 	_files = nullptr;
 	_invBox = nullptr;
@@ -135,7 +135,6 @@ AccessEngine::~AccessEngine() {
 	delete _invBox;
 	delete _aboutBox;
 	delete _char;
-	delete _debugger;
 	delete _events;
 	delete _files;
 	delete _inventory;
@@ -187,7 +186,6 @@ void AccessEngine::initialize() {
 		_aboutBox = nullptr;
 	}
 	_char = new CharManager(this);
-	_debugger = Debugger::init(this);
 	_events = new EventsManager(this);
 	_files = new FileManager(this);
 	_inventory = new InventoryManager(this);
@@ -197,6 +195,7 @@ void AccessEngine::initialize() {
 	_midi = new MusicManager(this);
 	_video = new VideoPlayer(this);
 
+	setDebugger(Debugger::init(this));
 	_buffer1.create(g_system->getWidth() + TILE_WIDTH, g_system->getHeight());
 	_buffer2.create(g_system->getWidth(), g_system->getHeight());
 	_vidBuf.create(160, 101);
@@ -255,15 +254,15 @@ void AccessEngine::speakText(BaseSurface *s, const Common::String &msg) {
 		_events->zeroKeys();
 
 		int width = 0;
-		bool lastLine = _fonts._font2.getLine(lines, s->_maxChars * 6, line, width);
+		bool lastLine = _fonts._font2->getLine(lines, s->_maxChars * 6, line, width);
 
 		// Set font colors
-		_fonts._font2._fontColors[0] = 0;
-		_fonts._font2._fontColors[1] = 28;
-		_fonts._font2._fontColors[2] = 29;
-		_fonts._font2._fontColors[3] = 30;
+		Font::_fontColors[0] = 0;
+		Font::_fontColors[1] = 28;
+		Font::_fontColors[2] = 29;
+		Font::_fontColors[3] = 30;
 
-		_fonts._font2.drawString(s, line, s->_printOrg);
+		_fonts._font2->drawString(s, line, s->_printOrg);
 		s->_printOrg = Common::Point(s->_printStart.x, s->_printOrg.y + 9);
 
 		if ((s->_printOrg.y > _printEnd) && (!lastLine)) {
@@ -331,14 +330,14 @@ void AccessEngine::printText(BaseSurface *s, const Common::String &msg) {
 	int width = 0;
 
 	for (;;) {
-		bool lastLine = _fonts._font2.getLine(lines, s->_maxChars * 6, line, width);
+		bool lastLine = _fonts._font2->getLine(lines, s->_maxChars * 6, line, width);
 
 		// Set font colors
-		_fonts._font2._fontColors[0] = 0;
-		_fonts._font2._fontColors[1] = 28;
-		_fonts._font2._fontColors[2] = 29;
-		_fonts._font2._fontColors[3] = 30;
-		_fonts._font2.drawString(s, line, s->_printOrg);
+		_fonts._font2->_fontColors[0] = 0;
+		_fonts._font2->_fontColors[1] = 28;
+		_fonts._font2->_fontColors[2] = 29;
+		_fonts._font2->_fontColors[3] = 30;
+		_fonts._font2->drawString(s, line, s->_printOrg);
 
 		s->_printOrg = Common::Point(s->_printStart.x, s->_printOrg.y + 9);
 
@@ -456,9 +455,9 @@ void AccessEngine::freeChar() {
 	_animation->freeAnimationData();
 }
 
-Common::Error AccessEngine::saveGameState(int slot, const Common::String &desc) {
+Common::Error AccessEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	Common::OutSaveFile *out = g_system->getSavefileManager()->openForSaving(
-		generateSaveName(slot));
+		getSaveStateName(slot));
 	if (!out)
 		return Common::kCreatingFileFailed;
 
@@ -477,7 +476,7 @@ Common::Error AccessEngine::saveGameState(int slot, const Common::String &desc) 
 
 Common::Error AccessEngine::loadGameState(int slot) {
 	Common::InSaveFile *saveFile = g_system->getSavefileManager()->openForLoading(
-		generateSaveName(slot));
+		getSaveStateName(slot));
 	if (!saveFile)
 		return Common::kReadingFailed;
 
@@ -487,11 +486,6 @@ Common::Error AccessEngine::loadGameState(int slot) {
 	AccessSavegameHeader header;
 	if (!readSavegameHeader(saveFile, header))
 		error("Invalid savegame");
-
-	if (header._thumbnail) {
-		header._thumbnail->free();
-		delete header._thumbnail;
-	}
 
 	// Load most of the savegame data
 	synchronize(s);
@@ -503,10 +497,6 @@ Common::Error AccessEngine::loadGameState(int slot) {
 	_events->clearEvents();
 
 	return Common::kNoError;
-}
-
-Common::String AccessEngine::generateSaveName(int slot) {
-	return Common::String::format("%s.%03d", _targetName.c_str(), slot);
 }
 
 bool AccessEngine::canLoadGameStateCurrently() {
@@ -537,9 +527,8 @@ void AccessEngine::synchronize(Common::Serializer &s) {
 const char *const SAVEGAME_STR = "ACCESS";
 #define SAVEGAME_STR_SIZE 6
 
-bool AccessEngine::readSavegameHeader(Common::InSaveFile *in, AccessSavegameHeader &header) {
+WARN_UNUSED_RESULT bool AccessEngine::readSavegameHeader(Common::InSaveFile *in, AccessSavegameHeader &header, bool skipThumbnail) {
 	char saveIdentBuffer[SAVEGAME_STR_SIZE + 1];
-	header._thumbnail = nullptr;
 
 	// Validate the header Id
 	in->read(saveIdentBuffer, SAVEGAME_STR_SIZE + 1);
@@ -557,9 +546,9 @@ bool AccessEngine::readSavegameHeader(Common::InSaveFile *in, AccessSavegameHead
 		header._saveName += ch;
 
 	// Get the thumbnail
-	header._thumbnail = Graphics::loadThumbnail(*in);
-	if (!header._thumbnail)
+	if (!Graphics::loadThumbnail(*in, header._thumbnail, skipThumbnail)) {
 		return false;
+	}
 
 	// Read in save date/time
 	header._year = in->readSint16LE();
@@ -604,7 +593,7 @@ void AccessEngine::writeSavegameHeader(Common::OutSaveFile *out, AccessSavegameH
 
 void AccessEngine::SPRINTCHR(char c, int fontNum) {
 	warning("TODO: SPRINTCHR");
-	_fonts._font1.drawChar(_screen, c, _screen->_printOrg);
+	_fonts._font1->drawChar(_screen, c, _screen->_printOrg);
 }
 
 void AccessEngine::PRINTCHR(Common::String msg, int fontNum) {
@@ -613,7 +602,7 @@ void AccessEngine::PRINTCHR(Common::String msg, int fontNum) {
 
 	for (int i = 0; msg[i]; i++) {
 		if (!(_fonts._charSet._hi & 8)) {
-			_fonts._font1.drawChar(_screen, msg[i], _screen->_printOrg);
+			_fonts._font1->drawChar(_screen, msg[i], _screen->_printOrg);
 			continue;
 		} else if (_fonts._charSet._hi & 2) {
 			Common::Point oldPos = _screen->_printOrg;

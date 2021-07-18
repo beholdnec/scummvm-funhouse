@@ -131,7 +131,8 @@ Common::Error Saver::save(int slot, const Common::String &saveName) {
 	_macroSaveFlag = true;
 
 	// Try and create the save file
-	Common::OutSaveFile *saveFile = g_system->getSavefileManager()->openForSaving(g_vm->generateSaveName(slot));
+	Common::OutSaveFile *saveFile = g_system->getSavefileManager()->openForSaving(
+		g_vm->getSaveStateName(slot));
 	if (!saveFile)
 		return Common::kCreatingFileFailed;
 
@@ -181,7 +182,8 @@ Common::Error Saver::restore(int slot) {
 	_unresolvedPtrs.clear();
 
 	// Set up the serializer
-	Common::InSaveFile *saveFile = g_system->getSavefileManager()->openForLoading(g_vm->generateSaveName(slot));
+	Common::InSaveFile *saveFile = g_system->getSavefileManager()->openForLoading(
+		g_vm->getSaveStateName(slot));
 	if (!saveFile)
 		return Common::kReadingFailed;
 
@@ -189,10 +191,10 @@ Common::Error Saver::restore(int slot) {
 
 	// Read in the savegame header
 	tSageSavegameHeader header;
-	readSavegameHeader(saveFile, header);
-	if (header._thumbnail)
-		header._thumbnail->free();
-	delete header._thumbnail;
+	if (!readSavegameHeader(saveFile, header)) {
+		delete saveFile;
+		return Common::kReadingFailed;
+	}
 
 	serializer.setSaveVersion(header._version);
 
@@ -247,9 +249,8 @@ Common::Error Saver::restore(int slot) {
 const char *SAVEGAME_STR = "SCUMMVM_TSAGE";
 #define SAVEGAME_STR_SIZE 13
 
-bool Saver::readSavegameHeader(Common::InSaveFile *in, tSageSavegameHeader &header) {
+WARN_UNUSED_RESULT bool Saver::readSavegameHeader(Common::InSaveFile *in, tSageSavegameHeader &header, bool skipThumbnail) {
 	char saveIdentBuffer[SAVEGAME_STR_SIZE + 1];
-	header._thumbnail = NULL;
 
 	// Validate the header Id
 	in->read(saveIdentBuffer, SAVEGAME_STR_SIZE + 1);
@@ -266,9 +267,9 @@ bool Saver::readSavegameHeader(Common::InSaveFile *in, tSageSavegameHeader &head
 	while ((ch = (char)in->readByte()) != '\0') header._saveName += ch;
 
 	// Get the thumbnail
-	header._thumbnail = Graphics::loadThumbnail(*in);
-	if (!header._thumbnail)
+	if (!Graphics::loadThumbnail(*in, header._thumbnail, skipThumbnail)) {
 		return false;
+	}
 
 	// Read in save date/time
 	header._saveYear = in->readSint16LE();
@@ -353,7 +354,7 @@ void Saver::removeObject(SavedObject *obj) {
  * Returns true if any savegames exist
  */
 bool Saver::savegamesExist() const {
-	Common::String slot1Name = g_vm->generateSaveName(1);
+	Common::String slot1Name = g_vm->getSaveStateName(1);
 
 	Common::InSaveFile *saveFile = g_system->getSavefileManager()->openForLoading(slot1Name);
 	bool result = saveFile != NULL;

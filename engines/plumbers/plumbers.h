@@ -23,28 +23,25 @@
 #ifndef PLUMBERS_PLUMBERS_H
 #define PLUMBERS_PLUMBERS_H
 
-#include "common/scummsys.h"
-#include "common/config-manager.h"
-#include "engines/advancedDetector.h"
-#include "common/error.h"
 #include "engines/engine.h"
 
-#include "audio/audiostream.h"
-#include "audio/decoders/wave.h"
-#include "audio/mixer.h"
-#include "common/events.h"
-#include "common/file.h"
+#include "common/platform.h"
 #include "common/queue.h"
-#include "common/system.h"
-#include "common/timer.h"
-#include "graphics/palette.h"
-#include "graphics/screen.h"
-#include "graphics/surface.h"
-#include "image/bmp.h"
+#include "common/rect.h"
+#include "common/str.h"
 
-#include "plumbers/console.h"
+#include "audio/mixer.h"
+
+struct ADGameDescription;
+
+namespace Image {
+class ImageDecoder;
+}
 
 namespace Plumbers {
+
+class Console;
+
 enum PlumbersDebugChannels {
 	kDebugGeneral = 1 << 0
 };
@@ -52,9 +49,9 @@ enum PlumbersDebugChannels {
 class PlumbersGame : public Engine {
 public:
 	PlumbersGame(OSystem *syst, const ADGameDescription *gameDesc);
-	~PlumbersGame();
+	~PlumbersGame() override;
 
-	virtual Common::Error run();
+	Common::Error run() override;
 
 	// Detection related functions
 	const ADGameDescription *_gameDescription;
@@ -110,7 +107,7 @@ private:
 	};
 
 	Common::Queue<Action> _actions;
-	
+
 	void loadImage(const Common::String &dirname, const Common::String &filename);
 	void drawScreen();
 

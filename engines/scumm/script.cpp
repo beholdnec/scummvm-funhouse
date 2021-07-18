@@ -651,7 +651,7 @@ void ScummEngine::writeVar(uint var, int value) {
 
 		_scummVars[var] = value;
 
-		if ((_varwatch == (int)var) || (_varwatch == 0)) {
+		if ((_varwatch == (int)var || _varwatch == 0) && _currentScript < NUM_SCRIPT_SLOT) {
 			if (vm.slot[_currentScript].number < 100)
 				debug(1, "vars[%d] = %d (via script-%d)", var, value, vm.slot[_currentScript].number);
 			else
@@ -1335,6 +1335,8 @@ void ScummEngine_v2::runInputScript(int clickArea, int val, int mode) {
 		break;
 	case kInventoryClickArea:		// Inventory clicked
 		VAR(VAR_CLICK_OBJECT) = val;
+		break;
+	default:
 		break;
 	}
 

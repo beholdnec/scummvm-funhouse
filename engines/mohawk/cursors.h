@@ -27,7 +27,7 @@
 
 namespace Common {
 class MacResManager;
-class NEResources;
+class WinResources;
 class SeekableReadStream;
 class String;
 }
@@ -72,11 +72,11 @@ protected:
 // Uses standard tCUR resources
 class DefaultCursorManager : public CursorManager {
 public:
-	DefaultCursorManager(MohawkEngine *vm, uint32 tag = ID_TCUR) : _vm(vm), _tag(tag) {}
-	~DefaultCursorManager() {}
+	explicit DefaultCursorManager(MohawkEngine *vm, uint32 tag = ID_TCUR) : _vm(vm), _tag(tag) {}
+	~DefaultCursorManager() override {}
 
-	void setCursor(uint16 id);
-	bool hasSource() const { return true; }
+	void setCursor(uint16 id) override;
+	bool hasSource() const override { return true; }
 
 private:
 	MohawkEngine *_vm;
@@ -110,14 +110,14 @@ class MohawkEngine_Myst;
 // Uses WDIB + CLRC resources
 class MystCursorManager : public CursorManager {
 public:
-	MystCursorManager(MohawkEngine_Myst *vm);
-	~MystCursorManager();
+	explicit MystCursorManager(MohawkEngine_Myst *vm);
+	~MystCursorManager() override;
 
-	void showCursor();
-	void hideCursor();
-	void setCursor(uint16 id);
-	void setDefaultCursor();
-	bool hasSource() const { return true; }
+	void showCursor() override;
+	void hideCursor() override;
+	void setCursor(uint16 id) override;
+	void setDefaultCursor() override;
+	bool hasSource() const override { return true; }
 
 private:
 	MohawkEngine_Myst *_vm;
@@ -125,27 +125,14 @@ private:
 
 #endif // ENABLE_MYST
 
-// The cursor manager for NE EXE's
-class NECursorManager : public CursorManager {
-public:
-	NECursorManager(const Common::String &appName);
-	~NECursorManager();
-
-	void setCursor(uint16 id);
-	bool hasSource() const { return _exe != 0; }
-
-private:
-	Common::NEResources *_exe;
-};
-
 // The cursor manager for Mac applications
 class MacCursorManager : public CursorManager {
 public:
-	MacCursorManager(const Common::String &appName);
-	~MacCursorManager();
+	explicit MacCursorManager(const Common::String &appName);
+	~MacCursorManager() override;
 
-	void setCursor(uint16 id);
-	bool hasSource() const { return _resFork != 0; }
+	void setCursor(uint16 id) override;
+	bool hasSource() const override { return _resFork != nullptr; }
 
 private:
 	Common::MacResManager *_resFork;
@@ -156,24 +143,26 @@ private:
 class LivingBooksCursorManager_v2 : public CursorManager {
 public:
 	LivingBooksCursorManager_v2();
-	~LivingBooksCursorManager_v2();
+	~LivingBooksCursorManager_v2() override;
 
-	void setCursor(uint16 id);
-	void setCursor(const Common::String &name);
-	bool hasSource() const { return _sysArchive != 0; }
+	void setCursor(uint16 id) override;
+	void setCursor(const Common::String &name) override;
+	bool hasSource() const override { return _sysArchive != nullptr; }
 
 private:
 	MohawkArchive *_sysArchive;
 };
 
-// The cursor manager for PE EXE's
-class PECursorManager : public CursorManager {
+// The cursor manager for Windows EXE's
+class WinCursorManager : public CursorManager {
 public:
-	PECursorManager(const Common::String &appName);
-	~PECursorManager();
+	~WinCursorManager() override;
 
-	void setCursor(uint16 id);
-	bool hasSource() const { return !_cursors.empty(); }
+	void setCursor(uint16 id) override;
+	bool hasSource() const override { return !_cursors.empty(); }
+
+protected:
+	void loadCursors(Common::WinResources *exe);
 
 private:
 	struct CursorItem {
@@ -182,6 +171,18 @@ private:
 	};
 
 	Common::Array<CursorItem> _cursors;
+};
+
+// The cursor manager for NE EXE's
+class NECursorManager : public WinCursorManager {
+public:
+	explicit NECursorManager(const Common::String &appName);
+};
+
+// The cursor manager for PE EXE's
+class PECursorManager : public WinCursorManager {
+public:
+	explicit PECursorManager(const Common::String &appName);
 };
 
 } // End of namespace Mohawk

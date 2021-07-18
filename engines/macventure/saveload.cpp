@@ -42,7 +42,7 @@ namespace MacVenture {
 #define MACVENTURE_SAVE_VERSION 1 //1 BYTE
 #define MACVENTURE_DESC_LENGTH 4 //4 BYTE for the metadata length
 
-SaveStateDescriptor loadMetaData(Common::SeekableReadStream *s, int slot) {
+SaveStateDescriptor loadMetaData(Common::SeekableReadStream *s, int slot, bool skipThumbnail) {
 	// Metadata is stored at the end of the file
 	// |THUMBNAIL						|
 	// |								|
@@ -62,11 +62,14 @@ SaveStateDescriptor loadMetaData(Common::SeekableReadStream *s, int slot) {
 
 	// Depends on MACVENTURE_DESC_LENGTH
 	uint32 metaSize = s->readUint32BE();
-	s->seek(-(5 + MACVENTURE_DESC_LENGTH + metaSize), SEEK_END);
+	s->seek(-((int32)(5 + MACVENTURE_DESC_LENGTH + metaSize)), SEEK_END);
 
 	// Load the thumbnail
-	Graphics::Surface *thumb = Graphics::loadThumbnail(*s);
-	desc.setThumbnail(thumb);
+	Graphics::Surface *thumbnail;
+	if (!Graphics::loadThumbnail(*s, thumbnail, skipThumbnail)) {
+		return desc;
+	}
+	desc.setThumbnail(thumbnail);
 
 	// Load the description
 	Common::String name;
@@ -136,7 +139,7 @@ void writeMetaData(Common::OutSaveFile *file, Common::String desc) {
 }
 
 Common::Error MacVentureEngine::loadGameState(int slot) {
-	Common::String saveFileName = Common::String::format("%s.%03d", _targetName.c_str(), slot);
+	Common::String saveFileName = getSaveStateName(slot);
 	Common::InSaveFile *file;
 	if(!(file = getSaveFileManager()->openForLoading(saveFileName))) {
 		error("ENGINE: Missing savegame file %s", saveFileName.c_str());
@@ -146,8 +149,8 @@ Common::Error MacVentureEngine::loadGameState(int slot) {
 	return Common::kNoError;
 }
 
-Common::Error MacVentureEngine::saveGameState(int slot, const Common::String &desc) {
-	Common::String saveFileName = Common::String::format("%s.%03d", _targetName.c_str(), slot);
+Common::Error MacVentureEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
+	Common::String saveFileName = getSaveStateName(slot);
 	Common::SaveFileManager *manager = getSaveFileManager();
 	// HACK Get a real name!
 	Common::OutSaveFile *file = manager->openForSaving(saveFileName);

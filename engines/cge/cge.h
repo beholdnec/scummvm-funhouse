@@ -56,7 +56,7 @@ class Walk;
 class Text;
 class Talk;
 
-#define kSavegameVersion 2
+#define kSavegameVersion 3
 #define kSavegameStrSize 11
 #define kPocketX    174
 #define kPocketY    176
@@ -99,8 +99,9 @@ struct SavegameHeader {
 	uint8 version;
 	Common::String saveName;
 	Graphics::Surface *thumbnail;
-	int saveYear, saveMonth, saveDay;
-	int saveHour, saveMinutes;
+	int16 saveYear, saveMonth, saveDay;
+	int16 saveHour, saveMinutes;
+	uint32 playTime;
 };
 
 extern const char *savegameStr;
@@ -132,15 +133,14 @@ private:
 	void writeSavegameHeader(Common::OutSaveFile *out, SavegameHeader &header);
 	void syncGame(Common::SeekableReadStream *readStream, Common::WriteStream *writeStream, bool tiny);
 	bool savegameExists(int slotNumber);
-	Common::String generateSaveName(int slot);
 public:
 	CGEEngine(OSystem *syst, const ADGameDescription *gameDescription);
-	~CGEEngine();
-	virtual bool hasFeature(EngineFeature f) const;
-	virtual bool canLoadGameStateCurrently();
-	virtual bool canSaveGameStateCurrently();
-	virtual Common::Error loadGameState(int slot);
-	virtual Common::Error saveGameState(int slot, const Common::String &desc);
+	~CGEEngine() override;
+	bool hasFeature(EngineFeature f) const override;
+	bool canLoadGameStateCurrently() override;
+	bool canSaveGameStateCurrently() override;
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
 
 	static const int _maxSceneArr[5];
 	bool _quitFlag;
@@ -204,10 +204,7 @@ public:
 	BitmapPtr *_miniShpList;
 	int        _startGameSlot;
 
-	virtual Common::Error run();
-	GUI::Debugger *getDebugger() {
-		return _console;
-	}
+	virtual Common::Error run() override;
 
 	void cge_main();
 	void switchScene(int newScene);
@@ -246,7 +243,7 @@ public:
 	void mainLoop();
 	void handleFrame();
 	void saveGame(int slotNumber, const Common::String &desc);
-	static bool readSavegameHeader(Common::InSaveFile *in, SavegameHeader &header);
+	WARN_UNUSED_RESULT static bool readSavegameHeader(Common::InSaveFile *in, SavegameHeader &header, bool skipThumbnail = true);
 	void switchMusic();
 	void selectPocket(int n);
 	void expandSprite(Sprite *spr);
@@ -325,7 +322,6 @@ protected:
 	int _recentStep;
 
 private:
-	CGEConsole *_console;
 	void init();
 	void deinit();
 };
@@ -334,7 +330,7 @@ private:
 class Console : public GUI::Debugger {
 public:
 	Console(CGEEngine *vm) {}
-	virtual ~Console() {}
+	~Console() override {}
 };
 
 } // End of namespace CGE

@@ -23,14 +23,16 @@
 #if !defined(BACKEND_EVENTS_SYMBIAN_SDL_H) && !defined(DISABLE_DEFAULT_EVENTMANAGER)
 #define BACKEND_EVENTS_SYMBIAN_SDL_H
 
-#include "backends/events/sdl/sdl-events.h"
+#include "backends/events/sdl/legacy-sdl-events.h"
+
+#ifdef GUI_ENABLE_KEYSDIALOG
 
 #define TOTAL_ZONES 3
 
 /**
  * SDL events manager for Symbian
  */
-class SymbianSdlEventSource : public SdlEventSource {
+class SymbianSdlEventSource : public LegacySdlEventSource {
 public:
 	SymbianSdlEventSource();
 
@@ -50,6 +52,10 @@ protected:
 	static zoneDesc _zones[TOTAL_ZONES];
 
 	virtual bool remapKey(SDL_Event &ev, Common::Event &event);
+
+	virtual bool handleAxisToMouseMotion(int16 xAxis, int16 yAxis);
 };
+
+#endif
 
 #endif

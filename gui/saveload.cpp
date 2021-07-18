@@ -31,12 +31,12 @@
 namespace GUI {
 
 SaveLoadChooser::SaveLoadChooser(const String &title, const String &buttonLabel, bool saveMode)
-	: _impl(0), _title(title), _buttonLabel(buttonLabel), _saveMode(saveMode) {
+	: _impl(nullptr), _title(title), _buttonLabel(buttonLabel), _saveMode(saveMode) {
 }
 
 SaveLoadChooser::~SaveLoadChooser() {
 	delete _impl;
-	_impl = 0;
+	_impl = nullptr;
 }
 
 void SaveLoadChooser::selectChooser(const MetaEngine &engine) {
@@ -44,13 +44,15 @@ void SaveLoadChooser::selectChooser(const MetaEngine &engine) {
 	const SaveLoadChooserType requestedType = getRequestedSaveLoadDialog(engine);
 	if (!_impl || _impl->getType() != requestedType) {
 		delete _impl;
-		_impl = 0;
+		_impl = nullptr;
 
 		switch (requestedType) {
 		case kSaveLoadDialogGrid:
 			_impl = new SaveLoadChooserGrid(_title, _saveMode);
 			break;
 
+		default:
+			// fallthrough intended
 		case kSaveLoadDialogList:
 #endif // !DISABLE_SAVELOADCHOOSER_GRID
 			_impl = new SaveLoadChooserSimple(_title, _buttonLabel, _saveMode);
@@ -74,16 +76,15 @@ Common::String SaveLoadChooser::createDefaultSaveDescription(const int slot) con
 }
 
 int SaveLoadChooser::runModalWithCurrentTarget() {
-	const Common::String gameId = ConfMan.get("gameid");
-
-	const EnginePlugin *plugin = 0;
-	EngineMan.findGame(gameId, &plugin);
-
+	const Plugin *plugin = EngineMan.findPlugin(ConfMan.get("engineid"));
+	if (!plugin) {
+		error("SaveLoadChooser::runModalWithCurrentTarget(): Cannot find plugin");
+	}
 	return runModalWithPluginAndTarget(plugin, ConfMan.getActiveDomainName());
 }
 
-int SaveLoadChooser::runModalWithPluginAndTarget(const EnginePlugin *plugin, const String &target) {
-	selectChooser(**plugin);
+int SaveLoadChooser::runModalWithPluginAndTarget(const Plugin *plugin, const String &target) {
+	selectChooser(plugin->get<MetaEngine>());
 	if (!_impl)
 		return -1;
 
@@ -98,10 +99,10 @@ int SaveLoadChooser::runModalWithPluginAndTarget(const EnginePlugin *plugin, con
 
 	int ret;
 	do {
-		ret = _impl->run(target, &(**plugin));
+		ret = _impl->run(target, &plugin->get<MetaEngine>());
 #ifndef DISABLE_SAVELOADCHOOSER_GRID
 		if (ret == kSwitchSaveLoadDialog) {
-			selectChooser(**plugin);
+			selectChooser(plugin->get<MetaEngine>());
 		}
 #endif // !DISABLE_SAVELOADCHOOSER_GRID
 	} while (ret < -1);

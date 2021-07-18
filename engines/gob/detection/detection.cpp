@@ -22,7 +22,6 @@
 
 #include "base/plugins.h"
 #include "engines/advancedDetector.h"
-#include "engines/obsolete.h"
 
 #include "gob/gob.h"
 #include "gob/dataio.h"
@@ -33,17 +32,19 @@ class GobMetaEngine : public AdvancedMetaEngine {
 public:
 	GobMetaEngine();
 
-	virtual GameDescriptor findGame(const char *gameId) const;
+	const char *getEngineId() const override {
+		return "gob";
+	}
 
-	virtual const ADGameDescription *fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const;
+	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const override;
 
-	virtual const char *getName() const;
-	virtual const char *getOriginalCopyright() const;
+	const char *getName() const override;
+	const char *getOriginalCopyright() const override;
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
+	bool hasFeature(MetaEngineFeature f) const override;
 
-	virtual Common::Error createInstance(OSystem *syst, Engine **engine) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
+	Common::Error createInstance(OSystem *syst, Engine **engine) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 
 private:
 	/**
@@ -55,33 +56,25 @@ private:
 GobMetaEngine::GobMetaEngine() :
 	AdvancedMetaEngine(Gob::gameDescriptions, sizeof(Gob::GOBGameDescription), gobGames) {
 
-	_singleId   = "gob";
 	_guiOptions = GUIO1(GUIO_NOLAUNCHLOAD);
 }
 
-GameDescriptor GobMetaEngine::findGame(const char *gameId) const {
-	return Engines::findGameID(gameId, _gameIds, obsoleteGameIDsTable);
-}
+ADDetectedGame GobMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
+	ADDetectedGame detectedGame = detectGameFilebased(allFiles, fslist, Gob::fileBased);
+	if (!detectedGame.desc) {
+		return ADDetectedGame();
+	}
 
-const ADGameDescription *GobMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
-	ADFilePropertiesMap filesProps;
-
-	const Gob::GOBGameDescription *game;
-	game = (const Gob::GOBGameDescription *)detectGameFilebased(allFiles, fslist, Gob::fileBased, &filesProps);
-	if (!game)
-		return 0;
+	const Gob::GOBGameDescription *game = (const Gob::GOBGameDescription *)detectedGame.desc;
 
 	if (game->gameType == Gob::kGameTypeOnceUponATime) {
 		game = detectOnceUponATime(fslist);
-		if (!game)
-			return 0;
+		if (game) {
+			detectedGame.desc = &game->desc;
+		}
 	}
 
-	ADGameIdList gameIds;
-	gameIds.push_back(game->desc.gameId);
-
-	reportUnknown(fslist.begin()->getParent(), filesProps, gameIds);
-	return (const ADGameDescription *)game;
+	return detectedGame;
 }
 
 const Gob::GOBGameDescription *GobMetaEngine::detectOnceUponATime(const Common::FSList &fslist) {
@@ -154,7 +147,7 @@ const Gob::GOBGameDescription *GobMetaEngine::detectOnceUponATime(const Common::
 
 	if ((gameType == Gob::kOnceUponATimeInvalid) || (platform == Gob::kOnceUponATimePlatformInvalid)) {
 		warning("GobMetaEngine::detectOnceUponATime(): Detection failed (%d, %d)",
-		        (int) gameType, (int) platform);
+		        (int)gameType, (int)platform);
 		return 0;
 	}
 
@@ -175,11 +168,10 @@ bool GobMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool Gob::GobEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL);
+		(f == kSupportsReturnToLauncher);
 }
 
 Common::Error GobMetaEngine::createInstance(OSystem *syst, Engine **engine) const {
-	Engines::upgradeTargetIfNecessary(obsoleteGameIDsTable);
 	return AdvancedMetaEngine::createInstance(syst, engine);
 }
 

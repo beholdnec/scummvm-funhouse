@@ -31,9 +31,11 @@
 #include "common/memstream.h"
 #endif
 
+#include "sci/engine/workarounds.h"
 #include "sci/parser/vocabulary.h"
 #include "sci/resource.h"
 #include "sci/resource_intern.h"
+#include "sci/resource_patcher.h"
 #include "sci/util.h"
 
 namespace Sci {
@@ -184,11 +186,15 @@ ResourceType ResourceManager::convertResType(byte type) {
 	// older resource types here.
 	// PQ4 CD and QFG4 CD are SCI2.1, but use the resource types of the
 	// corresponding SCI2 floppy disk versions.
+	// GK1 is the only SCI 2.0 Mac game and uses the older resource types.
 	if (g_sci && (g_sci->getGameId() == GID_LSL6HIRES ||
-	        g_sci->getGameId() == GID_QFG4 || g_sci->getGameId() == GID_PQ4))
+			g_sci->getGameId() == GID_QFG4 ||
+			g_sci->getGameId() == GID_PQ4 ||
+			g_sci->getGameId() == GID_GK1)) {
 		forceSci0 = true;
+	}
 
-	if (_mapVersion < kResVersionSci2 || forceSci0) {
+	if ((_mapVersion < kResVersionSci2 && !_isSci2Mac) || forceSci0) {
 		// SCI0 - SCI2
 		if (type < ARRAYSIZE(s_resTypeMapSci0))
 			return s_resTypeMapSci0[type];
@@ -224,10 +230,14 @@ void Resource::unalloc() {
 }
 
 void Resource::writeToStream(Common::WriteStream *stream) const {
-	stream->writeByte(getType() | 0x80); // 0x80 is required by old Sierra SCI, otherwise it wont accept the patch file
-	stream->writeByte(_headerSize);
-	if (_headerSize > 0)
+	if (_headerSize == 0) {
+		// create patch file header
+		stream->writeByte(getType() | 0x80); // 0x80 is required by old Sierra SCI, otherwise it wont accept the patch file
+		stream->writeByte(_headerSize);
+	} else {
+		// use existing patch file header
 		stream->write(_header, _headerSize);
+	}
 	stream->write(_data, _size);
 }
 
@@ -414,6 +424,9 @@ void ResourceManager::disposeVolumeFileStream(Common::SeekableReadStream *fileSt
 
 void ResourceManager::loadResource(Resource *res) {
 	res->_source->loadResource(this, res);
+	if (_patcher) {
+		_patcher->applyPatch(*res);
+	};
 }
 
 
@@ -476,7 +489,7 @@ void MacResourceForkResourceSource::decompressResource(Common::SeekableReadStrea
 	bool canBeCompressed = !(g_sci && g_sci->getGameId() == GID_KQ6) && isCompressableResource(resource->_id.getType());
 	uint32 uncompressedSize = 0;
 
-#ifdef ENABLE_SCI32_MAC
+#ifdef ENABLE_SCI32
 	// GK2 Mac is crazy. In its Patches resource fork, picture 2315 is not
 	// compressed and it is hardcoded in the executable to say that it's
 	// not compressed. Why didn't they just add four zeroes to the end of
@@ -618,7 +631,7 @@ int ResourceManager::addAppropriateSources() {
 		ResourceSource *map = addExternalMap("resource.map");
 
 		Common::ArchiveMemberList files;
-		SearchMan.listMatchingMembers(files, "resource.0??");
+		SearchMan.listMatchingMembers(files, "resource.0##");
 
 		for (Common::ArchiveMemberList::const_iterator x = files.begin(); x != files.end(); ++x) {
 			const Common::String name = (*x)->getName();
@@ -635,7 +648,8 @@ int ResourceManager::addAppropriateSources() {
 	} else if (Common::MacResManager::exists("Data1")) {
 		// Mac SCI1.1+ file naming scheme
 		Common::StringArray files;
-		Common::MacResManager::listFiles(files, "Data?");
+		Common::MacResManager::listFiles(files, "Data#");
+		Common::MacResManager::listFiles(files, "Data##");
 
 		for (Common::StringArray::const_iterator x = files.begin(); x != files.end(); ++x) {
 			addSource(new MacResourceForkResourceSource(*x, atoi(x->c_str() + 4)));
@@ -648,8 +662,8 @@ int ResourceManager::addAppropriateSources() {
 	} else {
 		// SCI2.1-SCI3 file naming scheme
 		Common::ArchiveMemberList mapFiles, files;
-		SearchMan.listMatchingMembers(mapFiles, "resmap.0??");
-		SearchMan.listMatchingMembers(files, "ressci.0??");
+		SearchMan.listMatchingMembers(mapFiles, "resmap.0##");
+		SearchMan.listMatchingMembers(files, "ressci.0##");
 
 		if (mapFiles.empty() || files.empty())
 			return 0;
@@ -728,7 +742,7 @@ int ResourceManager::addAppropriateSourcesForDetection(const Common::FSList &fsl
 			map = addExternalMap(file);
 
 		if (filename.contains("resmap.0")) {
-			const char *dot = strrchr(file->getName().c_str(), '.');
+			const char *dot = strrchr(filename.c_str(), '.');
 			uint number = atoi(dot + 1);
 
 			// We need to store each of these maps for use later on
@@ -799,7 +813,7 @@ void ResourceManager::addScriptChunkSources() {
 #endif
 }
 
-extern void showScummVMDialog(const Common::String &message);
+extern int showScummVMDialog(const Common::String& message, const char* altButton = nullptr, bool alignCenter = true);
 
 void ResourceManager::scanNewSources() {
 	_hasBadResources = false;
@@ -972,6 +986,13 @@ void ResourceManager::init() {
 #ifdef ENABLE_SCI32
 	_currentDiscNo = 1;
 #endif
+	if (g_sci) {
+		_patcher = new ResourcePatcher(g_sci->getGameId(), g_sci->getLanguage());
+		addSource(_patcher);
+	} else {
+		_patcher = NULL;
+	};
+
 	// FIXME: put this in an Init() function, so that we can error out if detection fails completely
 
 	_mapVersion = detectMapVersion();
@@ -987,6 +1008,11 @@ void ResourceManager::init() {
 		_mapVersion = _volVersion;
 	}
 
+	if ((_volVersion == kResVersionSci3) && (_mapVersion < kResVersionSci2)) {
+		warning("Detected volume version is too high for detected map version. Setting volume version to map version");
+		_volVersion = _mapVersion;
+	}
+
 	debugC(1, kDebugLevelResMan, "resMan: Detected resource map version %d: %s", _mapVersion, versionDescription(_mapVersion));
 	debugC(1, kDebugLevelResMan, "resMan: Detected volume version %d: %s", _volVersion, versionDescription(_volVersion));
 
@@ -995,6 +1021,13 @@ void ResourceManager::init() {
 		_viewType = kViewUnknown;
 		return;
 	}
+
+#ifdef ENABLE_SCI32
+	if (_volVersion == kResVersionSci11Mac)
+		_isSci2Mac = detectSci2Mac();
+	else
+#endif
+		_isSci2Mac = false;
 
 	scanNewSources();
 
@@ -1129,7 +1162,24 @@ Common::List<ResourceId> ResourceManager::listResources(ResourceType type, int m
 	return resources;
 }
 
+bool ResourceManager::hasResourceType(ResourceType type) {
+	ResourceMap::iterator itr = _resMap.begin();
+	while (itr != _resMap.end()) {
+		if (itr->_value->getType() == type) {
+			return true;
+		}
+		++itr;
+	}
+	return false;
+}
+
 Resource *ResourceManager::findResource(ResourceId id, bool lock) {
+	// remap known incorrect audio36 and sync36 resource ids
+	if (id.getType() == kResourceTypeAudio36) {
+		id = remapAudio36ResourceId(id);
+	} else if (id.getType() == kResourceTypeSync36) {
+		id = remapSync36ResourceId(id);
+	}
 	Resource *retval = testResource(id);
 
 	if (!retval)
@@ -1207,6 +1257,8 @@ const char *ResourceManager::versionDescription(ResVersion version) const {
 		return "SCI2/2.1";
 	case kResVersionSci3:
 		return "SCI3";
+	default:
+		break;
 	}
 
 	return "Version not valid";
@@ -1432,6 +1484,36 @@ ResVersion ResourceManager::detectVolVersion() {
 	return kResVersionUnknown;
 }
 
+#ifdef ENABLE_SCI32
+bool ResourceManager::detectSci2Mac() {
+	// SCI2 Mac games use the same volume format as SCI11 and so an extra initial check is required
+	//  to differentiate between versions so that resource parsing can apply the correct resource
+	//  type mapping before full SCI version detection occurs. A simple way to differentiate is to
+	//  search for the SCI2 Object class' script resource in Mac volume files.
+	Common::MacResManager macResManager;
+	for (Common::List<ResourceSource *>::iterator it = _sources.begin(); it != _sources.end(); ++it) {
+		ResourceSource *rsrc = *it;
+		if (rsrc->getSourceType() == kSourceMacResourceFork) {
+			if (macResManager.open(rsrc->getLocationName().c_str())) {
+				const uint32 scriptTypeID = MKTAG('S', 'C', 'R', ' ');
+				const uint32 objectScriptID = 64999;
+				Common::SeekableReadStream *resource = macResManager.getResource(scriptTypeID, objectScriptID);
+				bool objectScriptExists = false;
+				if (resource != nullptr) {
+					objectScriptExists = true;
+					delete resource;
+				}
+				macResManager.close();
+				if (objectScriptExists) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+#endif
+
 bool ResourceManager::isBlacklistedPatch(const ResourceId &resId) const {
 	switch (g_sci->getGameId()) {
 	case GID_SHIVERS:
@@ -1450,6 +1532,15 @@ bool ResourceManager::isBlacklistedPatch(const ResourceId &resId) const {
 		// eliminate user error when copying files from the original CDs, since
 		// each CD had a different 65535.MAP patch file.
 		return resId.getType() == kResourceTypeMap && resId.getNumber() == 65535;
+	case GID_MOTHERGOOSE256:
+		// The multilingual CD of Mothergoose 256 has a patch file SOUND.001
+		//  which only contains a General MIDI track of the main music for
+		//  Windows. Ignore this patch file for DOS so that the resource in
+		//  RESOURCE.001 with all the normal tracks gets used. Bug #11243
+		return g_sci->isCD() &&
+			g_sci->getPlatform() == Common::kPlatformDOS &&
+			resId.getType() == kResourceTypeSound &&
+			resId.getNumber() == 1;
 	default:
 		return false;
 	}
@@ -1572,7 +1663,7 @@ void ResourceManager::processPatch(ResourceSource *source, ResourceType resource
 	debugC(1, kDebugLevelResMan, "Patching %s - OK", source->getLocationName().c_str());
 }
 
-static ResourceId convertPatchNameBase36(ResourceType type, const Common::String &filename) {
+ResourceId convertPatchNameBase36(ResourceType type, const Common::String &filename) {
 	// The base36 encoded resource contains the following:
 	// uint16 resourceId, byte noun, byte verb, byte cond, byte seq
 
@@ -1613,7 +1704,7 @@ void ResourceManager::readResourcePatchesBase36() {
 			SearchMan.listMatchingMembers(files, "A???????.???");
 			SearchMan.listMatchingMembers(files, "B???????.???");
 		} else {
-			SearchMan.listMatchingMembers(files, "#???????.???");
+			SearchMan.listMatchingMembers(files, "\\#???????.???");
 #ifdef ENABLE_SCI32
 			SearchMan.listMatchingMembers(files, "S???????.???");
 			SearchMan.listMatchingMembers(files, "T???????.???");
@@ -1626,7 +1717,8 @@ void ResourceManager::readResourcePatchesBase36() {
 
 			// The S/T prefixes often conflict with non-patch files and generate
 			// spurious warnings about invalid patches
-			if (name.hasSuffix(".DLL") || name.hasSuffix(".EXE") || name.hasSuffix(".TXT") || name.hasSuffix(".OLD") || name.hasSuffix(".WIN") || name.hasSuffix(".DOS")) {
+			if (name.hasSuffix(".DLL") || name.hasSuffix(".EXE") || name.hasSuffix(".TXT") || name.hasSuffix(".OLD") || name.hasSuffix(".WIN") || name.hasSuffix(".DOS") ||
+				name.hasSuffix(".HLP") || name.hasSuffix(".DRV")) {
 				continue;
 			}
 
@@ -1687,7 +1779,7 @@ void ResourceManager::readResourcePatches() {
 		szResType = getResourceTypeName((ResourceType)i);
 		// SCI0 naming - type.nnn
 		mask = szResType;
-		mask += ".???";
+		mask += ".###";
 		SearchMan.listMatchingMembers(files, mask);
 		// SCI1 and later naming - nnn.typ
 		mask = "*.";
@@ -2031,7 +2123,10 @@ void MacResourceForkResourceSource::scanSource(ResourceManager *resMan) {
 				Common::String resourceName = _macResMan->getResName(tagArray[i], idArray[j]);
 
 				// Same as with audio36 above
-				if (!resourceName.empty() && resourceName[0] == '#')
+				if (!resourceName.empty() && 
+					(resourceName[0] == '#' || 
+					 resourceName[0] == 'S' || // Most SCI32 games
+					 resourceName[0] == 'T'))  // Torin syncs start with T or S
 					resId = convertPatchNameBase36(kResourceTypeSync36, resourceName);
 				else
 					resId = ResourceId(type, idArray[j]);
@@ -2065,7 +2160,11 @@ bool ResourceManager::validateResource(const ResourceId &resourceId, const Commo
 
 Resource *ResourceManager::addResource(ResourceId resId, ResourceSource *src, uint32 offset, uint32 size, const Common::String &sourceMapLocation) {
 	// Adding new resource only if it does not exist
-	if (_resMap.contains(resId) == false) {
+	// Hoyle 4 contains each audio resource twice. The first file is in an unknown
+	// format and only static sounds are heard when it's played. The second file
+	// is a typical SOL audio file. We therefore skip the first audio file and add
+	// second one for this game.
+	if (_resMap.contains(resId) == false || (resId.getType() == kResourceTypeAudio && g_sci && g_sci->getGameId() == GID_HOYLE4)) {
 		return updateResource(resId, src, offset, size, sourceMapLocation);
 	} else {
 		return _resMap.getVal(resId);
@@ -2098,7 +2197,12 @@ Resource *ResourceManager::updateResource(ResourceId resId, ResourceSource *src,
 		return res;
 	}
 
-	if (validateResource(resId, sourceMapLocation, src->getLocationName(), offset, size, volumeFile->size())) {
+	// Resources from MacResourceForkResourceSource do not have a source size
+	// since the source "volume file" is the empty data fork, and they don't
+	// have an offset either since the MacResManager handles this, so trying to
+	// validate these resources using the normal validation would always fail
+	if (src->getSourceType() == kSourceMacResourceFork ||
+		validateResource(resId, sourceMapLocation, src->getLocationName(), offset, size, volumeFile->size())) {
 		if (res == nullptr) {
 			res = new Resource(this, resId);
 			_resMap.setVal(resId, res);
@@ -2342,7 +2446,7 @@ ViewType ResourceManager::detectViewType() {
 					return kViewAmiga64;
 
 				return kViewVga;
-			case 0:
+			case 0: {
 				// EGA or Amiga, try to read as Amiga view
 
 				if (res->size() < 10)
@@ -2389,6 +2493,10 @@ ViewType ResourceManager::detectViewType() {
 				}
 
 				return kViewAmiga;
+			}
+
+			default:
+				break;
 			}
 		}
 	}
@@ -2918,6 +3026,9 @@ Common::String ResourceManager::findSierraGameId(const bool isBE) {
 		heap = findResource(ResourceId(kResourceTypeScript, 0), false);
 
 		Resource *vocab = findResource(ResourceId(kResourceTypeVocab, VOCAB_RESOURCE_SELECTORS), false);
+		if (!vocab)
+			return "";
+
 		const uint16 numSelectors = isBE ? vocab->getUint16BEAt(0) : vocab->getUint16LEAt(0);
 		for (uint16 i = 0; i < numSelectors; ++i) {
 			uint16 selectorOffset;

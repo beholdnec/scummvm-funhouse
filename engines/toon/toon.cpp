@@ -106,6 +106,9 @@ void ToonEngine::init() {
 	resources()->openPackage("ONETIME.PAK");
 	resources()->openPackage("DREW.PAK");
 
+	// load subtitles if available (if fails to load it only return false, so there's no need to check)
+	resources()->openPackage("SUBTITLES.PAK");
+
 	for (int32 i = 0; i < 32; i++)
 		_characters[i] = NULL;
 
@@ -245,11 +248,6 @@ void ToonEngine::parseInput() {
 						warning("%s", buf.c_str());
 						dialog.runModal();
 					}
-				}
-
-				if (event.kbd.keycode == Common::KEYCODE_d) {
-					_console->attach();
-					_console->onFrame();
 				}
 			}
 			break;
@@ -1064,6 +1062,8 @@ bool ToonEngine::showMainmenu(bool &loadedGame) {
 		case MAINMENUHOTSPOT_HOTKEYSCLOSE:
 			menuMask = MAINMENUMASK_BASE;
 			continue;
+		default:
+			break;
 		}
 
 		if (musicPlaying) {
@@ -1097,6 +1097,8 @@ bool ToonEngine::showMainmenu(bool &loadedGame) {
 		case MAINMENUHOTSPOT_QUIT:
 			exitGame = true;
 			doExit = true;
+			break;
+		default:
 			break;
 		}
 	}
@@ -1208,7 +1210,7 @@ ToonEngine::ToonEngine(OSystem *syst, const ADGameDescription *gameDescription)
 	_saveBufferStream = NULL;
 
 	_pathFinding = NULL;
-	_console = new ToonConsole(this);
+	setDebugger(new ToonConsole(this));
 
 	_cursorAnimation = NULL;
 	_cursorAnimationInstance = NULL;
@@ -1371,7 +1373,6 @@ ToonEngine::~ToonEngine() {
 	unloadToonDat();
 
 	DebugMan.clearAllDebugChannels();
-	delete _console;
 }
 
 void ToonEngine::flushPalette(bool deferFlushToNextRender) {
@@ -1427,7 +1428,7 @@ void ToonEngine::updateAnimationSceneScripts(int32 timeElapsed) {
 
 	do {
 		if (_sceneAnimationScripts[_lastProcessedSceneScript]._lastTimer <= _system->getMillis() &&
-		        !_sceneAnimationScripts[_lastProcessedSceneScript]._frozen && !_sceneAnimationScripts[_lastProcessedSceneScript]._frozenForConversation) {
+				!_sceneAnimationScripts[_lastProcessedSceneScript]._frozen && !_sceneAnimationScripts[_lastProcessedSceneScript]._frozenForConversation) {
 			_animationSceneScriptRunFlag = true;
 
 			while (_animationSceneScriptRunFlag && _sceneAnimationScripts[_lastProcessedSceneScript]._lastTimer <= _system->getMillis() && !_shouldQuit) {
@@ -1522,7 +1523,13 @@ void ToonEngine::loadScene(int32 SceneId, bool forGameLoad) {
 	Common::String locationName = state()->_locations[SceneId]._name;
 
 	// load package
-	resources()->openPackage(createRoomFilename(locationName + ".PAK"));
+	if (!resources()->openPackage(createRoomFilename(locationName + ".PAK"))) {
+		Common::String msg = Common::String::format(_("Unable to locate the '%s' data file."), createRoomFilename(locationName + ".PAK").c_str());
+		GUIErrorMessage(msg);
+		warning("%s", msg.c_str());
+		_shouldQuit = true;
+		return;
+	}
 
 	loadAdditionalPalette(locationName + ".NPP", 0);
 
@@ -1559,9 +1566,9 @@ void ToonEngine::loadScene(int32 SceneId, bool forGameLoad) {
 
 	if (state()->_locations[SceneId]._flags & 0x40) {
 		Common::String cutaway = state()->_locations[SceneId]._cutaway;
-		_hotspots->LoadRif(locationName + ".RIC", cutaway + ".RIC");
+		_hotspots->loadRif(locationName + ".RIC", cutaway + ".RIC");
 	} else {
-		_hotspots->LoadRif(locationName + ".RIC", "");
+		_hotspots->loadRif(locationName + ".RIC", "");
 	}
 	restoreRifFlags(_gameState->_currentScene);
 
@@ -1837,10 +1844,10 @@ void ToonEngine::clickEvent() {
 	}
 
 	// find hotspot
-	int32 hot = _hotspots->Find(mouseX + state()->_currentScrollValue , _mouseY);
+	int32 hot = _hotspots->find(mouseX + state()->_currentScrollValue , _mouseY);
 	HotspotData *currentHot = 0;
 	if (hot > -1) {
-		currentHot = _hotspots->Get(hot);
+		currentHot = _hotspots->get(hot);
 	}
 
 	if (_currentHotspotItem == -3) {
@@ -2012,9 +2019,9 @@ void ToonEngine::selectHotspot() {
 		}
 	}
 
-	int32 hot = _hotspots->Find(mouseX + state()->_currentScrollValue, _mouseY);
+	int32 hot = _hotspots->find(mouseX + state()->_currentScrollValue, _mouseY);
 	if (hot != -1) {
-		HotspotData *hotspot = _hotspots->Get(hot);
+		HotspotData *hotspot = _hotspots->get(hot);
 		int32 item = hotspot->getData(14);
 		if (hotspot->getType() == 3)
 			item += 2000;
@@ -2271,8 +2278,8 @@ void ToonEngine::storeRifFlags(int32 location) {
 	}
 
 	for (int32 i = 0; i < _hotspots->getCount(); i++) {
-		_gameState->_locations[location]._rifBoxesFlags[i * 2 + 0] = _hotspots->Get(i)->getData(4);
-		_gameState->_locations[location]._rifBoxesFlags[i * 2 + 1] = _hotspots->Get(i)->getData(7);
+		_gameState->_locations[location]._rifBoxesFlags[i * 2 + 0] = _hotspots->get(i)->getData(4);
+		_gameState->_locations[location]._rifBoxesFlags[i * 2 + 1] = _hotspots->get(i)->getData(7);
 	}
 }
 
@@ -2280,8 +2287,8 @@ void ToonEngine::restoreRifFlags(int32 location) {
 	if (_hotspots) {
 		if (!_gameState->_locations[location]._visited) {
 			for (int32 i = 0; i < _hotspots->getCount(); i++) {
-				_gameState->_locations[location]._rifBoxesFlags[i * 2 + 0] = _hotspots->Get(i)->getData(4);
-				_gameState->_locations[location]._rifBoxesFlags[i * 2 + 1] = _hotspots->Get(i)->getData(7);
+				_gameState->_locations[location]._rifBoxesFlags[i * 2 + 0] = _hotspots->get(i)->getData(4);
+				_gameState->_locations[location]._rifBoxesFlags[i * 2 + 1] = _hotspots->get(i)->getData(7);
 			}
 			_gameState->_locations[location]._numRifBoxes = _hotspots->getCount();
 		} else {
@@ -2289,8 +2296,8 @@ void ToonEngine::restoreRifFlags(int32 location) {
 				return;
 
 			for (int32 i = 0; i < _hotspots->getCount(); i++) {
-				_hotspots->Get(i)->setData(4, _gameState->_locations[location]._rifBoxesFlags[i * 2 + 0]);
-				_hotspots->Get(i)->setData(7, _gameState->_locations[location]._rifBoxesFlags[i * 2 + 1]);
+				_hotspots->get(i)->setData(4, _gameState->_locations[location]._rifBoxesFlags[i * 2 + 0]);
+				_hotspots->get(i)->setData(7, _gameState->_locations[location]._rifBoxesFlags[i * 2 + 1]);
 			}
 		}
 	}
@@ -2886,7 +2893,7 @@ int32 ToonEngine::runConversationCommand(int16 **command) {
 		}
 		break;
 	case 103:
-		return result;
+	default:
 		break;
 	}
 	return result;
@@ -2985,8 +2992,8 @@ int32 ToonEngine::showInventory() {
 				int32 x = 57 * (i % 7) + 114;
 				int32 y = ((9 * (i % 7)) & 0xf) + 56 * (i / 7) + 80;
 				if (_mouseX >= (_gameState->_currentScrollValue + x - 6) &&
-				        _mouseX <= (_gameState->_currentScrollValue + x + 44 + 7) &&
-				        _mouseY >= y - 6 && _mouseY <= y + 50) {
+						_mouseX <= (_gameState->_currentScrollValue + x + 44 + 7) &&
+						_mouseY >= y - 6 && _mouseY <= y + 50) {
 					foundObj = i;
 					break;
 				}
@@ -3286,7 +3293,18 @@ void ToonEngine::drawConversationLine() {
 	if (_currentTextLine && _showConversationText) {
 		_fontRenderer->setFontColorByCharacter(_currentTextLineCharacterId);
 		_fontRenderer->setFont(_currentFont);
-		_fontRenderer->renderMultiLineText(_currentTextLineX, _currentTextLineY, _currentTextLine, 0);
+		_fontRenderer->renderMultiLineText(_currentTextLineX, _currentTextLineY, _currentTextLine, 0, *_mainSurface);
+	}
+}
+
+void ToonEngine::drawCustomText(int16 x, int16 y, const char *line, Graphics::Surface *frame, byte color) {
+	if (line) {
+		byte col = color; // 0xce
+		_fontRenderer->setFontColor(0, col, col);
+		//_fontRenderer->setFontColorByCharacter(_currentTextLineCharacterId);
+		_gameState->_currentScrollValue = 0;
+		_fontRenderer->setFont(_currentFont);
+		_fontRenderer->renderMultiLineText(x, y, line, 0, *frame);
 	}
 }
 
@@ -3378,6 +3396,8 @@ bool ToonEngine::saveGame(int32 slot, const Common::String &saveGameDesc) {
 
 	saveFile->writeUint32BE(saveDate);
 	saveFile->writeUint16BE(saveTime);
+	uint32 playTime = getTotalPlayTime();
+	saveFile->writeUint32BE(playTime);
 
 	// save global state
 	_gameState->save(saveFile);
@@ -3444,7 +3464,7 @@ bool ToonEngine::loadGame(int32 slot) {
 		return false;
 
 	int32 saveGameVersion = loadFile->readSint32BE();
-	if (saveGameVersion != TOON_SAVEGAME_VERSION) {
+	if ( (saveGameVersion < 4) || (saveGameVersion > TOON_SAVEGAME_VERSION) ) {
 		delete loadFile;
 		return false;
 	}
@@ -3455,6 +3475,12 @@ bool ToonEngine::loadGame(int32 slot) {
 	Graphics::skipThumbnail(*loadFile);
 
 	loadFile->skip(6); // date & time skip
+
+	uint32 playTimeMsec = 0;
+	if (saveGameVersion >= 5) {
+		playTimeMsec = loadFile->readUint32BE();
+	}
+	setTotalPlayTime(playTimeMsec);
 
 	if (_gameState->_currentScene != -1) {
 		exitScene();
@@ -3964,7 +3990,6 @@ int32 ToonEngine::handleInventoryOnInventory(int32 itemDest, int32 itemSrc) {
 		break;
 	case 21:
 		switch (itemSrc) {
-
 		case 107:
 			characterTalk(1296);
 			replaceItemFromInventory(107, 109);
@@ -3993,6 +4018,8 @@ int32 ToonEngine::handleInventoryOnInventory(int32 itemDest, int32 itemSrc) {
 			setCursor(0, false, 0, 0);
 			rearrangeInventory();
 			return 1;
+		default:
+			break;
 		}
 		break;
 	case 22:
@@ -4308,6 +4335,8 @@ int32 ToonEngine::handleInventoryOnInventory(int32 itemDest, int32 itemSrc) {
 			setCursor(0, false, 0, 0);
 			rearrangeInventory();
 			return 1;
+		default:
+			break;
 		}
 		break;
 	case 71:
@@ -4620,6 +4649,9 @@ int32 ToonEngine::handleInventoryOnInventory(int32 itemDest, int32 itemSrc) {
 		} else if (itemSrc == 0x59 || itemSrc == 0x52) {
 			characterTalk(1496);
 		}
+		break;
+	default:
+		break;
 	}
 	return 0;
 }
@@ -4814,6 +4846,8 @@ int32 ToonEngine::handleInventoryOnDrew(int32 itemId) {
 			runEventScript(_mouseX, _mouseY, 2, 108, 0);
 		}
 		return 1;
+	default:
+		break;
 	}
 	return 0;
 }

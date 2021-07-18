@@ -26,14 +26,19 @@
 #include "backends/graphics/windowed.h"
 #include "backends/platform/sdl/sdl-window.h"
 
+#include "common/events.h"
 #include "common/rect.h"
 
 class SdlEventSource;
 
+#ifndef __SYMBIAN32__
+#define USE_OSD	1
+#endif
+
 /**
  * Base class for a SDL based graphics manager.
  */
-class SdlGraphicsManager : virtual public WindowedGraphicsManager {
+class SdlGraphicsManager : virtual public WindowedGraphicsManager, public Common::EventObserver {
 public:
 	SdlGraphicsManager(SdlEventSource *source, SdlWindow *window);
 	virtual ~SdlGraphicsManager() {}
@@ -89,7 +94,13 @@ public:
 	 */
 	virtual bool notifyMousePosition(Common::Point &mouse);
 
-	virtual bool showMouse(const bool visible) override;
+	virtual bool showMouse(bool visible) override;
+
+	virtual bool saveScreenshot(const Common::String &filename) const { return false; }
+	void saveScreenshot();
+
+	// Override from Common::EventObserver
+	virtual bool notifyEvent(const Common::Event &event) override;
 
 	/**
 	 * A (subset) of the graphic manager's state. This is used when switching
@@ -123,7 +134,28 @@ public:
 
 	virtual void initSizeHint(const Graphics::ModeList &modes) override;
 
+	Common::Keymap *getKeymap();
+
 protected:
+	enum CustomEventAction {
+		kActionToggleFullscreen = 100,
+		kActionToggleMouseCapture,
+		kActionSaveScreenshot,
+		kActionToggleAspectRatioCorrection,
+		kActionToggleFilteredScaling,
+		kActionCycleStretchMode,
+		kActionIncreaseScaleFactor,
+		kActionDecreaseScaleFactor,
+		kActionSetScaleFilter1,
+		kActionSetScaleFilter2,
+		kActionSetScaleFilter3,
+		kActionSetScaleFilter4,
+		kActionSetScaleFilter5,
+		kActionSetScaleFilter6,
+		kActionSetScaleFilter7,
+		kActionSetScaleFilter8
+	};
+
 	virtual int getGraphicsModeScale(int mode) const = 0;
 
 	bool defaultGraphicsModeConfig() const;
@@ -152,7 +184,7 @@ protected:
 
 	virtual void setSystemMousePosition(const int x, const int y) override;
 
-	virtual void handleResizeImpl(const int width, const int height) override;
+	virtual void handleResizeImpl(const int width, const int height, const int xdpi, const int ydpi) override;
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 public:
@@ -173,6 +205,9 @@ protected:
 	SDL_Surface *_hwScreen;
 	SdlEventSource *_eventSource;
 	SdlWindow *_window;
+
+private:
+	void toggleFullScreen();
 };
 
 #endif

@@ -102,7 +102,7 @@ void HnmPlayer::waitLoop() {
 	_nextFrameTime = _expectedFrameTime - _timeDrift;
 	if (_useSoundSync && _vm->_timerTicks > 1000.0 + _nextFrameTime)
 		_useSound = false;
-	while (_vm->_timerTicks < _nextFrameTime) ;  // waste time
+	while (_vm->_timerTicks < _nextFrameTime) {} // waste time
 	_timeDrift = _vm->_timerTicks - _nextFrameTime;
 }
 
@@ -129,7 +129,7 @@ void HnmPlayer::closeSound() {
 void HnmPlayer::loadDecompTable(int16 *buffer) {
 	for (int16 i = 0; i < 256; i++) {
 		int16 e = *buffer++;
-		decompTable[i] = LE16(e);
+		decompTable[i] = FROM_LE_16(e);
 	}
 }
 
@@ -225,7 +225,7 @@ void HnmPlayer::tryRead(int size) {
 bool HnmPlayer::loadFrame() {
 	tryRead(4);
 	int chunk = *(int *)_readBuffer;
-	chunk = LE32(chunk);
+	chunk = FROM_LE_32(chunk);
 	chunk &= 0xFFFFFF;  // upper bit - keyframe mark?
 	if (!chunk)
 		return false;

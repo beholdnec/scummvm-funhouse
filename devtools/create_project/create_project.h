@@ -23,12 +23,12 @@
 #ifndef TOOLS_CREATE_PROJECT_H
 #define TOOLS_CREATE_PROJECT_H
 
-#ifndef __has_feature       // Optional of course.
-#define __has_feature(x) 0  // Compatibility with non-clang compilers.
+#ifndef __has_feature      // Optional of course.
+#define __has_feature(x) 0 // Compatibility with non-clang compilers.
 #endif
 
-#include <map>
 #include <list>
+#include <map>
 #include <string>
 
 #include <cassert>
@@ -86,7 +86,7 @@ struct EngineDesc {
 	 * Whether the engine should be included in the build or not.
 	 */
 	bool enable;
-	
+
 	/**
 	 * Features required for this engine.
 	 */
@@ -156,12 +156,11 @@ StringList getEngineDefines(const EngineDescList &engines);
  * used to build ScummVM.
  */
 struct Feature {
-	const char *name;        ///< Name of the feature
-	const char *define;      ///< Define of the feature
+	const char *name;   ///< Name of the feature
+	const char *define; ///< Define of the feature
+	bool library; ///< Whether this feature needs to be linked to a library
 
-	const char *libraries;   ///< Libraries, which need to be linked, for the feature
-
-	bool enable;             ///< Whether the feature is enabled or not
+	bool enable; ///< Whether the feature is enabled or not
 
 	const char *description; ///< Human readable description of the feature
 
@@ -172,8 +171,8 @@ struct Feature {
 typedef std::list<Feature> FeatureList;
 
 struct Tool {
-	const char *name;        ///< Name of the tools
-	bool enable;             ///< Whether the tools is enabled or not
+	const char *name; ///< Name of the tools
+	bool enable;      ///< Whether the tools is enabled or not
 };
 typedef std::list<Tool> ToolList;
 
@@ -193,14 +192,6 @@ FeatureList getAllFeatures();
 StringList getFeatureDefines(const FeatureList &features);
 
 /**
- * Returns a list of all external library files, according to the
- * feature set passed.
- *
- * @param features List of features for the build (this may contain features, which are *not* enabled!)
- */
-StringList getFeatureLibraries(const FeatureList &features);
-
-/**
  * Sets the state of a given feature. This can be used to
  * either include or exclude an feature.
  *
@@ -212,6 +203,15 @@ StringList getFeatureLibraries(const FeatureList &features);
 bool setFeatureBuildState(const std::string &name, FeatureList &features, bool enable);
 
 /**
+ * Gets the state of a given feature.
+ *
+ * @param name Name of the feature.
+ * @param features List of features to operate on.
+ * @return "true", when the feature is enabled, "false" otherwise.
+ */
+bool getFeatureBuildState(const std::string &name, FeatureList &features);
+
+/**
  * Structure to describe a build setup.
  *
  * This includes various information about which engines to
@@ -219,8 +219,8 @@ bool setFeatureBuildState(const std::string &name, FeatureList &features, bool e
  * It also contains the path to the project source root.
  */
 struct BuildSetup {
-	std::string projectName;         ///< Project name
-	std::string projectDescription;  ///< Project description
+	std::string projectName;        ///< Project name
+	std::string projectDescription; ///< Project description
 
 	std::string srcDir;     ///< Path to the sources.
 	std::string filePrefix; ///< Prefix for the relative path arguments in the project files.
@@ -230,21 +230,22 @@ struct BuildSetup {
 	FeatureList features;   ///< Feature list for the build (this may contain features, which are *not* enabled!).
 
 	StringList defines;   ///< List of all defines for the build.
-	StringList libraries; ///< List of all external libraries required for the build.
 	StringList testDirs;  ///< List of all folders containing tests
 
-	bool devTools;         ///< Generate project files for the tools
-	bool tests;            ///< Generate project files for the tests
-	bool runBuildEvents;   ///< Run build events as part of the build (generate revision number and copy engine/theme data & needed files to the build folder
-	bool createInstaller;  ///< Create NSIS installer after the build
-	bool useSDL2;          ///< Whether to use SDL2 or not.
+	bool devTools;             ///< Generate project files for the tools
+	bool tests;                ///< Generate project files for the tests
+	bool runBuildEvents;       ///< Run build events as part of the build (generate revision number and copy engine/theme data & needed files to the build folder
+	bool createInstaller;      ///< Create installer after the build
+	bool useSDL2;              ///< Whether to use SDL2 or not.
+	bool useCanonicalLibNames; ///< Whether to use canonical libraries names or default ones
 
 	BuildSetup() {
-		devTools        = false;
-		tests           = false;
-		runBuildEvents  = false;
+		devTools = false;
+		tests = false;
+		runBuildEvents = false;
 		createInstaller = false;
-		useSDL2         = true;
+		useSDL2 = true;
+		useCanonicalLibNames = false;
 	}
 };
 
@@ -254,19 +255,76 @@ struct BuildSetup {
  * @param message The error message to print to stderr.
  */
 #if defined(__GNUC__)
-	#define NORETURN_POST __attribute__((__noreturn__))
+#define NORETURN_POST __attribute__((__noreturn__))
 #elif defined(_MSC_VER)
-	#define NORETURN_PRE __declspec(noreturn)
+#define NORETURN_PRE __declspec(noreturn)
 #endif
 
 #ifndef NORETURN_PRE
-#define	NORETURN_PRE
+#define NORETURN_PRE
 #endif
 
 #ifndef NORETURN_POST
-#define	NORETURN_POST
+#define NORETURN_POST
 #endif
 void NORETURN_PRE error(const std::string &message) NORETURN_POST;
+
+/**
+ * Structure to describe a Visual Studio version specification.
+ *
+ * This includes various generation details for MSVC projects,
+ * as well as describe the versions supported.
+ */
+struct MSVCVersion {
+	int version;                 ///< Version number passed as parameter.
+	const char *name;            ///< Full program name.
+	const char *solutionFormat;  ///< Format used for solution files.
+	const char *solutionVersion; ///< Version number used in solution files.
+	const char *project;         ///< Version number used in project files.
+	const char *toolsetMSVC;     ///< Toolset version for MSVC compiler.
+	const char *toolsetLLVM;     ///< Toolset version for Clang/LLVM compiler.
+};
+typedef std::list<MSVCVersion> MSVCList;
+
+enum MSVC_Architecture {
+	ARCH_ARM64,
+	ARCH_X86,
+	ARCH_AMD64
+};
+
+std::string getMSVCArchName(MSVC_Architecture arch);
+std::string getMSVCConfigName(MSVC_Architecture arch);
+
+/**
+ * Creates a list of all supported versions of Visual Studio.
+ *
+ * @return A list including all versions available.
+ */
+MSVCList getAllMSVCVersions();
+
+/**
+ * Returns the definitions for a specific Visual Studio version.
+ *
+ * @param version The requested version.
+ * @return The version information, or NULL if the version isn't supported.
+ */
+const MSVCVersion *getMSVCVersion(int version);
+
+/**
+ * Auto-detects the latest version of Visual Studio installed.
+ *
+ * @return Version number, or 0 if no installations were found.
+ */
+int getInstalledMSVC();
+
+/**
+ * Removes given feature from setup.
+ *
+ * @param setup The setup to be processed.
+ * @param feature The feature to be removed
+ * @return A copy of setup less feature.
+ */
+BuildSetup removeFeatureFromSetup(BuildSetup setup, const std::string &feature);
 
 namespace CreateProjectTool {
 
@@ -416,11 +474,11 @@ public:
 	static std::string getLastPathComponent(const std::string &path);
 
 protected:
-	const int _version;                                      ///< Target project version
-	StringList &_globalWarnings;                             ///< Global warnings
-	std::map<std::string, StringList> &_projectWarnings;     ///< Per-project warnings
+	const int _version;                                  ///< Target project version
+	StringList &_globalWarnings;                         ///< Global warnings
+	std::map<std::string, StringList> &_projectWarnings; ///< Per-project warnings
 
-	UUIDMap _uuidMap;                                        ///< List of (project name, UUID) pairs
+	UUIDMap _uuidMap; ///< List of (project name, UUID) pairs
 
 	/**
 	 *  Create workspace/solution file
@@ -533,7 +591,23 @@ protected:
 	 */
 	std::string createUUID() const;
 
+	/**
+	 * Creates a name-based UUID and returns it in string representation.
+	 *
+	 * @param name Unique name to hash.
+	 * @return A new UUID as string.
+	 */
+	std::string createUUID(const std::string &name) const;
+
 private:
+	/**
+	 * Returns the string representation of an existing UUID.
+	 *
+	 * @param uuid 128-bit array.
+	 * @return Existing UUID as string.
+	 */
+	std::string UUIDToString(unsigned char *uuid) const;
+
 	/**
 	 * This creates the engines/plugins_table.h file required for building
 	 * ScummVM.
@@ -543,6 +617,6 @@ private:
 	void createEnginePluginsTable(const BuildSetup &setup);
 };
 
-} // End of CreateProjectTool namespace
+} // namespace CreateProjectTool
 
 #endif // TOOLS_CREATE_PROJECT_H

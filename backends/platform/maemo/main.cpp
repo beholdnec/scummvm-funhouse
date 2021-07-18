@@ -22,19 +22,15 @@
 
 #if defined(MAEMO)
 
-#define FORBIDDEN_SYMBOL_EXCEPTION_unistd_h
-
 #include "backends/platform/maemo/maemo.h"
 #include "backends/plugins/sdl/sdl-provider.h"
 #include "base/main.h"
-
-#include <unistd.h>
 
 int main(int argc, char* argv[]) {
 	g_system = new Maemo::OSystem_SDL_Maemo();
 	assert(g_system);
 
-	((Maemo::OSystem_SDL_Maemo *)g_system)->init();
+	g_system->init();
 
 #ifdef DYNAMIC_MODULES
 	PluginManager::instance().addPluginProvider(new SDLPluginProvider());
@@ -44,7 +40,7 @@ int main(int argc, char* argv[]) {
 	int res = scummvm_main(argc, argv);
 
 	// Free OSystem
-	delete (Maemo::OSystem_SDL_Maemo *)g_system;
+	g_system->destroy();
 
 	return res;
 }

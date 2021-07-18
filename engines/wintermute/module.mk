@@ -35,6 +35,7 @@ MODULE_OBJS := \
 	base/scriptables/script_value.o \
 	base/scriptables/script_ext_array.o \
 	base/scriptables/script_ext_date.o \
+	base/scriptables/script_ext_directory.o \
 	base/scriptables/script_ext_file.o \
 	base/scriptables/script_ext_math.o \
 	base/scriptables/script_ext_object.o \
@@ -45,6 +46,7 @@ MODULE_OBJS := \
 	base/file/base_file_entry.o \
 	base/file/base_package.o \
 	base/file/base_save_thumb_file.o \
+	base/file/base_savefile_manager_file.o \
 	base/font/base_font_bitmap.o \
 	base/font/base_font_truetype.o \
 	base/font/base_font.o \
@@ -90,6 +92,17 @@ MODULE_OBJS := \
 	base/saveload.o \
 	base/save_thumb_helper.o \
 	base/timer.o \
+	ext/dll_dlltest.o \
+	ext/dll_geturl.o \
+	ext/dll_httpconnect.o \
+	ext/dll_img.o \
+	ext/dll_installutil.o \
+	ext/dll_kernel32.o \
+	ext/dll_shell32.o \
+	ext/dll_tools.o \
+	ext/wme_3fstatistics.o \
+	ext/wme_galaxy.o \
+	ext/wme_steam.o \
 	debugger/breakpoint.o \
 	debugger/debugger_controller.o \
 	debugger/error.o \

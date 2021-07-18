@@ -22,7 +22,7 @@
 
 /*
  * This code is based on original Sfinx source code
- * Copyright (c) 1994-1997 Janus B. Wisniewski and L.K. Avalon
+ * Copyright (c) 1994-1997 Janusz B. Wisniewski and L.K. Avalon
  */
 
 #include "cge2/cge2.h"
@@ -56,6 +56,16 @@ static const ADGameDescription gameDescriptions[] = {
 			{
 				{"vol.cat", 0, "aa402aed24a72c53a4d1211c456b79dd", 129024},
 				{"vol.dat", 0, "5966ac26d91d664714349669f9dd09b5", 34180164},
+				AD_LISTEND
+			},
+			Common::PL_POL, Common::kPlatformDOS, ADGF_NO_FLAGS, GUIO1(GAMEOPTION_COLOR_BLIND_DEFAULT_OFF)
+		},
+
+		{
+			"sfinx", "Freeware v1.1",
+			{
+				{"vol.cat", 0, "aa402aed24a72c53a4d1211c456b79dd", 129024},
+				{"vol.dat", 0, "5966ac26d91d664714349669f9dd09b5", 34180367},
 				AD_LISTEND
 			},
 			Common::PL_POL, Common::kPlatformDOS, ADGF_NO_FLAGS, GUIO1(GAMEOPTION_COLOR_BLIND_DEFAULT_OFF)
@@ -111,33 +121,31 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 class CGE2MetaEngine : public AdvancedMetaEngine {
 public:
 	CGE2MetaEngine() : AdvancedMetaEngine(gameDescriptions, sizeof(ADGameDescription), CGE2Games, optionsList) {
-		_singleId = "sfinx";
 	}
 
-	virtual const char *getName() const {
+	const char *getEngineId() const override {
+		return "cge2";
+	}
+
+	const char *getName() const override {
 		return "CGE2";
 	}
 
-	virtual const char *getOriginalCopyright() const {
-		return "Sfinx (C) 1994-1997 Janus B. Wisniewski and L.K. Avalon";
+	const char *getOriginalCopyright() const override {
+		return "Sfinx (C) 1994-1997 Janusz B. Wisniewski and L.K. Avalon";
 	}
 
-	virtual const ADGameDescription *fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const;
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual SaveStateList listSaves(const char *target) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
-	virtual void removeSaveState(const char *target, int slot) const;
-};
-
-static const ADFileBasedFallback fileBasedFallback[] = {
-	{ &gameDescriptions[0], { "vol.cat", "vol.dat", 0 } },
-	{ 0, { 0 } }
+	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const override;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	bool hasFeature(MetaEngineFeature f) const override;
+	int getMaximumSaveSlot() const override;
+	SaveStateList listSaves(const char *target) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	void removeSaveState(const char *target, int slot) const override;
 };
 
 static ADGameDescription s_fallbackDesc = {
-	"Sfinx",
+	"sfinx",
 	"Unknown version",
 	AD_ENTRY1(0, 0), // This should always be AD_ENTRY1(0, 0) in the fallback descriptor
 	Common::UNK_LANG,
@@ -146,30 +154,31 @@ static ADGameDescription s_fallbackDesc = {
 	GUIO1(GAMEOPTION_COLOR_BLIND_DEFAULT_OFF)
 };
 
+static const ADFileBasedFallback fileBasedFallback[] = {
+	{ &s_fallbackDesc, { "vol.cat", "vol.dat", 0 } },
+	{ 0, { 0 } }
+};
+
 // This fallback detection looks identical to the one used for CGE. In fact, the difference resides
 // in the ResourceManager which handles a different archive format. The rest of the detection is identical.
-const ADGameDescription *CGE2MetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
-	ADFilePropertiesMap filesProps;
+ADDetectedGame CGE2MetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
+	ADDetectedGame game = detectGameFilebased(allFiles, fslist, CGE2::fileBasedFallback);
 
-	const ADGameDescription *game;
-	game = detectGameFilebased(allFiles, fslist, CGE2::fileBasedFallback, &filesProps);
-
-	if (!game)
-		return 0;
+	if (!game.desc)
+		return ADDetectedGame();
 
 	SearchMan.addDirectory("CGE2MetaEngine::fallbackDetect", fslist.begin()->getParent());
 	ResourceManager *resman;
 	resman = new ResourceManager();
-	bool result = resman->exist("CGE.SAY");
+	bool sayFileFound = resman->exist("CGE.SAY");
 	delete resman;
 
 	SearchMan.remove("CGE2MetaEngine::fallbackDetect");
 
-	if (!result)
-		return 0;
+	if (!sayFileFound)
+		return ADDetectedGame();
 
-	reportUnknown(fslist.begin()->getParent(), filesProps);
-	return &s_fallbackDesc;
+	return game;
 }
 
 bool CGE2MetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
@@ -185,6 +194,7 @@ bool CGE2MetaEngine::hasFeature(MetaEngineFeature f) const {
 		(f == kSavesSupportMetaInfo) ||
 		(f == kSavesSupportThumbnail) ||
 		(f == kSavesSupportCreationDate) ||
+		(f == kSavesSupportPlayTime) ||
 		(f == kSupportsListSaves) ||
 		(f == kSupportsLoadingDuringStartup) ||
 		(f == kSimpleSavesNames);
@@ -221,10 +231,6 @@ SaveStateList CGE2MetaEngine::listSaves(const char *target) const {
 					// Valid savegame
 					if (CGE2::CGE2Engine::readSavegameHeader(file, header)) {
 						saveList.push_back(SaveStateDescriptor(slotNum, header.saveName));
-						if (header.thumbnail) {
-							header.thumbnail->free();
-							delete header.thumbnail;
-						}
 					}
 				} else {
 					// Must be an original format savegame
@@ -253,7 +259,7 @@ SaveStateDescriptor CGE2MetaEngine::querySaveMetaInfos(const char *target, int s
 		f->read(buffer, kSavegameStrSize + 1);
 
 		bool hasHeader = !strncmp(buffer, kSavegameStr, kSavegameStrSize + 1) &&
-			CGE2::CGE2Engine::readSavegameHeader(f, header);
+			CGE2::CGE2Engine::readSavegameHeader(f, header, false);
 		delete f;
 
 		if (!hasHeader) {
@@ -266,6 +272,10 @@ SaveStateDescriptor CGE2MetaEngine::querySaveMetaInfos(const char *target, int s
 			desc.setThumbnail(header.thumbnail);
 			desc.setSaveDate(header.saveYear, header.saveMonth, header.saveDay);
 			desc.setSaveTime(header.saveHour, header.saveMinutes);
+
+			if (header.playTime) {
+				desc.setPlayTime(header.playTime * 1000);
+			}
 
 			// Slot 0 is used for the 'automatic save on exit' save in Soltys, thus
 			// we prevent it from being deleted or overwritten by accident.

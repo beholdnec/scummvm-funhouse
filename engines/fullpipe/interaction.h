@@ -54,9 +54,9 @@ class Interaction : public CObject {
 
  public:
 	Interaction();
-	virtual ~Interaction();
+	~Interaction() override;
 
-	virtual bool load(MfcArchive &file);
+	bool load(MfcArchive &file) override;
 	bool canInteract(GameObject *obj1, GameObject *obj2, int invId);
 	bool isOverlapping(StaticANIObject *subj, GameObject *obj);
 };
@@ -70,14 +70,13 @@ public:
 
  private:
 	InteractionList _interactions;
-	int16 _field_20;
 	static bool compareInteractions(const Interaction *i1, const Interaction *i2);
 
  public:
-	InteractionController() : _field_20(0), _flag24(true) {}
-	virtual ~InteractionController();
+	InteractionController() : _flag24(true) {}
+	~InteractionController() override;
 
-	virtual bool load(MfcArchive &file);
+	bool load(MfcArchive &file) override;
 
 	void enableFlag24() { _flag24 = true; }
 	void disableFlag24() { _flag24 = false; }

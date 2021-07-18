@@ -30,6 +30,11 @@
 #include "lure/strings.h"
 #include "lure/surface.h"
 #include "common/endian.h"
+#include "common/config-manager.h"
+
+#ifdef USE_TTS
+#include "common/text-to-speech.h"
+#endif
 
 namespace Lure {
 
@@ -420,7 +425,7 @@ void Surface::wordWrap(char *text, uint16 width, char **&lines, uint8 &numLines)
 			wordEnd = strchr(wordStart, '\0') - 1;
 		}
 
-		int wordBytes = (int) (wordEnd - s + 1);
+		int wordBytes = (int)(wordEnd - s + 1);
 		uint16 wordSize = (wordBytes == 0) ? 0 : textWidth(s, wordBytes);
 		if (gDebugLevel >= ERROR_DETAILED) {
 			char wordBuffer[MAX_DESC_SIZE];
@@ -467,28 +472,44 @@ Surface *Surface::newDialog(uint16 width, uint8 numLines, const char **lines, bo
 
 	Surface *s = new Surface(width, size.y);
 	s->createDialog();
+#ifdef USE_TTS
+	Common::String text;
+#endif
 
 	uint16 yP = Surface::textY();
 	for (uint8 ctr = 0; ctr < numLines; ++ctr) {
+#ifdef USE_TTS
+		text += lines[ctr];
+#endif
 		s->writeString(Surface::textX(), yP, lines[ctr], true, color, varLength);
 		yP += squashedLines ? FONT_HEIGHT - 1 : FONT_HEIGHT;
 	}
+
+
+#ifdef USE_TTS
+	if (ConfMan.getBool("tts_narrator")) {
+		Common::TextToSpeechManager *ttsMan = g_system->getTextToSpeechManager();
+		if (ttsMan != nullptr) {
+			ttsMan->stop();
+			ttsMan->say(text.c_str());
+		}
+	}
+#endif
 
 	return s;
 }
 
 Surface *Surface::newDialog(uint16 width, const char *line, int color) {
 	char **lines;
-	char *lineCopy = strdup(line);
+	Common::String lineCopy(line);
 	uint8 numLines;
-	wordWrap(lineCopy, width - (Surface::textX() * 2), lines, numLines);
+	wordWrap(lineCopy.begin(), width - (Surface::textX() * 2), lines, numLines);
 
 	// Create the dialog
 	Surface *result = newDialog(width, numLines, const_cast<const char **>(lines), true, color);
 
 	// Deallocate used resources
 	free(lines);
-	free(lineCopy);
 
 	return result;
 }

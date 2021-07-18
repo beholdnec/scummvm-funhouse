@@ -57,38 +57,35 @@ bool ARMDLObject::relocate(Elf32_Off offset, Elf32_Word size, byte *relSegment) 
 		// Get the symbol this relocation entry is referring to
 		Elf32_Sym *sym = _symtab + (REL_INDEX(rel[i].r_info));
 
-		// Get the target instruction in the code. TODO: repect _segmentVMA
-		uint32 *target = (uint32 *)((byte *)relSegment + rel[i].r_offset);
+		// Get the target instruction in the code.
+		uint32 *target = (uint32 *)((byte *)relSegment + rel[i].r_offset - _segmentVMA);
 
-		uint32 origTarget = *target;	//Save for debugging
+//		uint32 origTarget = *target;	//Save for debugging
 
 		// Act differently based on the type of relocation
 		switch (REL_TYPE(rel[i].r_info)) {
 		case R_ARM_ABS32:
+		case R_ARM_TARGET1:
 			if (sym->st_shndx < SHN_LOPROC) {			// Only shift for plugin section.
 				a = *target;							// Get full 32 bits of addend
-				relocation = a + Elf32_Addr(_segment);	// Shift by main offset
+				relocation = a - _segmentVMA + Elf32_Addr(_segment);	// Shift by main offset
 
 				*target = relocation;
 
-				debug(8, "elfloader: R_ARM_ABS32: i=%d, a=%x, origTarget=%x, target=%x", i, a, origTarget, *target);
+//				debug(8, "elfloader: R_ARM_ABS32: i=%d, a=%x, origTarget=%x, target=%x", i, a, origTarget, *target);
 			}
 			break;
 
 		case R_ARM_THM_CALL:
-			debug(8, "elfloader: R_ARM_THM_CALL: PC-relative jump, ld takes care of necessary relocation work for us.");
+//			debug(8, "elfloader: R_ARM_THM_CALL: PC-relative jump, ld takes care of necessary relocation work for us.");
 			break;
 
 		case R_ARM_CALL:
-			debug(8, "elfloader: R_ARM_CALL: PC-relative jump, ld takes care of necessary relocation work for us.");
-			break;
-
 		case R_ARM_JUMP24:
-			debug(8, "elfloader: R_ARM_JUMP24: PC-relative jump, ld takes care of all relocation work for us.");
+//			debug(8, "elfloader: R_ARM_CALL/R_ARM_JUMP24: PC-relative jump, ld takes care of necessary relocation work for us.");
 			break;
-
 		case R_ARM_V4BX:
-			debug(8, "elfloader: R_ARM_V4BX: No relocation calculation necessary.");
+//			debug(8, "elfloader: R_ARM_V4BX: No relocation calculation necessary.");
 			break;
 
 		default:

@@ -30,9 +30,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <e32def.h>
 
+#if (__GNUC__ && __cplusplus)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-local-addr"
+#pragma GCC diagnostic ignored "-Wnarrowing"
+#endif
+#include <e32def.h>
 #include <e32std.h>
+#if (__GNUC__ && __cplusplus)
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#endif
+
 #include <libc\math.h>
 
 /* define pi */
@@ -53,6 +63,17 @@ typedef unsigned short int uint16;
 typedef signed short int int16;
 typedef unsigned long int uint32;
 typedef signed long int int32;
+typedef signed long long int64;
+typedef unsigned long long uint64;
+
+#ifdef __cplusplus
+namespace std
+	{
+
+	using ::size_t;
+
+	} // namespace std
+#endif
 
 // Define SCUMMVM_DONT_DEFINE_TYPES to prevent scummsys.h from trying to
 // re-define those data types.
@@ -65,15 +86,11 @@ typedef signed long int int32;
 #undef remove
 #endif
 
-#define GUI_ONLY_FULLSCREEN
+// TODO: Replace this with the keymapper
 #define GUI_ENABLE_KEYSDIALOG
 
 #define DISABLE_COMMAND_LINE
 #define USE_RGB_COLOR
-
-#if defined(USE_TREMOR) && !defined(USE_VORBIS)
-#define USE_VORBIS // make sure this one is defined together with USE_TREMOR!
-#endif
 
 // hack in some tricks to work around not having these fcns for Symbian
 // and we _really_ don't wanna link with any other windows LIBC library!
@@ -99,9 +116,9 @@ typedef signed long int int32;
 	/* convert double float to double int (dfdi) */
 	long long inline
 	scumm_fixdfdi (double a1) { // __fixdfdi (double a1)
-	    register union double_long dl1;
-	    register int exp;
-	    register long long l;
+	    union double_long dl1;
+	    int exp;
+	    long long l;
 
 	    dl1.d = a1;
 
@@ -151,15 +168,29 @@ typedef signed long int int32;
 	#define vsnprintf(buf,len,format,valist) symbian_vsnprintf(buf,len,format,valist)
 #endif
 
+extern "C" float roundf (float x); // ultima engine
+extern "C" double nearbyint(double x); // ultima engine
+extern "C" double round(double x); // ultima engine
+
+
+#ifndef signbit
+#define signbit(x)     \
+    ((sizeof (x) == sizeof (float)) ? __signbitf(x) \
+    : (sizeof (x) == sizeof (double)) ? __signbit(x) \
+    : __signbitl(x))
+#endif 
+
+extern "C" int __signbit(double);
+extern "C" int __signbitf(float);
+extern "C" int __signbitl(long double);
+extern "C" float truncf(float);
+
 #ifndef __WINS__
 #define USE_ARM_GFX_ASM
 #define USE_ARM_SMUSH_ASM
 #define USE_ARM_COSTUME_ASM
 #define USE_ARM_SOUND_ASM
 #endif
-// This is not really functioning yet.
-// Default SDL keys should map to standard keys I think!
-//#define ENABLE_KEYMAPPER
 
 // Symbian bsearch implementation is flawed
 void *scumm_bsearch(const void *key, const void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *));

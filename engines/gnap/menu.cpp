@@ -257,6 +257,8 @@ void GnapEngine::runMenu() {
 		case 4:
 			updateMenuStatusQueryQuit();
 			break;
+		default:
+			break;
 		}
 
 		gameUpdateTick();
@@ -525,9 +527,9 @@ void GnapEngine::updateMenuStatusMainMenu() {
 #endif
 }
 
-Common::Error GnapEngine::saveGameState(int slot, const Common::String &desc) {
+Common::Error GnapEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	Common::OutSaveFile *out = g_system->getSavefileManager()->openForSaving(
-		generateSaveName(slot));
+		getSaveStateName(slot));
 	if (!out)
 		return Common::kCreatingFileFailed;
 
@@ -589,9 +591,8 @@ void GnapEngine::writeSavegameHeader(Common::OutSaveFile *out, GnapSavegameHeade
 	out->writeSint16LE(td.tm_min);
 }
 
-bool GnapEngine::readSavegameHeader(Common::InSaveFile *in, GnapSavegameHeader &header) {
+WARN_UNUSED_RESULT bool GnapEngine::readSavegameHeader(Common::InSaveFile *in, GnapSavegameHeader &header, bool skipThumbnail) {
 	char saveIdentBuffer[SAVEGAME_STR_SIZE + 1];
-	header._thumbnail = nullptr;
 
 	// Validate the header Id
 	in->read(saveIdentBuffer, SAVEGAME_STR_SIZE + 1);
@@ -612,9 +613,9 @@ bool GnapEngine::readSavegameHeader(Common::InSaveFile *in, GnapSavegameHeader &
 	if (header._version == 1)
 		header._thumbnail = nullptr;
 	else {
-		header._thumbnail = Graphics::loadThumbnail(*in);
-		if (!header._thumbnail)
+		if (!Graphics::loadThumbnail(*in, header._thumbnail, skipThumbnail)) {
 			return false;
+		}
 	}
 
 	// Read in save date/time
@@ -629,7 +630,7 @@ bool GnapEngine::readSavegameHeader(Common::InSaveFile *in, GnapSavegameHeader &
 
 Common::Error GnapEngine::loadGameState(int slot) {
 	Common::InSaveFile *saveFile = g_system->getSavefileManager()->openForLoading(
-		generateSaveName(slot));
+		getSaveStateName(slot));
 	if (!saveFile)
 		return Common::kReadingFailed;
 
@@ -650,10 +651,6 @@ Common::Error GnapEngine::loadGameState(int slot) {
 
 	_loadGameSlot = slot;
 	return Common::kNoError;
-}
-
-Common::String GnapEngine::generateSaveName(int slot) {
-	return Common::String::format("%s.%03d", _targetName.c_str(), slot);
 }
 
 void GnapEngine::updateMenuStatusSaveGame() {

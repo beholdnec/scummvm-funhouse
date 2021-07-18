@@ -36,10 +36,12 @@ class SetEffects;
 
 class Fog {
 	friend class SetEffects;
+	friend class Debugger;
 
 protected:
-	char       _name[20];
-	int        _framesCount;
+	Common::String _name;
+
+	int        _frameCount;
 	int        _animatedParameters;
 	Matrix4x3  _matrix;
 	Matrix4x3  _inverted;
@@ -59,17 +61,13 @@ protected:
 	float     *_m33ptr;
 	float     *_m34ptr;
 
-	float      _parameter1;
-	float      _parameter2;
-	float      _parameter3;
-
 	Fog       *_next;
 
 public:
 	Fog();
 	virtual ~Fog();
 
-	virtual void read(Common::ReadStream *stream, int framesCount) = 0;
+	virtual void read(Common::ReadStream *stream, int frameCount) = 0;
 	virtual void calculateCoeficient(Vector3 position, Vector3 viewPosition, float *coeficient) = 0;
 	void reset();
 
@@ -81,19 +79,37 @@ protected:
 
 };
 
-class FogCone : public Fog {
-	void read(Common::ReadStream *stream, int framesCount);
-	void calculateCoeficient(Vector3 position, Vector3 viewPosition, float *coeficient);
+class FogSphere : public Fog {
+private:
+	float _radius;
+
+public:
+	FogSphere():_radius(0.0f) {};
+
+	void read(Common::ReadStream *stream, int frameCount) override;
+	void calculateCoeficient(Vector3 position, Vector3 viewPosition, float *coeficient) override;
 };
 
-class FogSphere : public Fog {
-	void read(Common::ReadStream *stream, int framesCount);
-	void calculateCoeficient(Vector3 position, Vector3 viewPosition, float *coeficient);
+class FogCone : public Fog {
+private:
+	float _coneAngle;
+
+public:
+	FogCone():_coneAngle(0.0f) {};
+
+	void read(Common::ReadStream *stream, int frameCount) override;
+	void calculateCoeficient(Vector3 position, Vector3 viewPosition, float *coeficient) override;
 };
 
 class FogBox : public Fog {
-	void read(Common::ReadStream *stream, int framesCount);
-	void calculateCoeficient(Vector3 position, Vector3 viewPosition, float *coeficient);
+private:
+	Vector3 _size;
+
+public:
+	FogBox():_size() {};
+
+	void read(Common::ReadStream *stream, int frameCount) override;
+	void calculateCoeficient(Vector3 position, Vector3 viewPosition, float *coeficient) override;
 };
 
 } // End of namespace BladeRunner

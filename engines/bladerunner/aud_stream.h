@@ -45,22 +45,23 @@ class AudStream : public Audio::RewindableAudioStream {
 	uint32      _sizeDecompressed;
 	byte        _flags;
 	byte        _compressionType;
+	int         _overrideFrequency;
 
 	ADPCMWestwoodDecoder _decoder;
 
 	void init(byte *data);
 
 public:
-	AudStream(byte *data);
-	AudStream(AudioCache *cache, int32 hash);
-	~AudStream();
+	AudStream(byte *data, int overrideFrequency = -1);
+	AudStream(AudioCache *cache, int32 hash, int overrideFrequency = -1);
+	~AudStream() override;
 
-	int readBuffer(int16 *buffer, const int numSamples);
-	bool isStereo() const { return false; }
-	int getRate() const { return _frequency; };
-	bool endOfData() const { return _p == _end; }
-	bool rewind();
-	int getLength();
+	int readBuffer(int16 *buffer, const int numSamples) override;
+	bool isStereo() const override { return false; }
+	int getRate() const override { return _overrideFrequency > 0 ? _overrideFrequency : _frequency; };
+	bool endOfData() const override { return _p == _end; }
+	bool rewind() override;
+	uint32 getLength() const;
 };
 
 } // End of namespace BladeRunner

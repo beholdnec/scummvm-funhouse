@@ -332,6 +332,7 @@ void AGOSEngine::loadTextIntoMem(uint16 stringId) {
 
 			_tablesHeapPtr += size;
 			_tablesHeapCurPos += size;
+			alignTableMem();
 
 			if (_tablesHeapCurPos > _tablesHeapSize) {
 				error("loadTextIntoMem: Out of table memory");
@@ -486,7 +487,7 @@ void AGOSEngine::printScreenText(uint vgaSpriteId, uint color, const char *strin
 		if (_variableArray[141] == 0)
 			_variableArray[141] = 9;
 		_variableArray[85] = _variableArray[141] * talkDelay;
-		
+
 		if (_language == Common::HE_ISR)
 			_variableArray[85] += talkDelay * 2;
 	} else {

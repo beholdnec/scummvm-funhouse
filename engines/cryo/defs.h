@@ -305,7 +305,8 @@ enum PersonFlags {
 };
 }
 
-#pragma pack(push, 1)
+#include "common/pack-start.h"
+
 struct perso_t {
 	uint16  _roomNum;    // room this person currently in
 	uint16  _actionId;   // TODO: checkme
@@ -367,10 +368,10 @@ enum DialogType {
 }
 
 struct Dialog {
-	char        _flags;          // 0-3 - action index, 4 - highest bit of contidion index, rest is DialogFlags
-	char        _condNumLow;     // condition index low bits
-	char        _textCondHiMask; // 0-1 text index hi bits, 2-5 - perso mask num, 6-7 condition index hi bits
-	char        _textNumLow;     // text line index low bits
+	int8        _flags;          // 0-3 - action index, 4 - highest bit of contidion index, rest is DialogFlags
+	int8        _condNumLow;     // condition index low bits
+	int8        _textCondHiMask; // 0-1 text index hi bits, 2-5 - perso mask num, 6-7 condition index hi bits
+	int8        _textNumLow;     // text line index low bits
 };
 
 struct tape_t {
@@ -383,8 +384,8 @@ struct tape_t {
 };
 
 struct Follower {      // Characters on Mirror screen
-	char        _id;         // character
-	char        _spriteNum;      // sprite number
+	int8        _id;         // character
+	int8        _spriteNum;      // sprite number
 	int16       sx;
 	int16       sy;
 	int16       ex;
@@ -596,7 +597,7 @@ struct global_t {
 	uint16  _party;
 	uint16  _partyOutside;
 	uint16  _metPersonsMask2;
-	uint16  _var1C;    //TODO: write-only?	
+	uint16  _var1C;    //TODO: write-only?
 	uint16  _phaseActionsCount;
 	uint16  _curAreaFlags;
 	uint16  _curItemsMask;
@@ -756,7 +757,8 @@ public:
 	uint16    _count;
 	PakHeaderItem* _files;
 };
-#pragma pack(pop)
+
+#include "common/pack-end.h"
 
 struct Citadel {
 	int16 _id;

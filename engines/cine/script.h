@@ -177,7 +177,7 @@ protected:
 	int o1_loadMask4();
 	int o1_unloadMask4();
 	int o1_addSpriteFilledToBgList();
-	int o1_op1B();
+	int o1_clearBgIncrustList();
 	int o1_label();
 	int o1_goto();
 	int o1_gotoIfSup();
@@ -239,7 +239,7 @@ protected:
 	int o2_removeSeq();
 	int o2_playSample();
 	int o2_playSampleAlt();
-	int o2_op81();
+	int o2_clearSeqList();
 	int o2_modifySeqListElement();
 	int o2_isSeqRunning();
 	int o2_gotoIfSupNearest();
@@ -344,16 +344,16 @@ public:
  */
 class OSScriptInfo : public FWScriptInfo {
 protected:
-	virtual OpFunc opcodeHandler(byte opcode) const;
+	OpFunc opcodeHandler(byte opcode) const override;
 
 public:
-	virtual ~OSScriptInfo() {}
+	~OSScriptInfo() override {}
 
-	virtual const char *opcodeInfo(byte opcode) const;
-	virtual FWScript *create(const RawScript &script, int16 index) const;
-	virtual FWScript *create(const RawObjectScript &script, int16 index) const;
-	virtual FWScript *create(const RawScript &script, int16 index, const ScriptVars &labels, const ScriptVars &local, uint16 compare, uint16 pos) const;
-	virtual FWScript *create(const RawObjectScript &script, int16 index, const ScriptVars &labels, const ScriptVars &local, uint16 compare, uint16 pos) const;
+	const char *opcodeInfo(byte opcode) const override;
+	FWScript *create(const RawScript &script, int16 index) const override;
+	FWScript *create(const RawObjectScript &script, int16 index) const override;
+	FWScript *create(const RawScript &script, int16 index, const ScriptVars &labels, const ScriptVars &local, uint16 compare, uint16 pos) const override;
+	FWScript *create(const RawObjectScript &script, int16 index, const ScriptVars &labels, const ScriptVars &local, uint16 compare, uint16 pos) const override;
 
 	friend class FWScript;
 };

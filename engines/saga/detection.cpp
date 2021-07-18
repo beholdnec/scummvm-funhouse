@@ -28,7 +28,6 @@
 
 #include "common/config-manager.h"
 #include "engines/advancedDetector.h"
-#include "engines/obsolete.h"
 #include "common/system.h"
 #include "graphics/thumbnail.h"
 
@@ -81,7 +80,6 @@ const ADGameFileDescription *SagaEngine::getFilesDescriptions() const { return _
 }
 
 static const PlainGameDescriptor sagaGames[] = {
-	{"saga", "SAGA Engine game"},
 	{"ite", "Inherit the Earth: Quest for the Orb"},
 	{"ihnm", "I Have No Mouth and I Must Scream"},
 	{"dino", "Dinotopia"},
@@ -89,27 +87,18 @@ static const PlainGameDescriptor sagaGames[] = {
 	{0, 0}
 };
 
-static const Engines::ObsoleteGameID obsoleteGameIDsTable[] = {
-	{"ite", "saga", Common::kPlatformUnknown},
-	{"ihnm", "saga", Common::kPlatformUnknown},
-	{"dino", "saga", Common::kPlatformUnknown},
-	{"fta2", "saga", Common::kPlatformUnknown},
-	{0, 0, Common::kPlatformUnknown}
-};
-
 #include "saga/detection_tables.h"
 
 class SagaMetaEngine : public AdvancedMetaEngine {
 public:
 	SagaMetaEngine() : AdvancedMetaEngine(Saga::gameDescriptions, sizeof(Saga::SAGAGameDescription), sagaGames) {
-		_singleId = "saga";
 	}
 
-	virtual GameDescriptor findGame(const char *gameId) const {
-		return Engines::findGameID(gameId, _gameIds, obsoleteGameIDsTable);
+	const char *getEngineId() const override {
+		return "saga";
 	}
 
-	virtual const char *getName() const {
+	const char *getName() const override {
 		return "SAGA ["
 
 #if defined(ENABLE_IHNM) && defined(ENABLE_SAGA2)
@@ -131,22 +120,21 @@ public:
 ;
 	}
 
-	virtual const char *getOriginalCopyright() const {
+	const char *getOriginalCopyright() const override {
 		return "Inherit the Earth (C) Wyrmkeep Entertainment";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
+	bool hasFeature(MetaEngineFeature f) const override;
 
-	virtual Common::Error createInstance(OSystem *syst, Engine **engine) const {
-		Engines::upgradeTargetIfNecessary(obsoleteGameIDsTable);
+	Common::Error createInstance(OSystem *syst, Engine **engine) const override {
 		return AdvancedMetaEngine::createInstance(syst, engine);
 	}
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 };
 
 bool SagaMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -163,7 +151,7 @@ bool SagaMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool Saga::SagaEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsLoadingDuringRuntime) ||
 		(f == kSupportsSavingDuringRuntime);
 }
@@ -234,7 +222,7 @@ SaveStateDescriptor SagaMetaEngine::querySaveMetaInfos(const char *target, int s
 		SaveStateDescriptor desc(slot, name);
 
 		// Some older saves were not written in an endian safe fashion.
-		// We try to detect this here by checking for extremly high version values.
+		// We try to detect this here by checking for extremely high version values.
 		// If found, we retry with the data swapped.
 		if (version > 0xFFFFFF) {
 			warning("This savegame is not endian safe, retrying with the data swapped");
@@ -256,7 +244,11 @@ SaveStateDescriptor SagaMetaEngine::querySaveMetaInfos(const char *target, int s
 		}
 
 		if (version >= 6) {
-			Graphics::Surface *const thumbnail = Graphics::loadThumbnail(*in);
+			Graphics::Surface *thumbnail;
+			if (!Graphics::loadThumbnail(*in, thumbnail)) {
+				delete in;
+				return SaveStateDescriptor();
+			}
 			desc.setThumbnail(thumbnail);
 
 			uint32 saveDate = in->readUint32BE();
@@ -342,7 +334,7 @@ Common::Error SagaEngine::loadGameState(int slot) {
 	return Common::kNoError;	// TODO: return success/failure
 }
 
-Common::Error SagaEngine::saveGameState(int slot, const Common::String &desc) {
+Common::Error SagaEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	save(calcSaveFileName((uint)slot), desc.c_str());
 	return Common::kNoError;	// TODO: return success/failure
 }

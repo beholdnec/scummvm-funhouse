@@ -26,6 +26,7 @@
 #include "scumm/music.h"
 
 #include "common/mutex.h"
+#include "common/serializer.h"
 
 namespace OPL {
 class OPL;
@@ -34,7 +35,6 @@ class OPL;
 namespace Scumm {
 
 class ScummEngine;
-class Serializer;
 
 /**
  * Sound output for v3/v4 AdLib data.
@@ -42,17 +42,17 @@ class Serializer;
 class Player_AD : public MusicEngine {
 public:
 	Player_AD(ScummEngine *scumm);
-	virtual ~Player_AD();
+	~Player_AD() override;
 
 	// MusicEngine API
-	virtual void setMusicVolume(int vol);
-	virtual void startSound(int sound);
-	virtual void stopSound(int sound);
-	virtual void stopAllSounds();
-	virtual int  getMusicTimer();
-	virtual int  getSoundStatus(int sound) const;
+	void setMusicVolume(int vol) override;
+	void startSound(int sound) override;
+	void stopSound(int sound) override;
+	void stopAllSounds() override;
+	int  getMusicTimer() override;
+	int  getSoundStatus(int sound) const override;
 
-	virtual void saveLoadWithSerializer(Serializer *ser);
+	void saveLoadWithSerializer(Common::Serializer &ser) override;
 
 	// Timer callback
 	void onTimer();

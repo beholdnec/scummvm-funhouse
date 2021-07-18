@@ -55,6 +55,8 @@ void FontManager::loadZoneText() {
 	case LANG_SP:
 		_zoneText = _vm->_fileIO->loadFile("ZONEES.TXT");
 		break;
+	default:
+		break;
 	}
 }
 
@@ -281,9 +283,9 @@ void FontManager::box(int idx, int messageId, const Common::String &filename, in
 				int ptrb = _boxWidth - 4;
 				for (;;) {
 					lineSize = curLineSize;
-					do
+					do {
 						curChar = _tempText[tempTextIdx + curLineSize++];
-					while (curChar != ' ' && curChar != '%');
+					} while (curChar != ' ' && curChar != '%');
 					if (curLineSize >= ptrb / _fontFixedWidth) {
 						if (curChar == '%')
 							curChar = ' ';

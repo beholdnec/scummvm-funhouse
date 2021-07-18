@@ -60,10 +60,9 @@ GuiResourceId GfxPicture::getResourceId() {
 // differentiation between various picture formats can NOT get done using sci-version checks.
 //  Games like PQ1 use the "old" vector data picture format, but are actually SCI1.1
 //  We should leave this that way to decide the format on-the-fly instead of hardcoding it in any way
-void GfxPicture::draw(int16 animationNr, bool mirroredFlag, bool addToFlag, int16 EGApaletteNo) {
+void GfxPicture::draw(bool mirroredFlag, bool addToFlag, int16 EGApaletteNo) {
 	uint16 headerSize;
 
-	_animationNr = animationNr;
 	_mirroredFlag = mirroredFlag;
 	_addToFlag = addToFlag;
 	_EGApaletteNo = EGApaletteNo;
@@ -424,7 +423,6 @@ void GfxPicture::drawVectorData(const SciSpan<const byte> &data) {
 	byte pic_priority = 255, pic_control = 255;
 	int16 x = 0, y = 0, oldx, oldy;
 	byte EGApalettes[PIC_EGAPALETTE_TOTALSIZE] = {0};
-	byte *EGApalette = &EGApalettes[_EGApaletteNo * PIC_EGAPALETTE_SIZE];
 	byte EGApriority[PIC_EGAPRIORITY_SIZE] = {0};
 	bool isEGA = false;
 	uint curPos = 0;
@@ -438,8 +436,10 @@ void GfxPicture::drawVectorData(const SciSpan<const byte> &data) {
 
 	memset(&palette, 0, sizeof(palette));
 
-	if (_EGApaletteNo >= PIC_EGAPALETTE_COUNT)
+	if (_EGApaletteNo >= PIC_EGAPALETTE_COUNT) {
 		_EGApaletteNo = 0;
+	}
+	byte *EGApalette = &EGApalettes[_EGApaletteNo * PIC_EGAPALETTE_SIZE];
 
 	if (_resMan->getViewType() == kViewEga) {
 		isEGA = true;

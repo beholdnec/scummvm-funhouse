@@ -21,22 +21,20 @@
  */
 
 #include "fullpipe/fullpipe.h"
-#include "fullpipe/messages.h"
-#include "fullpipe/constants.h"
-#include "fullpipe/motion.h"
-#include "fullpipe/scenes.h"
-#include "fullpipe/gameloader.h"
-#include "fullpipe/statics.h"
-#include "fullpipe/modal.h"
 
 #include "fullpipe/constants.h"
+#include "fullpipe/gameloader.h"
+#include "fullpipe/messages.h"
+#include "fullpipe/modal.h"
+#include "fullpipe/motion.h"
 #include "fullpipe/objectnames.h"
+#include "fullpipe/scenes.h"
+#include "fullpipe/statics.h"
+
+#include "engines/savestate.h"
 
 #include "graphics/palette.h"
 #include "graphics/surface.h"
-
-#include "engines/savestate.h"
-#include "engines/advancedDetector.h"
 
 namespace Fullpipe {
 
@@ -374,7 +372,7 @@ static bool checkSkipVideo(const Common::Event &event) {
 			return false;
 		}
 	case Common::EVENT_QUIT:
-	case Common::EVENT_RTL:
+	case Common::EVENT_RETURN_TO_LAUNCHER:
 		return true;
 	default:
 		return false;
@@ -869,6 +867,8 @@ PictureObject *ModalMap::getScenePicture(int sceneId) {
 	case SC_FINAL1:
 		picId = PIC_MAP_S38;
 		break;
+	default:
+		break;
 	}
 
 	if (picId)
@@ -1000,6 +1000,10 @@ bool ModalMap::checkScenePass(PreloadItem *item) {
 		if (g_fp->getObjectState(sO_Board_25) != g_fp->getObjectEnumState(sO_Board_25, sO_NearDudesStairs)) {
 			res = false;
 		}
+		break;
+
+	default:
+		break;
 	}
 
 	switch (item->sceneId) {
@@ -1028,6 +1032,9 @@ bool ModalMap::checkScenePass(PreloadItem *item) {
 			break;
 		}
 		item->param = TrubaUp;
+		break;
+
+	default:
 		break;
 	}
 
@@ -1802,9 +1809,9 @@ void ModalHelp::launch() {
 
 	if (_mainMenuScene) {
 		if (g_fp->isDemo() && g_fp->getLanguage() == Common::RU_RUS)
-			_bg = _mainMenuScene->getPictureObjectById(364, 0)->_picture.get();
+			_bg = _mainMenuScene->getPictureObjectById(364, 0)->_picture;
 		else
-			_bg = _mainMenuScene->getPictureObjectById(PIC_HLP_BGR, 0)->_picture.get();
+			_bg = _mainMenuScene->getPictureObjectById(PIC_HLP_BGR, 0)->_picture;
 		_isRunning = 1;
 	}
 }
@@ -2142,7 +2149,8 @@ bool ModalSaveGame::getFileInfo(int slot, FileInfo *fileinfo) {
 		return false;
 
 	Fullpipe::FullpipeSavegameHeader header;
-	Fullpipe::readSavegameHeader(f.get(), header);
+	if (!Fullpipe::readSavegameHeader(f.get(), header))
+		return false;
 
 	// Create the return descriptor
 	SaveStateDescriptor desc(slot, header.saveName);
@@ -2396,7 +2404,7 @@ bool ModalDemo::init(int counterDiff) {
 	if (_clickedQuit == -1)
 		return true;
 
-	g_system->openUrl("http://www.amazon.de/EuroVideo-Bildprogramm-GmbH-Full-Pipe/dp/B003TO51YE/ref=sr_1_1?ie=UTF8&s=videogames&qid=1279207213&sr=8-1");
+	g_system->openUrl("http://www.amazon.de/EuroVideo-Bildprogramm-GmbH-Full-Pipe/dp/B003TO51YE/ref=sr_1_1");
 
 	g_fp->_gameContinue = false;
 

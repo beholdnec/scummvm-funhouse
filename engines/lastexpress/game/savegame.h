@@ -79,8 +79,11 @@
 
 namespace LastExpress {
 
+// our own hack until compression code will be confirmed stable
+#define DISABLE_COMPRESSION 1
+
 // Savegame signatures
-#define SAVEGAME_SIGNATURE       0x12001200    // 301994496
+#define SAVEGAME_SIGNATURE       (0x12001200 ^ DISABLE_COMPRESSION)    // 301994496
 #define SAVEGAME_ENTRY_SIGNATURE 0xE660E660    // 3865110112
 
 #define WRAP_SYNC_FUNCTION(instance, className, method) \
@@ -102,12 +105,12 @@ public:
 		memset(_buffer, 0, 256);
 	}
 
-	int32 pos() const { return MemoryWriteStreamDynamic::pos(); }
-	int32 size() const { return MemoryWriteStreamDynamic::size(); }
-	bool seek(int32 offset, int whence = SEEK_SET) { return MemoryWriteStreamDynamic::seek(offset, whence); }
-	bool eos() const { return _eos; }
-	uint32 read(void *dataPtr, uint32 dataSize);
-	uint32 write(const void *dataPtr, uint32 dataSize);
+	int32 pos() const override { return MemoryWriteStreamDynamic::pos(); }
+	int32 size() const override { return MemoryWriteStreamDynamic::size(); }
+	bool seek(int32 offset, int whence = SEEK_SET) override { return MemoryWriteStreamDynamic::seek(offset, whence); }
+	bool eos() const override { return _eos; }
+	uint32 read(void *dataPtr, uint32 dataSize) override;
+	uint32 write(const void *dataPtr, uint32 dataSize) override;
 
 	uint32 process();
 
@@ -196,7 +199,7 @@ private:
 			field_1C = 9;
 		}
 
-		void saveLoadWithSerializer(Common::Serializer &s) {
+		void saveLoadWithSerializer(Common::Serializer &s) override {
 			s.syncAsUint32LE(signature);
 			s.syncAsUint32LE(count);
 			s.syncAsUint32LE(offset);
@@ -258,7 +261,7 @@ private:
 			field_1C = 0;
 		}
 
-		void saveLoadWithSerializer(Common::Serializer &s) {
+		void saveLoadWithSerializer(Common::Serializer &s) override {
 			s.syncAsUint32LE(signature);
 			s.syncAsUint32LE(type);
 			s.syncAsUint32LE(time);

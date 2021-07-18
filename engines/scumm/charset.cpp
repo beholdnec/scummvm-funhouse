@@ -68,7 +68,7 @@ void ScummEngine::loadCJKFont() {
 		if (!_cjkFont)
 			error("SCUMM::Font: Could not open file 'pce.cdbios'");
 
-		_cjkFont->setDrawingMode(Graphics::FontSJIS::kShadowMode);
+		_cjkFont->setDrawingMode(Graphics::FontSJIS::kShadowRightMode);
 		_2byteWidth = _2byteHeight = 12;
 		_useCJKMode = true;
 #endif
@@ -176,6 +176,8 @@ byte *ScummEngine::get2byteCharPtr(int idx) {
 			}
 
 			idx = (SWAP_CONSTANT_16(idx) & 0x7fff) - 1;
+		} else {
+			idx = Graphics::FontTowns::getCharFMTChunk(idx);
 		}
 
 		break;
@@ -708,17 +710,12 @@ void CharsetRenderer::translateColor() {
 	}
 }
 
-void CharsetRenderer::saveLoadWithSerializer(Serializer *ser) {
-	static const SaveLoadEntry charsetRendererEntries[] = {
-		MKLINE_OLD(CharsetRenderer, _curId, sleByte, VER(73), VER(73)),
-		MKLINE(CharsetRenderer, _curId, sleInt32, VER(74)),
-		MKLINE(CharsetRenderer, _color, sleByte, VER(73)),
-		MKEND()
-	};
+void CharsetRenderer::saveLoadWithSerializer(Common::Serializer &ser) {
+	ser.syncAsByte(_curId, VER(73), VER(73));
+	ser.syncAsSint32LE(_curId, VER(74));
+	ser.syncAsByte(_color, VER(73));
 
-	ser->saveLoadEntries(this, charsetRendererEntries);
-
-	if (ser->isLoading()) {
+	if (ser.isLoading()) {
 		setCurID(_curId);
 		setColor(_color);
 	}

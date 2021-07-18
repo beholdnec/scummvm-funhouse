@@ -36,10 +36,7 @@ class DynamicPhase;
 class Movement;
 struct PicAniInfo;
 
-typedef Common::Array<int32> Palette;
 typedef Common::Point Dims;
-
-typedef Common::SharedPtr<Graphics::TransparentSurface> TransSurfacePtr;
 
 struct Bitmap {
 	int _x;
@@ -50,7 +47,7 @@ struct Bitmap {
 	int _dataSize;
 	int _flags;
 	int _flipping;
-	TransSurfacePtr _surface;
+	Graphics::TransparentSurface *_surface;
 
 	Bitmap();
 	Bitmap(const Bitmap &src);
@@ -84,12 +81,12 @@ private:
 class Picture : public MemoryObject {
 public:
 	Picture();
-	virtual ~Picture();
+	~Picture() override;
 
 	void freePicture();
 	void freePixelData();
 
-	virtual bool load(MfcArchive &file);
+	bool load(MfcArchive &file) override;
 	void setAOIDs();
 	virtual void init();
 	void getDibInfo();
@@ -132,10 +129,10 @@ protected:
 class BigPicture : public Picture {
   public:
 	BigPicture() {}
-	virtual ~BigPicture() {}
+	~BigPicture() override {}
 
-	virtual bool load(MfcArchive &file);
-	virtual void draw(int x, int y, int style, int angle);
+	bool load(MfcArchive &file) override;
+	void draw(int x, int y, int style, int angle) override;
 };
 
 class GameObject : public CObject {
@@ -154,7 +151,8 @@ class GameObject : public CObject {
 	GameObject();
 	GameObject(GameObject *src);
 
-	virtual bool load(MfcArchive &file);
+	virtual Common::String toXML();
+	bool load(MfcArchive &file) override;
 	void setOXY(int x, int y);
 	void renumPictures(Common::Array<StaticANIObject *> *lst);
 	void renumPictures(Common::Array<PictureObject *> *lst);
@@ -173,7 +171,7 @@ public:
 	PictureObject(PictureObject *src);
 
 	virtual bool load(MfcArchive &file, bool bigPicture);
-	virtual bool load(MfcArchive &file) { assert(0); return false; } // Disable base class
+	bool load(MfcArchive &file) override { assert(0); return false; } // Disable base class
 
 	Dims getDimensions() const { return _picture->getDimensions(); }
 	void draw();
@@ -184,7 +182,7 @@ public:
 	bool isPixelHitAtPos(int x, int y);
 	void setOXY2();
 
-	Common::SharedPtr<Picture> _picture;
+	Picture *_picture;
 
 private:
 	Common::Array<GameObject> _pictureObject2List;
@@ -209,9 +207,9 @@ public:
 
 public:
 	Background();
-	virtual ~Background();
+	~Background() override;
 
-	virtual bool load(MfcArchive &file);
+	bool load(MfcArchive &file) override;
 	void addPictureObject(PictureObject *pct);
 
 	BigPicture *getBigPicture(int x, int y) { return _bigPictureArray[y * _bigPictureXDim + x]; }
@@ -233,7 +231,7 @@ class Shadows : public CObject {
 
   public:
 	Shadows();
-	virtual bool load(MfcArchive &file);
+	bool load(MfcArchive &file) override;
 	void init();
 
 	void initMovement(Movement *mov);

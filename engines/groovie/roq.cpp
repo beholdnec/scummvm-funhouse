@@ -437,6 +437,8 @@ void ROQPlayer::processBlockQuadVectorBlock(int baseX, int baseY, int8 Mx, int8 
 			}
 		}
 		break;
+	default:
+		break;
 	}
 }
 
@@ -463,6 +465,8 @@ void ROQPlayer::processBlockQuadVectorBlockSub(int baseX, int baseY, int8 Mx, in
 		paint2(_file->readByte(), baseX    , baseY + 2);
 		paint2(_file->readByte(), baseX + 2, baseY + 2);
 		break;
+	default:
+		break;
 	}
 }
 
@@ -470,6 +474,7 @@ bool ROQPlayer::processBlockStill(ROQBlockHeader &blockHeader) {
 	debugC(5, kDebugVideo, "Groovie::ROQ: Processing still (JPEG) block");
 
 	Image::JPEGDecoder jpg;
+	jpg.setOutputPixelFormat(_vm->_pixelFormat);
 
 	uint32 startPos = _file->pos();
 	Common::SeekableSubReadStream subStream(_file, startPos, startPos + blockHeader.size, DisposeAfterUse::NO);
@@ -478,7 +483,9 @@ bool ROQPlayer::processBlockStill(ROQBlockHeader &blockHeader) {
 	const Graphics::Surface *srcSurf = jpg.getSurface();
 	_currBuf->free();
 	delete _currBuf;
-	_currBuf = srcSurf->convertTo(_vm->_pixelFormat);
+
+	_currBuf = new Graphics::Surface();
+	_currBuf->copyFrom(*srcSurf);
 
 	_file->seek(startPos + blockHeader.size);
 	return true;

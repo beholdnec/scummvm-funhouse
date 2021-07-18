@@ -26,12 +26,14 @@
 #include "titanic/support/simple_file.h"
 #include "titanic/titanic.h"
 
+#include "common/math.h"
+
 namespace Titanic {
 
 CViewport::CViewport() {
-	_fieldC = 0; // doesn't get used
-	_field10 = 800.0; // doesn't get used
-	_field14 = 10000.0; // doesn't get used
+	_spin = 0.0;
+	_frontClip = 800.0;
+	_backClip = 10000.0;
 	_centerYAngleDegrees = 20.0;
 	_centerZAngleDegrees = 20.0;
 	_width = 600;
@@ -47,9 +49,9 @@ CViewport::CViewport() {
 CViewport::CViewport(CViewport *src) :
 		_orientation(src->_orientation), _currentPose(src->_currentPose), _rawPose(src->_rawPose) {
 	_position = src->_position;
-	_fieldC = src->_fieldC;
-	_field10 = src->_field10;
-	_field14 = src->_field14;
+	_spin = src->_spin;
+	_frontClip = src->_frontClip;
+	_backClip = src->_backClip;
 	_centerYAngleDegrees = src->_centerYAngleDegrees;
 	_centerZAngleDegrees = src->_centerZAngleDegrees;
 	_width = src->_width;
@@ -74,9 +76,9 @@ void CViewport::load(SimpleFile *file, int param) {
 	_position._x = file->readFloat();
 	_position._y = file->readFloat();
 	_position._z = file->readFloat();
-	_fieldC = file->readFloat();
-	_field10 = file->readFloat();
-	_field14 = file->readFloat();
+	_spin = file->readFloat();
+	_frontClip = file->readFloat();
+	_backClip = file->readFloat();
 	_centerYAngleDegrees = file->readFloat();
 	_centerZAngleDegrees = file->readFloat();
 
@@ -101,13 +103,13 @@ void CViewport::save(SimpleFile *file, int indent) {
 	file->writeFloatLine(_position._x, indent);
 	file->writeFloatLine(_position._y, indent);
 	file->writeFloatLine(_position._z, indent);
-	file->writeFloatLine(_fieldC, indent);
-	file->writeFloatLine(_field10, indent);
-	file->writeFloatLine(_field14, indent);
+	file->writeFloatLine(_spin, indent);
+	file->writeFloatLine(_frontClip, indent);
+	file->writeFloatLine(_backClip, indent);
 	file->writeFloatLine(_centerYAngleDegrees, indent);
 	file->writeFloatLine(_centerZAngleDegrees, indent);
 	file->writeNumberLine(_width | (_height << 16), indent);
-	int field24 = (int) _starColor;
+	int field24 = (int)_starColor;
 	file->writeNumberLine(field24, indent);
 
 	for (int idx = 0; idx < 2; ++idx)
@@ -141,21 +143,18 @@ void CViewport::setOrientation(const FVector &v) {
 	_poseUpToDate = false;
 }
 
-// This never gets called
-void CViewport::setC(double v) {
-	_fieldC = v;
+void CViewport::SetRoleAngle(double angle) {
+	_spin = angle;
 	_poseUpToDate = false;
 }
 
-// This never gets called
-void CViewport::set10(double v) {
-	_field10 = v;
+void CViewport::setFrontClip(double dist) {
+	_frontClip = dist;
 	_poseUpToDate = false;
 }
 
-// This never gets called
-void CViewport::set14(double v) {
-	_field10 = v;
+void CViewport::setBackClip(double dist) {
+	_backClip = dist;
 }
 
 void CViewport::setCenterYAngle(double angleDegrees) {
@@ -178,7 +177,7 @@ void CViewport::randomizeOrientation() {
 	FPose m1(X_AXIS, ranRotAngleX);
 	FPose m2(Y_AXIS, ranRotAngleY);
 	FPose m3(Z_AXIS, ranRotAngleZ);
-	
+
 	FPose s1(m1, m2);
 	FPose s2(s1, m3);
 
@@ -229,7 +228,7 @@ FPose CViewport::getRawPose() {
 
 // TODO: should index be used here like 
 // getRelativePosCentering/getRelativePosCentering2?
-// CStarCamera::getRelativePosCentering is calling this with an index of
+// CCamera::getRelativePosCentering is calling this with an index of
 // 2 which corresponds to _isZero which has value 0.
 FVector CViewport::getRelativePosNoCentering(int index, const FVector &src) {
 	FPose current_pose = getPose();
@@ -299,8 +298,8 @@ void CViewport::reset() {
 
 	_center = FPoint((double)_width * 0.5, (double)_height * 0.5);
 	_centerVector._x = MIN(_center._x, _center._y);
-	_centerVector._y = tan(_centerYAngleDegrees * Deg2Rad);
-	_centerVector._z = tan(_centerZAngleDegrees * Deg2Rad);
+	_centerVector._y = tan(Common::deg2rad<double>(_centerYAngleDegrees));
+	_centerVector._z = tan(Common::deg2rad<double>(_centerZAngleDegrees));
 }
 
 const FMatrix &CViewport::getOrientation() const {

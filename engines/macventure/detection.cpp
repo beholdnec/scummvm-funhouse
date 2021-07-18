@@ -29,9 +29,9 @@
 
 namespace MacVenture {
 
-#define ADGF_DEFAULT (ADGF_DROPLANGUAGE|ADGF_DROPPLATFORM|ADGF_MACRESFORK)
+#define ADGF_DEFAULT (ADGF_DROPLANGUAGE|ADGF_DROPPLATFORM|ADGF_MACRESFORK|ADGF_UNSTABLE)
 
-#define BASEGAME(n, v, f, md5, s) {n, v, AD_ENTRY1s(f, md5, s), Common::EN_ANY, Common::kPlatformMacintosh, ADGF_DEFAULT, GUIO0()}
+#define BASEGAME(n, v, f, md5, s) {n, v, AD_ENTRY1s(f, md5, s), Common::EN_ANY, Common::kPlatformMacintosh, ADGF_DEFAULT, GUIO1(GUIO_NOMIDI)}
 
 static const ADGameDescription gameDescriptions[] = {
 	BASEGAME("shadowgate", "Zojoi Rerelease", "Shadowgate.bin", "ebbfbcbf93938bd2900cb0c0213b19ad", 68974), // Zojoi Rerelease
@@ -54,28 +54,34 @@ static const PlainGameDescriptor macventureGames[] = {
 
 namespace MacVenture {
 
-SaveStateDescriptor loadMetaData(Common::SeekableReadStream *s, int slot);
+SaveStateDescriptor loadMetaData(Common::SeekableReadStream *s, int slot, bool skipThumbnail = true);
 
 class MacVentureMetaEngine : public AdvancedMetaEngine {
 public:
 	MacVentureMetaEngine() : AdvancedMetaEngine(MacVenture::gameDescriptions, sizeof(ADGameDescription), macventureGames) {
-		_guiOptions = GUIO0();
+		_guiOptions = GUIO1(GUIO_NOMIDI);
 		_md5Bytes = 5000000; // TODO: Upper limit, adjust it once all games are added
 	}
 
-	virtual const char *getName() const override {
+	const char *getEngineId() const override {
+		return "macventure";
+	}
+
+	const char *getName() const override {
 		return "MacVenture";
 	}
-	virtual const char *getOriginalCopyright() const override {
+
+	const char *getOriginalCopyright() const override {
 		return "(C) ICOM Simulations";
 	}
 
-	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const;
+protected:
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	bool hasFeature(MetaEngineFeature f) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 };
 
 bool MacVentureMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -91,7 +97,7 @@ bool MacVentureMetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool MacVentureEngine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsLoadingDuringRuntime) ||
 		(f == kSupportsSavingDuringRuntime);
 }
@@ -163,7 +169,7 @@ SaveStateDescriptor MacVentureMetaEngine::querySaveMetaInfos(const char *target,
 
 	Common::InSaveFile *in = saveFileMan->openForLoading(saveFileName);
 	if (in) {
-		desc = loadMetaData(in, slot);
+		desc = loadMetaData(in, slot, false);
 		delete in;
 		return desc;
 	}

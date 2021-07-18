@@ -440,18 +440,20 @@ void DreamWebEngine::showLeftPage() {
 	showFrame(_folderGraphics2, 0, y, 5, 0);
 	_lineSpacing = 8;
 	_charShift = 91;
-	_kerning = 1;
+
+	if (getLanguage() == Common::RU_RUS)
+		_charShift = 182;
+
 	uint8 pageIndex = _folderPage - 2;
 	const uint8 *string = getTextInFile1(pageIndex * 2);
 	y = 48;
 	for (uint i = 0; i < 2; ++i) {
 		uint8 lastChar;
 		do {
-			lastChar = printDirect(&string, 2, &y, 140, false);
+			lastChar = printDirect(&string, 2, &y, 140, false, true);
 			y += _lineSpacing;
 		} while (lastChar != '\0');
 	}
-	_kerning = 0;
 	_charShift = 0;
 	_lineSpacing = 10;
 	uint8 *bufferToSwap = workspace() + (48*kScreenwidth)+2;
@@ -473,18 +475,16 @@ void DreamWebEngine::showRightPage() {
 
 	showFrame(_folderGraphics2, 143, y, 2, 0);
 	_lineSpacing = 8;
-	_kerning = 1;
 	uint8 pageIndex = _folderPage - 1;
 	const uint8 *string = getTextInFile1(pageIndex * 2);
 	y = 48;
 	for (uint i = 0; i < 2; ++i) {
 		uint8 lastChar;
 		do {
-			lastChar = printDirect(&string, 152, &y, 140, false);
+			lastChar = printDirect(&string, 152, &y, 140, false, true);
 			y += _lineSpacing;
 		} while (lastChar != '\0');
 	}
-	_kerning = 0;
 	_lineSpacing = 10;
 }
 
@@ -848,17 +848,19 @@ void DreamWebEngine::diaryKeyN() {
 
 void DreamWebEngine::showDiaryPage() {
 	showFrame(_diaryGraphics, kDiaryx, kDiaryy, 0, 0);
-	_kerning = 1;
 	useTempCharset(&_diaryCharset);
+
+	if (getLanguage() == Common::RU_RUS)
+		useCharsetTempgraphics();
+
 	_charShift = 91+91;
 	const uint8 *string = getTextInFile1(_diaryPage);
 	uint16 y = kDiaryy + 16;
-	printDirect(&string, kDiaryx + 48, &y, 240, 240 & 1);
+	printDirect(&string, kDiaryx + 48, &y, 240, 240 & 1, true);
 	y = kDiaryy + 16;
-	printDirect(&string, kDiaryx + 129, &y, 240, 240 & 1);
+	printDirect(&string, kDiaryx + 129, &y, 240, 240 & 1, true);
 	y = kDiaryy + 23;
-	printDirect(&string, kDiaryx + 48, &y, 240, 240 & 1);
-	_kerning = 0;
+	printDirect(&string, kDiaryx + 48, &y, 240, 240 & 1, true);
 	_charShift = 0;
 	useCharset1();
 }

@@ -70,6 +70,7 @@ static const GameSettings sword2_settings[] = {
 	{"sword2psx", "Broken Sword II: The Smoking Mirror (PlayStation)", 0, "screens.clu"},
 	{"sword2psxdemo", "Broken Sword II: The Smoking Mirror (PlayStation/Demo)", Sword2::GF_DEMO, "screens.clu"},
 	{"sword2demo", "Broken Sword II: The Smoking Mirror (Demo)", Sword2::GF_DEMO, "players.clu" },
+	{"sword2demo-es", "Broken Sword II: The Smoking Mirror (Spanish/Demo)", Sword2::GF_DEMO | Sword2::GF_SPANISHDEMO, "vielogo.tga" },
 	{NULL, NULL, 0, NULL}
 };
 
@@ -84,23 +85,27 @@ static const ExtraGuiOption sword2ExtraGuiOption = {
 
 class Sword2MetaEngine : public MetaEngine {
 public:
-	virtual const char *getName() const {
-		return "Sword2";
-	}
-	virtual const char *getOriginalCopyright() const {
-		return "Broken Sword Games (C) Revolution";
+	const char *getEngineId() const override {
+		return "sword2";
 	}
 
-	virtual bool hasFeature(MetaEngineFeature f) const;
-	virtual GameList getSupportedGames() const;
-	virtual const ExtraGuiOptions getExtraGuiOptions(const Common::String &target) const;
-	virtual GameDescriptor findGame(const char *gameid) const;
-	virtual GameList detectGames(const Common::FSList &fslist) const;
-	virtual SaveStateList listSaves(const char *target) const;
-	virtual int getMaximumSaveSlot() const;
-	virtual void removeSaveState(const char *target, int slot) const;
+	const char *getName() const override {
+		return "Broken Sword II: The Smoking Mirror";
+	}
+	const char *getOriginalCopyright() const override {
+		return "Broken Sword II: The Smoking Mirror (C) Revolution";
+	}
 
-	virtual Common::Error createInstance(OSystem *syst, Engine **engine) const;
+	bool hasFeature(MetaEngineFeature f) const override;
+	PlainGameList getSupportedGames() const override;
+	const ExtraGuiOptions getExtraGuiOptions(const Common::String &target) const override;
+	PlainGameDescriptor findGame(const char *gameid) const override;
+	DetectedGames detectGames(const Common::FSList &fslist) const override;
+	SaveStateList listSaves(const char *target) const override;
+	int getMaximumSaveSlot() const override;
+	void removeSaveState(const char *target, int slot) const override;
+
+	Common::Error createInstance(OSystem *syst, Engine **engine) const override;
 };
 
 bool Sword2MetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -113,17 +118,17 @@ bool Sword2MetaEngine::hasFeature(MetaEngineFeature f) const {
 
 bool Sword2::Sword2Engine::hasFeature(EngineFeature f) const {
 	return
-		(f == kSupportsRTL) ||
+		(f == kSupportsReturnToLauncher) ||
 		(f == kSupportsSubtitleOptions) ||
 		(f == kSupportsSavingDuringRuntime) ||
 		(f == kSupportsLoadingDuringRuntime);
 }
 
-GameList Sword2MetaEngine::getSupportedGames() const {
+PlainGameList Sword2MetaEngine::getSupportedGames() const {
 	const Sword2::GameSettings *g = Sword2::sword2_settings;
-	GameList games;
+	PlainGameList games;
 	while (g->gameid) {
-		games.push_back(GameDescriptor(g->gameid, g->description));
+		games.push_back(PlainGameDescriptor::of(g->gameid, g->description));
 		g++;
 	}
 	return games;
@@ -135,20 +140,20 @@ const ExtraGuiOptions Sword2MetaEngine::getExtraGuiOptions(const Common::String 
 	return options;
 }
 
-GameDescriptor Sword2MetaEngine::findGame(const char *gameid) const {
+PlainGameDescriptor Sword2MetaEngine::findGame(const char *gameid) const {
 	const Sword2::GameSettings *g = Sword2::sword2_settings;
 	while (g->gameid) {
 		if (0 == scumm_stricmp(gameid, g->gameid))
 			break;
 		g++;
 	}
-	return GameDescriptor(g->gameid, g->description);
+	return PlainGameDescriptor::of(g->gameid, g->description);
 }
 
 bool isFullGame(const Common::FSList &fslist) {
 	Common::FSList::const_iterator file;
 
-	// We distinguish between the two versions by the presense of paris.clu
+	// We distinguish between the two versions by the presence of paris.clu
 	for (file = fslist.begin(); file != fslist.end(); ++file) {
 		if (!file->isDirectory()) {
 			if (file->getName().equalsIgnoreCase("paris.clu"))
@@ -159,8 +164,8 @@ bool isFullGame(const Common::FSList &fslist) {
 	return false;
 }
 
-GameList detectGamesImpl(const Common::FSList &fslist, bool recursion = false) {
-	GameList detectedGames;
+DetectedGames detectGamesImpl(const Common::FSList &fslist, bool recursion = false) {
+	DetectedGames detectedGames;
 	const Sword2::GameSettings *g;
 	Common::FSList::const_iterator file;
 	bool isFullVersion = isFullGame(fslist);
@@ -192,7 +197,10 @@ GameList detectGamesImpl(const Common::FSList &fslist, bool recursion = false) {
 						continue;
 
 					// Match found, add to list of candidates, then abort inner loop.
-					detectedGames.push_back(GameDescriptor(g->gameid, g->description, Common::UNK_LANG, Common::kPlatformUnknown, GUIO2(GUIO_NOMIDI, GUIO_NOASPECT)));
+					DetectedGame game = DetectedGame("sword2", g->gameid, g->description);
+					game.setGUIOptions(GUIO2(GUIO_NOMIDI, GUIO_NOASPECT));
+
+					detectedGames.push_back(game);
 					break;
 				}
 			}
@@ -208,7 +216,7 @@ GameList detectGamesImpl(const Common::FSList &fslist, bool recursion = false) {
 				if (file->getName().equalsIgnoreCase("clusters")) {
 					Common::FSList recList;
 					if (file->getChildren(recList, Common::FSNode::kListAll)) {
-						GameList recGames(detectGamesImpl(recList, true));
+						DetectedGames recGames = detectGamesImpl(recList, true);
 						if (!recGames.empty()) {
 							detectedGames.push_back(recGames);
 							break;
@@ -223,7 +231,7 @@ GameList detectGamesImpl(const Common::FSList &fslist, bool recursion = false) {
 	return detectedGames;
 }
 
-GameList Sword2MetaEngine::detectGames(const Common::FSList &fslist) const {
+DetectedGames Sword2MetaEngine::detectGames(const Common::FSList &fslist) const {
 	return detectGamesImpl(fslist);
 }
 
@@ -278,10 +286,10 @@ Common::Error Sword2MetaEngine::createInstance(OSystem *syst, Engine **engine) c
 
 	// Invoke the detector
 	Common::String gameid = ConfMan.get("gameid");
-	GameList detectedGames = detectGames(fslist);
+	DetectedGames detectedGames = detectGames(fslist);
 
 	for (uint i = 0; i < detectedGames.size(); i++) {
-		if (detectedGames[i].gameid() == gameid) {
+		if (detectedGames[i].gameId == gameid) {
 			*engine = new Sword2::Sword2Engine(syst);
 			return Common::kNoError;
 		}
@@ -309,6 +317,8 @@ Sword2Engine::Sword2Engine(OSystem *syst) : Engine(syst), _rnd("sword2") {
 
 	if (!scumm_stricmp(ConfMan.get("gameid").c_str(), "sword2demo") || !scumm_stricmp(ConfMan.get("gameid").c_str(), "sword2psxdemo"))
 		_features = GF_DEMO;
+	else if (!scumm_stricmp(ConfMan.get("gameid").c_str(), "sword2demo-es"))
+		_features = GF_DEMO | GF_SPANISHDEMO;
 	else
 		_features = 0;
 
@@ -342,7 +352,7 @@ Sword2Engine::Sword2Engine(OSystem *syst) : Engine(syst), _rnd("sword2") {
 }
 
 Sword2Engine::~Sword2Engine() {
-	delete _debugger;
+	//_debugger is deleted by Engine
 	delete _sound;
 	delete _fontRenderer;
 	delete _screen;
@@ -350,10 +360,6 @@ Sword2Engine::~Sword2Engine() {
 	delete _logic;
 	delete _resman;
 	delete _memory;
-}
-
-GUI::Debugger *Sword2Engine::getDebugger() {
-	return _debugger;
 }
 
 void Sword2Engine::registerDefaultSettings() {
@@ -451,6 +457,7 @@ Common::Error Sword2Engine::run() {
 	// visible to the user.
 
 	_debugger = new Debugger(this);
+	setDebugger(_debugger);
 
 	_memory = new MemoryManager();
 	_resman = new ResourceManager(this);
@@ -514,8 +521,6 @@ Common::Error Sword2Engine::run() {
 	_screen->initializeRenderCycle();
 
 	while (1) {
-		_debugger->onFrame();
-
 		// Handle GMM Loading
 		if (_gmmLoadSlot != -1) {
 
@@ -539,16 +544,14 @@ Common::Error Sword2Engine::run() {
 		KeyboardEvent *ke = keyboardEvent();
 
 		if (ke) {
-			if ((ke->kbd.hasFlags(Common::KBD_CTRL) && ke->kbd.keycode == Common::KEYCODE_d) || ke->kbd.ascii == '#' || ke->kbd.ascii == '~') {
-				_debugger->attach();
-			} else if (ke->kbd.hasFlags(0) || ke->kbd.hasFlags(Common::KBD_SHIFT)) {
+			if (ke->kbd.hasFlags(0) || ke->kbd.hasFlags(Common::KBD_SHIFT)) {
 				switch (ke->kbd.keycode) {
 				case Common::KEYCODE_p:
 					if (isPaused()) {
 						_screen->dimPalette(false);
-						pauseEngine(false);
+						_gamePauseToken.clear();
 					} else {
-						pauseEngine(true);
+						_gamePauseToken = pauseEngine();
 						_screen->dimPalette(true);
 					}
 					break;
@@ -824,7 +827,7 @@ uint32 Sword2Engine::getMillis() {
 	return _system->getMillis();
 }
 
-Common::Error Sword2Engine::saveGameState(int slot, const Common::String &desc) {
+Common::Error Sword2Engine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	uint32 saveVal = saveGame(slot, (const byte *)desc.c_str());
 
 	if (saveVal == SR_OK)

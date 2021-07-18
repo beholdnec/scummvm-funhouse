@@ -38,10 +38,11 @@ namespace Hopkins {
 HopkinsEngine::HopkinsEngine(OSystem *syst, const HopkinsGameDescription *gameDesc) : Engine(syst),
 		_gameDescription(gameDesc), _randomSource("Hopkins") {
 	DebugMan.addDebugChannel(kDebugPath, "Path", "Pathfinding debug level");
+	DebugMan.addDebugChannel(kDebugGraphics, "Graphics", "Graphics debug level");
 	_animMan = new AnimationManager(this);
 	_computer = new ComputerManager(this);
 	_dialog = new DialogsManager(this);
-	_debug = new Debugger(this);
+	setDebugger(new Debugger(this));
 	_events = new EventsManager(this);
 	_fileIO = new FileManager(this);
 	_fontMan = new FontManager(this);
@@ -71,14 +72,9 @@ HopkinsEngine::~HopkinsEngine() {
 	delete _fontMan;
 	delete _fileIO;
 	delete _events;
-	delete _debug;
 	delete _dialog;
 	delete _computer;
 	delete _animMan;
-}
-
-Common::String HopkinsEngine::generateSaveName(int slot) {
-	return Common::String::format("%s.%03d", _targetName.c_str(), slot);
 }
 
 /**
@@ -106,7 +102,7 @@ Common::Error HopkinsEngine::loadGameState(int slot) {
 /**
  * Save the game to the given slot index, and with the given name
  */
-Common::Error HopkinsEngine::saveGameState(int slot, const Common::String &desc) {
+Common::Error HopkinsEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	return _saveLoad->saveGame(slot, desc);
 }
 
@@ -166,7 +162,7 @@ bool HopkinsEngine::runWin95Demo() {
 
 	_globals->_characterType = CHARACTER_HOPKINS;
 	_objectsMan->_mapCarPosX = _objectsMan->_mapCarPosY = 0;
-	memset(_globals->_saveData, 0, sizeof(Savegame));
+	_globals->_saveData->reset();
 	_globals->_exitId = 0;
 
 	if (getLanguage() != Common::PL_POL)
@@ -219,6 +215,8 @@ bool HopkinsEngine::runWin95Demo() {
 						break;
 					case LANG_SP:
 						_graphicsMan->loadImage("fondes");
+						break;
+					default:
 						break;
 					}
 				}
@@ -314,9 +312,9 @@ bool HopkinsEngine::runWin95Demo() {
 					_graphicsMan->loadImage("ENDUK");
 				_graphicsMan->fadeInLong();
 				_events->mouseOn();
-				do
+				do {
 					_events->refreshScreenAndEvents();
-				while (_events->getMouseButton() != 1);
+				} while (_events->getMouseButton() != 1);
 				_graphicsMan->fadeOutLong();
 				restoreSystem();
 			} else
@@ -436,6 +434,9 @@ bool HopkinsEngine::runWin95Demo() {
 			_globals->_eventMode = EVENTMODE_DEFAULT;
 			_globals->_exitId = 300;
 			break;
+
+		default:
+			break;
 		}
 	}
 	return true;
@@ -470,7 +471,7 @@ bool HopkinsEngine::runLinuxDemo() {
 	_globals->_characterSpriteBuf = _fileIO->loadFile("PERSO.SPR");
 	_globals->_characterType = CHARACTER_HOPKINS;
 	_objectsMan->_mapCarPosX = _objectsMan->_mapCarPosY = 0;
-	memset(_globals->_saveData, 0, sizeof(Savegame));
+	_globals->_saveData->reset();
 	_globals->_exitId = 0;
 
 	if (_startGameSlot != -1)
@@ -535,6 +536,8 @@ bool HopkinsEngine::runLinuxDemo() {
 						break;
 					case LANG_SP:
 						_graphicsMan->loadImage("fondes");
+						break;
+					default:
 						break;
 					}
 				}
@@ -754,6 +757,9 @@ bool HopkinsEngine::runLinuxDemo() {
 			_globals->_eventMode = EVENTMODE_DEFAULT;
 			_globals->_exitId = 300;
 			break;
+
+		default:
+			break;
 		}
 	}
 	return true;
@@ -837,7 +843,7 @@ bool HopkinsEngine::runFull() {
 	_globals->_characterSpriteBuf = _fileIO->loadFile("PERSO.SPR");
 	_globals->_characterType = CHARACTER_HOPKINS;
 	_objectsMan->_mapCarPosX = _objectsMan->_mapCarPosY = 0;
-	memset(_globals->_saveData, 0, sizeof(Savegame));
+	_globals->_saveData->reset();
 
 	_globals->_exitId = 0;
 
@@ -887,6 +893,8 @@ bool HopkinsEngine::runFull() {
 						break;
 					case LANG_SP:
 						_graphicsMan->loadImage("fondes");
+						break;
+					default:
 						break;
 					}
 				}
@@ -1563,6 +1571,9 @@ bool HopkinsEngine::runFull() {
 			_globals->_eventMode = EVENTMODE_DEFAULT;
 			_graphicsMan->_lineNbr = SCREEN_WIDTH;
 			break;
+
+		default:
+			break;
 		}
 	}
 	_globals->_characterSpriteBuf = _globals->freeMemory(_globals->_characterSpriteBuf);
@@ -2047,9 +2058,9 @@ void HopkinsEngine::playUnderwaterBaseCutscene() {
 	_graphicsMan->fadeInLong();
 	_objectsMan->enableHidingBehavior();
 
-	do
+	do {
 		_events->refreshScreenAndEvents();
-	while (!shouldQuit() && _objectsMan->getBobAnimDataIdx(8) != 22);
+	} while (!shouldQuit() && _objectsMan->getBobAnimDataIdx(8) != 22);
 
 	if (!shouldQuit()) {
 		_graphicsMan->fadeOutLong();
@@ -2092,9 +2103,9 @@ void HopkinsEngine::playEnding() {
 	_graphicsMan->fadeInLong();
 	_globals->_eventMode = EVENTMODE_IGNORE;
 
-	do
+	do {
 		_events->refreshScreenAndEvents();
-	while (_objectsMan->getBobAnimDataIdx(6) != 54);
+	} while (_objectsMan->getBobAnimDataIdx(6) != 54);
 
 	_globals->_introSpeechOffFl = true;
 	_talkMan->startAnimatedCharacterDialogue("GM4.PE2");
@@ -2104,38 +2115,38 @@ void HopkinsEngine::playEnding() {
 	_objectsMan->setBobAnimation(9);
 	_objectsMan->setBobAnimation(7);
 
-	do
+	do {
 		_events->refreshScreenAndEvents();
-	while (_objectsMan->getBobAnimDataIdx(7) != 54);
+	} while (_objectsMan->getBobAnimDataIdx(7) != 54);
 
 	_soundMan->playSample(1);
 
-	do
+	do {
 		_events->refreshScreenAndEvents();
-	while (_objectsMan->getBobAnimDataIdx(7) != 65);
+	} while (_objectsMan->getBobAnimDataIdx(7) != 65);
 
 	_globals->_introSpeechOffFl = true;
 	_talkMan->startAnimatedCharacterDialogue("DUELB4.PE2");
 	_events->mouseOff();
 	_globals->_disableInventFl = true;
 
-	do
+	do {
 		_events->refreshScreenAndEvents();
-	while (_objectsMan->getBobAnimDataIdx(7) != 72);
+	} while (_objectsMan->getBobAnimDataIdx(7) != 72);
 
 	_globals->_introSpeechOffFl = true;
 	_talkMan->startAnimatedCharacterDialogue("DUELH1.PE2");
 
-	do
+	do {
 		_events->refreshScreenAndEvents();
-	while (_objectsMan->getBobAnimDataIdx(7) != 81);
+	} while (_objectsMan->getBobAnimDataIdx(7) != 81);
 
 	_globals->_introSpeechOffFl = true;
 	_talkMan->startAnimatedCharacterDialogue("DUELB5.PE2");
 
-	do
+	do {
 		_events->refreshScreenAndEvents();
-	while (_objectsMan->getBobAnimDataIdx(7) != 120);
+	} while (_objectsMan->getBobAnimDataIdx(7) != 120);
 
 	_objectsMan->stopBobAnimation(7);
 	if (_globals->_saveData->_data[svGameWonFl] == 1) {
@@ -2150,9 +2161,9 @@ void HopkinsEngine::playEnding() {
 
 		_events->_rateCounter = 0;
 		if (!_events->_escKeyFl) {
-			do
+			do {
 				_events->refreshEvents();
-			while (_events->_rateCounter < 2000 / _globals->_speed && !_events->_escKeyFl);
+			} while (_events->_rateCounter < 2000 / _globals->_speed && !_events->_escKeyFl);
 		}
 		_events->_escKeyFl = false;
 		_graphicsMan->fadeOutLong();
@@ -2184,15 +2195,15 @@ void HopkinsEngine::playEnding() {
 		_talkMan->startAnimatedCharacterDialogue("GM5.PE2");
 		_globals->_disableInventFl = true;
 
-		do
+		do {
 			_events->refreshScreenAndEvents();
-		while (_objectsMan->getBobAnimDataIdx(8) != 5);
+		} while (_objectsMan->getBobAnimDataIdx(8) != 5);
 
 		_soundMan->directPlayWav("SOUND41.WAV");
 
-		do
+		do {
 			_events->refreshScreenAndEvents();
-		while (_objectsMan->getBobAnimDataIdx(8) != 21);
+		} while (_objectsMan->getBobAnimDataIdx(8) != 21);
 
 		_graphicsMan->fadeOutLong();
 		_graphicsMan->endDisplayBob();
@@ -2733,6 +2744,8 @@ void HopkinsEngine::handleOceanMouseEvents() {
 		}
 		_globals->_oceanDirection = DIR_DOWN;
 		_globals->_exitId = 4;
+		break;
+	default:
 		break;
 	}
 }
