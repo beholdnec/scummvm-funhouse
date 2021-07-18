@@ -66,9 +66,17 @@ class FunhouseMetaEngine : public AdvancedMetaEngine {
 public:
 	FunhouseMetaEngine();
 
-	virtual const char *getName() const;
+	const char *getEngineId() const override {
+		return "funhouse";
+	}
 
-	virtual const char *getOriginalCopyright() const;
+	virtual const char* getName() const override {
+		return "Funhouse";
+	}
+
+	virtual const char *getOriginalCopyright() const override {
+		return "(C) 1994 Philips Interactive Media";
+	}
 
 protected:
 	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
@@ -77,14 +85,6 @@ protected:
 FunhouseMetaEngine::FunhouseMetaEngine() :
 	AdvancedMetaEngine(Funhouse::gameDescriptions, sizeof(ADGameDescription), funhouseGames)
 { }
-
-const char *FunhouseMetaEngine::getName() const {
-	return "Funhouse";
-}
-
-const char *FunhouseMetaEngine::getOriginalCopyright() const {
-	return "(C) 1994 Philips Interactive Media";
-}
 
 bool FunhouseMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const
 {

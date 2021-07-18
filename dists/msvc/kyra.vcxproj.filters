@@ -1,35 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="engine">
-			<UniqueIdentifier>215C540C-2AEF-4CEA-B78D-D72B94C4383A</UniqueIdentifier>
+			<UniqueIdentifier>EEEE4178-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics">
-			<UniqueIdentifier>F393BB7C-E597-416F-9DF8-D685C6259CD6</UniqueIdentifier>
+			<UniqueIdentifier>EEEE4179-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="gui">
-			<UniqueIdentifier>02B39B19-59B5-4623-B7A3-D38669A493CE</UniqueIdentifier>
+			<UniqueIdentifier>EEEE417A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="resource">
-			<UniqueIdentifier>7A5A4045-846E-4318-9EB0-92F9707DF46F</UniqueIdentifier>
+			<UniqueIdentifier>EEEE417B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="script">
-			<UniqueIdentifier>6E593F5F-D0A2-499F-8B0F-6C3C07622C74</UniqueIdentifier>
+			<UniqueIdentifier>EEEE417C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sequence">
-			<UniqueIdentifier>B400A983-5400-4B47-8EE1-7CC9467ECC40</UniqueIdentifier>
+			<UniqueIdentifier>EEEE417D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sound">
-			<UniqueIdentifier>2893B506-8234-4F03-9FB2-37638364E663</UniqueIdentifier>
+			<UniqueIdentifier>EEEE417E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sound\drivers">
-			<UniqueIdentifier>0B4E4789-A25F-4C0B-BEC3-D0EA971E9997</UniqueIdentifier>
+			<UniqueIdentifier>EEEE417F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="text">
-			<UniqueIdentifier>5356F780-73D8-423C-BE65-528D6D8F4B9C</UniqueIdentifier>
+			<UniqueIdentifier>EEEE4180-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
+		<ClCompile Include="..\..\engines\kyra\detection.cpp" />
 		<ClCompile Include="..\..\engines\kyra\engine\chargen.cpp">
 			<Filter>engine</Filter>
 		</ClCompile>
@@ -411,9 +412,9 @@
 		<ClCompile Include="..\..\engines\kyra\text\text_rpg.cpp">
 			<Filter>text</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\kyra\detection.cpp" />
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="..\..\engines\kyra\detection_tables.h" />
 		<ClInclude Include="..\..\engines\kyra\engine\darkmoon.h">
 			<Filter>engine</Filter>
 		</ClInclude>
@@ -516,6 +517,7 @@
 		<ClInclude Include="..\..\engines\kyra\gui\gui_v2.h">
 			<Filter>gui</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\kyra\kyra_v1.h" />
 		<ClInclude Include="..\..\engines\kyra\resource\resource.h">
 			<Filter>resource</Filter>
 		</ClInclude>
@@ -585,8 +587,6 @@
 		<ClInclude Include="..\..\engines\kyra\text\text_rpg.h">
 			<Filter>text</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\kyra\detection_tables.h" />
-		<ClInclude Include="..\..\engines\kyra\kyra_v1.h" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="..\..\engines\kyra\module.mk" />

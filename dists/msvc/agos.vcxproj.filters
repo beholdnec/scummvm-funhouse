@@ -1,20 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="drivers">
-			<UniqueIdentifier>DA2255A0-FCFB-4AE0-A513-59745EAF99F7</UniqueIdentifier>
+			<UniqueIdentifier>EEEE4145-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="drivers\accolade">
-			<UniqueIdentifier>967C856F-6D17-419E-A068-1DB946127749</UniqueIdentifier>
+			<UniqueIdentifier>EEEE4146-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="drivers\simon1">
-			<UniqueIdentifier>D889E66C-A7AC-4BAD-BE20-C9B933A01ED0</UniqueIdentifier>
+			<UniqueIdentifier>EEEE4147-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
+		<ClCompile Include="..\..\engines\agos\agos.cpp" />
+		<ClCompile Include="..\..\engines\agos\animation.cpp" />
+		<ClCompile Include="..\..\engines\agos\charset-fontdata.cpp" />
 		<ClCompile Include="..\..\engines\agos\charset.cpp" />
 		<ClCompile Include="..\..\engines\agos\contain.cpp" />
 		<ClCompile Include="..\..\engines\agos\cursor.cpp" />
+		<ClCompile Include="..\..\engines\agos\debug.cpp" />
+		<ClCompile Include="..\..\engines\agos\debugger.cpp" />
+		<ClCompile Include="..\..\engines\agos\detection.cpp" />
+		<ClCompile Include="..\..\engines\agos\draw.cpp" />
 		<ClCompile Include="..\..\engines\agos\drivers\accolade\adlib.cpp">
 			<Filter>drivers\accolade</Filter>
 		</ClCompile>
@@ -27,13 +34,6 @@
 		<ClCompile Include="..\..\engines\agos\drivers\simon1\adlib.cpp">
 			<Filter>drivers\simon1</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\agos\agos.cpp" />
-		<ClCompile Include="..\..\engines\agos\animation.cpp" />
-		<ClCompile Include="..\..\engines\agos\charset-fontdata.cpp" />
-		<ClCompile Include="..\..\engines\agos\debug.cpp" />
-		<ClCompile Include="..\..\engines\agos\debugger.cpp" />
-		<ClCompile Include="..\..\engines\agos\detection.cpp" />
-		<ClCompile Include="..\..\engines\agos\draw.cpp" />
 		<ClCompile Include="..\..\engines\agos\event.cpp" />
 		<ClCompile Include="..\..\engines\agos\feeble.cpp" />
 		<ClCompile Include="..\..\engines\agos\gfx.cpp" />
@@ -78,6 +78,11 @@
 		<ClCompile Include="..\..\engines\agos\zones.cpp" />
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="..\..\engines\agos\agos.h" />
+		<ClInclude Include="..\..\engines\agos\animation.h" />
+		<ClInclude Include="..\..\engines\agos\debug.h" />
+		<ClInclude Include="..\..\engines\agos\debugger.h" />
+		<ClInclude Include="..\..\engines\agos\detection_tables.h" />
 		<ClInclude Include="..\..\engines\agos\drivers\accolade\adlib.h">
 			<Filter>drivers\accolade</Filter>
 		</ClInclude>
@@ -90,11 +95,6 @@
 		<ClInclude Include="..\..\engines\agos\drivers\simon1\adlib.h">
 			<Filter>drivers\simon1</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\agos\agos.h" />
-		<ClInclude Include="..\..\engines\agos\animation.h" />
-		<ClInclude Include="..\..\engines\agos\debug.h" />
-		<ClInclude Include="..\..\engines\agos\debugger.h" />
-		<ClInclude Include="..\..\engines\agos\detection_tables.h" />
 		<ClInclude Include="..\..\engines\agos\intern.h" />
 		<ClInclude Include="..\..\engines\agos\midi.h" />
 		<ClInclude Include="..\..\engines\agos\sound.h" />

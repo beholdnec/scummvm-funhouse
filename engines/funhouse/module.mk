@@ -10,6 +10,7 @@ MODULE_OBJS := \
 	scene.o \
 	boltlib/boltlib.o \
 	boltlib/palette.o \
+	boltlib/sound.o \
 	boltlib/sprites.o \
 	labyrinth/labyrinth.o \
 	merlin/action_puzzle.o \
@@ -22,6 +23,7 @@ MODULE_OBJS := \
 	merlin/merlin.o \
 	merlin/popup_menu.o \
 	merlin/potion_puzzle.o \
+	merlin/save.o \
 	merlin/sliding_puzzle.o \
 	merlin/synch_puzzle.o \
 	merlin/tangram_puzzle.o \

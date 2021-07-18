@@ -1,11 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="scenes">
-			<UniqueIdentifier>4C14D099-6EB5-496F-B090-BC4D61486A33</UniqueIdentifier>
+			<UniqueIdentifier>EEEE4155-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
+		<ClCompile Include="..\..\engines\fullpipe\anihandler.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\behavior.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\console.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\detection.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\floaters.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\fullpipe.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\gameloader.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\gfx.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\init.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\input.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\interaction.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\inventory.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\lift.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\messagehandlers.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\messages.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\modal.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\motion.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\ngiarchive.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\scene.cpp" />
+		<ClCompile Include="..\..\engines\fullpipe\scenes.cpp" />
 		<ClCompile Include="..\..\engines\fullpipe\scenes\scene01.cpp">
 			<Filter>scenes</Filter>
 		</ClCompile>
@@ -129,26 +149,6 @@
 		<ClCompile Include="..\..\engines\fullpipe\scenes\sceneIntroDemo.cpp">
 			<Filter>scenes</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\fullpipe\anihandler.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\behavior.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\console.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\detection.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\floaters.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\fullpipe.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\gameloader.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\gfx.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\init.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\input.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\interaction.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\inventory.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\lift.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\messagehandlers.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\messages.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\modal.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\motion.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\ngiarchive.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\scene.cpp" />
-		<ClCompile Include="..\..\engines\fullpipe\scenes.cpp" />
 		<ClCompile Include="..\..\engines\fullpipe\sound.cpp" />
 		<ClCompile Include="..\..\engines\fullpipe\stateloader.cpp" />
 		<ClCompile Include="..\..\engines\fullpipe\statesaver.cpp" />

@@ -1,17 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="dialogs">
-			<UniqueIdentifier>A0CE031A-346E-44D8-9A7E-6D337A097ECC</UniqueIdentifier>
+			<UniqueIdentifier>EEEE4239-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="swordsofxeen">
-			<UniqueIdentifier>72498F14-15A3-42B5-8554-43357B70E9B6</UniqueIdentifier>
+			<UniqueIdentifier>EEEE423A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="worldofxeen">
-			<UniqueIdentifier>D58B3803-2EC9-4A20-BCB0-3663B185515F</UniqueIdentifier>
+			<UniqueIdentifier>EEEE423B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
+		<ClCompile Include="..\..\engines\xeen\character.cpp" />
+		<ClCompile Include="..\..\engines\xeen\combat.cpp" />
+		<ClCompile Include="..\..\engines\xeen\cutscenes.cpp" />
+		<ClCompile Include="..\..\engines\xeen\debugger.cpp" />
+		<ClCompile Include="..\..\engines\xeen\detection.cpp" />
 		<ClCompile Include="..\..\engines\xeen\dialogs\credits_screen.cpp">
 			<Filter>dialogs</Filter>
 		</ClCompile>
@@ -81,32 +86,6 @@
 		<ClCompile Include="..\..\engines\xeen\dialogs\please_wait.cpp">
 			<Filter>dialogs</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\xeen\swordsofxeen\swordsofxeen.cpp">
-			<Filter>swordsofxeen</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\xeen\swordsofxeen\swordsofxeen_menu.cpp">
-			<Filter>swordsofxeen</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\xeen\worldofxeen\clouds_cutscenes.cpp">
-			<Filter>worldofxeen</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\xeen\worldofxeen\darkside_cutscenes.cpp">
-			<Filter>worldofxeen</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\xeen\worldofxeen\worldofxeen.cpp">
-			<Filter>worldofxeen</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\xeen\worldofxeen\worldofxeen_cutscenes.cpp">
-			<Filter>worldofxeen</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\xeen\worldofxeen\worldofxeen_menu.cpp">
-			<Filter>worldofxeen</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\xeen\character.cpp" />
-		<ClCompile Include="..\..\engines\xeen\combat.cpp" />
-		<ClCompile Include="..\..\engines\xeen\cutscenes.cpp" />
-		<ClCompile Include="..\..\engines\xeen\debugger.cpp" />
-		<ClCompile Include="..\..\engines\xeen\detection.cpp" />
 		<ClCompile Include="..\..\engines\xeen\events.cpp" />
 		<ClCompile Include="..\..\engines\xeen\files.cpp" />
 		<ClCompile Include="..\..\engines\xeen\font.cpp" />
@@ -128,11 +107,37 @@
 		<ClCompile Include="..\..\engines\xeen\spells.cpp" />
 		<ClCompile Include="..\..\engines\xeen\sprites.cpp" />
 		<ClCompile Include="..\..\engines\xeen\subtitles.cpp" />
+		<ClCompile Include="..\..\engines\xeen\swordsofxeen\swordsofxeen.cpp">
+			<Filter>swordsofxeen</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\xeen\swordsofxeen\swordsofxeen_menu.cpp">
+			<Filter>swordsofxeen</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\xeen\window.cpp" />
+		<ClCompile Include="..\..\engines\xeen\worldofxeen\clouds_cutscenes.cpp">
+			<Filter>worldofxeen</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\xeen\worldofxeen\darkside_cutscenes.cpp">
+			<Filter>worldofxeen</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\xeen\worldofxeen\worldofxeen.cpp">
+			<Filter>worldofxeen</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\xeen\worldofxeen\worldofxeen_cutscenes.cpp">
+			<Filter>worldofxeen</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\xeen\worldofxeen\worldofxeen_menu.cpp">
+			<Filter>worldofxeen</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\xeen\xeen.cpp" />
 		<ClCompile Include="..\..\engines\xeen\xsurface.cpp" />
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="..\..\engines\xeen\character.h" />
+		<ClInclude Include="..\..\engines\xeen\combat.h" />
+		<ClInclude Include="..\..\engines\xeen\cutscenes.h" />
+		<ClInclude Include="..\..\engines\xeen\debugger.h" />
+		<ClInclude Include="..\..\engines\xeen\detection_tables.h" />
 		<ClInclude Include="..\..\engines\xeen\dialogs\credits_screen.h">
 			<Filter>dialogs</Filter>
 		</ClInclude>
@@ -202,32 +207,6 @@
 		<ClInclude Include="..\..\engines\xeen\dialogs\please_wait.h">
 			<Filter>dialogs</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\xeen\swordsofxeen\swordsofxeen.h">
-			<Filter>swordsofxeen</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\xeen\swordsofxeen\swordsofxeen_menu.h">
-			<Filter>swordsofxeen</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\xeen\worldofxeen\clouds_cutscenes.h">
-			<Filter>worldofxeen</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\xeen\worldofxeen\darkside_cutscenes.h">
-			<Filter>worldofxeen</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\xeen\worldofxeen\worldofxeen.h">
-			<Filter>worldofxeen</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\xeen\worldofxeen\worldofxeen_cutscenes.h">
-			<Filter>worldofxeen</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\xeen\worldofxeen\worldofxeen_menu.h">
-			<Filter>worldofxeen</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\xeen\character.h" />
-		<ClInclude Include="..\..\engines\xeen\combat.h" />
-		<ClInclude Include="..\..\engines\xeen\cutscenes.h" />
-		<ClInclude Include="..\..\engines\xeen\debugger.h" />
-		<ClInclude Include="..\..\engines\xeen\detection_tables.h" />
 		<ClInclude Include="..\..\engines\xeen\events.h" />
 		<ClInclude Include="..\..\engines\xeen\files.h" />
 		<ClInclude Include="..\..\engines\xeen\font.h" />
@@ -249,7 +228,28 @@
 		<ClInclude Include="..\..\engines\xeen\spells.h" />
 		<ClInclude Include="..\..\engines\xeen\sprites.h" />
 		<ClInclude Include="..\..\engines\xeen\subtitles.h" />
+		<ClInclude Include="..\..\engines\xeen\swordsofxeen\swordsofxeen.h">
+			<Filter>swordsofxeen</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\xeen\swordsofxeen\swordsofxeen_menu.h">
+			<Filter>swordsofxeen</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\xeen\window.h" />
+		<ClInclude Include="..\..\engines\xeen\worldofxeen\clouds_cutscenes.h">
+			<Filter>worldofxeen</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\xeen\worldofxeen\darkside_cutscenes.h">
+			<Filter>worldofxeen</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\xeen\worldofxeen\worldofxeen.h">
+			<Filter>worldofxeen</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\xeen\worldofxeen\worldofxeen_cutscenes.h">
+			<Filter>worldofxeen</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\xeen\worldofxeen\worldofxeen_menu.h">
+			<Filter>worldofxeen</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\xeen\xeen.h" />
 		<ClInclude Include="..\..\engines\xeen\xsurface.h" />
 	</ItemGroup>

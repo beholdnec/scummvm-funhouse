@@ -45,7 +45,7 @@ FunhouseEngine::FunhouseEngine(OSystem *const syst, const ADGameDescription *con
 
 bool FunhouseEngine::hasFeature(const EngineFeature f) const {
 	return
-		(f == kSupportsRTL);
+		(f == kSupportsReturnToLauncher);
 }
 
 Common::Error FunhouseEngine::run() {

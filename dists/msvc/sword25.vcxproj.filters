@@ -1,58 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="fmv">
-			<UniqueIdentifier>FAF00066-2F81-419B-94CD-4F27AEF01F0F</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41BF-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="gfx">
-			<UniqueIdentifier>6FAE4012-9652-457B-AC0B-41A433922630</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41C0-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="gfx\image">
-			<UniqueIdentifier>A9403824-05A7-4DEC-B21B-2CFAB67010D1</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41C1-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="input">
-			<UniqueIdentifier>3937562C-EC56-414B-846F-20E4D94947E1</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41C2-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="kernel">
-			<UniqueIdentifier>D67E068E-1ACA-44EE-9145-038842CD9A72</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41C3-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="math">
-			<UniqueIdentifier>978F4123-E953-46D0-82E3-5708A1146C92</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41C4-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="package">
-			<UniqueIdentifier>942B63CC-489F-4DBC-8274-B6B5B2EE4A27</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41C5-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="script">
-			<UniqueIdentifier>7E54C87A-B118-4ABC-B9F1-7656BC6A6E2D</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41C6-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sfx">
-			<UniqueIdentifier>E14F1A72-E8EE-4788-84E6-B8D03F120CD3</UniqueIdentifier>
+			<UniqueIdentifier>EEEE41C7-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
+		<ClCompile Include="..\..\engines\sword25\console.cpp" />
+		<ClCompile Include="..\..\engines\sword25\detection.cpp" />
 		<ClCompile Include="..\..\engines\sword25\fmv\movieplayer.cpp">
 			<Filter>fmv</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\sword25\fmv\movieplayer_script.cpp">
 			<Filter>fmv</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\sword25\gfx\image\art.cpp">
-			<Filter>gfx\image</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\sword25\gfx\image\imgloader.cpp">
-			<Filter>gfx\image</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\sword25\gfx\image\renderedimage.cpp">
-			<Filter>gfx\image</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\sword25\gfx\image\swimage.cpp">
-			<Filter>gfx\image</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\sword25\gfx\image\vectorimage.cpp">
-			<Filter>gfx\image</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\sword25\gfx\image\vectorimagerenderer.cpp">
-			<Filter>gfx\image</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\sword25\gfx\animation.cpp">
 			<Filter>gfx</Filter>
@@ -83,6 +67,24 @@
 		</ClCompile>
 		<ClCompile Include="..\..\engines\sword25\gfx\graphicengine_script.cpp">
 			<Filter>gfx</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sword25\gfx\image\art.cpp">
+			<Filter>gfx\image</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sword25\gfx\image\imgloader.cpp">
+			<Filter>gfx\image</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sword25\gfx\image\renderedimage.cpp">
+			<Filter>gfx\image</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sword25\gfx\image\swimage.cpp">
+			<Filter>gfx\image</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sword25\gfx\image\vectorimage.cpp">
+			<Filter>gfx\image</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sword25\gfx\image\vectorimagerenderer.cpp">
+			<Filter>gfx\image</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\sword25\gfx\microtiles.cpp">
 			<Filter>gfx</Filter>
@@ -180,31 +182,13 @@
 		<ClCompile Include="..\..\engines\sword25\sfx\soundengine_script.cpp">
 			<Filter>sfx</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\sword25\console.cpp" />
-		<ClCompile Include="..\..\engines\sword25\detection.cpp" />
 		<ClCompile Include="..\..\engines\sword25\sword25.cpp" />
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="..\..\engines\sword25\console.h" />
+		<ClInclude Include="..\..\engines\sword25\detection_tables.h" />
 		<ClInclude Include="..\..\engines\sword25\fmv\movieplayer.h">
 			<Filter>fmv</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\sword25\gfx\image\art.h">
-			<Filter>gfx\image</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\sword25\gfx\image\image.h">
-			<Filter>gfx\image</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\sword25\gfx\image\imgloader.h">
-			<Filter>gfx\image</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\sword25\gfx\image\renderedimage.h">
-			<Filter>gfx\image</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\sword25\gfx\image\swimage.h">
-			<Filter>gfx\image</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\sword25\gfx\image\vectorimage.h">
-			<Filter>gfx\image</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\sword25\gfx\animation.h">
 			<Filter>gfx</Filter>
@@ -235,6 +219,24 @@
 		</ClInclude>
 		<ClInclude Include="..\..\engines\sword25\gfx\graphicengine.h">
 			<Filter>gfx</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sword25\gfx\image\art.h">
+			<Filter>gfx\image</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sword25\gfx\image\image.h">
+			<Filter>gfx\image</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sword25\gfx\image\imgloader.h">
+			<Filter>gfx\image</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sword25\gfx\image\renderedimage.h">
+			<Filter>gfx\image</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sword25\gfx\image\swimage.h">
+			<Filter>gfx\image</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sword25\gfx\image\vectorimage.h">
+			<Filter>gfx\image</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\sword25\gfx\microtiles.h">
 			<Filter>gfx</Filter>
@@ -350,8 +352,6 @@
 		<ClInclude Include="..\..\engines\sword25\sfx\soundengine.h">
 			<Filter>sfx</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\sword25\console.h" />
-		<ClInclude Include="..\..\engines\sword25\detection_tables.h" />
 		<ClInclude Include="..\..\engines\sword25\sword25.h" />
 	</ItemGroup>
 	<ItemGroup>

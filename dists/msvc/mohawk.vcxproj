@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup Label="ProjectConfigurations">
 		<ProjectConfiguration Include="Debug|Win32">
 			<Configuration>Debug</Configuration>
@@ -51,10 +51,10 @@
 		</ProjectConfiguration>
 	</ItemGroup>
 	<PropertyGroup Label="Globals">
-		<ProjectGuid>{5660C22F-5545-48B7-A92E-CDB0A8B3F9DE}</ProjectGuid>
+		<ProjectGuid>{DF2A27C2-2323-31F1-A697-E6DC82DAA4A6}</ProjectGuid>
 		<RootNamespace>mohawk</RootNamespace>
 		<Keyword>Win32Proj</Keyword>
-		<VCTargetsPath Condition="'$(VCTargetsPath12)' != '' and '$(VSVersion)' == '' and $(VisualStudioVersion) == ''">$(VCTargetsPath12)</VCTargetsPath>
+		<VCTargetsPath Condition="'$(VCTargetsPath16)' != '' and '$(VSVersion)' == '' and $(VisualStudioVersion) == ''">$(VCTargetsPath16)</VCTargetsPath>
 		<VcpkgTriplet Condition="'$(Platform)' == 'Win32'">x86-windows</VcpkgTriplet>
 		<VcpkgTriplet Condition="'$(Platform)' == 'x64'">x64-windows</VcpkgTriplet>
 		<VcpkgTriplet Condition="'$(Platform)' == 'arm64'">arm64-windows</VcpkgTriplet>
@@ -62,51 +62,51 @@
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>LLVM-vs2013</PlatformToolset>
+		<PlatformToolset>llvm</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>LLVM-vs2013</PlatformToolset>
+		<PlatformToolset>llvm</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>LLVM-vs2013</PlatformToolset>
+		<PlatformToolset>llvm</PlatformToolset>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
-		<PlatformToolset>v120</PlatformToolset>
+		<PlatformToolset>v142</PlatformToolset>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -187,6 +187,12 @@
 		<ClCompile Include="..\..\engines\mohawk\riven_stacks\tspit.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\bitmap.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\console.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\cstime.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\cstime_cases.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\cstime_game.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\cstime_graphics.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\cstime_ui.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\cstime_view.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\cursors.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\detection.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\dialogs.cpp" />
@@ -247,6 +253,12 @@
 		<ClInclude Include="..\..\engines\mohawk\riven_stacks\tspit.h" />
 		<ClInclude Include="..\..\engines\mohawk\bitmap.h" />
 		<ClInclude Include="..\..\engines\mohawk\console.h" />
+		<ClInclude Include="..\..\engines\mohawk\cstime.h" />
+		<ClInclude Include="..\..\engines\mohawk\cstime_cases.h" />
+		<ClInclude Include="..\..\engines\mohawk\cstime_game.h" />
+		<ClInclude Include="..\..\engines\mohawk\cstime_graphics.h" />
+		<ClInclude Include="..\..\engines\mohawk\cstime_ui.h" />
+		<ClInclude Include="..\..\engines\mohawk\cstime_view.h" />
 		<ClInclude Include="..\..\engines\mohawk\cursors.h" />
 		<ClInclude Include="..\..\engines\mohawk\detection_tables.h" />
 		<ClInclude Include="..\..\engines\mohawk\dialogs.h" />
