@@ -52,10 +52,10 @@ protected:
 	typedef Common::List<Particle> ParticleList;
 
 	void playMode();
-    BoltRsp handlePopupButtonClick(int num);
+	BoltRsp handlePopupButtonClick(int num);
 	const BltImage& getParticleImage(const Particle &particle);
 	Common::Point getParticlePos(const Particle &particle);
-    BoltRsp handleClick(const Common::Point &pt);
+	BoltRsp handleClick(const Common::Point &pt);
 	bool isParticleAtPoint(const Particle &particle, const Common::Point &pt);
 	void spawnParticle(int imageNum, int pathNum);
 	void drawBack();
@@ -63,7 +63,7 @@ protected:
 	void tick();
 	BoltRsp win();
 
-    MerlinGame *_game;
+	MerlinGame *_game;
 	DynamicMode _mode;
 	Timer _timer;
 	BltImage _bgImage;

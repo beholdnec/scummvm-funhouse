@@ -45,7 +45,7 @@ struct BltHub { // type 40
 };
 
 void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
-    _game = game;
+	_game = game;
 
 	BltHub hubInfo;
 	loadBltResource(hubInfo, boltlib, resId);
@@ -100,10 +100,10 @@ void HubCard::enter() {
 }
 
 BoltRsp HubCard::handleMsg(const BoltMsg &msg) {
-    BoltRsp cmd = _game->handlePopup(msg);
-    if (cmd != BoltRsp::kPass) {
-        return cmd;
-    }
+	BoltRsp cmd = _game->handlePopup(msg);
+	if (cmd != BoltRsp::kPass) {
+		return cmd;
+	}
 
 	if (msg.type == Scene::kClickButton) {
 		return handleButtonClick(msg.num);
@@ -115,7 +115,7 @@ BoltRsp HubCard::handleMsg(const BoltMsg &msg) {
 BoltRsp HubCard::handleButtonClick(int num) {
 	if (num == -1) {
 		// XXX: If no button was clicked, go to potion puzzle
-        _game->branchScript(_itemImages.size());
+		_game->branchScript(_itemImages.size());
 		return BoltRsp::kDone;
 	} else {
 		_game->branchScript(num);

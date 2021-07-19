@@ -40,7 +40,7 @@ public:
 	~BltSound();
 	void load(Boltlib &boltlib, BltId id);
 	void play(Audio::Mixer *mixer);
-    uint32 getNumSamples() const;
+	uint32 getNumSamples() const;
 
 private:
 	Audio::SeekableAudioStream *_audioStream;
@@ -54,7 +54,7 @@ public:
 	BltSoundList();
 	void load(Boltlib &boltlib, BltId id);
 	void play(Audio::Mixer *mixer);
-    BltSound& pickSound();
+	BltSound& pickSound();
 
 private:
 	ScopedArray<BltSound> _sounds;

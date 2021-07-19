@@ -56,17 +56,17 @@ struct BltScene { // type 32
 };
 
 struct BltPlane { // type 26
-    static const uint32 kType = kBltPlane;
-    static const uint kSize = 0x10;
-    void load(Common::Span<const byte> src, Boltlib &bltFile) {
-        imageId = BltId(src.getUint32BEAt(0));
-        paletteId = BltId(src.getUint32BEAt(4));
-        hotspotsId = BltId(src.getUint32BEAt(8));
-    }
+	static const uint32 kType = kBltPlane;
+	static const uint kSize = 0x10;
+	void load(Common::Span<const byte> src, Boltlib &bltFile) {
+		imageId = BltId(src.getUint32BEAt(0));
+		paletteId = BltId(src.getUint32BEAt(4));
+		hotspotsId = BltId(src.getUint32BEAt(8));
+	}
 
-    BltId imageId;
-    BltId paletteId;
-    BltId hotspotsId;
+	BltId imageId;
+	BltId paletteId;
+	BltId hotspotsId;
 };
 
 struct BltButtonGraphicElement { // type 30
@@ -149,11 +149,11 @@ void Scene::redraw() {
 		_engine->getGraphics()->clearPlane(kFore);
 	}
 
-    for (int i = 0; i < _sprites.getSpriteCount(); ++i) {
+	for (int i = 0; i < _sprites.getSpriteCount(); ++i) {
 		Common::Point position = _sprites.getSpritePosition(i) - _origin;
 		// FIXME: Are sprites drawn to back or fore plane? Is it selectable?
 		_sprites.getSpriteImage(i)->drawAt(_engine->getGraphics()->getPlaneSurface(kFore), position.x, position.y, true);
-    }
+	}
 
 	drawButtons(getButtonAtPoint(_engine->getEventManager()->getMousePos()));
 
@@ -172,7 +172,7 @@ BoltRsp Scene::handleMsg(const BoltMsg &msg) {
 		BoltMsg newMsg(kClickButton);
 		newMsg.num = getButtonAtPoint(msg.point);
 		_engine->setNextMsg(newMsg);
-        break;
+		break;
 	}
 	}
 

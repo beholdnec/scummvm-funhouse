@@ -106,7 +106,7 @@ struct BoltMsg {
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
 		kPopupButtonClick,
-        kSceneMsgs = 100,
+		kSceneMsgs = 100,
 	};
 
 	BoltMsg(int type_ = kYield) : type(type_) { }
@@ -118,17 +118,17 @@ struct BoltMsg {
 
 // Responses to a message.
 enum BoltRsp {
-    kDone, // Message was handled.
-    kPass, // Message was not handled and should be passed to the next handler.
+	kDone, // Message was handled.
+	kPass, // Message was not handled and should be passed to the next handler.
 };
 
 class Card {
 public:
 	virtual ~Card() { }
 	virtual void enter() = 0;
-    virtual void redraw() {
-        enter();
-    }
+	virtual void redraw() {
+		enter();
+	}
 	virtual BoltRsp handleMsg(const BoltMsg &msg) = 0;
 };
 
@@ -186,14 +186,14 @@ public:
 	virtual ~FunhouseGame() { }
 	virtual void init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mixer) = 0;
 	virtual BoltRsp handleMsg(const BoltMsg &msg) = 0;
-    virtual void win() = 0;
+	virtual void win() = 0;
 };
 
 class FunhouseEngine : public Engine {
 public:
 	FunhouseEngine(OSystem *syst, const ADGameDescription *gd);
 
-    void win();
+	void win();
 
 	// From Engine
 	virtual bool hasFeature(EngineFeature f) const;
@@ -218,10 +218,10 @@ private:
 	BoltMsg getNextMsg();
 	void yield();
 	
-    Common::ScopedPtr<FunhouseConsole> _console;
+	Common::ScopedPtr<FunhouseConsole> _console;
 	Graphics _graphics;
 
-    Common::ScopedPtr<FunhouseGame> _game;
+	Common::ScopedPtr<FunhouseGame> _game;
 
 	BoltMsg _nextMsg;
 	uint32 _eventTime;

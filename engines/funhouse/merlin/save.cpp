@@ -26,48 +26,48 @@
 namespace Funhouse {
 
 void SaveManager::init(MerlinGame *game) {
-    _game = game;
+	_game = game;
 }
 
 bool SaveManager::getProfileStatus(int idx) const {
-    return _profileStatus[idx];
+	return _profileStatus[idx];
 }
 
 int SaveManager::getProfileIdx() const {
-    return _profileIdx;
+	return _profileIdx;
 }
 
 void SaveManager::setProfileIdx(int idx) {
-    _profileIdx = idx;
+	_profileIdx = idx;
 }
 
 ProfileData& SaveManager::getProfile() {
-    assert(_profileIdx >= 0 && _profileIdx < kProfileCount);
+	assert(_profileIdx >= 0 && _profileIdx < kProfileCount);
 
-    if (!_profileStatus[_profileIdx]) {
-        // Create a new profile
-        _profiles[_profileIdx] = {};
-        _profiles[_profileIdx].scriptCursor = MerlinGame::kNewGameScriptCursor;
-        _profiles[_profileIdx].scriptReturnCursor = MerlinGame::kNewGameScriptCursor;
+	if (!_profileStatus[_profileIdx]) {
+		// Create a new profile
+		_profiles[_profileIdx] = {};
+		_profiles[_profileIdx].scriptCursor = MerlinGame::kNewGameScriptCursor;
+		_profiles[_profileIdx].scriptReturnCursor = MerlinGame::kNewGameScriptCursor;
 
-        _profileStatus[_profileIdx] = true;
-    }
+		_profileStatus[_profileIdx] = true;
+	}
 
-    return _profiles[_profileIdx];
+	return _profiles[_profileIdx];
 }
 
 void SaveManager::save() {
-    if (_profileIdx == -1) {
-        // No profile is active; abort
-        return;
-    }
+	if (_profileIdx == -1) {
+		// No profile is active; abort
+		return;
+	}
 
-    assert(_profileIdx >= 0 && _profileIdx < kProfileCount);
+	assert(_profileIdx >= 0 && _profileIdx < kProfileCount);
 
-    getProfile().scriptCursor = _game->_scriptCursor;
-    getProfile().scriptReturnCursor = _game->_scriptReturnCursor;
+	getProfile().scriptCursor = _game->_scriptCursor;
+	getProfile().scriptReturnCursor = _game->_scriptReturnCursor;
 
-    warning("Save not implemented");
+	warning("Save not implemented");
 }
 
 } // end of namespace Funhouse

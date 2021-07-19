@@ -30,17 +30,17 @@
 namespace Funhouse {
 
 struct BltColorPuzzleTransition { // type 58
-    static const uint32 kType = kBltColorPuzzleTransition;
-    static const uint kSize = 8;
-    void load(Common::Span<const byte> src, Boltlib &boltlib) {
-        for (int i = 0; i < 4; ++i) {
-            piece[i] = src.getInt8At(i * 2);
-            count[i] = src.getUint8At(i * 2 + 1);
-        }
-    }
+	static const uint32 kType = kBltColorPuzzleTransition;
+	static const uint kSize = 8;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		for (int i = 0; i < 4; ++i) {
+			piece[i] = src.getInt8At(i * 2);
+			count[i] = src.getUint8At(i * 2 + 1);
+		}
+	}
 
-    int8 piece[4];
-    uint8 count[4];
+	int8 piece[4];
+	uint8 count[4];
 };
 
 class BltSoundList;
@@ -54,7 +54,7 @@ public:
 private:
 	// All color puzzles in Merlin's Apprentice have 4 pieces.
 	static const int kNumPieces = 4;
-    static const int kNumTransitionSteps = 4;
+	static const int kNumTransitionSteps = 4;
 	// FIXME: morph duration is probably set in game data
 	// or it may last as long as the sound
 	static const uint kMorphDuration = 500;
@@ -63,31 +63,31 @@ private:
 		int numStates;
 		BltPaletteMods palettes;
 		int state;
-        int solution;
-        BltColorPuzzleTransition transition;
+		int solution;
+		BltColorPuzzleTransition transition;
 	};
 
 	BoltRsp handlePopupButtonClick(int num);
 	BoltRsp handleButtonClick(int num);
 
 	void idleMode();
-    BoltRsp driveTransition();
-    BoltRsp driveMorph();
+	BoltRsp driveTransition();
+	BoltRsp driveMorph();
 	void selectPiece(int piece);
 	void setPieceState(int piece, int state);
 	void morphPiece(int piece, int state);
-    void startMorph(BltPaletteMods *paletteMods, int startState, int endState);
-    bool isSolved() const;
+	void startMorph(BltPaletteMods *paletteMods, int startState, int endState);
+	bool isSolved() const;
 
-    MerlinGame *_game;
+	MerlinGame *_game;
 	DynamicMode _mode;
 	Scene _scene;
 	ScopedArray<BltSoundList> _soundLists;
 
 	Piece _pieces[kNumPieces];
 
-    int _selectedPiece;
-    int _transitionStep;
+	int _selectedPiece;
+	int _transitionStep;
 
 	Timer _morphTimer;
 	BltPaletteMods *_morphPaletteMods;

@@ -40,7 +40,7 @@ enum BltType {
 	kBltPalette = 10,
 	kBltColorCycles = 11,
 	kBltColorCycleSlot = 12,
-    kBltRect = 24,
+	kBltRect = 24,
 	kBltPlane = 26, // image, palette, hotspots
 	kBltSpriteList = 27, // image, x, y
 	kBltColors = 28, // just some colors, referenced by palette mods
@@ -50,8 +50,8 @@ enum BltType {
 	kBltScene = 32,
 	kBltMainMenu = 33,
 	kBltFileMenu = 34,
-    kBltPopup = 37,
-    kBltPopupCatalog = 38,
+	kBltPopup = 37,
+	kBltPopupCatalog = 38,
 	kBltHub = 40,
 	kBltHubItem = 41,
 	kBltSlidingPuzzle = 44,
@@ -60,12 +60,12 @@ enum BltType {
 	kBltWordPuzzleInfo              = 48,
 	kBltWordPuzzleVariantInfo       = 49,
 	kBltTangramPuzzleDifficultyInfo = 51,
-    kBltSynchPuzzleInfo             = 52,
-    kBltSynchPuzzleTransition       = 53,
-    kBltMemoryPuzzleInfos           = 54,
+	kBltSynchPuzzleInfo             = 52,
+	kBltSynchPuzzleTransition       = 53,
+	kBltMemoryPuzzleInfos           = 54,
 	kBltMemoryPuzzleItemFrameList   = 55,
 	kBltMemoryPuzzleItemList        = 56,
-    kBltColorPuzzleTransition       = 58,
+	kBltColorPuzzleTransition       = 58,
 	kBltPotionPuzzle                = 59,
 	kBltPotionPuzzleSpritePoints    = 60, // potion puzzles
 	kBltPotionPuzzleDifficulty      = 61, // potion puzzles

@@ -350,7 +350,7 @@ void Graphics::init(OSystem *system, FunhouseEngine *engine) {
 	_fade = Common::Rational(1);
 	_dirty = true;
 
-    ::Graphics::PixelFormat pixelFormat = ::Graphics::PixelFormat::createFormatCLUT8();
+	::Graphics::PixelFormat pixelFormat = ::Graphics::PixelFormat::createFormatCLUT8();
 	initGraphics(kVgaScreenWidth, kVgaScreenHeight, &pixelFormat);
 
 	initPlane(_backPlane, kVgaScreenWidth, kVgaScreenHeight, kBackVgaFirst);
@@ -481,7 +481,7 @@ void Graphics::setColorCycle(int slot, int plane, uint16 start, uint16 end, int 
 	if (start < 128 && end < 128) {
 		_colorCycles[slot].start = start;
 		_colorCycles[slot].end = end;
-        _colorCycles[slot].plane = plane;
+		_colorCycles[slot].plane = plane;
 		_colorCycles[slot].delay = delay;
 		// Start cycling now
 		_engine->startTimer(kColorCycle0 + slot, delay);

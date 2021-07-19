@@ -29,12 +29,12 @@ namespace Funhouse {
 
 class BltSprites {
 public:
-    void load(Boltlib &boltlib, BltId id);
+	void load(Boltlib &boltlib, BltId id);
 
-    int getSpriteCount() const;
+	int getSpriteCount() const;
 	const Common::Point& getSpritePosition(int num) const;
 	const BltImage* getSpriteImage(int num) const;
-    void setSpriteImageNum(int num, int imageNum);
+	void setSpriteImageNum(int num, int imageNum);
 	BltImage* getImageFromSet(int num);
 
 private:
@@ -43,10 +43,10 @@ private:
 		int imageNum;
 	};
 
-    ScopedArray<BltImage> _images;
-    ScopedArray<Sprite> _sprites;
+	ScopedArray<BltImage> _images;
+	ScopedArray<Sprite> _sprites;
 };
-    
+	
 } // End of namespace Funhouse
 
 #endif

@@ -58,7 +58,7 @@ void BltSound::play(Audio::Mixer *mixer) {
 }
 
 uint32 BltSound::getNumSamples() const {
-    return _resource.size();
+	return _resource.size();
 }
 
 BltSoundList::BltSoundList() : _random("SoundRandomSource")
@@ -78,8 +78,8 @@ void BltSoundList::play(Audio::Mixer *mixer) {
 }
 
 BltSound& BltSoundList::pickSound() {
-    int num = _random.getRandomNumber(_sounds.size() - 1);
-    return _sounds[num];
+	int num = _random.getRandomNumber(_sounds.size() - 1);
+	return _sounds[num];
 }
 
 } // End of namespace Funhouse

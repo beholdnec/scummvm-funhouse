@@ -30,15 +30,15 @@
 namespace Funhouse {
 
 struct BltSynchPuzzleTransitionElement { // type 53
-    static const uint32 kType = kBltSynchPuzzleTransition;
-    static const uint kSize = 2;
-    void load(Common::Span<const byte> src, Boltlib &boltlib) {
-        item = src.getInt8At(0);
-        count = src.getInt8At(1);
-    }
+	static const uint32 kType = kBltSynchPuzzleTransition;
+	static const uint kSize = 2;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		item = src.getInt8At(0);
+		count = src.getInt8At(1);
+	}
 
-    int8 item;
-    int8 count;
+	int8 item;
+	int8 count;
 };
 
 typedef ScopedArray<BltSynchPuzzleTransitionElement> BltSynchPuzzleTransition;
@@ -47,44 +47,44 @@ class SynchPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
-    BoltRsp handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
-    static const int kTimeoutDelay = 250;
+	static const int kTimeoutDelay = 250;
 
-    struct Move {
-        Move() : item(-1), count(0) {}
-        int item;
-        int count; // Negative for backwards; Positive for forwards
-    };
+	struct Move {
+		Move() : item(-1), count(0) {}
+		int item;
+		int count; // Negative for backwards; Positive for forwards
+	};
 
-    struct Item {
-        int state;
-        int solution;
-        BltSprites sprites;
-        ScopedArray<BltSynchPuzzleTransition> moveset;
-    };
+	struct Item {
+		int state;
+		int solution;
+		BltSprites sprites;
+		ScopedArray<BltSynchPuzzleTransition> moveset;
+	};
 
-    typedef ScopedArray<Item> ItemArray;
+	typedef ScopedArray<Item> ItemArray;
 
-    BoltRsp handlePopupButtonClick(int num);
-    BoltRsp handleButtonClick(int num);
-    void redraw();
-    void idle();
-    void setTimeout(int32 delay, std::function<void()> then);
-    BoltRsp driveTransition();
-    int getItemAtPosition(const Common::Point& pt);
-    bool isSolved() const;
+	BoltRsp handlePopupButtonClick(int num);
+	BoltRsp handleButtonClick(int num);
+	void redraw();
+	void idle();
+	void setTimeout(int32 delay, std::function<void()> then);
+	BoltRsp driveTransition();
+	int getItemAtPosition(const Common::Point& pt);
+	bool isSolved() const;
 
-    MerlinGame *_game;
+	MerlinGame *_game;
 	Scene _scene;
-    DynamicMode _mode;
-    Timer _timer;
-    std::function<void()> _timeoutThen;
+	DynamicMode _mode;
+	Timer _timer;
+	std::function<void()> _timeoutThen;
 
-    ItemArray _items;
+	ItemArray _items;
 
-    ScopedArray<Move> _moveAgenda;
+	ScopedArray<Move> _moveAgenda;
 };
 
 } // End of namespace Funhouse

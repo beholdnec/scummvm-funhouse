@@ -51,7 +51,7 @@ bool FunhouseEngine::hasFeature(const EngineFeature f) const {
 Common::Error FunhouseEngine::run() {
 	assert(_game);
 
-    _console.reset(new FunhouseConsole(this));
+	_console.reset(new FunhouseConsole(this));
 
 	_eventTime = getTotalPlayTime();
 	_lastTicksTime = _eventTime;
@@ -165,7 +165,7 @@ void FunhouseEngine::yield() {
 }
 
 void FunhouseEngine::win() {
-    _game->win();
+	_game->win();
 }
 
 void FunhouseEngine::setNextMsg(const BoltMsg &msg) {

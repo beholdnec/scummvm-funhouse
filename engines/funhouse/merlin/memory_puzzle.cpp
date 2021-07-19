@@ -27,16 +27,16 @@
 namespace Funhouse {
 
 struct BltMemoryPuzzleInfo {
-    static const uint32 kType = kBltMemoryPuzzleInfos;
-    static const uint kSize = 0x10;
-    void load(Common::Span<const byte> src, Boltlib &boltlib) {
-        finalGoal = src.getUint16BEAt(2);
-        // TODO: the rest of the fields appear to be timing parameters
-        foo = src.getUint16BEAt(8);
-    }
+	static const uint32 kType = kBltMemoryPuzzleInfos;
+	static const uint kSize = 0x10;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		finalGoal = src.getUint16BEAt(2);
+		// TODO: the rest of the fields appear to be timing parameters
+		foo = src.getUint16BEAt(8);
+	}
 
-    uint16 finalGoal; // Number of matches to win
-    uint16 foo;
+	uint16 finalGoal; // Number of matches to win
+	uint16 foo;
 };
 
 typedef ScopedArray<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
@@ -69,12 +69,12 @@ struct BltMemoryPuzzleItemFrame {
 		pos.x = src.getInt16BEAt(0);
 		pos.y = src.getInt16BEAt(2);
 		imageId = BltId(src.getUint32BEAt(4)); // 8640
-        delayFrames = src.getInt16BEAt(8);
+		delayFrames = src.getInt16BEAt(8);
 	}
 
 	Common::Point pos;
 	BltId imageId;
-    int16 delayFrames;
+	int16 delayFrames;
 };
 
 typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
@@ -83,34 +83,34 @@ MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
 {}
 
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
-    _game = game;
-    _animMode.init(_game->getEngine());
-    idle();
-    _matches = 0;
+	_game = game;
+	_animMode.init(_game->getEngine());
+	idle();
+	_matches = 0;
 
-    uint16 resId = 0;
-    switch (challengeIdx) {
-    case 3: resId = 0x865E; break;
-    case 11: resId = 0x8797; break;
-    case 23: resId = 0x887B; break;
-    default: assert(false); break;
-    }
+	uint16 resId = 0;
+	switch (challengeIdx) {
+	case 3: resId = 0x865E; break;
+	case 11: resId = 0x8797; break;
+	case 23: resId = 0x887B; break;
+	default: assert(false); break;
+	}
 
-    _game->setPopup(MerlinGame::kPuzzlePopup);
+	_game->setPopup(MerlinGame::kPuzzlePopup);
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
-    BltId infosId     = resourceList[0].value; // Ex: 8600
+	BltId infosId     = resourceList[0].value; // Ex: 8600
 	BltId sceneId     = resourceList[1].value; // Ex: 8606
-    BltId failSoundId = resourceList[2].value; // Ex: 8608
-    BltId itemsId     = resourceList[3].value; // Ex: 865D
+	BltId failSoundId = resourceList[2].value; // Ex: 8608
+	BltId itemsId     = resourceList[3].value; // Ex: 865D
 
-    BltMemoryPuzzleInfos infos;
-    loadBltResourceArray(infos, boltlib, infosId);
-    const BltMemoryPuzzleInfo& info = infos[_game->getDifficulty(kMemoryDifficulty)];
-    _finalGoal = info.finalGoal;
-    _foo = info.foo;
-    _goal = 3;
+	BltMemoryPuzzleInfos infos;
+	loadBltResourceArray(infos, boltlib, infosId);
+	const BltMemoryPuzzleInfo& info = infos[_game->getDifficulty(kMemoryDifficulty)];
+	_finalGoal = info.finalGoal;
+	_foo = info.foo;
+	_goal = 3;
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
@@ -124,10 +124,10 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 		_itemList[i].frames.alloc(frames.size());
 		for (uint j = 0; j < frames.size(); ++j) {
-            ItemFrame& frame = _itemList[i].frames[j];
-            frame.pos = frames[j].pos;
+			ItemFrame& frame = _itemList[i].frames[j];
+			frame.pos = frames[j].pos;
 			frame.image.load(boltlib, frames[j].imageId);
-            frame.delayFrames = frames[j].delayFrames;
+			frame.delayFrames = frames[j].delayFrames;
 		}
 
 		_itemList[i].palette.load(boltlib, itemList[i].paletteId);
@@ -141,12 +141,12 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_failSound.load(boltlib, failSoundId);
 
-    _solution.alloc(_finalGoal);
-    for (int i = 0; i < _finalGoal; ++i) {
-        _solution[i] = _random.getRandomNumber(_itemList.size() - 1);
-    }
+	_solution.alloc(_finalGoal);
+	for (int i = 0; i < _finalGoal; ++i) {
+		_solution[i] = _random.getRandomNumber(_itemList.size() - 1);
+	}
 
-    startPlayback();
+	startPlayback();
 }
 
 void MemoryPuzzle::enter() {
@@ -154,14 +154,14 @@ void MemoryPuzzle::enter() {
 }
 
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-    _animMode.react(msg);
-    return kDone;
+	_animMode.react(msg);
+	return kDone;
 }
 
 BoltRsp MemoryPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->branchReturn();
+		_game->branchReturn();
 		return BoltRsp::kDone;
 	default:
 		warning("Unhandled popup button %d", num);
@@ -170,225 +170,225 @@ BoltRsp MemoryPuzzle::handlePopupButtonClick(int num) {
 }
 
 BoltRsp MemoryPuzzle::handleButtonClick(int num) {
-    debug(3, "Clicked button %d", num);
+	debug(3, "Clicked button %d", num);
 
-    if (num >= 0 && num < _itemList.size()) {
-        if (_solution[_matches] == num) {
-            // Earn a new match
-            ++_matches;
-            startAnimation(num, _itemList[num].sound);
-            _animThen = [this]() {
-                idle();
-            };
-        } else {
-            // Mismatch
-            _matches = 0;
-            startAnimation(num, _failSound.pickSound());
-            _animThen = [this]() {
-                startPlayback();
-            };
-        }
-    }
+	if (num >= 0 && num < _itemList.size()) {
+		if (_solution[_matches] == num) {
+			// Earn a new match
+			++_matches;
+			startAnimation(num, _itemList[num].sound);
+			_animThen = [this]() {
+				idle();
+			};
+		} else {
+			// Mismatch
+			_matches = 0;
+			startAnimation(num, _failSound.pickSound());
+			_animThen = [this]() {
+				startPlayback();
+			};
+		}
+	}
 
-    return BoltRsp::kDone;
+	return BoltRsp::kDone;
 }
 
 void MemoryPuzzle::startPlayback() {
-    _playbackStep = 0;
-    playbackNext();
+	_playbackStep = 0;
+	playbackNext();
 }
 
 void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
-    debug(3, "Starting animation for item %d", itemNum);
+	debug(3, "Starting animation for item %d", itemNum);
 
-    _animMode = {};
-    _animItem = itemNum;
-    _animFrame = 0;
-    _animSubFrame = 0;
-    _animSoundTime = sound.getNumSamples() / 22; // This approximation is used by the original engine.
-    _animPlayTime = _animSoundTime;
-    if (_foo == 0x4d) {
-        warning("Overriding animation time for foo 0x4d");
-        // Special case for Vials puzzle
-        _animPlayTime = 400;
-    }
-    else if (_animPlayTime < kMinAnimPlayTimeMs) {
-        _animPlayTime = kMinAnimPlayTimeMs;
-    }
+	_animMode = {};
+	_animItem = itemNum;
+	_animFrame = 0;
+	_animSubFrame = 0;
+	_animSoundTime = sound.getNumSamples() / 22; // This approximation is used by the original engine.
+	_animPlayTime = _animSoundTime;
+	if (_foo == 0x4d) {
+		warning("Overriding animation time for foo 0x4d");
+		// Special case for Vials puzzle
+		_animPlayTime = 400;
+	}
+	else if (_animPlayTime < kMinAnimPlayTimeMs) {
+		_animPlayTime = kMinAnimPlayTimeMs;
+	}
 
-    drawItemFrame(_animItem, _animFrame);
+	drawItemFrame(_animItem, _animFrame);
 
-    Item &item = _itemList[_animItem];
-    //applyPalette(_graphics, kFore, item.palette);
-    // XXX: applyPalette doesn't work correctly. Manually apply palette.
-    _game->getGraphics()->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
-        0, 128);
-    if (item.colorCycles) {
-        applyColorCycles(_game->getGraphics(), kFore, item.colorCycles.get());
-    } else {
-        _game->getGraphics()->resetColorCycles();
-    }
-    
-    sound.play(_game->getEngine()->_mixer);
+	Item &item = _itemList[_animItem];
+	//applyPalette(_graphics, kFore, item.palette);
+	// XXX: applyPalette doesn't work correctly. Manually apply palette.
+	_game->getGraphics()->setPlanePalette(kFore, &item.palette.data[BltPalette::kHeaderSize],
+		0, 128);
+	if (item.colorCycles) {
+		applyColorCycles(_game->getGraphics(), kFore, item.colorCycles.get());
+	} else {
+		_game->getGraphics()->resetColorCycles();
+	}
+	
+	sound.play(_game->getEngine()->_mixer);
 
-    animPlaying();
+	animPlaying();
 }
 
 void MemoryPuzzle::playbackNext() {
-    if (_playbackStep < _goal) {
-        startAnimation(_solution[_playbackStep], _itemList[_solution[_playbackStep]].sound);
-        _animThen = [this]() {
-            playbackNext();
-        };
-        ++_playbackStep;
-    }
-    else {
-        idle();
-    }
+	if (_playbackStep < _goal) {
+		startAnimation(_solution[_playbackStep], _itemList[_solution[_playbackStep]].sound);
+		_animThen = [this]() {
+			playbackNext();
+		};
+		++_playbackStep;
+	}
+	else {
+		idle();
+	}
 }
 
 void MemoryPuzzle::idle() {
-    _animMode.transition();
-    _animMode.onEnter([this]() {
-        _game->getEngine()->setNextMsg(BoltMsg::kDrive); // Check for win now
-    });
-    _animMode.onMsg([this](const BoltMsg& msg) {
-        BoltRsp cmd;
+	_animMode.transition();
+	_animMode.onEnter([this]() {
+		_game->getEngine()->setNextMsg(BoltMsg::kDrive); // Check for win now
+	});
+	_animMode.onMsg([this](const BoltMsg& msg) {
+		BoltRsp cmd;
 
-        if (_matches >= _finalGoal) {
-            _game->branchWin();
-            return BoltRsp::kDone;
-        }
-        else if (_matches >= _goal) {
-            _matches = 0;
-            _goal += 3;
-            startPlayback();
-            return BoltRsp::kDone;
-        }
+		if (_matches >= _finalGoal) {
+			_game->branchWin();
+			return BoltRsp::kDone;
+		}
+		else if (_matches >= _goal) {
+			_matches = 0;
+			_goal += 3;
+			startPlayback();
+			return BoltRsp::kDone;
+		}
 
-        if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
-            return cmd;
-        }
+		if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
+			return cmd;
+		}
 
-        switch (msg.type) {
-        case BoltMsg::kPopupButtonClick:
-            return handlePopupButtonClick(msg.num);
-        case Scene::kClickButton:
-            return handleButtonClick(msg.num);
-        }
+		switch (msg.type) {
+		case BoltMsg::kPopupButtonClick:
+			return handlePopupButtonClick(msg.num);
+		case Scene::kClickButton:
+			return handleButtonClick(msg.num);
+		}
 
-        return _scene.handleMsg(msg);
-    });
+		return _scene.handleMsg(msg);
+	});
 }
 
 void MemoryPuzzle::animPlaying() {
-    _animMode.transition();
-    _animMode.onEnter([this]() {
-        _frameTimer.start(kFrameDelayMs, true);
-        _animTimer.start(_animSoundTime, false);
-    });
-    _animMode.onMsg([](const BoltMsg& msg) {
-    });
-    _animMode.onTimer(&_frameTimer, [this]() {
-        const Item& item = _itemList[_animItem];
-        const ItemFrame& frame = item.frames[_animFrame];
+	_animMode.transition();
+	_animMode.onEnter([this]() {
+		_frameTimer.start(kFrameDelayMs, true);
+		_animTimer.start(_animSoundTime, false);
+	});
+	_animMode.onMsg([](const BoltMsg& msg) {
+	});
+	_animMode.onTimer(&_frameTimer, [this]() {
+		const Item& item = _itemList[_animItem];
+		const ItemFrame& frame = item.frames[_animFrame];
 
-        _frameTimer.ticks -= kFrameDelayMs;
+		_frameTimer.ticks -= kFrameDelayMs;
 
-        if (_animTimer.ticks >= _animPlayTime) {
-            if (frame.delayFrames == -1) {
-                _animFrame++;
-                _animSubFrame = 0;
-                drawItemFrame(_animItem, _animFrame);
-                animWindingDown();
-                debug("winding down animation...");
-            }
-            else {
-                animStopping();
-            }
+		if (_animTimer.ticks >= _animPlayTime) {
+			if (frame.delayFrames == -1) {
+				_animFrame++;
+				_animSubFrame = 0;
+				drawItemFrame(_animItem, _animFrame);
+				animWindingDown();
+				debug("winding down animation...");
+			}
+			else {
+				animStopping();
+			}
 
-            return;
-        }
-        else {
-            if (frame.delayFrames == -1) {
-                // Do not advance frames
-            }
-            else {
-                ++_animSubFrame;
-                if (_animSubFrame >= frame.delayFrames) {
-                    ++_animFrame;
-                    if (_animFrame >= item.frames.size()) {
-                        _animFrame = 0;
-                    }
-                    _animSubFrame = 0;
-                    drawItemFrame(_animItem, _animFrame);
-                }
-            }
-        }
-    });
-    _animMode.onTimer(&_animTimer, nullptr);
+			return;
+		}
+		else {
+			if (frame.delayFrames == -1) {
+				// Do not advance frames
+			}
+			else {
+				++_animSubFrame;
+				if (_animSubFrame >= frame.delayFrames) {
+					++_animFrame;
+					if (_animFrame >= item.frames.size()) {
+						_animFrame = 0;
+					}
+					_animSubFrame = 0;
+					drawItemFrame(_animItem, _animFrame);
+				}
+			}
+		}
+	});
+	_animMode.onTimer(&_animTimer, nullptr);
 }
 
 void MemoryPuzzle::animWindingDown() {
-    _animMode.transition();
-    _animMode.onEnter([this]() {
-    });
-    _animMode.onMsg([](const BoltMsg& msg) {
-    });
-    _animMode.onTimer(&_frameTimer, [this]() {
-        _frameTimer.ticks -= kFrameDelayMs;
+	_animMode.transition();
+	_animMode.onEnter([this]() {
+	});
+	_animMode.onMsg([](const BoltMsg& msg) {
+	});
+	_animMode.onTimer(&_frameTimer, [this]() {
+		_frameTimer.ticks -= kFrameDelayMs;
 
-        const Item& item = _itemList[_animItem];
+		const Item& item = _itemList[_animItem];
 
-        if (_animFrame >= item.frames.size()) {
-            animStopping();
-            return;
-        }
+		if (_animFrame >= item.frames.size()) {
+			animStopping();
+			return;
+		}
 
-        const ItemFrame& frame = item.frames[_animFrame];
+		const ItemFrame& frame = item.frames[_animFrame];
 
-        if (frame.delayFrames != -1) {
-            ++_animSubFrame;
-            if (_animSubFrame >= frame.delayFrames) {
-                ++_animFrame;
-                _animSubFrame = 0;
-                drawItemFrame(_animItem, _animFrame);
-            }
-        }
-        else {
-            _animFrame++;
-            _animSubFrame = 0;
-            drawItemFrame(_animItem, _animFrame);
-        }
-    });
-    _animMode.onTimer(&_animTimer, nullptr);
+		if (frame.delayFrames != -1) {
+			++_animSubFrame;
+			if (_animSubFrame >= frame.delayFrames) {
+				++_animFrame;
+				_animSubFrame = 0;
+				drawItemFrame(_animItem, _animFrame);
+			}
+		}
+		else {
+			_animFrame++;
+			_animSubFrame = 0;
+			drawItemFrame(_animItem, _animFrame);
+		}
+	});
+	_animMode.onTimer(&_animTimer, nullptr);
 }
 
 void MemoryPuzzle::animStopping() {
-    _animMode.transition();
-    _animMode.onEnter([this]() {
-        _animTimer.armed = true;
-    });
-    _animMode.onMsg([](const BoltMsg& msg) {
-    });
-    _animMode.onTimer(&_animTimer, [this]() {
-        _animTimer.armed = false;
-        drawItemFrame(_animItem, -1);
-        _animThen();
-    });
+	_animMode.transition();
+	_animMode.onEnter([this]() {
+		_animTimer.armed = true;
+	});
+	_animMode.onMsg([](const BoltMsg& msg) {
+	});
+	_animMode.onTimer(&_animTimer, [this]() {
+		_animTimer.armed = false;
+		drawItemFrame(_animItem, -1);
+		_animThen();
+	});
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {
-    _game->getGraphics()->clearPlane(kFore);
+	_game->getGraphics()->clearPlane(kFore);
 
-    const Item &item = _itemList[itemNum];
-    if (frameNum >= 0 && frameNum < item.frames.size()) {
-        const ItemFrame &frame = item.frames[frameNum];
-        const Common::Point &origin = _scene.getOrigin();
-        frame.image.drawAt(_game->getGraphics()->getPlaneSurface(kFore), frame.pos.x - origin.x, frame.pos.y - origin.y, true);
-    }
+	const Item &item = _itemList[itemNum];
+	if (frameNum >= 0 && frameNum < item.frames.size()) {
+		const ItemFrame &frame = item.frames[frameNum];
+		const Common::Point &origin = _scene.getOrigin();
+		frame.image.drawAt(_game->getGraphics()->getPlaneSurface(kFore), frame.pos.x - origin.x, frame.pos.y - origin.y, true);
+	}
 
-    _game->getGraphics()->markDirty();
+	_game->getGraphics()->markDirty();
 }
 
 } // End of namespace Funhouse

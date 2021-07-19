@@ -33,10 +33,10 @@ class TangramPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
-    BoltRsp handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
-    struct Piece {
+	struct Piece {
 		Piece() : placed(false) {}
 
 		BltImage placedImage;
@@ -46,36 +46,36 @@ private:
 		// The position of the upper left of the piece's image (NOT including
 		// the offset specified in the BltImage). This field is only relevant
 		// when the piece is placed.
-        Common::Point pos;
-    };
+		Common::Point pos;
+	};
 
-    typedef ScopedArray<Piece> PieceArray;
+	typedef ScopedArray<Piece> PieceArray;
 
 	BoltRsp handlePopupButtonClick(int num);
-    int getPieceAtPosition(const Common::Point& pos);
+	int getPieceAtPosition(const Common::Point& pos);
 	bool pieceIsPlaceableAt(int pieceNum, int x, int y);
 	int getCollisionAt(int x, int y);
 	bool checkWin();
-    void drawPieces();
+	void drawPieces();
 
-    MerlinGame *_game;
+	MerlinGame *_game;
 
-    PopupMenu _popup;
+	PopupMenu _popup;
 
-    // Main resources
+	// Main resources
 	BltImage _bgImage;
 	BltPalette _palette;
 	BltColorCycles _colorCycles;
 
-    // Per-difficulty resources
-    BltPalette _forePalette;
+	// Per-difficulty resources
+	BltPalette _forePalette;
 	int _gridSpacing;
 	Common::Point _offset;
 	BltU8Values _windowCollision;
 
-    // Puzzle state
-    PieceArray _pieces;
-    int _pieceInHand; // -1 if no piece is in hand
+	// Puzzle state
+	PieceArray _pieces;
+	int _pieceInHand; // -1 if no piece is in hand
 	Common::Point _grabPos;
 };
 

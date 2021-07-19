@@ -27,59 +27,59 @@
 #include "funhouse/merlin/merlin.h"
 
 namespace Funhouse {
-    
+	
 struct BltRect {
 	static const uint32 kType = kBltRect;
 	static const uint32 kSize = 8;
 	void load(Common::Span<const byte> src, Boltlib &bltFile) {
-        rect = Rect(src);
+		rect = Rect(src);
 	}
 
-    Rect rect;
+	Rect rect;
 };
 
 struct BltPopup {
 	static const uint32 kType = kBltPopup;
 	static const uint32 kSize = 0x12;
 	void load(Common::Span<const byte> src, Boltlib &bltFile) {
-        numButtons = src.getUint16BEAt(0);
-        bgImageId = BltId(src.getUint32BEAt(2));
-        paletteId = BltId(src.getUint32BEAt(6));
-        hotspotListId = BltId(src.getUint32BEAt(0xA));
-        spriteListId = BltId(src.getUint32BEAt(0xE));
+		numButtons = src.getUint16BEAt(0);
+		bgImageId = BltId(src.getUint32BEAt(2));
+		paletteId = BltId(src.getUint32BEAt(6));
+		hotspotListId = BltId(src.getUint32BEAt(0xA));
+		spriteListId = BltId(src.getUint32BEAt(0xE));
 	}
 
-    uint16 numButtons;
-    BltId bgImageId;
-    BltId paletteId;
-    BltId hotspotListId;
-    BltId spriteListId;
+	uint16 numButtons;
+	BltId bgImageId;
+	BltId paletteId;
+	BltId hotspotListId;
+	BltId spriteListId;
 };
 
 void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
-    _game = game;
-    _active = false;
+	_game = game;
+	_active = false;
 
-    BltPopup popup;
-    loadBltResource(popup, boltlib, id);
-    _buttons.alloc(popup.numButtons);
-    _bgImage.load(boltlib, popup.bgImageId);
-    _palette.load(boltlib, popup.paletteId);
+	BltPopup popup;
+	loadBltResource(popup, boltlib, id);
+	_buttons.alloc(popup.numButtons);
+	_bgImage.load(boltlib, popup.bgImageId);
+	_palette.load(boltlib, popup.paletteId);
 
-    BltResourceList hotspotList;
-    loadBltResourceArray(hotspotList, boltlib, popup.hotspotListId);
+	BltResourceList hotspotList;
+	loadBltResourceArray(hotspotList, boltlib, popup.hotspotListId);
 
-    BltResourceList spriteList;
-    loadBltResourceArray(spriteList, boltlib, popup.spriteListId);
+	BltResourceList spriteList;
+	loadBltResourceArray(spriteList, boltlib, popup.spriteListId);
 
-    for (int i = 0; i < popup.numButtons; ++i) {
-        BltRect hotspotRect;
-        loadBltResource(hotspotRect, boltlib, hotspotList[i].value);
+	for (int i = 0; i < popup.numButtons; ++i) {
+		BltRect hotspotRect;
+		loadBltResource(hotspotRect, boltlib, hotspotList[i].value);
 
-        _buttons[i].hotspot = hotspotRect.rect;
-        _buttons[i].hovered.load(boltlib, spriteList[i * 2].value);
-        _buttons[i].unhovered.load(boltlib, spriteList[i * 2 + 1].value);
-    }
+		_buttons[i].hotspot = hotspotRect.rect;
+		_buttons[i].hovered.load(boltlib, spriteList[i * 2].value);
+		_buttons[i].unhovered.load(boltlib, spriteList[i * 2 + 1].value);
+	}
 }
 
 void PopupMenu::dismiss() {
@@ -87,80 +87,80 @@ void PopupMenu::dismiss() {
 }
 
 BoltRsp PopupMenu::handleMsg(const BoltMsg &msg) {
-    if (msg.type == BoltMsg::kRightClick) {
-        if (!_active) {
-            activate();
-        } else {
-            _active = false;
-            _game->redraw();
-        }
+	if (msg.type == BoltMsg::kRightClick) {
+		if (!_active) {
+			activate();
+		} else {
+			_active = false;
+			_game->redraw();
+		}
 
-        return BoltRsp::kDone;
-    }
+		return BoltRsp::kDone;
+	}
 
 	if (msg.type == BoltMsg::kPopupButtonClick) {
 		return BoltRsp::kPass;
 	}
 
-    if (!_active) {
-        return BoltRsp::kPass;
-    }
+	if (!_active) {
+		return BoltRsp::kPass;
+	}
 
-    if (msg.type == BoltMsg::kClick || msg.type == BoltMsg::kHover) {
-        int num = getButtonAt(msg.point);
-        if (num != -1) {
-            for (int i = 0; i < _buttons.size(); ++i) {
+	if (msg.type == BoltMsg::kClick || msg.type == BoltMsg::kHover) {
+		int num = getButtonAt(msg.point);
+		if (num != -1) {
+			for (int i = 0; i < _buttons.size(); ++i) {
 				const BltSprites &sprites = (i == num) ? _buttons[i].hovered : _buttons[i].unhovered;
 				const Common::Point &spritePos = sprites.getSpritePosition(0);
 				const BltImage *spriteImage = sprites.getSpriteImage(0);
-                spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kBack), spritePos.x, spritePos.y, true);
-            }
+				spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kBack), spritePos.x, spritePos.y, true);
+			}
 
-            if (msg.type == BoltMsg::kClick) {
-                return handleButtonClick(num);
-            }
-        }
-    }
+			if (msg.type == BoltMsg::kClick) {
+				return handleButtonClick(num);
+			}
+		}
+	}
 
-    return BoltRsp::kDone;
+	return BoltRsp::kDone;
 }
 
 BoltRsp PopupMenu::handleButtonClick(int num) {
 	BoltMsg msg(BoltMsg::kPopupButtonClick);
 	msg.num = num;
 	_game->getEngine()->setNextMsg(msg);
-    return BoltRsp::kDone;
+	return BoltRsp::kDone;
 }
 
 bool PopupMenu::isActive() const {
-    return _active;
+	return _active;
 }
 
 void PopupMenu::activate() {
-    _active = true;
+	_active = true;
 
-    // The original engine does something hacky here: Only colors 121-127 are applied.
-    static const int kFirstPopupColor = 121;
-    static const int kNumPopupColors = 7;
-    _game->getGraphics()->setPlanePalette(kBack, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
+	// The original engine does something hacky here: Only colors 121-127 are applied.
+	static const int kFirstPopupColor = 121;
+	static const int kNumPopupColors = 7;
+	_game->getGraphics()->setPlanePalette(kBack, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
 
-    static const int kPopupX = -32;
-    static const int kPopupY = 168;
-    _bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), kPopupX, kPopupY, true);
+	static const int kPopupX = -32;
+	static const int kPopupY = 168;
+	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), kPopupX, kPopupY, true);
 
-    _game->getGraphics()->markDirty();
+	_game->getGraphics()->markDirty();
 
-    _game->getEngine()->requestHover();
+	_game->getEngine()->requestHover();
 }
 
 int PopupMenu::getButtonAt(const Common::Point &pt) const {
-    for (int i = 0; i < _buttons.size(); ++i) {
-        if (_buttons[i].hotspot.contains(pt)) {
-            return i;
-        }
-    }
+	for (int i = 0; i < _buttons.size(); ++i) {
+		if (_buttons[i].hotspot.contains(pt)) {
+			return i;
+		}
+	}
 
-    return -1;
+	return -1;
 }
 
 } // End of namespace Funhouse

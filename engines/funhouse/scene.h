@@ -119,24 +119,24 @@ public:
 	Button& getButton(int num);
 
 private:
-    struct Plane {
-        BltImage image;
-        BltPalette palette;
-        BltImage hotspots;
-    };
+	struct Plane {
+		BltImage image;
+		BltPalette palette;
+		BltImage hotspots;
+	};
 	
 	void loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId);
-    // Return the button at a given point, or -1 if there is no button.
-    int getButtonAtPoint(const Common::Point &pt);
-    void drawButton(const Button &button, bool hovered);
+	// Return the button at a given point, or -1 if there is no button.
+	int getButtonAtPoint(const Common::Point &pt);
+	void drawButton(const Button &button, bool hovered);
 	void drawButtons(int hoveredButton);
 
 	FunhouseEngine *_engine;
 
 	Common::Point _origin;
-    Plane _forePlane;
-    Plane _backPlane;
-    Common::ScopedPtr<BltColorCycles> _colorCycles;
+	Plane _forePlane;
+	Plane _backPlane;
+	Common::ScopedPtr<BltColorCycles> _colorCycles;
 
 	ScopedArray<Button> _buttons;
 	BltSprites _sprites;

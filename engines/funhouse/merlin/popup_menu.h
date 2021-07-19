@@ -36,30 +36,30 @@ class MerlinGame;
 
 class PopupMenu {
 public:
-    void init(MerlinGame *game, Boltlib &boltlib, BltId id);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId id);
 
-    bool isActive() const;
+	bool isActive() const;
 	void dismiss();
-    BoltRsp handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
-    struct Button {
-        Rect hotspot;
-        BltSprites hovered;
-        BltSprites unhovered;
-    };
-    typedef ScopedArray<Button> ButtonList;
+	struct Button {
+		Rect hotspot;
+		BltSprites hovered;
+		BltSprites unhovered;
+	};
+	typedef ScopedArray<Button> ButtonList;
 
-    void activate();
-    int getButtonAt(const Common::Point &pt) const;
-    BoltRsp handleButtonClick(int num);
+	void activate();
+	int getButtonAt(const Common::Point &pt) const;
+	BoltRsp handleButtonClick(int num);
 
-    MerlinGame *_game;
+	MerlinGame *_game;
 
-    bool _active = false;
-    BltImage _bgImage;
-    BltPalette _palette;
-    ButtonList _buttons;
+	bool _active = false;
+	BltImage _bgImage;
+	BltPalette _palette;
+	ButtonList _buttons;
 };
 
 } // End of namespace Funhouse

@@ -54,7 +54,7 @@ struct BltParticles { // type 46
 };
 
 void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
-    _game = game;
+	_game = game;
 	_mode.init(_game->getEngine());
 
 	uint16 resId = 0;
@@ -225,7 +225,7 @@ void ActionPuzzle::playMode() {
 BoltRsp ActionPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->branchReturn();
+		_game->branchReturn();
 		return kDone;
 	case 1: // Difficulty
 		_game->branchDifficultyMenu();
@@ -355,7 +355,7 @@ BoltRsp ActionPuzzle::win() {
 	// Redraw background before starting win movie
 	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 	_game->getGraphics()->clearPlane(kFore);
-    _game->branchWin();
+	_game->branchWin();
 	return BoltRsp::kDone;
 }
 

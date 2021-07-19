@@ -24,7 +24,7 @@
 #include "funhouse/merlin/merlin.h"
 
 namespace Funhouse {
-    
+	
 void DifficultyMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 	_game = game;
 
@@ -51,13 +51,13 @@ static const int kAllExpertButton = 6;
 static const int kFirstDifficultyButton = 12;
 
 BoltRsp DifficultyMenu::handleButtonClick(int num) {
-    if (num >= kFirstDifficultyButton && num < kFirstDifficultyButton + 3 * kNumDifficultyCategories) {
-        DifficultyCategory category = static_cast<DifficultyCategory>((num - kFirstDifficultyButton) / 3);
-        int level = (num - kFirstDifficultyButton) % 3;
-        _game->setDifficulty(category, level);
-        setupButtons();
-        return BoltRsp::kDone;
-    }
+	if (num >= kFirstDifficultyButton && num < kFirstDifficultyButton + 3 * kNumDifficultyCategories) {
+		DifficultyCategory category = static_cast<DifficultyCategory>((num - kFirstDifficultyButton) / 3);
+		int level = (num - kFirstDifficultyButton) % 3;
+		_game->setDifficulty(category, level);
+		setupButtons();
+		return BoltRsp::kDone;
+	}
 
 	switch (num) {
 	case -1: // No button
@@ -87,27 +87,27 @@ BoltRsp DifficultyMenu::handleButtonClick(int num) {
 }
 
 bool DifficultyMenu::isReadyToPlay() const {
-    for (int i = 0; i < kNumDifficultyCategories; ++i) {
-        if (_game->getDifficulty(static_cast<DifficultyCategory>(i)) < 0) {
-            return false;
-        }
-    }
+	for (int i = 0; i < kNumDifficultyCategories; ++i) {
+		if (_game->getDifficulty(static_cast<DifficultyCategory>(i)) < 0) {
+			return false;
+		}
+	}
 
-    return  true;
+	return  true;
 }
 
 void DifficultyMenu::setAllDifficulties(int difficulty) {
-    for (int i = 0; i < kNumDifficultyCategories; ++i) {
-        _game->setDifficulty(static_cast<DifficultyCategory>(i), difficulty);
-    }
+	for (int i = 0; i < kNumDifficultyCategories; ++i) {
+		_game->setDifficulty(static_cast<DifficultyCategory>(i), difficulty);
+	}
 	setupButtons();
 }
 
 void DifficultyMenu::setupButtons() {
 	for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < kNumDifficultyCategories; ++j) {
-            _scene.getButton(kFirstDifficultyButton + 3 * j + i).setGraphics(i == _game->getDifficulty(static_cast<DifficultyCategory>(j)) ? 1 : 0);
-        }
+		for (int j = 0; j < kNumDifficultyCategories; ++j) {
+			_scene.getButton(kFirstDifficultyButton + 3 * j + i).setGraphics(i == _game->getDifficulty(static_cast<DifficultyCategory>(j)) ? 1 : 0);
+		}
 	}
 
 	_scene.getButton(kPlayButton).setGraphics(isReadyToPlay() ? 1 : 0);

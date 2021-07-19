@@ -35,20 +35,20 @@ struct BltWordPuzzleInfo {
 };
 	
 struct BltWordPuzzleVariantInfo {
-    static const uint32 kType = kBltWordPuzzleVariantInfo;
-    static const uint kSize = 0x4;
-    void load(Common::Span<const byte> src, Boltlib &boltlib) {
+	static const uint32 kType = kBltWordPuzzleVariantInfo;
+	static const uint kSize = 0x4;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		numChars = src.getUint8At(0);
 		numLines = src.getUint8At(1);
 		// TODO: more fields
-    }
+	}
 
 	uint8 numChars;
 	uint8 numLines;
 };
 
 void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
-    _game = game;
+	_game = game;
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -62,7 +62,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
-    BltId difficultiesId          = resourceList[0].value;  // Ex: 6100
+	BltId difficultiesId          = resourceList[0].value;  // Ex: 6100
 	BltId infoId                  = resourceList[1].value;  // Ex: 6101
 	BltId normalSpriteListId      = resourceList[2].value;  // Ex: 61B4
 	BltId highlightedSpriteListId = resourceList[3].value;  // Ex: 61B5
@@ -83,7 +83,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltU16Values difficulties;
 	loadBltResourceArray(difficulties, boltlib, difficultiesId);
-    BltId difficultyId = BltShortId(difficulties[_game->getDifficulty(kWordsDifficulty)].value); // Ex: 5E18
+	BltId difficultyId = BltShortId(difficulties[_game->getDifficulty(kWordsDifficulty)].value); // Ex: 5E18
 
 	int puzzleVariant = 0; // TODO: Choose puzzle variant 0-3
 
@@ -93,7 +93,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltId lineLengthsId    = difficulty[4 + puzzleVariant].value; // Ex: 5E01
 	BltId lineYPositionsId = difficulty[8 + puzzleVariant].value; // Ex: 5E02
 	BltId solutionId       = difficulty[12 + puzzleVariant].value; // Ex: 5E03
-    BltId sceneId          = difficulty[16 + puzzleVariant].value; // Ex: 5E05
+	BltId sceneId          = difficulty[16 + puzzleVariant].value; // Ex: 5E05
 
 	BltWordPuzzleVariantInfo variantInfo;
 	loadBltResource(variantInfo, boltlib, variantInfoId);
@@ -115,10 +115,10 @@ void WordPuzzle::enter() {
 }
 
 BoltRsp WordPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltRsp cmd = _game->handlePopup(msg);
-    if (cmd != BoltRsp::kPass) {
-        return cmd;
-    }
+	BoltRsp cmd = _game->handlePopup(msg);
+	if (cmd != BoltRsp::kPass) {
+		return cmd;
+	}
 
 	switch (msg.type) {
 	case BoltMsg::kPopupButtonClick:
@@ -134,7 +134,7 @@ BoltRsp WordPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
 		_game->branchReturn();
-        return BoltRsp::kDone;
+		return BoltRsp::kDone;
 	case 3: // Reset
 		return handleReset();
 	default:
@@ -222,7 +222,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 	setupButtons();
 
 	if (isSolved()) {
-        _game->branchWin();
+		_game->branchWin();
 	}
 
 	return BoltRsp::kDone;

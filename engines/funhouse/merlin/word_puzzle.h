@@ -34,14 +34,14 @@ class WordPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
-    BoltRsp handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg);
 
 private:
 	static const int kNumLetters = 26;
 
-    BoltRsp handlePopupButtonClick(int num);
-    BoltRsp handleReset();
-    BoltRsp handleButtonClick(int num);
+	BoltRsp handlePopupButtonClick(int num);
+	BoltRsp handleReset();
+	BoltRsp handleButtonClick(int num);
 
 	void reset();
 	int glyphToRune(int glyph) const;
@@ -52,7 +52,7 @@ private:
 	void setupButtons();
 	bool isSolved();
 
-    MerlinGame *_game;
+	MerlinGame *_game;
 	Scene _scene;
 	BltSoundList _resetSound;
 

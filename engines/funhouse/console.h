@@ -33,12 +33,12 @@ class FunhouseEngine;
 
 class FunhouseConsole : public GUI::Debugger {
 public:
-    FunhouseConsole(FunhouseEngine *engine);
+	FunhouseConsole(FunhouseEngine *engine);
 
 private:
-    bool Cmd_Win(int argc, const char **argv);
+	bool Cmd_Win(int argc, const char **argv);
 
-    FunhouseEngine *_engine;
+	FunhouseEngine *_engine;
 };
 
 } // End of namespace Funhouse

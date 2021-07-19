@@ -92,25 +92,25 @@ public:
 		return result;
 	}
 
-    Movable clone() const {
-        Movable result;
-        result.data = new T[_internal.size];
-        result.size = _internal.size;
+	Movable clone() const {
+		Movable result;
+		result.data = new T[_internal.size];
+		result.size = _internal.size;
 
-        for (uint i = 0; i < _internal.size; ++i) {
-            result.data[i] = _internal.data[i];
-        }
+		for (uint i = 0; i < _internal.size; ++i) {
+			result.data[i] = _internal.data[i];
+		}
 
-        return result;
-    }
+		return result;
+	}
 
-    Common::Span<const byte> span() const {
-        return Common::Span<const byte>(_internal.data, _internal.size);
-    }
+	Common::Span<const byte> span() const {
+		return Common::Span<const byte>(_internal.data, _internal.size);
+	}
 
 private:
 	// Prevent accidentally copying a ScopedArray. To clone a ScopedArray, use
-    // the clone method.
+	// the clone method.
 	// XXX: Class is made noncopyable here (instead of inheriting from
 	// Common::NonCopyable) because VS2015 emits very unhelpful error messages.
 	ScopedArray(const ScopedArray&);

@@ -66,21 +66,21 @@ void applyPalette(Graphics *graphics, int plane, const BltPalette &palette) {
 	if (palette.data) {
 		BltPaletteHeader header(palette.data.span());
 
-        int count = header.last - header.first + 1;
-        if (count > 128) {
-            count = 128;
-        }
-        else if (count < 0) {
-            count = 0;
-        }
+		int count = header.last - header.first + 1;
+		if (count > 128) {
+			count = 128;
+		}
+		else if (count < 0) {
+			count = 0;
+		}
 
-        // FIXME: are the planes backwards?
-        if (plane == 0) {
-            graphics->setPlanePalette(kFore, &palette.data[BltPaletteHeader::kSize + header.first * 3], header.first, count);
-        }
-        else { // plane == 1
-            graphics->setPlanePalette(kBack, &palette.data[BltPaletteHeader::kSize + header.first * 3], header.first, count);
-        }
+		// FIXME: are the planes backwards?
+		if (plane == 0) {
+			graphics->setPlanePalette(kFore, &palette.data[BltPaletteHeader::kSize + header.first * 3], header.first, count);
+		}
+		else { // plane == 1
+			graphics->setPlanePalette(kBack, &palette.data[BltPaletteHeader::kSize + header.first * 3], header.first, count);
+		}
 	}
 }
 

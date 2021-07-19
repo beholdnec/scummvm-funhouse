@@ -526,7 +526,7 @@ void Movie::stepCelCommands() {
 				_celsBackground.reset(fetchBuffer(_videoQueues[1]));
 
 				_celCurCameraX = params.getInt16BEAt(0);
-                _celCurCameraY = params.getInt16BEAt(2);
+				_celCurCameraY = params.getInt16BEAt(2);
 				_celNextCameraX = _celCurCameraX;
 				_celNextCameraY = _celCurCameraY;
 
@@ -642,8 +642,8 @@ void Movie::drawCel(const ScopedBuffer &src, uint16 frameNum) {
 	assert(header.queueNum == 4);
 	assert(frameNum < header.numFrames);
 
-    uint32 rl7Offset = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8);
-    uint32 rl7Size = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8 + 4);
+	uint32 rl7Offset = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8);
+	uint32 rl7Size = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8 + 4);
 
 	decodeRL7(_engine->getGraphics()->getPlaneSurface(kFore), 0, 0, header.width, header.height,
 		&src[rl7Offset], rl7Size, false);
@@ -872,7 +872,7 @@ void Movie::drawQueue0or1(int plane, const ScopedBuffer &src, int x, int y) {
 
 void Movie::enqueueVideoBuffer(ScopedBuffer::Movable buf) {
 	ScopedBuffer myBuf(buf);
-    uint16 queueNum = myBuf.span().getUint16BEAt(0);
+	uint16 queueNum = myBuf.span().getUint16BEAt(0);
 	if (queueNum < 5) {
 		_videoQueues[queueNum].push(myBuf.release());
 	}

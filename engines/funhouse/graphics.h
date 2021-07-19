@@ -112,7 +112,7 @@ private:
 		ColorCycle() : start(0), end(0), delay(0) { }
 		uint16 start;
 		uint16 end;
-        int plane;
+		int plane;
 		int delay; // 0 means this cycle is inactive
 	};
 

@@ -57,7 +57,7 @@ protected:
 	BoltRsp handleButtonClick(int num);
 
 private:
-    MerlinGame *_game;
+	MerlinGame *_game;
 	Scene _scene;
 	ScopedArray<BltHubItem> _items;
 	ScopedArray<BltImage> _itemImages;

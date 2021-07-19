@@ -32,17 +32,17 @@ class MerlinGame;
 
 class DifficultyMenu : public Card {
 public:
-    void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
-    void enter();
-    BoltRsp handleMsg(const BoltMsg &msg);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
+	void enter();
+	BoltRsp handleMsg(const BoltMsg &msg);
 private:
-    BoltRsp handleButtonClick(int num);
+	BoltRsp handleButtonClick(int num);
 	bool isReadyToPlay() const;
 	void setAllDifficulties(int difficulty);
 	void setupButtons();
 
-    MerlinGame *_game;
-    Scene _scene;
+	MerlinGame *_game;
+	Scene _scene;
 };
 
 } // End of namespace Funhouse

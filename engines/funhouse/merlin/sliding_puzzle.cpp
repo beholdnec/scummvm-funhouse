@@ -45,7 +45,7 @@ struct BltSlidingPuzzleInfo { // type 44
 };
 
 void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
-    _game = game;
+	_game = game;
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -62,7 +62,7 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
-    BltId puzzleInfoId = resourceList[1].value;
+	BltId puzzleInfoId = resourceList[1].value;
 
 	BltSlidingPuzzleInfo slidingPuzzleInfo;
 	loadBltResource(slidingPuzzleInfo, boltlib, puzzleInfoId);
@@ -78,39 +78,39 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltResourceList difficultyInfo;
 	loadBltResourceArray(difficultyInfo, boltlib, difficultyId); // Ex: 3A34, 3B34, 3C34
-    BltId sceneId        = difficultyInfo[1].value;
-    BltId initialStateId = difficultyInfo[2].value;
-    BltId moveTablesId   = difficultyInfo[6].value;
+	BltId sceneId        = difficultyInfo[1].value;
+	BltId initialStateId = difficultyInfo[2].value;
+	BltId moveTablesId   = difficultyInfo[6].value;
 
-    // FIXME: difficultyInfo[3-5] are probably more initial state tables.
-    BltU8Values initialState;
-    loadBltResourceArray(initialState, boltlib, initialStateId);
+	// FIXME: difficultyInfo[3-5] are probably more initial state tables.
+	BltU8Values initialState;
+	loadBltResourceArray(initialState, boltlib, initialStateId);
 
-    _pieces.alloc(numPieces);
-    for (int i = 0; i < numPieces; ++i) {
-        _pieces[i] = initialState[i].value;
-    }
+	_pieces.alloc(numPieces);
+	for (int i = 0; i < numPieces; ++i) {
+		_pieces[i] = initialState[i].value;
+	}
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
-    BltResourceList moveTablesRes;
-    loadBltResourceArray(moveTablesRes, boltlib, moveTablesId);
-    // FIXME: difficultyInfo[7-9] are more move tables. What are they for?
-    for (int i = 0; i < kNumButtons * 2; ++i) {
-        loadBltResourceArray(_moveTables[i], boltlib, moveTablesRes[i].value);
-    }
+	BltResourceList moveTablesRes;
+	loadBltResourceArray(moveTablesRes, boltlib, moveTablesId);
+	// FIXME: difficultyInfo[7-9] are more move tables. What are they for?
+	for (int i = 0; i < kNumButtons * 2; ++i) {
+		loadBltResourceArray(_moveTables[i], boltlib, moveTablesRes[i].value);
+	}
 }
 
 void SlidingPuzzle::enter() {
 	_scene.enter();
-    setSprites();
+	setSprites();
 }
 
 BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
-    BoltRsp cmd = _game->handlePopup(msg);
-    if (cmd != BoltRsp::kPass) {
-        return cmd;
-    }
+	BoltRsp cmd = _game->handlePopup(msg);
+	if (cmd != BoltRsp::kPass) {
+		return cmd;
+	}
 
 	switch (msg.type) {
 	case BoltMsg::kPopupButtonClick:
@@ -123,18 +123,18 @@ BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 }
 
 void SlidingPuzzle::setSprites() {
-    for (int i = 0; i < _pieces.size(); ++i) {
+	for (int i = 0; i < _pieces.size(); ++i) {
 		_scene.setSpriteImageNum(i, _pieces[i]);
-    }
+	}
 
-    _scene.redraw();
+	_scene.redraw();
 	_game->getGraphics()->markDirty();
 }
 
 BoltRsp SlidingPuzzle::handlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
-        _game->branchReturn();
+		_game->branchReturn();
 		return BoltRsp::kDone;
 	case 1: // Difficulties
 		_game->branchDifficultyMenu();
@@ -146,29 +146,29 @@ BoltRsp SlidingPuzzle::handlePopupButtonClick(int num) {
 }
 
 BoltRsp SlidingPuzzle::handleButtonClick(int num) {
-    if (num >= 0 && num < kNumButtons * 2) {
-        ScopedArray<int> oldPieces(_pieces.clone());
-        for (uint i = 0; i < _pieces.size(); ++i) {
-            _pieces[i] = oldPieces[_moveTables[num][i].value];
-        }
+	if (num >= 0 && num < kNumButtons * 2) {
+		ScopedArray<int> oldPieces(_pieces.clone());
+		for (uint i = 0; i < _pieces.size(); ++i) {
+			_pieces[i] = oldPieces[_moveTables[num][i].value];
+		}
 
-        setSprites();
+		setSprites();
 
-        bool win = true;
-        for (uint i = 0; i < _pieces.size(); ++i) {
-            if (_pieces[i] != i) {
-                win = false;
-                break;
-            }
-        }
+		bool win = true;
+		for (uint i = 0; i < _pieces.size(); ++i) {
+			if (_pieces[i] != i) {
+				win = false;
+				break;
+			}
+		}
 
-        if (win) {
-            _game->branchWin();
-            return BoltRsp::kDone;
-        }
-    } else if (num != -1) {
-        warning("Unhandled button %d", num);
-    }
+		if (win) {
+			_game->branchWin();
+			return BoltRsp::kDone;
+		}
+	} else if (num != -1) {
+		warning("Unhandled button %d", num);
+	}
 
 	return BoltRsp::kDone;
 }

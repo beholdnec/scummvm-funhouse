@@ -33,20 +33,20 @@ class MerlinGame;
 
 class FileMenu : public Card {
 public:
-    void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
-    void enter();
-    BoltRsp handleMsg(const BoltMsg &msg);
+	void init(MerlinGame *game, Boltlib &boltlib, BltId resId);
+	void enter();
+	BoltRsp handleMsg(const BoltMsg &msg);
 private:
-    BoltRsp handleButtonClick(int num);
+	BoltRsp handleButtonClick(int num);
 	void setButtons();
 
-    MerlinGame *_game;
+	MerlinGame *_game;
 
-    Scene _scene;
-    BltU8Values _cheatCode;
-    BltSound _cheatSound;
+	Scene _scene;
+	BltU8Values _cheatCode;
+	BltSound _cheatSound;
 
-    int _cheatIndex;
+	int _cheatIndex;
 };
 
 } // End of namespace Funhouse

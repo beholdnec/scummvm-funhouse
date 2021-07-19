@@ -27,12 +27,12 @@
 namespace Funhouse {
 
 FunhouseConsole::FunhouseConsole(FunhouseEngine *engine) : GUI::Debugger(), _engine(engine) {
-    registerCmd("win", WRAP_METHOD(FunhouseConsole, Cmd_Win));
+	registerCmd("win", WRAP_METHOD(FunhouseConsole, Cmd_Win));
 }
 
 bool FunhouseConsole::Cmd_Win(int argc, const char **argv) {
-    _engine->win();
-    return true;
+	_engine->win();
+	return true;
 }
 
 } // End of namespace Funhouse
