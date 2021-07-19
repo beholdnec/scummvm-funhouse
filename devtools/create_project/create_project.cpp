@@ -23,7 +23,7 @@
 #define ENABLE_XCODE
 
 // HACK to allow building with the SDL backend on MinGW
-// see bug #1800764 "TOOLS: MinGW tools building broken"
+// see bug #3412 "TOOLS: MinGW tools building broken"
 #ifdef main
 #undef main
 #endif // main
@@ -102,6 +102,8 @@ enum ProjectType {
 	kProjectMSVC,
 	kProjectXcode
 };
+
+std::map<std::string, bool> isEngineEnabled;
 
 int main(int argc, char *argv[]) {
 #ifndef USE_WIN32_API
@@ -287,6 +289,10 @@ int main(int argc, char *argv[]) {
 			setup.useSDL2 = false;
 		} else if (!std::strcmp(argv[i], "--use-canonical-lib-names")) {
 			setup.useCanonicalLibNames = true;
+		} else if (!std::strcmp(argv[i], "--use-windows-unicode")) {
+			setup.useWindowsUnicode = true;
+		} else if (!std::strcmp(argv[i], "--use-windows-ansi")) {
+			setup.useWindowsUnicode = false;
 		} else {
 			std::cerr << "ERROR: Unknown parameter \"" << argv[i] << "\"\n";
 			return -1;
@@ -295,11 +301,32 @@ int main(int argc, char *argv[]) {
 
 	// When building tests, disable some features
 	if (setup.tests) {
+		setup.useStaticDetection = false;
 		setFeatureBuildState("mt32emu", setup.features, false);
 		setFeatureBuildState("eventrecorder", setup.features, false);
 
 		for (EngineDescList::iterator j = setup.engines.begin(); j != setup.engines.end(); ++j)
 			j->enable = false;
+	} else if (setup.devTools) {
+		setup.useStaticDetection = false;
+	}
+
+	// HACK: Vorbis and Tremor can not be enabled simultaneously
+	if (getFeatureBuildState("tremor", setup.features)) {
+		setFeatureBuildState("vorbis", setup.features, false);
+	}
+
+	// HACK: Fluidsynth and Fluidlite can not be enabled simultaneously
+	if (getFeatureBuildState("fluidsynth", setup.features)) {
+		setFeatureBuildState("fluidlite", setup.features, false);
+	}
+
+	// HACK: These features depend on OpenGL
+	if (!getFeatureBuildState("opengl", setup.features)) {
+		setFeatureBuildState("opengl_game", setup.features, false);
+		setFeatureBuildState("opengl_shaders", setup.features, false);
+		setFeatureBuildState("opengles2", setup.features, false);
+		setFeatureBuildState("glew", setup.features, false);
 	}
 
 	// Disable engines for which we are missing dependencies
@@ -312,12 +339,8 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 			}
+			isEngineEnabled[i->name] = true;
 		}
-	}
-
-	// HACK: Vorbis and Tremor can not be enabled simultaneously
-	if (getFeatureBuildState("tremor", setup.features)) {
-		setFeatureBuildState("vorbis", setup.features, false);
 	}
 
 	// Print status
@@ -400,6 +423,10 @@ int main(int argc, char *argv[]) {
 		// this in our configure/make based build system. Adapt create_project
 		// to replicate this behavior.
 		setup.defines.push_back("USE_SDL2");
+	}
+
+	if (setup.useStaticDetection) {
+		setup.defines.push_back("DETECTION_STATIC");
 	}
 
 	// List of global warnings and map of project-specific warnings
@@ -700,6 +727,10 @@ void displayHelp(const char *exe) {
 	        "                            (default: false)\n"
 	        " --use-canonical-lib-names  Use canonical library names for linking. This makes it easy to use\n"
 	        "                            e.g. vcpkg-provided libraries\n"
+	        "                            (default: false)\n"
+	        " --use-windows-unicode      Use Windows Unicode APIs\n"
+	        "                            (default: true)\n"
+	        " --use-windows-ansi         Use Windows ANSI APIs\n"
 	        "                            (default: false)\n"
 	        "\n"
 	        "Engines settings:\n"
@@ -1025,38 +1056,49 @@ const Feature s_features[] = {
 	{    "tremor",      "USE_TREMOR", true, false, "Tremor support" },
 	{      "flac",        "USE_FLAC", true, true,  "FLAC support" },
 	{       "png",         "USE_PNG", true, true,  "libpng support" },
+	{       "gif",         "USE_GIF", true, false, "libgif support" },
 	{      "faad",        "USE_FAAD", true, false, "AAC support" },
 	{     "mpeg2",       "USE_MPEG2", true, false, "MPEG-2 support" },
 	{    "theora",   "USE_THEORADEC", true, true,  "Theora decoding support" },
 	{  "freetype",   "USE_FREETYPE2", true, true,  "FreeType support" },
 	{      "jpeg",        "USE_JPEG", true, true,  "libjpeg support" },
 	{"fluidsynth",  "USE_FLUIDSYNTH", true, true,  "FluidSynth support" },
+	{ "fluidlite",   "USE_FLUIDLITE", true, false, "FluidLite support" },
 	{   "libcurl",     "USE_LIBCURL", true, true,  "libcurl support" },
 	{    "sdlnet",     "USE_SDL_NET", true, true,  "SDL_net support" },
 	{   "discord",     "USE_DISCORD", true, false, "Discord support" },
+	{      "glew",        "USE_GLEW", true, true,  "GLEW support" },
 
 	// Feature flags
-	{            "bink",                      "USE_BINK", false, true,  "Bink video support" },
-	{         "scalers",                   "USE_SCALERS", false, true,  "Scalers" },
-	{       "hqscalers",                "USE_HQ_SCALERS", false, true,  "HQ scalers" },
-	{           "16bit",                 "USE_RGB_COLOR", false, true,  "16bit color support" },
-	{         "highres",                   "USE_HIGHRES", false, true,  "high resolution" },
-	{         "mt32emu",                   "USE_MT32EMU", false, true,  "integrated MT-32 emulator" },
-	{             "lua",                       "USE_LUA", false, true,  "lua" },
-	{            "nasm",                      "USE_NASM", false, true,  "IA-32 assembly support" }, // This feature is special in the regard, that it needs additional handling.
-	{          "opengl",                    "USE_OPENGL", false, true,  "OpenGL support" },
-	{        "opengles",                      "USE_GLES", false, true,  "forced OpenGL ES mode" },
-	{         "taskbar",                   "USE_TASKBAR", false, true,  "Taskbar integration support" },
-	{           "cloud",                     "USE_CLOUD", false, true,  "Cloud integration support" },
-	{     "translation",               "USE_TRANSLATION", false, true,  "Translation support" },
-	{          "vkeybd",                 "ENABLE_VKEYBD", false, false, "Virtual keyboard support"},
-	{   "eventrecorder",          "ENABLE_EVENTRECORDER", false, false, "Event recorder support"},
-	{         "updates",                   "USE_UPDATES", false, false, "Updates support"},
-	{         "dialogs",                "USE_SYSDIALOGS", false, true,  "System dialogs support"},
-	{      "langdetect",                "USE_DETECTLANG", false, true,  "System language detection support" }, // This feature actually depends on "translation", there
+	{             "bink",                      "USE_BINK", false, true,  "Bink video support" },
+	{          "scalers",                   "USE_SCALERS", false, true,  "Scalers" },
+	{        "hqscalers",                "USE_HQ_SCALERS", false, true,  "HQ scalers" },
+	{      "edgescalers",              "USE_EDGE_SCALERS", false, true,  "Edge scalers" },
+	{           "aspect",                    "USE_ASPECT", false, true,  "Aspect ratio correction" },
+	{            "16bit",                 "USE_RGB_COLOR", false, true,  "16bit color support" },
+	{          "highres",                   "USE_HIGHRES", false, true,  "high resolution" },
+	{          "mt32emu",                   "USE_MT32EMU", false, true,  "integrated MT-32 emulator" },
+	{              "lua",                       "USE_LUA", false, true,  "lua" },
+	{             "nasm",                      "USE_NASM", false, true,  "IA-32 assembly support" }, // This feature is special in the regard, that it needs additional handling.
+	{           "tinygl",                    "USE_TINYGL", false, true,  "TinyGL support" },
+	{           "opengl",                    "USE_OPENGL", false, true,  "OpenGL support" },
+	{      "opengl_game",               "USE_OPENGL_GAME", false, true,  "OpenGL support in 3d games" },
+	{   "opengl_shaders",            "USE_OPENGL_SHADERS", false, true,  "OpenGL support (shaders) in 3d games" },
+	{        "opengles2",                     "USE_GLES2", false, false, "forced OpenGL ES2 mode in 3d games" },
+	{          "taskbar",                   "USE_TASKBAR", false, true,  "Taskbar integration support" },
+	{            "cloud",                     "USE_CLOUD", false, true,  "Cloud integration support" },
+	{      "translation",               "USE_TRANSLATION", false, true,  "Translation support" },
+	{           "vkeybd",                 "ENABLE_VKEYBD", false, false, "Virtual keyboard support"},
+	{    "eventrecorder",          "ENABLE_EVENTRECORDER", false, false, "Event recorder support"},
+	{          "updates",                   "USE_UPDATES", false, false, "Updates support"},
+	{          "dialogs",                "USE_SYSDIALOGS", false, true,  "System dialogs support"},
+	{       "langdetect",                "USE_DETECTLANG", false, true,  "System language detection support" }, // This feature actually depends on "translation", there
 	                                                                                                           // is just no current way of properly detecting this...
-	{    "text-console", "USE_TEXT_CONSOLE_FOR_DEBUGGER", false, false, "Text console debugger" }, // This feature is always applied in xcode projects
-	{             "tts",                       "USE_TTS", false, true,  "Text to speech support"}
+	{     "text-console", "USE_TEXT_CONSOLE_FOR_DEBUGGER", false, false, "Text console debugger" }, // This feature is always applied in xcode projects
+	{              "tts",                       "USE_TTS", false, true,  "Text to speech support"},
+	{"builtin-resources",             "BUILTIN_RESOURCES", false, true,  "include resources (e.g. engine data, fonts) into the binary"},
+	{ "detection-static", "USE_DETECTION_FEATURES_STATIC", false, true,  "Static linking of detection objects for engines."},
+	{            "cxx11",                     "USE_CXX11", false, true,  "Compile with c++11 support"}
 };
 
 const Tool s_tools[] = {
@@ -1129,8 +1171,8 @@ bool setFeatureBuildState(const std::string &name, FeatureList &features, bool e
 	}
 }
 
-bool getFeatureBuildState(const std::string &name, FeatureList &features) {
-	FeatureList::iterator i = std::find(features.begin(), features.end(), name);
+bool getFeatureBuildState(const std::string &name, const FeatureList &features) {
+	FeatureList::const_iterator i = std::find(features.begin(), features.end(), name);
 	if (i != features.end()) {
 		return i->enable;
 	} else {
@@ -1244,6 +1286,12 @@ void splitFilename(const std::string &fileName, std::string &name, std::string &
 	ext = (dot == std::string::npos) ? std::string() : fileName.substr(dot + 1);
 }
 
+void splitPath(const std::string &path, std::string &dir, std::string &file) {
+	const std::string::size_type sep = path.find_last_of('/');
+	dir = (sep == std::string::npos) ? path : path.substr(0, sep);
+	file = (sep == std::string::npos) ? std::string() : path.substr(sep + 1);
+}
+
 std::string basename(const std::string &fileName) {
 	const std::string::size_type slash = fileName.find_last_of('/');
 	if (slash == std::string::npos)
@@ -1251,14 +1299,14 @@ std::string basename(const std::string &fileName) {
 	return fileName.substr(slash + 1);
 }
 
+bool producesObjectExtension(const std::string &ext) {
+	return (ext == "cpp" || ext == "c" || ext == "asm" || ext == "m" || ext == "mm");
+}
+
 bool producesObjectFile(const std::string &fileName) {
 	std::string n, ext;
 	splitFilename(fileName, n, ext);
-
-	if (ext == "cpp" || ext == "c" || ext == "asm" || ext == "m" || ext == "mm")
-		return true;
-	else
-		return false;
+	return producesObjectExtension(ext);
 }
 
 std::string toString(int num) {
@@ -1271,10 +1319,10 @@ std::string toString(int num) {
  * Checks whether the give file in the specified directory is present in the given
  * file list.
  *
- * This function does as special match against the file list. Object files (.o) are
- * excluded by default and it will not take file extensions into consideration,
- * when the extension of a file in the specified directory is one of "h", "cpp",
- * "c" or "asm".
+ * This function does as special match against the file list.
+ * By default object files (.o) are excluded, header files (.h) are included,
+ * and it will not take file extensions into consideration, when the extension
+ * of a file in the specified directory is one of "m", "cpp", "c" or "asm".
  *
  * @param dir Parent directory of the file.
  * @param fileName File name to match.
@@ -1282,6 +1330,9 @@ std::string toString(int num) {
  * @return "true" when the file is in the list, "false" otherwise.
  */
 bool isInList(const std::string &dir, const std::string &fileName, const StringList &fileList) {
+	if (fileList.empty())
+		return false;
+
 	std::string compareName, extensionName;
 	splitFilename(fileName, compareName, extensionName);
 
@@ -1289,28 +1340,34 @@ bool isInList(const std::string &dir, const std::string &fileName, const StringL
 		compareName += '.';
 
 	for (StringList::const_iterator i = fileList.begin(); i != fileList.end(); ++i) {
-		if (i->compare(0, dir.size(), dir))
-			continue;
 
 		// When no comparison name is given, we try to match whether a subset of
 		// the given directory should be included. To do that we must assure that
 		// the first character after the substring, having the same size as dir, must
 		// be a path delimiter.
 		if (compareName.empty()) {
+			if (i->compare(0, dir.size(), dir))
+				continue;
 			if (i->size() >= dir.size() + 1 && i->at(dir.size()) == '/')
 				return true;
 			else
 				continue;
 		}
 
-		const std::string lastPathComponent = ProjectProvider::getLastPathComponent(*i);
+		std::string listDir, listFile;
+		splitPath(*i, listDir, listFile);
+		if (dir.compare(0, listDir.size(), listDir))
+			continue;
+
 		if (extensionName == "o") {
 			return false;
-		} else if (!producesObjectFile(fileName) && extensionName != "h") {
-			if (fileName == lastPathComponent)
+		} else if (extensionName == "h") {
+			return true;
+		} else if (!producesObjectExtension(extensionName)) {
+			if (fileName == listFile)
 				return true;
 		} else {
-			if (!lastPathComponent.compare(0, compareName.size(), compareName))
+			if (!listFile.compare(0, compareName.size(), compareName))
 				return true;
 		}
 	}
@@ -1442,16 +1499,14 @@ FileNode *scanFiles(const std::string &dir, const StringList &includeList, const
 			continue;
 		}
 
-		if (isInList(dir, i->name, excludeList))
-			continue;
-
 		std::string name, ext;
 		splitFilename(i->name, name, ext);
 
-		if (ext != "h") {
-			if (!isInList(dir, i->name, includeList))
-				continue;
-		}
+		if (ext != "h" && isInList(dir, i->name, excludeList))
+			continue;
+
+		if (!isInList(dir, i->name, includeList))
+			continue;
 
 		FileNode *child = new FileNode(i->name);
 		assert(child);
@@ -1471,30 +1526,38 @@ FileNode *scanFiles(const std::string &dir, const StringList &includeList, const
 // Project Provider methods
 //////////////////////////////////////////////////////////////////////////
 ProjectProvider::ProjectProvider(StringList &global_warnings, std::map<std::string, StringList> &project_warnings, const int version)
-    : _version(version), _globalWarnings(global_warnings), _projectWarnings(project_warnings) {
+	: _version(version), _globalWarnings(global_warnings), _projectWarnings(project_warnings) {
 }
 
 void ProjectProvider::createProject(BuildSetup &setup) {
 	std::string targetFolder;
 
 	if (setup.devTools) {
-		_uuidMap = createToolsUUIDMap();
+		_engineUuidMap = createToolsUUIDMap();
 		targetFolder = "/devtools/";
 	} else if (!setup.tests) {
-		_uuidMap = createUUIDMap(setup);
+		_engineUuidMap = createUUIDMap(setup);
 		targetFolder = "/engines/";
 	}
 
+	_allProjUuidMap = _engineUuidMap;
+
 	// We also need to add the UUID of the main project file.
-	const std::string svmUUID = _uuidMap[setup.projectName] = createUUID(setup.projectName);
+	const std::string svmUUID = _allProjUuidMap[setup.projectName] = createUUID(setup.projectName);
+	// Add the uuid of the detection project
+	const std::string detProject = setup.projectName + "-detection";
+	const std::string detUUID = createUUID(detProject);
+	if (setup.useStaticDetection) {
+		_allProjUuidMap[detProject] = _engineUuidMap[detProject] = detUUID;
+	}
 
 	createWorkspace(setup);
 
 	StringList in, ex;
 
 	// Create project files
-	for (UUIDMap::const_iterator i = _uuidMap.begin(); i != _uuidMap.end(); ++i) {
-		if (i->first == setup.projectName)
+	for (UUIDMap::const_iterator i = _engineUuidMap.begin(); i != _engineUuidMap.end(); ++i) {
+		if (i->first == detProject)
 			continue;
 		// Retain the files between engines if we're creating a single project
 		in.clear();
@@ -1506,22 +1569,29 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 		createProjectFile(i->first, i->second, setup, moduleDir, in, ex);
 	}
 
-	if (setup.tests) {
-		// Create the main project file.
+	// Create engine-detection submodules.
+	if (setup.useStaticDetection) {
 		in.clear();
 		ex.clear();
-		createModuleList(setup.srcDir + "/backends", setup.defines, setup.testDirs, in, ex);
-		createModuleList(setup.srcDir + "/backends/platform/sdl", setup.defines, setup.testDirs, in, ex);
-		createModuleList(setup.srcDir + "/base", setup.defines, setup.testDirs, in, ex);
-		createModuleList(setup.srcDir + "/common", setup.defines, setup.testDirs, in, ex);
-		createModuleList(setup.srcDir + "/engines", setup.defines, setup.testDirs, in, ex);
-		createModuleList(setup.srcDir + "/graphics", setup.defines, setup.testDirs, in, ex);
-		createModuleList(setup.srcDir + "/gui", setup.defines, setup.testDirs, in, ex);
-		createModuleList(setup.srcDir + "/audio", setup.defines, setup.testDirs, in, ex);
-		createModuleList(setup.srcDir + "/test", setup.defines, setup.testDirs, in, ex);
+		std::vector<std::string> detectionModuleDirs;
+		detectionModuleDirs.reserve(setup.engines.size());
 
-		createProjectFile(setup.projectName, svmUUID, setup, setup.srcDir, in, ex);
-	} else if (!setup.devTools) {
+		for (EngineDescList::const_iterator i = setup.engines.begin(), end = setup.engines.end(); i != end; ++i) {
+			// We ignore all sub engines here because they require no special handling.
+			if (isSubEngine(i->name, setup.engines)) {
+				continue;
+			}
+			detectionModuleDirs.push_back(setup.srcDir + "/engines/" + i->name);
+		}
+
+		for (std::vector<std::string>::const_iterator i = detectionModuleDirs.begin(), end = detectionModuleDirs.end(); i != end; ++i) {
+			createModuleList(*i, setup.defines, setup.testDirs, in, ex, true);
+		}
+
+		createProjectFile(detProject, detUUID, setup, setup.srcDir + "/engines", in, ex);
+	}
+
+	if (!setup.devTools) {
 		// Last but not least create the main project file.
 		in.clear();
 		ex.clear();
@@ -1537,21 +1607,28 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 		createModuleList(setup.srcDir + "/audio/softsynth/mt32", setup.defines, setup.testDirs, in, ex);
 		createModuleList(setup.srcDir + "/video", setup.defines, setup.testDirs, in, ex);
 		createModuleList(setup.srcDir + "/image", setup.defines, setup.testDirs, in, ex);
+		createModuleList(setup.srcDir + "/math", setup.defines, setup.testDirs, in, ex);
+		if (setup.tests) {
+			createModuleList(setup.srcDir + "/test", setup.defines, setup.testDirs, in, ex);
+		} else {
+			// Resource files
+			addResourceFiles(setup, in, ex);
 
-		// Resource files
-		addResourceFiles(setup, in, ex);
-
-		// Various text files
-		in.push_back(setup.srcDir + "/AUTHORS");
-		in.push_back(setup.srcDir + "/COPYING");
-		in.push_back(setup.srcDir + "/COPYING.LGPL");
-		in.push_back(setup.srcDir + "/COPYING.BSD");
-		in.push_back(setup.srcDir + "/COPYING.FREEFONT");
-		in.push_back(setup.srcDir + "/COPYING.OFL");
-		in.push_back(setup.srcDir + "/COPYRIGHT");
-		in.push_back(setup.srcDir + "/NEWS");
-		in.push_back(setup.srcDir + "/README");
-		in.push_back(setup.srcDir + "/TODO");
+			// Various text files
+			in.push_back(setup.srcDir + "/AUTHORS");
+			in.push_back(setup.srcDir + "/COPYING");
+			in.push_back(setup.srcDir + "/COPYING.BSD");
+			in.push_back(setup.srcDir + "/COPYING.FREEFONT");
+			in.push_back(setup.srcDir + "/COPYING.ISC");
+			in.push_back(setup.srcDir + "/COPYING.LGPL");
+			in.push_back(setup.srcDir + "/COPYING.LUA");
+			in.push_back(setup.srcDir + "/COPYING.MIT");
+			in.push_back(setup.srcDir + "/COPYING.OFL");
+			in.push_back(setup.srcDir + "/COPYING.TINYGL");
+			in.push_back(setup.srcDir + "/COPYRIGHT");
+			in.push_back(setup.srcDir + "/NEWS.md");
+			in.push_back(setup.srcDir + "/README.md");
+		}
 
 		// Create the main project file.
 		createProjectFile(setup.projectName, svmUUID, setup, setup.srcDir, in, ex);
@@ -1561,7 +1638,7 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 	createOtherBuildFiles(setup);
 
 	// In case we create the main ScummVM project files we will need to
-	// generate engines/plugins_table.h too.
+	// generate engines/plugins_table.h & engines/detection_table.h
 	if (!setup.tests && !setup.devTools) {
 		createEnginePluginsTable(setup);
 	}
@@ -1702,44 +1779,16 @@ std::string ProjectProvider::getLastPathComponent(const std::string &path) {
 }
 
 void ProjectProvider::addFilesToProject(const std::string &dir, std::ofstream &projectFile,
-                                        const StringList &includeList, const StringList &excludeList,
-                                        const std::string &filePrefix) {
-	// Check for duplicate object file names
-	StringList duplicate;
-
-	for (StringList::const_iterator i = includeList.begin(); i != includeList.end(); ++i) {
-		std::string fileName = getLastPathComponent(*i);
-		std::transform(fileName.begin(), fileName.end(), fileName.begin(), tolower);
-
-		// Leave out non object file names.
-		if (fileName.size() < 2 || fileName.compare(fileName.size() - 2, 2, ".o"))
-			continue;
-
-		// Check whether an duplicate has been found yet
-		if (std::find(duplicate.begin(), duplicate.end(), fileName) != duplicate.end())
-			continue;
-
-		// Search for duplicates
-		StringList::const_iterator j = i;
-		++j;
-		for (; j != includeList.end(); ++j) {
-			std::string candidateFileName = getLastPathComponent(*j);
-			std::transform(candidateFileName.begin(), candidateFileName.end(), candidateFileName.begin(), tolower);
-			if (fileName == candidateFileName) {
-				duplicate.push_back(fileName);
-				break;
-			}
-		}
-	}
-
+										const StringList &includeList, const StringList &excludeList,
+										const std::string &filePrefix) {
 	FileNode *files = scanFiles(dir, includeList, excludeList);
 
-	writeFileListToProject(*files, projectFile, 0, duplicate, std::string(), filePrefix + '/');
+	writeFileListToProject(*files, projectFile, 0, std::string(), filePrefix + '/');
 
 	delete files;
 }
 
-void ProjectProvider::createModuleList(const std::string &moduleDir, const StringList &defines, StringList &testDirs, StringList &includeList, StringList &excludeList) const {
+void ProjectProvider::createModuleList(const std::string &moduleDir, const StringList &defines, StringList &testDirs, StringList &includeList, StringList &excludeList, bool forDetection) const {
 	const std::string moduleMkFile = moduleDir + "/module.mk";
 	std::ifstream moduleMk(moduleMkFile.c_str());
 	if (!moduleMk)
@@ -1751,6 +1800,7 @@ void ProjectProvider::createModuleList(const std::string &moduleDir, const Strin
 	shouldInclude.push(true);
 
 	StringList filesInVariableList;
+	std::string moduleRootDir;
 
 	bool hadModule = false;
 	std::string line;
@@ -1784,6 +1834,10 @@ void ProjectProvider::createModuleList(const std::string &moduleDir, const Strin
 				error("MODULE root " + moduleRoot + " does not match base dir " + moduleDir);
 
 			hadModule = true;
+			if (forDetection) {
+				moduleRootDir = moduleRoot;
+				break;
+			}
 		} else if (*i == "MODULE_OBJS") {
 			if (tokens.size() < 3)
 				error("Malformed MODULE_OBJS definition in " + moduleMkFile);
@@ -1895,9 +1949,6 @@ void ProjectProvider::createModuleList(const std::string &moduleDir, const Strin
 				// Scan all files in the include folder
 				FileList files = listDirectory(folder);
 
-				if (files.empty())
-					continue;
-
 				// Add to list of test folders
 				testDirs.push_back(folder);
 
@@ -1951,12 +2002,95 @@ void ProjectProvider::createModuleList(const std::string &moduleDir, const Strin
 			shouldInclude.pop();
 		} else if (*i == "elif") {
 			error("Unsupported operation 'elif' in " + moduleMkFile);
-		} else if (*i == "ifeq") {
+		} else if (*i == "ifeq" || *i == "ifneq") {
 			//XXX
 			shouldInclude.push(false);
 		}
 	}
 
+	if (forDetection) {
+		std::string::size_type p = moduleRootDir.find('/');
+		std::string engineName = moduleRootDir.substr(p + 1);
+		std::string engineNameUpper;
+
+		for (std::string::const_iterator i = engineName.begin(); i != engineName.end(); ++i) {
+			engineNameUpper += toupper(*i);
+		}
+		for (;;) {
+			std::getline(moduleMk, line);
+
+			if (moduleMk.eof())
+				break;
+
+			if (moduleMk.fail())
+				error("Failed while reading from " + moduleMkFile);
+
+			TokenList tokens = tokenize(line);
+			if (tokens.empty())
+				continue;
+
+			TokenList::const_iterator i = tokens.begin();
+
+			if (*i != "DETECT_OBJS" && *i != "ifneq") {
+				continue;
+			}
+
+			if (*i == "ifneq") {
+				++i;
+				if (*i != ("($(ENABLE_" + engineNameUpper + "),")) {
+					continue;
+				}
+
+				// If the engine is already enabled, skip the additional
+				// dependencies for detection objects.
+				if (isEngineEnabled[engineName]) {
+					bool breakEarly = false;
+					while (true) {
+						std::getline(moduleMk, line);
+						if (moduleMk.eof()) {
+							error("Unexpected EOF found, while parsing for " + engineName + " engine's module file.");
+						} else if (line != "endif") {
+							continue;
+						} else {
+							breakEarly = true;
+							break;
+						}
+					}
+					if (breakEarly) {
+						break;
+					}
+				}
+
+				while (*i != "DETECT_OBJS") {
+					std::getline(moduleMk, line);
+					if (moduleMk.eof()) {
+						break;
+					}
+
+					tokens = tokenize(line);
+
+					if (tokens.empty())
+						continue;
+					i = tokens.begin();
+				}
+			}
+
+
+			if (tokens.size() < 3)
+				error("Malformed DETECT_OBJS definition in " + moduleMkFile);
+			++i;
+
+			if (*i != "+=")
+				error("Malformed DETECT_OBJS definition in " + moduleMkFile);
+
+			++i;
+
+			p = (*i).find('/');
+			const std::string filename = moduleDir + "/" + (*i).substr(p + 1);
+
+			includeList.push_back(filename);
+		}
+	}
 	if (shouldInclude.size() != 1)
 		error("Malformed file " + moduleMkFile);
 }
@@ -1965,14 +2099,26 @@ void ProjectProvider::createEnginePluginsTable(const BuildSetup &setup) {
 	// First we need to create the "engines" directory.
 	createDirectory(setup.outputDir + "/engines");
 
-	// Then, we can generate the actual "plugins_table.h" file.
+	// Then, we can generate the actual "plugins_table.h" & "detection_table.h" file.
 	const std::string enginePluginsTableFile = setup.outputDir + "/engines/plugins_table.h";
+	const std::string detectionTableFile = setup.outputDir + "/engines/detection_table.h";
+
 	std::ofstream enginePluginsTable(enginePluginsTableFile.c_str());
+	std::ofstream detectionTable(detectionTableFile.c_str());
+
 	if (!enginePluginsTable) {
 		error("Could not open \"" + enginePluginsTableFile + "\" for writing");
 	}
 
+	if (!detectionTable) {
+		error("Could not open \"" + detectionTableFile + "\" for writing");
+	}
+
 	enginePluginsTable << "/* This file is automatically generated by create_project */\n"
+	                   << "/* DO NOT EDIT MANUALLY */\n"
+	                   << "// This file is being included by \"base/plugins.cpp\"\n";
+
+	detectionTable	   << "/* This file is automatically generated by create_project */\n"
 	                   << "/* DO NOT EDIT MANUALLY */\n"
 	                   << "// This file is being included by \"base/plugins.cpp\"\n";
 
@@ -1990,6 +2136,8 @@ void ProjectProvider::createEnginePluginsTable(const BuildSetup &setup) {
 		enginePluginsTable << "#if PLUGIN_ENABLED_STATIC(" << engineName << ")\n"
 		                   << "LINK_PLUGIN(" << engineName << ")\n"
 		                   << "#endif\n";
+
+		detectionTable << "LINK_PLUGIN(" << engineName << "_DETECTION)\n";
 	}
 }
 } // namespace CreateProjectTool
@@ -1997,4 +2145,17 @@ void ProjectProvider::createEnginePluginsTable(const BuildSetup &setup) {
 void error(const std::string &message) {
 	std::cerr << "ERROR: " << message << "!" << std::endl;
 	std::exit(-1);
+}
+
+bool BuildSetup::featureEnabled(std::string feature) const {
+	return getFeature(feature).enable;
+}
+
+Feature BuildSetup::getFeature(std::string feature) const {
+	for (FeatureList::const_iterator itr = features.begin(); itr != features.end(); ++itr) {
+		if (itr->name != feature)
+			continue;
+		return *itr;
+	}
+	error("invalid feature request: " + feature);
 }

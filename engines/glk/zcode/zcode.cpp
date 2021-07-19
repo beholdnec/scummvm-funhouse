@@ -123,7 +123,7 @@ Common::Error ZCode::loadGameState(int slot) {
 			|| h_screen_cols != old_screen_cols))
 			erase_window(1);
 	} else {
-		error("%s", "Error reading save file");
+		error("Error reading save file");
 	}
 
 	return Common::kNoError;
@@ -142,7 +142,7 @@ Common::Error ZCode::saveGameState(int slot, const Common::String &desc, bool is
 	file->close();
 
 	if (!success)
-		print_string("Error writing save file\n");
+		print_string_uni(_("Error writing save file\n").u32_str());
 
 	return Common::kNoError;
 

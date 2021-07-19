@@ -36,8 +36,10 @@ enum {
 
 class TabWidget : public Widget {
 	typedef Common::String String;
+	typedef Common::U32String U32String;
+
 	struct Tab {
-		String title;
+		U32String title;
 		String dialogName;
 		Widget *firstWidget;
 		int _tabWidth;
@@ -51,6 +53,7 @@ protected:
 	TabList _tabs;
 	int _tabHeight;
 	int _minTabWidth;
+	int _titleSpacing;
 
 	int _bodyRP, _bodyTP, _bodyLP, _bodyBP;
 	ThemeEngine::DialogBackground _bodyBackgroundType;
@@ -63,6 +66,8 @@ protected:
 	bool _navButtonsVisible;
 	int _lastRead;
 
+	void recalc();
+
 public:
 	TabWidget(GuiObject *boss, int x, int y, int w, int h);
 	TabWidget(GuiObject *boss, const String &name);
@@ -74,7 +79,7 @@ public:
 	 * Add a new tab with the given title. Returns a unique ID which can be used
 	 * to identify the tab (to remove it / activate it etc.).
 	 */
-	int addTab(const String &title, const String &dialogName);
+	int addTab(const U32String &title, const String &dialogName);
 
 	/**
 	 * Remove the tab with the given tab ID. Disposes all child widgets of that tab.
@@ -98,7 +103,7 @@ public:
 	 */
 	void setActiveTab(int tabID);
 
-	void setTabTitle(int tabID, const String &title) {
+	void setTabTitle(int tabID, const U32String &title) {
 		assert(0 <= tabID && tabID < (int)_tabs.size());
 		_tabs[tabID].title = title;
 	}

@@ -309,7 +309,7 @@ void WindowStream::setReverseVideo(bool reverse) {
 MemoryStream::MemoryStream(Streams *streams, void *buf, size_t buflen, FileMode mode, uint rock, bool unicode) :
 	Stream(streams, mode != filemode_Write, mode != filemode_Read, rock, unicode),
 	_buf(buf), _bufLen(buflen), _bufPtr(buf) {
-	assert(_buf && _bufLen);
+	assert(_buf || !_bufLen);
 	assert(mode == filemode_Read || mode == filemode_Write || mode == filemode_ReadWrite);
 
 	if (unicode)
@@ -977,7 +977,13 @@ void IOStream::setPosition(int pos, uint seekMode) {
 	if (_inStream) {
 		_inStream->seek(pos, SEEK_SET);
 	} else {
-		error("seek not supported for writing files");
+		Common::SeekableWriteStream *ws =
+			dynamic_cast<Common::SeekableWriteStream *>(_outStream);
+
+		if (ws)
+			ws->seek(pos, SEEK_SET);
+		else
+			error("seek not supported for writing files");
 	}
 }
 
@@ -1310,7 +1316,7 @@ uint IOStream::getLineUni(uint32 *ubuf, uint len) {
 FileStream::FileStream(Streams *streams, frefid_t fref, uint fmode, uint rock, bool unicode) :
 		IOStream(streams, fmode == filemode_Read, fmode != filemode_Read, rock, unicode),
 		_inSave(nullptr), _outSave(nullptr) {
-	
+
 	_textFile = fref->_textMode;
 	Common::String fname = fref->_slotNumber == -1 ? fref->_filename : fref->getSaveName();
 
@@ -1409,7 +1415,7 @@ void Streams::removeStream(Stream *stream) {
 	}
 
 	if (_currentStream == stream)
-		_currentStream = nullptr; 
+		_currentStream = nullptr;
 }
 
 Stream *Streams::getFirst(uint *rock) {

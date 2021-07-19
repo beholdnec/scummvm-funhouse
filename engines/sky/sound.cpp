@@ -1101,7 +1101,7 @@ void Sound::playSound(uint16 sound, uint16 volume, uint8 channel) {
 
 	// Note: All those tables are big endian. Don't ask me why. *sigh*
 
-	// Use the sample rate from game data, see bug #1507757.
+	// Use the sample rate from game data, see bug #2688.
 	uint16 sampleRate = READ_BE_UINT16(_sampleRates + (sound << 2));
 	if (sampleRate > 11025)
 		sampleRate = 11025;
@@ -1238,7 +1238,7 @@ bool Sound::startSpeech(uint16 textNum) {
 
 	free(speechData);
 
-	// Workaround for BASS bug #897775 - some voice-overs are played at
+	// Workaround for BASS bug #1461 - some voice-overs are played at
 	// half speed in 0.0368 (the freeware CD version), in 0.0372 they sound
 	// just fine.
 

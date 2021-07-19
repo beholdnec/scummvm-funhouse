@@ -182,8 +182,8 @@ Picture *Pictures::load(const Common::String &name) {
 	// Create new picture based on the image
 	pic = new Picture(img->w, img->h, g_system->getScreenFormat());
 	pic->_refCount = 1;
-    pic->_name = name;
-    pic->_scaled = false;
+	pic->_name = name;
+	pic->_scaled = false;
 	if (transColor != -1 || (!palette && img->format.aBits() > 0))
 		pic->clear(pic->getTransparentColor());
 
@@ -196,7 +196,7 @@ Picture *Pictures::load(const Common::String &name) {
 		for (uint idx = 0; idx < palCount; ++idx)
 			pal[idx] = pic->format.RGBToColor(palette[idx * 3],
 				palette[idx * 3 + 1], palette[idx * 3 + 2]);
-		
+
 		const byte *srcP = (const byte *)img->getPixels();
 		byte *destP = (byte *)pic->getPixels();
 		for (int idx = 0; idx < img->w * img->h; ++idx, srcP++, destP += pic->format.bytesPerPixel) {
@@ -210,14 +210,14 @@ Picture *Pictures::load(const Common::String &name) {
 		}
 	}
 
-    store(pic);
-    return pic;
+	store(pic);
+	return pic;
 }
 
 Picture *Pictures::scale(Picture *src, size_t sx, size_t sy) {
 	// Check for the presence of an already scaled version of that size
 	Picture *dst = retrieve(src->_name, true);
-	if (dst && dst->w == sx && dst->h == sy)
+	if (dst && (size_t)dst->w == sx && (size_t)dst->h == sy)
 		return dst;
 
 	// Create a new picture of the destination size and rescale the source picture

@@ -528,8 +528,8 @@ void ConsoleDialog::specialKeys(Common::KeyCode keycode) {
 		break;
 	case Common::KEYCODE_v:
 		if (g_system->hasTextInClipboard()) {
-			Common::String text = g_system->getTextFromClipboard();
-			insertIntoPrompt(text.c_str());
+			Common::U32String text = g_system->getTextFromClipboard();
+			insertIntoPrompt(text.encode().c_str());
 			scrollToCurrent();
 			drawLine(pos2line(_currentPos));
 		}
@@ -675,10 +675,13 @@ int ConsoleDialog::printFormat(int dummy, const char *format, ...) {
 
 int ConsoleDialog::vprintFormat(int dummy, const char *format, va_list argptr) {
 	Common::String buf = Common::String::vformat(format, argptr);
+	const int size = buf.size();
 
 	print(buf.c_str());
+	buf.trim();
+	debug("%s", buf.c_str());
 
-	return buf.size();
+	return size;
 }
 
 void ConsoleDialog::printChar(int c) {

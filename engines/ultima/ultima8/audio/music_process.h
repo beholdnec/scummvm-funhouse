@@ -25,7 +25,7 @@
 
 #include "ultima/ultima8/kernel/process.h"
 #include "ultima/ultima8/usecode/intrinsics.h"
-#include "ultima/ultima8/misc/p_dynamic_cast.h"
+#include "ultima/ultima8/misc/classtype.h"
 #include "audio/mididrv.h"
 
 namespace Ultima {
@@ -48,7 +48,6 @@ public:
 	MusicProcess();
 	~MusicProcess() override;
 
-	// p_dynamic_cast stuff
 	ENABLE_RUNTIME_CLASSTYPE()
 
 	//! Get the current instance of the Music Processes
@@ -72,8 +71,18 @@ public:
 	//! Bring back the track state from before it was put on hold
 	virtual void restoreTrackState() = 0;
 
+	//! Is a track currently playing?
+	virtual bool isPlaying() = 0;
+
+	//! Pause the currently playing track
+	virtual void pauseMusic() = 0;
+	//! Resume the current track after pausing
+	virtual void unpauseMusic() = 0;
+
 	INTRINSIC(I_playMusic);
-	INTRINSIC(I_musicStop);
+	INTRINSIC(I_stopMusic);
+	INTRINSIC(I_pauseMusic);
+	INTRINSIC(I_unpauseMusic);
 
 };
 

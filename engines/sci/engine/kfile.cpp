@@ -30,6 +30,7 @@
 #include "common/system.h"
 #include "common/translation.h"
 #include "common/memstream.h"
+#include "common/str-enc.h"
 
 #include "gui/saveload.h"
 
@@ -45,7 +46,7 @@
 #include "sci/engine/guest_additions.h"
 #endif
 #include "sci/engine/message.h"
-#include "sci/resource.h"
+#include "sci/resource/resource.h"
 
 namespace Sci {
 
@@ -874,6 +875,15 @@ reg_t kFileIOExists(EngineState *s, int argc, reg_t *argv) {
 			exists = true;
 	}
 
+	// GK1 easter egg at the Voodoo Hounfour in script 805. In this easter
+	// egg, Gabriel draws a doodle of Jane Jensen in the whiteboard, if the
+	// player uses the operate action below the whiteboard's eraser. This
+	// easter egg looks for a file named "buster" to be present, so that it
+	// is enabled. We always report that this file exists, to unlock the
+	// easter egg.
+	if (!exists && name == "buster")
+		exists = true;
+	
 	// Special case for non-English versions of LSL5: The English version of
 	// LSL5 calls kFileIO(), case K_FILEIO_OPEN for reading to check if
 	// memory.drv exists (which is where the game's password is stored). If
@@ -1087,6 +1097,11 @@ reg_t kSaveGame(EngineState *s, int argc, reg_t *argv) {
 		if (argv[2].isNull())
 			error("kSaveGame: called with description being NULL");
 		game_description = s->_segMan->getString(argv[2]);
+		if (g_sci->getLanguage() == Common::HE_ISR) {
+			Common::U32String u32string = game_description.decode(Common::kWindows1255);
+			game_description = u32string.encode(Common::kUtf8);
+		};
+
 
 		debug(3, "kSaveGame(%s,%d,%s,%s)", game_id.c_str(), virtualId, game_description.c_str(), version.c_str());
 

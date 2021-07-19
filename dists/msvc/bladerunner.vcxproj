@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -395,12 +410,12 @@
 		<ClCompile Include="..\..\engines\bladerunner\bladerunner.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\boundingbox.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\chapters.cpp" />
+		<ClCompile Include="..\..\engines\bladerunner\color.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\combat.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\crimes_database.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\debugger.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\decompress_lcw.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\decompress_lzo.cpp" />
-		<ClCompile Include="..\..\engines\bladerunner\detection.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\dialogue_menu.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\fog.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\font.cpp" />
@@ -414,6 +429,7 @@
 		<ClCompile Include="..\..\engines\bladerunner\light.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\lights.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\matrix.cpp" />
+		<ClCompile Include="..\..\engines\bladerunner\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\mouse.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\movement_track.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\music.cpp" />

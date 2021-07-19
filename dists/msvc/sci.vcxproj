@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -266,6 +281,7 @@
 		<ClCompile Include="..\..\engines\sci\graphics\coordadjuster.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\cursor.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\cursor32.cpp" />
+		<ClCompile Include="..\..\engines\sci\graphics\fontkorean.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\fontsjis.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\frameout.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\maccursor32.cpp" />
@@ -282,6 +298,7 @@
 		<ClCompile Include="..\..\engines\sci\graphics\remap.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\remap32.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\scifont.cpp" />
+		<ClCompile Include="..\..\engines\sci\graphics\scifx.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\screen.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\screen_item32.cpp" />
 		<ClCompile Include="..\..\engines\sci\graphics\text16.cpp" />
@@ -293,6 +310,10 @@
 		<ClCompile Include="..\..\engines\sci\parser\grammar.cpp" />
 		<ClCompile Include="..\..\engines\sci\parser\said.cpp" />
 		<ClCompile Include="..\..\engines\sci\parser\vocabulary.cpp" />
+		<ClCompile Include="..\..\engines\sci\resource\decompressor.cpp" />
+		<ClCompile Include="..\..\engines\sci\resource\resource.cpp" />
+		<ClCompile Include="..\..\engines\sci\resource\resource_audio.cpp" />
+		<ClCompile Include="..\..\engines\sci\resource\resource_patcher.cpp" />
 		<ClCompile Include="..\..\engines\sci\sound\decoders\sol.cpp" />
 		<ClCompile Include="..\..\engines\sci\sound\drivers\adlib.cpp" />
 		<ClCompile Include="..\..\engines\sci\sound\drivers\amigamac0.cpp" />
@@ -312,12 +333,8 @@
 		<ClCompile Include="..\..\engines\sci\video\robot_decoder.cpp" />
 		<ClCompile Include="..\..\engines\sci\video\seq_decoder.cpp" />
 		<ClCompile Include="..\..\engines\sci\console.cpp" />
-		<ClCompile Include="..\..\engines\sci\decompressor.cpp" />
-		<ClCompile Include="..\..\engines\sci\detection.cpp" />
 		<ClCompile Include="..\..\engines\sci\event.cpp" />
-		<ClCompile Include="..\..\engines\sci\resource.cpp" />
-		<ClCompile Include="..\..\engines\sci\resource_audio.cpp" />
-		<ClCompile Include="..\..\engines\sci\resource_patcher.cpp" />
+		<ClCompile Include="..\..\engines\sci\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\sci\sci.cpp" />
 		<ClCompile Include="..\..\engines\sci\util.cpp" />
 	</ItemGroup>
@@ -352,9 +369,11 @@
 		<ClInclude Include="..\..\engines\sci\graphics\coordadjuster.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\cursor.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\cursor32.h" />
+		<ClInclude Include="..\..\engines\sci\graphics\fontkorean.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\fontsjis.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\frameout.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\helpers.h" />
+		<ClInclude Include="..\..\engines\sci\graphics\helpers_detection_enums.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\lists32.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\maccursor32.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\maciconbar.h" />
@@ -370,6 +389,7 @@
 		<ClInclude Include="..\..\engines\sci\graphics\remap.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\remap32.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\scifont.h" />
+		<ClInclude Include="..\..\engines\sci\graphics\scifx.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\screen.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\screen_item32.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\text16.h" />
@@ -379,6 +399,10 @@
 		<ClInclude Include="..\..\engines\sci\graphics\video32.h" />
 		<ClInclude Include="..\..\engines\sci\graphics\view.h" />
 		<ClInclude Include="..\..\engines\sci\parser\vocabulary.h" />
+		<ClInclude Include="..\..\engines\sci\resource\decompressor.h" />
+		<ClInclude Include="..\..\engines\sci\resource\resource.h" />
+		<ClInclude Include="..\..\engines\sci\resource\resource_intern.h" />
+		<ClInclude Include="..\..\engines\sci\resource\resource_patcher.h" />
 		<ClInclude Include="..\..\engines\sci\sound\decoders\sol.h" />
 		<ClInclude Include="..\..\engines\sci\sound\drivers\gm_names.h" />
 		<ClInclude Include="..\..\engines\sci\sound\drivers\macmixer.h" />
@@ -394,12 +418,9 @@
 		<ClInclude Include="..\..\engines\sci\video\seq_decoder.h" />
 		<ClInclude Include="..\..\engines\sci\console.h" />
 		<ClInclude Include="..\..\engines\sci\debug.h" />
-		<ClInclude Include="..\..\engines\sci\decompressor.h" />
+		<ClInclude Include="..\..\engines\sci\detection.h" />
 		<ClInclude Include="..\..\engines\sci\detection_tables.h" />
 		<ClInclude Include="..\..\engines\sci\event.h" />
-		<ClInclude Include="..\..\engines\sci\resource.h" />
-		<ClInclude Include="..\..\engines\sci\resource_intern.h" />
-		<ClInclude Include="..\..\engines\sci\resource_patcher.h" />
 		<ClInclude Include="..\..\engines\sci\sci.h" />
 		<ClInclude Include="..\..\engines\sci\util.h" />
 	</ItemGroup>

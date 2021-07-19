@@ -83,9 +83,9 @@ typedef sc_taf_s sc_taf_t;
 
 /* Microsoft Visual Basic PRNG magic numbers, initial and current state. */
 static const sc_int PRNG_CST1 = 0x43fd43fd,
-                    PRNG_CST2 = 0x00c39ec3,
-                    PRNG_CST3 = 0x00ffffff,
-                    PRNG_INITIAL_STATE = 0x00a09e86;
+					PRNG_CST2 = 0x00c39ec3,
+					PRNG_CST3 = 0x00ffffff,
+					PRNG_INITIAL_STATE = 0x00a09e86;
 static sc_int taf_random_state = 0x00a09e86;
 
 /*
@@ -435,7 +435,7 @@ static sc_bool taf_read_raw(sc_tafref_t taf, sc_read_callbackref_t callback,
 
 		totalBytes = bytesLeft + bytesRead;
 		bytesWritten = taf_append_buffer(taf, buffer, totalBytes);
-		
+
 		bytesLeft = totalBytes - bytesWritten;
 		if (bytesLeft)
 			Common::copy(buffer + bytesWritten, buffer + totalBytes, buffer);
@@ -699,7 +699,7 @@ void taf_debug_dump(sc_tafref_t taf) {
 	sc_trace("taf->slabs = \n");
 	for (index_ = 0; index_ < taf->slab_count; index_++) {
 		sc_trace("%3ld : %p, %ld bytes\n", index_,
-		         taf->slabs[index_].data, taf->slabs[index_].size);
+		         (void *)taf->slabs[index_].data, taf->slabs[index_].size);
 	}
 
 	sc_trace("taf->slab_count = %ld\n", taf->slab_count);

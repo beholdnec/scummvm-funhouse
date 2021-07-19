@@ -25,7 +25,7 @@
 
 #include "ultima/ultima8/gumps/modal_gump.h"
 #include "ultima/ultima8/usecode/intrinsics.h"
-#include "ultima/ultima8/misc/p_dynamic_cast.h"
+#include "ultima/ultima8/misc/classtype.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -41,7 +41,7 @@ public:
 	ENABLE_RUNTIME_CLASSTYPE()
 
 	BookGump();
-	BookGump(ObjId owner_, const Std::string &msg);
+	BookGump(ObjId owner, const Std::string &msg);
 	~BookGump() override;
 
 	// Go to the next page on mouse click

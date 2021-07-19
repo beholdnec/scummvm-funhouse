@@ -52,7 +52,7 @@ Common::SeekableReadStream *Resource::getDecompressedStream(Common::SeekableRead
 		dec.decompress(buffer + 18, decompData, decompLen);
 		free(buffer);
 
-		debug(8, "Resource::getDecompressedStream: decompressed %d to %d bytes", stream->size(), decompLen);
+		debug(8, "Resource::getDecompressedStream: decompressed %d to %d bytes", (int)stream->size(), decompLen);
 
 		return new Common::MemoryReadStream(decompData, decompLen, DisposeAfterUse::YES);
 	} else {
@@ -93,7 +93,10 @@ bool PrinceEngine::loadLocation(uint16 locationNr) {
 
 	_flicPlayer.close();
 
-	memset(_textSlots, 0, sizeof(_textSlots));
+	for (uint i = 0; i < ARRAYSIZE(_textSlots); i++) {
+		_textSlots[i].clear();
+		_textSlots[i]._color = 0; // FIXME: Can be left at default of 255?
+	}
 	freeAllSamples();
 
 	debugEngine("PrinceEngine::loadLocation %d", locationNr);

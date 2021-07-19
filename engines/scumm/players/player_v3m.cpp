@@ -105,59 +105,22 @@ Player_V3M::Player_V3M(ScummEngine *scumm, Audio::Mixer *mixer)
 	// not sure if stream 4 is ever used, but let's use it just in case.
 }
 
-// \xAA is a trademark glyph in Mac OS Roman. We try that, but also the Windows
-// version, the UTF-8 version, and just plain without in case the file system
-// can't handle exotic characters like that.
-
-static const char *loomFileNames[] = {
-	"Loom\xAA",
-	"Loom\x99",
-	"Loom\xE2\x84\xA2",
-	"Loom"
-};
-
-bool Player_V3M::checkMusicAvailable() {
-	Common::MacResManager resource;
-
-	for (int i = 0; i < ARRAYSIZE(loomFileNames); i++) {
-		if (resource.exists(loomFileNames[i])) {
-			return true;
-		}
-	}
-
-	GUI::MessageDialog dialog(_(
-		"Could not find the 'Loom' Macintosh executable to read the\n"
-		"instruments from. Music will be disabled."), _("OK"));
-	dialog.runModal();
-	return false;
-}
-
 bool Player_V3M::loadMusic(const byte *ptr) {
 	Common::MacResManager resource;
-	bool found = false;
-
-	for (int i = 0; i < ARRAYSIZE(loomFileNames); i++) {
-		if (resource.open(loomFileNames[i])) {
-			found = true;
-			break;
-		}
-	}
-
-	if (!found) {
+	if (!resource.open(_instrumentFile)) {
 		return false;
 	}
 
 	if (ptr[4] != 's' || ptr[5] != 'o') {
 		// Like the original we ignore all sound resources which do not have
 		// a 'so' tag in them.
-		// See bug #3602239 ("Mac Loom crashes using opening spell on
+		// See bug #6238 ("Mac Loom crashes using opening spell on
 		// gravestone") for a case where this is required. Loom Mac tries to
 		// play resource 11 here. This resource is no Mac sound resource
 		// though, it is a PC Speaker resource. A test with the original
 		// interpreter also has shown that no sound is played while the
 		// screen is shaking.
 		debug(5, "Player_V3M::loadMusic: Skipping unknown music type %02X%02X", ptr[4], ptr[5]);
-		resource.close();
 		return false;
 	}
 
@@ -176,15 +139,16 @@ bool Player_V3M::loadMusic(const byte *ptr) {
 		_channel[i]._notesLeft = true;
 
 		Common::SeekableReadStream *stream = resource.getResource(RES_SND, instrument);
+
 		if (_channel[i].loadInstrument(stream)) {
 			debug(6, "Player_V3M::loadMusic: Channel %d - Loaded Instrument %d (%s)", i, instrument, resource.getResName(RES_SND, instrument).c_str());
+			delete stream;
 		} else {
-			resource.close();
+			delete stream;
 			return false;
 		}
 	}
 
-	resource.close();
 	return true;
 }
 

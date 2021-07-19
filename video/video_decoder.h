@@ -719,6 +719,16 @@ protected:
 		void setBalance(int8 balance);
 
 		/**
+		 * Get the sound type for this track
+		 */
+		Audio::Mixer::SoundType getSoundType() const { return _soundType; }
+
+		/**
+		 * Set the sound type for this track
+		 */
+		void setSoundType(Audio::Mixer::SoundType soundType) { _soundType = soundType; }
+
+		/**
 		 * Get the time the AudioStream behind this track has been
 		 * running
 		 */
@@ -934,7 +944,7 @@ private:
 
 	// Current playback status
 	bool _needsUpdate;
-	Audio::Timestamp _lastTimeChange, _endTime;
+	Audio::Timestamp _endTime;
 	bool _endTimeSet;
 	Common::Rational _playbackRate;
 	VideoTrack *_nextVideoTrack;
@@ -949,6 +959,7 @@ private:
 	// Default PixelFormat settings
 	Graphics::PixelFormat _defaultHighColorFormat;
 
+protected:
 	// Internal helper functions
 	void stopAudio();
 	void startAudio();
@@ -956,7 +967,10 @@ private:
 	bool hasFramesLeft() const;
 	bool hasAudio() const;
 
+	Audio::Timestamp _lastTimeChange;
 	int32 _startTime;
+
+private:
 	uint32 _pauseLevel;
 	uint32 _pauseStartTime;
 	byte _audioVolume;

@@ -91,7 +91,7 @@ void ScriptBase::Actor_Set_At_XYZ(int actorId, float x, float y, float z, int di
 
 void ScriptBase::Actor_Set_At_Waypoint(int actorId, int waypointId, int angle) {
 	debugC(kDebugScript, "Actor_Set_At_Waypoint(%d, %d, %d)", actorId, waypointId, angle);
-	_vm->_actors[actorId]->setAtWaypoint(waypointId, angle, 0, false);
+	_vm->_actors[actorId]->setAtWaypoint(waypointId, angle, false, false);
 }
 
 bool ScriptBase::Region_Check(int left, int top, int right, int down) {
@@ -350,6 +350,7 @@ void ScriptBase::Actor_Says_With_Pause(int actorId, int sentenceId, float pause,
 	if (pause > 0.0f && !_vm->_actorSpeakStopIsRequested) {
 		Delay(pause * 1000u);
 	}
+	_vm->_actorSpeakStopIsRequested = false;
 	Player_Gains_Control();
 }
 
@@ -375,6 +376,7 @@ void ScriptBase::Actor_Voice_Over(int sentenceId, int actorId) {
 			break;
 		}
 	}
+	_vm->_actorSpeakStopIsRequested = false;
 	Player_Gains_Control();
 }
 
@@ -844,6 +846,13 @@ void ScriptBase::Item_Add_To_World(int itemId, int animationId, int setId, float
 	_vm->_items->addToWorld(itemId, animationId, setId, Vector3(x, y, z), facing, height, width, isTargetable, isObstacle, isPoliceMazeEnemy, updateOnly == 0);
 }
 
+#if !BLADERUNNER_ORIGINAL_BUGS
+void ScriptBase::Item_Remove_From_Current_Scene(int itemId) {
+	debugC(kDebugScript, "Item_Remove_From_Current_Scene(%d)", itemId);
+	_vm->_items->removeFromCurrentSceneOnly(itemId);
+}
+#endif // !BLADERUNNER_ORIGINAL_BUGS
+
 void ScriptBase::Item_Remove_From_World(int itemId) {
 	debugC(kDebugScript, "Item_Remove_From_World(%d)", itemId);
 	_vm->_items->remove(itemId);
@@ -1170,19 +1179,19 @@ void ScriptBase::Footstep_Sound_Override_Off() {
 	_vm->_scene->_set->resetFoodstepSoundOverride();
 }
 
-bool ScriptBase::Music_Play(int musicId, int volume, int pan, int32 timeFadeIn, int32 timePlay, int loop, int32 timeFadeOut) {
-	debugC(kDebugScript, "Music_Play(%d, %d, %d, %d, %d, %d, %d)", musicId, volume, pan, timeFadeIn, timePlay, loop, timeFadeOut);
-	return _vm->_music->play(_vm->_gameInfo->getMusicTrack(musicId), volume, pan, timeFadeIn, timePlay, loop, timeFadeOut);
+bool ScriptBase::Music_Play(int musicId, int volume, int pan, int32 timeFadeInSeconds, int32 timePlaySeconds, int loop, int32 timeFadeOutSeconds) {
+	debugC(kDebugScript, "Music_Play(%d, %d, %d, %d, %d, %d, %d)", musicId, volume, pan, timeFadeInSeconds, timePlaySeconds, loop, timeFadeOutSeconds);
+	return _vm->_music->play(_vm->_gameInfo->getMusicTrack(musicId), volume, pan, timeFadeInSeconds, timePlaySeconds, loop, timeFadeOutSeconds);
 }
 
-void ScriptBase::Music_Adjust(int volume, int pan, uint32 delay) {
-	debugC(kDebugScript, "Music_Adjust(%d, %d, %u)", volume, pan, delay);
-	_vm->_music->adjust(volume, pan, delay);
+void ScriptBase::Music_Adjust(int volume, int pan, uint32 delaySeconds) {
+	debugC(kDebugScript, "Music_Adjust(%d, %d, %u)", volume, pan, delaySeconds);
+	_vm->_music->adjust(volume, pan, delaySeconds);
 }
 
-void ScriptBase::Music_Stop(uint32 delay) {
-	debugC(kDebugScript, "Music_Stop(%u)", delay);
-	_vm->_music->stop(delay);
+void ScriptBase::Music_Stop(uint32 delaySeconds) {
+	debugC(kDebugScript, "Music_Stop(%u)", delaySeconds);
+	_vm->_music->stop(delaySeconds);
 }
 
 bool ScriptBase::Music_Is_Playing() {
@@ -1221,9 +1230,9 @@ void ScriptBase::Outtake_Play(int id, int noLocalization, int container) {
 	_vm->outtakePlay(id, noLocalization, container);
 }
 
-void ScriptBase::Ambient_Sounds_Add_Sound(int sfxId, uint32 timeMin, uint32 timeMax, int volumeMin, int volumeMax, int panStartMin, int panStartMax, int panEndMin, int panEndMax, int priority, int unk) {
-	debugC(kDebugScript, "Ambient_Sounds_Add_Sound(%d, %u, %u, %d, %d, %d, %d, %d, %d, %d, %d)", sfxId, timeMin, timeMax, volumeMin, volumeMax, panStartMin, panStartMax, panEndMin, panEndMax, priority, unk);
-	_vm->_ambientSounds->addSound(sfxId, timeMin, timeMax, volumeMin, volumeMax, panStartMin, panStartMax, panEndMin, panEndMax, priority, unk);
+void ScriptBase::Ambient_Sounds_Add_Sound(int sfxId, uint32 delayMinSeconds, uint32 delayMaxSeconds, int volumeMin, int volumeMax, int panStartMin, int panStartMax, int panEndMin, int panEndMax, int priority, int unk) {
+	debugC(kDebugScript, "Ambient_Sounds_Add_Sound(%d, %u, %u, %d, %d, %d, %d, %d, %d, %d, %d)", sfxId, delayMinSeconds, delayMaxSeconds, volumeMin, volumeMax, panStartMin, panStartMax, panEndMin, panEndMax, priority, unk);
+	_vm->_ambientSounds->addSound(sfxId, delayMinSeconds, delayMaxSeconds, volumeMin, volumeMax, panStartMin, panStartMax, panEndMin, panEndMax, priority, unk);
 }
 
 void  ScriptBase::Ambient_Sounds_Remove_Sound(int sfxId, bool stopPlaying) {
@@ -1231,9 +1240,9 @@ void  ScriptBase::Ambient_Sounds_Remove_Sound(int sfxId, bool stopPlaying) {
 	_vm->_ambientSounds->removeNonLoopingSound(sfxId,  stopPlaying);
 }
 
-void ScriptBase::Ambient_Sounds_Add_Speech_Sound(int actorId, int sentenceId, uint32 timeMin, uint32 timeMax, int volumeMin, int volumeMax, int panStartMin, int panStartMax, int panEndMin, int panEndMax, int priority, int unk) {
-	debugC(kDebugScript, "Ambient_Sounds_Add_Speech_Sound(%d, %d, %u, %u, %d, %d, %d, %d, %d, %d, %d, %d)", actorId, sentenceId, timeMin, timeMax, volumeMin, volumeMax, panStartMin, panStartMax, panEndMin, panEndMax, priority, unk);
-	_vm->_ambientSounds->addSpeech(actorId, sentenceId, timeMin, timeMax, volumeMin, volumeMax, panStartMin, panStartMax, panEndMin, panEndMax, priority, unk);
+void ScriptBase::Ambient_Sounds_Add_Speech_Sound(int actorId, int sentenceId, uint32 delayMinSeconds, uint32 delayMaxSeconds, int volumeMin, int volumeMax, int panStartMin, int panStartMax, int panEndMin, int panEndMax, int priority, int unk) {
+	debugC(kDebugScript, "Ambient_Sounds_Add_Speech_Sound(%d, %d, %u, %u, %d, %d, %d, %d, %d, %d, %d, %d)", actorId, sentenceId, delayMinSeconds, delayMaxSeconds, volumeMin, volumeMax, panStartMin, panStartMax, panEndMin, panEndMax, priority, unk);
+	_vm->_ambientSounds->addSpeech(actorId, sentenceId, delayMinSeconds, delayMaxSeconds, volumeMin, volumeMax, panStartMin, panStartMax, panEndMin, panEndMax, priority, unk);
 }
 
 // ScriptBase::Ambient_Sounds_Remove_Speech_Sound
@@ -1253,24 +1262,24 @@ void ScriptBase::Ambient_Sounds_Remove_All_Non_Looping_Sounds(bool stopPlaying) 
 	_vm->_ambientSounds->removeAllNonLoopingSounds(stopPlaying);
 }
 
-void ScriptBase::Ambient_Sounds_Add_Looping_Sound(int sfxId, int volume, int pan, uint32 delay) {
-	debugC(kDebugScript, "Ambient_Sounds_Add_Looping_Sound(%d, %d, %d, %u)", sfxId, volume, pan, delay);
-	_vm->_ambientSounds->addLoopingSound(sfxId, volume, pan, delay);
+void ScriptBase::Ambient_Sounds_Add_Looping_Sound(int sfxId, int volume, int pan, uint32 delaySeconds) {
+	debugC(kDebugScript, "Ambient_Sounds_Add_Looping_Sound(%d, %d, %d, %u)", sfxId, volume, pan, delaySeconds);
+	_vm->_ambientSounds->addLoopingSound(sfxId, volume, pan, delaySeconds);
 }
 
-void ScriptBase::Ambient_Sounds_Adjust_Looping_Sound(int sfxId, int volume, int pan, uint32 delay) {
-	debugC(kDebugScript, "Ambient_Sounds_Adjust_Looping_Sound(%d, %d, %d, %u)", sfxId, volume, pan, delay);
-	_vm->_ambientSounds->adjustLoopingSound(sfxId, volume, pan, delay);
+void ScriptBase::Ambient_Sounds_Adjust_Looping_Sound(int sfxId, int volume, int pan, uint32 delaySeconds) {
+	debugC(kDebugScript, "Ambient_Sounds_Adjust_Looping_Sound(%d, %d, %d, %u)", sfxId, volume, pan, delaySeconds);
+	_vm->_ambientSounds->adjustLoopingSound(sfxId, volume, pan, delaySeconds);
 }
 
-void ScriptBase::Ambient_Sounds_Remove_Looping_Sound(int sfxId, uint32 delay) {
-	debugC(kDebugScript, "Ambient_Sounds_Remove_Looping_Sound(%d, %u)", sfxId, delay);
-	_vm->_ambientSounds->removeLoopingSound(sfxId, delay);
+void ScriptBase::Ambient_Sounds_Remove_Looping_Sound(int sfxId, uint32 delaySeconds) {
+	debugC(kDebugScript, "Ambient_Sounds_Remove_Looping_Sound(%d, %u)", sfxId, delaySeconds);
+	_vm->_ambientSounds->removeLoopingSound(sfxId, delaySeconds);
 }
 
-void ScriptBase::Ambient_Sounds_Remove_All_Looping_Sounds(uint32 delay) {
-	debugC(kDebugScript, "Ambient_Sounds_Remove_All_Looping_Sounds(%u)", delay);
-	_vm->_ambientSounds->removeAllLoopingSounds(delay);
+void ScriptBase::Ambient_Sounds_Remove_All_Looping_Sounds(uint32 delaySeconds) {
+	debugC(kDebugScript, "Ambient_Sounds_Remove_All_Looping_Sounds(%u)", delaySeconds);
+	_vm->_ambientSounds->removeAllLoopingSounds(delaySeconds);
 }
 
 void ScriptBase::Setup_Scene_Information(float actorX, float actorY, float actorZ, int actorFacing) {
@@ -1688,9 +1697,9 @@ void ScriptBase::ADQ_Add(int actorId, int sentenceId, int animationMode) {
 	_vm->_actorDialogueQueue->add(actorId, sentenceId, animationMode);
 }
 
-void ScriptBase::ADQ_Add_Pause(int32 delay) {
-	debugC(kDebugScript, "ADQ_Add_Pause(%d)", delay);
-	_vm->_actorDialogueQueue->addPause(delay);
+void ScriptBase::ADQ_Add_Pause(int32 delayMillis) {
+	debugC(kDebugScript, "ADQ_Add_Pause(%d)", delayMillis);
+	_vm->_actorDialogueQueue->addPause(delayMillis);
 }
 
 void ScriptBase::ADQ_Wait_For_All_Queued_Dialogue() {
@@ -1794,8 +1803,8 @@ void ScriptBase::ESPER_Define_Special_Region(int regionId, int innerLeft, int in
 	_vm->_esper->defineRegion(regionId, Common::Rect(innerLeft, innerTop, innerRight, innerBottom), Common::Rect(outerLeft, outerTop, outerRight, outerBottom), Common::Rect(selectionLeft, selectionTop, selectionRight, selectionBottom), name);
 }
 
-void ScriptBase::VK_Play_Speech_Line(int actorId, int sentenceId, float duration) {
-	_vm->_vk->playSpeechLine(actorId, sentenceId, duration);
+void ScriptBase::VK_Play_Speech_Line(int actorId, int sentenceId, float pauseDuration) {
+	_vm->_vk->playSpeechLine(actorId, sentenceId, pauseDuration);
 }
 
 void ScriptBase::VK_Add_Question(int intensity, int sentenceId, int relatedSentenceId) {

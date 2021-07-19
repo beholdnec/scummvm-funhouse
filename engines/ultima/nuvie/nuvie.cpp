@@ -258,10 +258,10 @@ bool NuvieEngine::canLoadGameStateCurrently(bool isAutosave) {
 	// the save dialog will result in active gumps being closed
 	Events *events = static_cast<Events *>(_events);
 	MapWindow *mapWindow = _game->get_map_window();
-	
+
 	if (isAutosave) {
 		return events->get_mode() == MOVE_MODE;
-	
+
 	} else {
 		events->close_gumps();
 
@@ -330,7 +330,7 @@ Common::Error NuvieEngine::saveGameState(int slot, const Common::String &desc, b
 
 			// Display that the game was saved
 			MsgScroll *scroll = Game::get_game()->get_scroll();
-			scroll->display_string(_("\nGame Saved\n\n"));
+			scroll->display_string("\nGame Saved\n\n");
 			scroll->display_prompt();
 		}
 
@@ -379,12 +379,12 @@ bool NuvieEngine::quickSave(int saveSlot, bool isLoad) {
 		if (!canLoadGameStateCurrently(false))
 			return false;
 
-		text = _("loading quick save %d");
+		text = Common::convertFromU32String(_("loading quick save %d"));
 	} else {
 		if (!canSaveGameStateCurrently(false))
 			return false;
 
-		text = _("saving quick save %d");
+		text = Common::convertFromU32String(_("saving quick save %d"));
 	}
 
 	text = Std::string::format(text.c_str(), saveSlot);
@@ -398,7 +398,7 @@ bool NuvieEngine::quickSave(int saveSlot, bool isLoad) {
 			return false;
 		}
 	} else {
-		Common::String saveDesc = Common::String::format(_("Quicksave %03d"), saveSlot);
+		Common::String saveDesc = Common::String::format("Quicksave %03d", saveSlot);
 		return saveGameState(saveSlot, saveDesc, false).getCode() == Common::kNoError;
 	}
 }
@@ -407,6 +407,15 @@ bool NuvieEngine::playIntro() {
 	if (ConfMan.hasKey("save_slot") && ConfMan.getInt("save_slot") >= 0)
 		// Loading a savegame from the launcher, so skip intro
 		return true;
+
+	bool skip_intro;
+	string key = config_get_game_key(_config);
+	key.append("/skip_intro");
+	_config->value(key, skip_intro, false);
+
+	if (skip_intro)
+		return true;
+
 
 	if (_script->play_cutscene("/intro.lua")) {
 		bool should_quit = false;

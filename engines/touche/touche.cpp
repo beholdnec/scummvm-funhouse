@@ -103,13 +103,6 @@ ToucheEngine::ToucheEngine(OSystem *system, Common::Language language)
 
 	SearchMan.addSubDirectoryMatching(gameDataDir, "database");
 
-	DebugMan.addDebugChannel(kDebugEngine,   "Engine",   "Engine debug level");
-	DebugMan.addDebugChannel(kDebugGraphics, "Graphics", "Graphics debug level");
-	DebugMan.addDebugChannel(kDebugResource, "Resource", "Resource debug level");
-	DebugMan.addDebugChannel(kDebugOpcodes,  "Opcodes",  "Opcodes debug level");
-	DebugMan.addDebugChannel(kDebugMenu,     "Menu",     "Menu debug level");
-	DebugMan.addDebugChannel(kDebugCharset,  "Charset",   "Charset debug level");
-
 	setDebugger(new ToucheConsole(this));
 
 	_newEpisodeNum = 0;
@@ -191,8 +184,6 @@ ToucheEngine::ToucheEngine(OSystem *system, Common::Language language)
 }
 
 ToucheEngine::~ToucheEngine() {
-	DebugMan.clearAllDebugChannels();
-
 	stopMusic();
 	delete _midiPlayer;
 }
@@ -2039,7 +2030,7 @@ void ToucheEngine::updateRoomAreas(int num, int flags) {
 		if (_programAreaTable[i].id == num) {
 			Area area = _programAreaTable[i].area;
 			if (i == 14 && _currentRoomNum == 8 && area.r.left == 715) {
-				// Workaround for bug #1751170. area[14].r.left (update rect) should
+				// Workaround for bug #3306. area[14].r.left (update rect) should
 				// be equal to area[7].r.left (redraw rect) but it's one off, which
 				// leads to a glitch when that room area needs to be redrawn.
 				area.r.left = 714;
@@ -3320,7 +3311,9 @@ void ToucheEngine::processAnimationTable() {
 }
 
 void ToucheEngine::clearAnimationTable() {
-	memset(_animationTable, 0, sizeof(_animationTable));
+	for (uint i = 0; i < ARRAYSIZE(_animationTable); i++) {
+		_animationTable[i].clear();
+	}
 }
 
 void ToucheEngine::addToDirtyRect(const Common::Rect &r) {

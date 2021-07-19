@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -161,14 +176,11 @@
 	</ImportGroup>
 	<PropertyGroup Label="UserMacros" />
 	<ItemGroup>
-		<ClCompile Include="..\..\engines\sherlock\scalpel\3do\movie_decoder.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\scalpel\3do\scalpel_3do_screen.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\scalpel\drivers\adlib.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\scalpel\drivers\mt32.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\scalpel\tsage\logo.cpp" />
-		<ClCompile Include="..\..\engines\sherlock\scalpel\tsage\resources.cpp">
-			<ObjectFileName>$(IntDir)scalpel_tsage_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\sherlock\scalpel\tsage\resources.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\scalpel\scalpel.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\scalpel\scalpel_darts.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\scalpel\scalpel_debugger.cpp" />
@@ -211,7 +223,6 @@
 		<ClCompile Include="..\..\engines\sherlock\tattoo\widget_verbs.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\animation.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\debugger.cpp" />
-		<ClCompile Include="..\..\engines\sherlock\detection.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\events.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\fixed_text.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\fonts.cpp" />
@@ -219,12 +230,11 @@
 		<ClCompile Include="..\..\engines\sherlock\inventory.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\journal.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\map.cpp" />
+		<ClCompile Include="..\..\engines\sherlock\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\music.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\objects.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\people.cpp" />
-		<ClCompile Include="..\..\engines\sherlock\resources.cpp">
-			<ObjectFileName>$(IntDir)%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\sherlock\resources.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\saveload.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\scene.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\screen.cpp" />
@@ -235,7 +245,6 @@
 		<ClCompile Include="..\..\engines\sherlock\user_interface.cpp" />
 	</ItemGroup>
 	<ItemGroup>
-		<ClInclude Include="..\..\engines\sherlock\scalpel\3do\movie_decoder.h" />
 		<ClInclude Include="..\..\engines\sherlock\scalpel\3do\scalpel_3do_screen.h" />
 		<ClInclude Include="..\..\engines\sherlock\scalpel\drivers\mididriver.h" />
 		<ClInclude Include="..\..\engines\sherlock\scalpel\tsage\logo.h" />
@@ -282,6 +291,7 @@
 		<ClInclude Include="..\..\engines\sherlock\tattoo\widget_verbs.h" />
 		<ClInclude Include="..\..\engines\sherlock\animation.h" />
 		<ClInclude Include="..\..\engines\sherlock\debugger.h" />
+		<ClInclude Include="..\..\engines\sherlock\detection.h" />
 		<ClInclude Include="..\..\engines\sherlock\detection_tables.h" />
 		<ClInclude Include="..\..\engines\sherlock\events.h" />
 		<ClInclude Include="..\..\engines\sherlock\fixed_text.h" />

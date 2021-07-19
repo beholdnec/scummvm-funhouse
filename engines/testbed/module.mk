@@ -3,15 +3,15 @@ MODULE := engines/testbed
 MODULE_OBJS := \
 	config.o \
 	config-params.o \
-	detection.o \
 	events.o \
 	fs.o \
 	graphics.o \
+	metaengine.o \
 	midi.o \
 	misc.o \
+	networking.o \
 	savegame.o \
 	sound.o \
-	encoding.o \
 	testbed.o \
 	testsuite.o \
 	video.o
@@ -43,3 +43,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

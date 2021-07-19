@@ -78,13 +78,17 @@ class AudioStream;
  * to the 'stream' object is kept, so you can safely delete it after
  * invoking this factory.
  *
+ * This stream may be infinitely long if the mod contains a loop.
+ *
  * @param stream			the ReadStream from which to read the tracker sound data
  * @param disposeAfterUse	whether to delete the stream after use
+ * @param initialPos		initial track to start playback from
  * @param rate				sample rate
  * @param interpolation		interpolation effect level
  */
-AudioStream *makeModXmS3mStream(Common::SeekableReadStream *stream,
+RewindableAudioStream *makeModXmS3mStream(Common::SeekableReadStream *stream,
 		DisposeAfterUse::Flag disposeAfterUse,
+		int initialPos = 0,
 		int rate = 48000, int interpolation = 0);
 
 } // End of namespace Audio

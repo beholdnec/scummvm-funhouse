@@ -5,7 +5,7 @@
 	</ImportGroup>
 	<PropertyGroup>
 		<_PropertySheetDisplayName>ScummVM_Analysisx64</_PropertySheetDisplayName>
-		<LinkIncremental>true</LinkIncremental>
+		<LinkIncremental>false</LinkIncremental>
 		<GenerateManifest>false</GenerateManifest>
 	</PropertyGroup>
 	<ItemDefinitionGroup>
@@ -16,7 +16,7 @@
 			<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
 			<FunctionLevelLinking>true</FunctionLevelLinking>
 			<TreatWarningAsError>false</TreatWarningAsError>
-			<DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+			<DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
 			<EnablePREfast>true</EnablePREfast>
 		</ClCompile>
 		<Link>

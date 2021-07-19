@@ -26,7 +26,7 @@
 
 #include "sci/sci.h"
 #include "sci/event.h"
-#include "sci/resource.h"
+#include "sci/resource/resource.h"
 #include "sci/util.h"
 #include "sci/engine/features.h"
 #include "sci/graphics/palette32.h"
@@ -386,7 +386,7 @@ static const uint8 gammaTables[GfxPalette32::numGammaTables][256] = {
 	_cycleMap(),
 
 	// Gamma correction
-	_gammaLevel(-1),
+	_gammaLevel(g_sci->_features->useMacGammaLevel() ? 2 : -1),
 	_gammaChanged(false) {
 
 	for (int i = 0, len = ARRAYSIZE(_fadeTable); i < len; ++i) {
@@ -436,6 +436,14 @@ int16 GfxPalette32::matchColor(const uint8 r, const uint8 g, const uint8 b) {
 	}
 
 	return bestIndex;
+}
+
+uint8 GfxPalette32::getPlatformBlack() const {
+	return (g_sci->getPlatform() == Common::kPlatformMacintosh) ? 255 : 0;
+}
+
+uint8 GfxPalette32::getPlatformWhite() const {
+	return (g_sci->getPlatform() == Common::kPlatformMacintosh) ? 0 : 255;
 }
 
 void GfxPalette32::submit(const Palette &palette) {

@@ -301,7 +301,7 @@ bool SoundManager::playSample(int id, int sub, bool bLooped, int x, int y, int p
 	}
 
 	debugC(DEBUG_DETAILED, kTinselDebugSound, "Playing sound %d.%d, %d bytes at %d (pan %d)", id, sub, sampleLen,
-			_sampleStream.pos(), getPan(x));
+			(int)_sampleStream.pos(), getPan(x));
 
 	// allocate a buffer
 	byte *sampleBuf = (byte *) malloc(sampleLen);
@@ -485,7 +485,7 @@ void SoundManager::setSFXVolumes(uint8 volume) {
 void SoundManager::showSoundError(const char *errorMsg, const char *soundFile) {
 	Common::String msg;
 	msg = Common::String::format(errorMsg, soundFile);
-	GUI::MessageDialog dialog(msg, "OK");
+	GUI::MessageDialog dialog(msg.c_str(), "OK");
 	dialog.runModal();
 
 	error("%s", msg.c_str());
@@ -542,6 +542,10 @@ void SoundManager::openSampleFiles() {
 			break;
 		default:
 			debugC(DEBUG_DETAILED, kTinselDebugSound, "Detected original sound-data");
+			if (TinselV3) {
+				// And in Noir, the data is MP3
+				_soundMode = kMP3Mode;
+			}
 			break;
 		}
 

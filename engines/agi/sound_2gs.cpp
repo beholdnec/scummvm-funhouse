@@ -667,7 +667,7 @@ static const IIgsMidiProgramMapping progToInstMappingV1 = {
 };
 
 /** Newer Apple IIGS AGI MIDI program change to instrument number mapping.
-    FIXME: Some instrument choices sound wrong. */
+	FIXME: Some instrument choices sound wrong. */
 static const IIgsMidiProgramMapping progToInstMappingV2 = {
 	{
 		21, 22, 24, 25, 23, 26, 6, 6, 6, 6,
@@ -750,7 +750,7 @@ bool SoundGen2GS::loadInstrumentHeaders(Common::String &exePath, const IIgsExeIn
 	file.open(exePath);
 	if (file.size() != (int32)exeInfo.exeSize) {
 		debugC(3, kDebugLevelSound, "Apple IIGS executable (%s) has wrong size (Is %d, should be %d)",
-		       exePath.c_str(), file.size(), exeInfo.exeSize);
+		       exePath.c_str(), (int)file.size(), exeInfo.exeSize);
 	}
 
 	// Read the whole executable file into memory

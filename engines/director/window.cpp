@@ -70,27 +70,28 @@ Window::~Window() {
 	}
 }
 
-void Window::invertChannel(Channel *channel) {
+void Window::invertChannel(Channel *channel, const Common::Rect &destRect) {
 	const Graphics::Surface *mask = channel->getMask(true);
-	Common::Rect destRect = channel->getBbox();
+	Common::Rect srcRect = channel->getBbox();
+	srcRect.clip(destRect);
 
 	if (_wm->_pixelformat.bytesPerPixel == 1) {
-		for (int i = 0; i < destRect.height(); i++) {
-			byte *src = (byte *)_composeSurface->getBasePtr(destRect.left, destRect.top + i);
+		for (int i = 0; i < srcRect.height(); i++) {
+			byte *src = (byte *)_composeSurface->getBasePtr(srcRect.left, srcRect.top + i);
 			const byte *msk = mask ? (const byte *)mask->getBasePtr(0, i) : nullptr;
 
-			for (int j = 0; j < destRect.width(); j++, src++)
+			for (int j = 0; j < srcRect.width(); j++, src++)
 				if (!mask || (msk && !(*msk++)))
 					*src = ~(*src);
 		}
 	} else {
 		uint32 alpha = _wm->_pixelformat.ARGBToColor(255, 0, 0, 0);
 
-		for (int i = 0; i < destRect.height(); i++) {
-			uint32 *src = (uint32 *)_composeSurface->getBasePtr(destRect.left, destRect.top + i);
+		for (int i = 0; i < srcRect.height(); i++) {
+			uint32 *src = (uint32 *)_composeSurface->getBasePtr(srcRect.left, srcRect.top + i);
 			const uint32 *msk = mask ? (const uint32 *)mask->getBasePtr(0, i) : nullptr;
 
-			for (int j = 0; j < destRect.width(); j++, src++)
+			for (int j = 0; j < srcRect.width(); j++, src++)
 				if (!mask || (msk && !(*msk++)))
 					*src = ~(*src & ~alpha) | alpha;
 		}
@@ -105,7 +106,7 @@ bool Window::render(bool forceRedraw, Graphics::ManagedSurface *blitTo) {
 		blitTo->clear(_stageColor);
 		markAllDirty();
 	} else {
-		if (_dirtyRects.size() == 0)
+		if (_dirtyRects.size() == 0 && _currentMovie->_videoPlayback == false)
 			return false;
 
 		mergeDirtyRects();
@@ -113,6 +114,7 @@ bool Window::render(bool forceRedraw, Graphics::ManagedSurface *blitTo) {
 
 	if (!blitTo)
 		blitTo = _composeSurface;
+	Channel *hiliteChannel = _currentMovie->getScore()->getChannelById(_currentMovie->_currentHiliteChannelId);
 
 	for (Common::List<Common::Rect>::iterator i = _dirtyRects.begin(); i != _dirtyRects.end(); i++) {
 		const Common::Rect &r = *i;
@@ -129,8 +131,11 @@ bool Window::render(bool forceRedraw, Graphics::ManagedSurface *blitTo) {
 						continue;
 				}
 
-				if ((*j)->_visible)
+				if ((*j)->_visible) {
 					inkBlitFrom(*j, r, blitTo);
+					if ((*j) == hiliteChannel)
+						invertChannel(hiliteChannel, r);
+				}
 			}
 		}
 	}
@@ -173,7 +178,7 @@ void Window::inkBlitFrom(Channel *channel, Common::Rect destRect, Graphics::Mana
 			inkBlitSurface(&pd, srcRect, channel->getMask());
 		}
 	} else {
-		warning("Window::inkBlitFrom: No source surface: spriteType: %d, castType: %d, castId: %d", channel->_sprite->_spriteType, channel->_sprite->_cast ? channel->_sprite->_cast->_type : 0, channel->_sprite->_castId);
+		warning("Window::inkBlitFrom: No source surface: spriteType: %d, castType: %d, castId: %s", channel->_sprite->_spriteType, channel->_sprite->_cast ? channel->_sprite->_cast->_type : 0, channel->_sprite->_castId.asString().c_str());
 	}
 }
 
@@ -195,8 +200,8 @@ void Window::inkBlitShape(DirectorPlotData *pd, Common::Rect &srcRect) {
 		break;
 	}
 
-	Common::Rect fillRect((int)srcRect.width(), (int)srcRect.height());
-	fillRect.moveTo(srcRect.left, srcRect.top);
+	Common::Rect fillAreaRect((int)srcRect.width(), (int)srcRect.height());
+	fillAreaRect.moveTo(srcRect.left, srcRect.top);
 	Graphics::MacPlotData plotFill(pd->dst, nullptr, &g_director->getPatterns(), pd->ms->pattern, srcRect.left, srcRect.top, 1, pd->ms->backColor);
 
 	Common::Rect strokeRect(MAX((int)srcRect.width() - pd->ms->lineSize, 0), MAX((int)srcRect.height() - pd->ms->lineSize, 0));
@@ -206,25 +211,32 @@ void Window::inkBlitShape(DirectorPlotData *pd, Common::Rect &srcRect) {
 	switch (pd->ms->spriteType) {
 	case kRectangleSprite:
 		pd->ms->pd = &plotFill;
-		Graphics::drawFilledRect(fillRect, pd->ms->foreColor, g_director->getInkDrawPixel(), pd);
+		Graphics::drawFilledRect(fillAreaRect, pd->ms->foreColor, g_director->getInkDrawPixel(), pd);
 		// fall through
 	case kOutlinedRectangleSprite:
+		// if we have lineSize <= 0, means we are not drawing anything. so we may return directly.
+		if (pd->ms->lineSize <= 0)
+			break;
 		pd->ms->pd = &plotStroke;
 		Graphics::drawRect(strokeRect, pd->ms->foreColor, g_director->getInkDrawPixel(), pd);
 		break;
 	case kRoundedRectangleSprite:
 		pd->ms->pd = &plotFill;
-		Graphics::drawRoundRect(fillRect, 12, pd->ms->foreColor, true, g_director->getInkDrawPixel(), pd);
+		Graphics::drawRoundRect(fillAreaRect, 12, pd->ms->foreColor, true, g_director->getInkDrawPixel(), pd);
 		// fall through
 	case kOutlinedRoundedRectangleSprite:
+		if (pd->ms->lineSize <= 0)
+			break;
 		pd->ms->pd = &plotStroke;
 		Graphics::drawRoundRect(strokeRect, 12, pd->ms->foreColor, false, g_director->getInkDrawPixel(), pd);
 		break;
 	case kOvalSprite:
 		pd->ms->pd = &plotFill;
-		Graphics::drawEllipse(fillRect.left, fillRect.top, fillRect.right, fillRect.bottom, pd->ms->foreColor, true, g_director->getInkDrawPixel(), pd);
+		Graphics::drawEllipse(fillAreaRect.left, fillAreaRect.top, fillAreaRect.right, fillAreaRect.bottom, pd->ms->foreColor, true, g_director->getInkDrawPixel(), pd);
 		// fall through
 	case kOutlinedOvalSprite:
+		if (pd->ms->lineSize <= 0)
+			break;
 		pd->ms->pd = &plotStroke;
 		Graphics::drawEllipse(strokeRect.left, strokeRect.top, strokeRect.right, strokeRect.bottom, pd->ms->foreColor, false, g_director->getInkDrawPixel(), pd);
 		break;
@@ -234,7 +246,7 @@ void Window::inkBlitShape(DirectorPlotData *pd, Common::Rect &srcRect) {
 		break;
 	case kLineBottomTopSprite:
 		pd->ms->pd = &plotStroke;
-		Graphics::drawLine(strokeRect.left, strokeRect.top, strokeRect.right, strokeRect.bottom, pd->ms->foreColor, g_director->getInkDrawPixel(), pd);
+		Graphics::drawLine(strokeRect.left, strokeRect.bottom, strokeRect.right, strokeRect.top, pd->ms->foreColor, g_director->getInkDrawPixel(), pd);
 		break;
 	default:
 		warning("Window::inkBlitFrom: Expected shape type but got type %d", pd->ms->spriteType);
@@ -256,7 +268,7 @@ void Window::inkBlitSurface(DirectorPlotData *pd, Common::Rect &srcRect, const G
 			const byte *msk = mask ? (const byte *)mask->getBasePtr(pd->srcPoint.x, pd->srcPoint.y) : nullptr;
 
 			for (int j = 0; j < pd->destRect.width(); j++, pd->srcPoint.x++) {
-				if (!mask || (msk && (pd->ink == kInkTypeMask ? *msk++ : !(*msk++)))) {
+				if (!mask || (msk && !(*msk++))) {
 					(g_director->getInkDrawPixel())(pd->destRect.left + j, pd->destRect.top + i,
 											preprocessColor(pd, *((byte *)pd->srf->getBasePtr(pd->srcPoint.x, pd->srcPoint.y))), pd);
 				}
@@ -266,7 +278,7 @@ void Window::inkBlitSurface(DirectorPlotData *pd, Common::Rect &srcRect, const G
 			const uint32 *msk = mask ? (const uint32 *)mask->getBasePtr(pd->srcPoint.x, pd->srcPoint.y) : nullptr;
 
 			for (int j = 0; j < pd->destRect.width(); j++, pd->srcPoint.x++) {
-				if (!mask || (msk && (pd->ink == kInkTypeMask ? *msk++ : !(*msk++)))) {
+				if (!mask || (msk && !(*msk++))) {
 					(g_director->getInkDrawPixel())(pd->destRect.left + j, pd->destRect.top + i,
 											preprocessColor(pd, *((int *)pd->srf->getBasePtr(pd->srcPoint.x, pd->srcPoint.y))), pd);
 				}
@@ -294,7 +306,7 @@ void Window::inkBlitStretchSurface(DirectorPlotData *pd, Common::Rect &srcRect, 
 			const byte *msk = mask ? (const byte *)mask->getBasePtr(pd->srcPoint.x, pd->srcPoint.y) : nullptr;
 
 			for (int xCtr = 0, scaleXCtr = 0; xCtr < pd->destRect.width(); xCtr++, scaleXCtr += scaleX, pd->srcPoint.x++) {
-				if (!mask || (msk && (pd->ink == kInkTypeMask ? *msk++ : !(*msk++)))) {
+				if (!mask || !(*msk++)) {
 				(g_director->getInkDrawPixel())(pd->destRect.left + xCtr, pd->destRect.top + i,
 										preprocessColor(pd, *((byte *)pd->srf->getBasePtr(scaleXCtr / SCALE_THRESHOLD, scaleYCtr / SCALE_THRESHOLD))), pd);
 				}
@@ -304,7 +316,7 @@ void Window::inkBlitStretchSurface(DirectorPlotData *pd, Common::Rect &srcRect, 
 			const uint32 *msk = mask ? (const uint32 *)mask->getBasePtr(pd->srcPoint.x, pd->srcPoint.y) : nullptr;
 
 			for (int xCtr = 0, scaleXCtr = 0; xCtr < pd->destRect.width(); xCtr++, scaleXCtr += scaleX, pd->srcPoint.x++) {
-				if (!mask || (msk && (pd->ink == kInkTypeMask ? *msk++ : !(*msk++)))) {
+				if (!mask || !(*msk++)) {
 				(g_director->getInkDrawPixel())(pd->destRect.left + xCtr, pd->destRect.top + i,
 										preprocessColor(pd, *((int *)pd->srf->getBasePtr(scaleXCtr / SCALE_THRESHOLD, scaleYCtr / SCALE_THRESHOLD))), pd);
 				}
@@ -320,7 +332,7 @@ int Window::preprocessColor(DirectorPlotData *p, uint32 src) {
 	if (p->sprite == kTextSprite) {
 		switch(p->ink) {
 		case kInkTypeMask:
-			src = (src == p->backColor ? 0xff : p->foreColor);
+			src = (src == p->backColor ? p->foreColor : 0xff);
 			break;
 		case kInkTypeReverse:
 			src = (src == p->foreColor ? 0 : p->colorWhite);
@@ -468,12 +480,19 @@ bool Window::step() {
 		debug(0, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
 		g_lingo->resetLingo();
-		if (sharedCast && sharedCast->_castArchive
-				&& sharedCast->_castArchive->getPathName().equalsIgnoreCase(_currentPath + _vm->_sharedCastFile)) {
-			_currentMovie->_sharedCast = sharedCast;
+		Common::String sharedCastPath = getSharedCastPath();
+		if (!sharedCastPath.empty()) {
+			if (sharedCast && sharedCast->_castArchive
+					&& sharedCast->_castArchive->getPathName().equalsIgnoreCase(sharedCastPath)) {
+				// if we are not deleting shared cast, then we need to clear those previous widget pointer
+				sharedCast->releaseCastMemberWidget();
+				_currentMovie->_sharedCast = sharedCast;
+			} else {
+				delete sharedCast;
+				_currentMovie->loadSharedCastsFrom(sharedCastPath);
+			}
 		} else {
 			delete sharedCast;
-			_currentMovie->loadSharedCastsFrom(_currentPath + _vm->_sharedCastFile);
 		}
 
 		_nextMovie.movie.clear();
@@ -525,6 +544,34 @@ bool Window::step() {
 	}
 
 	return false;
+}
+
+Common::String Window::getSharedCastPath() {
+	Common::Array<Common::String> namesToTry;
+	if (_vm->getVersion() < 400) {
+		if (g_director->getPlatform() == Common::kPlatformWindows) {
+			namesToTry.push_back("SHARDCST.MMM");
+		} else {
+			namesToTry.push_back("Shared Cast");
+		}
+	} else if (_vm->getVersion() < 500) {
+		namesToTry.push_back("Shared.dir");
+		namesToTry.push_back("Shared.dxr");
+	} else {
+		// TODO: Does D5 actually support D4-style shared cast?
+		namesToTry.push_back("Shared.cst");
+		namesToTry.push_back("Shared.cxt");
+	}
+
+	for (uint i = 0; i < namesToTry.size(); i++) {
+		Common::File f;
+		if (f.open(_currentPath + namesToTry[i])) {
+			f.close();
+			return _currentPath + namesToTry[i];
+		}
+	}
+
+	return Common::String();
 }
 
 } // End of namespace Director

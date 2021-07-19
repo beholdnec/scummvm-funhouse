@@ -74,7 +74,7 @@ void DialogInterface::initCursor() {
 	_wasCursorAnim = cursor->_animate;
 	_wasCursorShown = cursor->_isShown;
 
-	cursor->_isShown = false;
+	cursor->show(false);
 	cursor->_animate = true;
 	cursor->_resourceId = 5006;
 	cursor->_actionType = kActionTalk;
@@ -86,6 +86,12 @@ void DialogInterface::restoreCursor() {
 	cursor->_animate = _wasCursorAnim;
 	cursor->_resourceId = _savedCursorId;
 	cursor->_actionType = _savedCursorActType;
+
+	// original bug fix
+	Common::Event ev;
+	ev.type = Common::EVENT_MOUSEMOVE;
+	ev.mouse = g_system->getEventManager()->getMousePos();
+	_qsys->onEvent(ev);
 }
 
 void DialogInterface::next(int choice) {
@@ -189,10 +195,10 @@ void DialogInterface::playSound(const Common::String &name) {
 	_soundName = name;
 	Sound *s = g_vm->soundMgr()->addSound(name, Audio::Mixer::kSpeechSoundType);
 	if (s) {
-		FlicDecoder *flc = g_vm->resMgr()->loadFlic(_talker->_resourceId);
+		FlicDecoder *flc = g_vm->resMgr()->getFlic(_talker->_resourceId);
 		if (flc) {
 			Common::Rect bounds = flc->getBounds();
-			s->setBalance(bounds.left + _talker->_x + bounds.width(), 640);
+			s->setBalance(bounds.left + _talker->_x + bounds.width(), _qsys->_sceneWidth);
 		}
 		s->play(false);
 	}
@@ -245,7 +251,7 @@ void DialogInterface::onMenuOpcode() {
 }
 
 void DialogInterface::onUserMsgOpcode() {
-	_qsys->_currInterface->setTextPhrase(Common::U32String(""), 0, 0);
+	_qsys->_currInterface->setTextPhrase(Common::U32String(), 0, 0);
 	removeSound();
 	_talker = nullptr;
 	_state = kPlaying;

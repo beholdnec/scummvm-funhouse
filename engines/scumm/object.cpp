@@ -101,19 +101,19 @@ void ScummEngine::setOwnerOf(int obj, int owner) {
 
 	// In Sam & Max this is necessary, or you won't get your stuff back
 	// from the Lost and Found tent after riding the Cone of Tragedy. But
-	// it probably applies to all V6+ games. See bugs #493153 and #907113.
+	// it probably applies to all V6+ games. See bugs #52 and #1507.
 	// FT disassembly is checked, behavior is correct. [sev]
 
 	int arg = (_game.version >= 6) ? obj : 0;
 
-	// WORKAROUND for bug #1917981: Game crash when finishing Indy3 demo.
+	// WORKAROUND for bug #3657: Game crash when finishing Indy3 demo.
 	// Script 94 tries to empty the inventory but does so in a bogus way.
 	// This causes it to try to remove object 0 from the inventory.
 	if (_game.id == GID_PASS && obj == 0 && vm.slot[_currentScript].number == 94)
 		return;
 
 	// WORKAROUND for bug #6802: assert() was triggered in freddi2.
- 	// Bug is in room 39. Problem is script 10, in the localvar2==78 case;
+	// Bug is in room 39. Problem is script 10, in the localvar2==78 case;
 	// this only sets the obj id if var198 is non-zero, but in the asserting
 	// case, it is obj 0. That means two setOwnerOf calls are made with obj 0.
 	// The correct setOwnerOf calls are made afterwards, so just ignoring this
@@ -126,7 +126,7 @@ void ScummEngine::setOwnerOf(int obj, int owner) {
 	if (owner == 0) {
 		clearOwnerOf(obj);
 
-		// FIXME: See bug #1535358 and many others. Essentially, the following
+		// FIXME: See bug #2771 and many others. Essentially, the following
 		// code, while matching disasm of various versions of the SCUMM engine,
 		// is total bullocks, and leads to odd crashes due to out-of-bounds
 		// array (read) access. Three "famous" crashes were caused by this:
@@ -456,7 +456,7 @@ void ScummEngine::getObjectXYPos(int object, int &x, int &y, int &dir) {
 		// Adjust x, y when no actor direction is set, but only perform this
 		// adjustment for V0 games (e.g. MM C64), otherwise certain scenes in
 		// newer games are affected as well (e.g. the interior of the Shuttle
-		// Bus scene in Zak V2, where no actor is present). Refer to bug #3526089.
+		// Bus scene in Zak V2, where no actor is present). Refer to bug #6034.
 		if (!od.actordir && _game.version == 0) {
 			x = od.x_pos + od.width / 2;
 			y = od.y_pos + od.height / 2;
@@ -502,7 +502,7 @@ int ScummEngine::getObjActToObjActDist(int a, int b) {
 	// Perform adjustXYToBeInBox() *only* if the first item is an
 	// actor and the second is an object. This used to not check
 	// whether the second item is a non-actor, which caused bug
-	// #853874).
+	// #1320).
 	if (acta && !actb) {
 		AdjustBoxResult r = acta->adjustXYToBeInBox(x2, y2);
 		x2 = r.x;

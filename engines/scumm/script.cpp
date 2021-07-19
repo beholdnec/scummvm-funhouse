@@ -152,7 +152,7 @@ int ScummEngine::getVerbEntrypoint(int obj, int entry) {
 	const byte *objptr, *verbptr;
 	int verboffs;
 
-	// WORKAROUND for bug #1555938: Disallow pulling the rope if it's
+	// WORKAROUND for bug #2826: Disallow pulling the rope if it's
 	// already in the player's inventory.
 	if (_game.id == GID_MONKEY2 && obj == 1047 && entry == 6 && whereIsObject(obj) == WIO_INVENTORY) {
 		return 0;
@@ -428,7 +428,7 @@ void ScummEngine::getScriptBaseAddress() {
 		error("Bad type while getting base address");
 	}
 
-	// The following fixes bug #1202487. Confirmed against disasm.
+	// The following fixes bug #2028. Confirmed against disasm.
 	if (_game.version <= 2 && _scriptOrgPointer == NULL) {
 		ss->status = ssDead;
 		_currentScript = 0xFF;
@@ -640,7 +640,7 @@ void ScummEngine::writeVar(uint var, int value) {
 			// Otherwise, use the value specified by the game script.
 			// Note: To determine whether there was a user override, we only
 			// look at the target specific settings, assuming that any global
-			// value is likely to be bogus. See also bug #2251765.
+			// value is likely to be bogus. See also bug #4008.
 			if (ConfMan.hasKey("talkspeed", _targetName)) {
 				value = getTalkSpeed();
 			} else {
@@ -650,6 +650,23 @@ void ScummEngine::writeVar(uint var, int value) {
 		}
 
 		_scummVars[var] = value;
+
+		// Unlike the PC version, the Macintosh version of Loom appears
+		// to hard-code the drawing of the practice mode box. This is
+		// handled by script 27 in both versions, but wherease the PC
+		// version draws the notes, the the Mac version this just sets
+		// variables 50 and 54.
+		//
+		// In this script, the variables are set to the same value but
+		// it appears that only variable 50 is cleared when the box is
+		// supposed to disappear. I don't know what the purpose of
+		// variable 54 is.
+
+		if (_game.id == GID_LOOM && _game.platform == Common::kPlatformMacintosh) {
+			if (VAR(128) == 0 && var == 50) {
+				mac_drawLoomPracticeMode();
+			}
+		}
 
 		if ((_varwatch == (int)var || _varwatch == 0) && _currentScript < NUM_SCRIPT_SLOT) {
 			if (vm.slot[_currentScript].number < 100)
@@ -1019,7 +1036,7 @@ void ScummEngine::killScriptsAndResources() {
 				// no longer in use (i.e. not owned by anyone anymore); or if
 				// it is an object which is owned by a room.
 				if (owner == 0 || (_game.version < 7 && owner == OF_OWNER_ROOM)) {
-					// WORKAROUND for a problem mentioned in bug report #941275:
+					// WORKAROUND for a problem mentioned in bug report #1607:
 					// In FOA in the sentry room, in the chest plate of the statue,
 					// the pegs may be renamed to mouth: this custom name is lost
 					// when leaving the room; this hack prevents this).
@@ -1113,7 +1130,7 @@ void ScummEngine::checkAndRunSentenceScript() {
 
 
 		if (_game.id == GID_FT && !isValidActor(localParamList[1]) && !isValidActor(localParamList[2])) {
-			// WORKAROUND for bug #1407789. The buggy script clearly
+			// WORKAROUND for bug #2466. The buggy script clearly
 			// assumes that one of the two objects is an actor. If that's
 			// not the case, fall back on the default sentence script.
 
@@ -1395,8 +1412,26 @@ void ScummEngine::runInputScript(int clickArea, int val, int mode) {
 		_lastInputScriptTime = time;
 	}
 
-	if (verbScript)
-		runScript(verbScript, 0, 0, args);
+	if (verbScript) {
+		// It seems that script 18 expects to be called twice: Once
+		// with parameter 1 (kVerbClickArea) to clear all the verbs,
+		// and once with 3 (kInventoryClickArea) to print the "Take
+		// this <something>" message.
+		//
+		// In the 256-color DOS version, this is all done in the same
+		// call to the script.
+		//
+		// Should this workaround apply to other input scripts
+		// as well? I don't know.
+		if (_game.id == GID_INDY3 && _game.platform == Common::kPlatformMacintosh && verbScript == 18 && val >= 101 && val <= 106) {
+			args[0] = kVerbClickArea;
+			runScript(verbScript, 0, 0, args);
+
+			args[0] = kInventoryClickArea;
+			runScript(verbScript, 0, 0, args);
+		} else
+			runScript(verbScript, 0, 0, args);
+	}
 }
 
 void ScummEngine::decreaseScriptDelay(int amount) {
@@ -1406,6 +1441,20 @@ void ScummEngine::decreaseScriptDelay(int amount) {
 		if (ss->status == ssPaused) {
 			ss->delay -= amount;
 			if (ss->delay < 0) {
+				if (_game.id == GID_INDY3 && _game.platform == Common::kPlatformMacintosh && ss->number == 134 && ss->where == WIO_GLOBAL) {
+					// Unlike the DOS version, there doesn't
+					// appear to be anything in the credits
+					// script to clear the credits between
+					// the text screens. I don't know how
+					// the original did it, but the only
+					// reliable way I can think of is to
+					// trigger on the end of each delay
+					// throughout the script.
+					//
+					// Since this is at the very end of the
+					// game, it should be safe enough.
+					mac_undrawIndy3CreditsText();
+				}
 				ss->status = ssRunning;
 				ss->delay = 0;
 			}
@@ -1468,7 +1517,7 @@ int ScummEngine::resStrLen(const byte *src) {
 			chr = *src++;
 			num++;
 
-			// WORKAROUND for bug #985948, a script bug in Indy3. See also
+			// WORKAROUND for bug #1675, a script bug in Indy3. See also
 			// the corresponding code in ScummEngine::convertMessageToString().
 			if (_game.id == GID_INDY3 && chr == 0x2E) {
 				continue;
@@ -1524,8 +1573,16 @@ void ScummEngine::endCutscene() {
 	vm.cutSceneScript[vm.cutSceneStackPointer] = 0;
 	vm.cutScenePtr[vm.cutSceneStackPointer] = 0;
 
-	if (0 == vm.cutSceneStackPointer)
+	if (0 == vm.cutSceneStackPointer) {
+		// WORKAROUND bug #5624: Due to poor translation of the v2 script to
+		// v5 an if statement jumps in the middle of a cutscene causing a
+		// endCutscene() without a begin cutscene()
+		if (_game.id == GID_ZAK && _game.platform == Common::kPlatformFMTowns &&
+			vm.slot[_currentScript].number == 205 && _currentRoom == 185) {
+			return;
+		}
 		error("Cutscene stack underflow");
+	}
 	vm.cutSceneStackPointer--;
 
 	if (VAR(VAR_CUTSCENE_END_SCRIPT))

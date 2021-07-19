@@ -2,25 +2,24 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="scalpel">
-			<UniqueIdentifier>EEEE41B6-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD8-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="scalpel\3do">
-			<UniqueIdentifier>EEEE41B7-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD9-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="scalpel\drivers">
-			<UniqueIdentifier>EEEE41B8-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CDA-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="scalpel\tsage">
-			<UniqueIdentifier>EEEE41B9-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CDB-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="tattoo">
-			<UniqueIdentifier>EEEE41BA-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CDC-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\sherlock\animation.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\debugger.cpp" />
-		<ClCompile Include="..\..\engines\sherlock\detection.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\events.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\fixed_text.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\fonts.cpp" />
@@ -28,14 +27,12 @@
 		<ClCompile Include="..\..\engines\sherlock\inventory.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\journal.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\map.cpp" />
+		<ClCompile Include="..\..\engines\sherlock\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\music.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\objects.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\people.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\resources.cpp" />
 		<ClCompile Include="..\..\engines\sherlock\saveload.cpp" />
-		<ClCompile Include="..\..\engines\sherlock\scalpel\3do\movie_decoder.cpp">
-			<Filter>scalpel\3do</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\sherlock\scalpel\3do\scalpel_3do_screen.cpp">
 			<Filter>scalpel\3do</Filter>
 		</ClCompile>
@@ -182,6 +179,7 @@
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\sherlock\animation.h" />
 		<ClInclude Include="..\..\engines\sherlock\debugger.h" />
+		<ClInclude Include="..\..\engines\sherlock\detection.h" />
 		<ClInclude Include="..\..\engines\sherlock\detection_tables.h" />
 		<ClInclude Include="..\..\engines\sherlock\events.h" />
 		<ClInclude Include="..\..\engines\sherlock\fixed_text.h" />
@@ -195,9 +193,6 @@
 		<ClInclude Include="..\..\engines\sherlock\people.h" />
 		<ClInclude Include="..\..\engines\sherlock\resources.h" />
 		<ClInclude Include="..\..\engines\sherlock\saveload.h" />
-		<ClInclude Include="..\..\engines\sherlock\scalpel\3do\movie_decoder.h">
-			<Filter>scalpel\3do</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\sherlock\scalpel\3do\scalpel_3do_screen.h">
 			<Filter>scalpel\3do</Filter>
 		</ClInclude>

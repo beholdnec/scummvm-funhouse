@@ -155,7 +155,7 @@ static const byte macCursorCrossBar[] = {
 
 static void menuTimerHandler(void *refCon);
 
-MacWindowManager::MacWindowManager(uint32 mode, MacPatterns *patterns) {
+MacWindowManager::MacWindowManager(uint32 mode, MacPatterns *patterns, Common::Language language) {
 	_screen = nullptr;
 	_screenCopy = nullptr;
 	_desktopBmp = nullptr;
@@ -169,6 +169,7 @@ MacWindowManager::MacWindowManager(uint32 mode, MacPatterns *patterns) {
 	_hoveredWidget = nullptr;
 
 	_mode = mode;
+	_language = language;
 
 	_menu = 0;
 	_menuDelay = 0;
@@ -188,9 +189,7 @@ MacWindowManager::MacWindowManager(uint32 mode, MacPatterns *patterns) {
 	_colorGreen2 = kColorGreen2;
 
 	_fullRefresh = true;
-
-	_palette = nullptr;
-	_paletteSize = 0;
+	_inEditableArea = false;
 
 	if (mode & kWMMode32bpp)
 		_pixelformat = Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0);
@@ -206,7 +205,13 @@ MacWindowManager::MacWindowManager(uint32 mode, MacPatterns *patterns) {
 
 	g_system->getPaletteManager()->setPalette(palette, 0, ARRAYSIZE(palette) / 3);
 
-	_fontMan = new MacFontManager(mode);
+	_paletteSize = ARRAYSIZE(palette) / 3;
+	if (_paletteSize) {
+		_palette = (byte *)malloc(_paletteSize * 3);
+		memcpy(_palette, palette, _paletteSize * 3);
+	}
+
+	_fontMan = new MacFontManager(mode, language);
 
 	_cursor = nullptr;
 	_cursorType = _tempType = kMacCursorArrow;
@@ -215,7 +220,9 @@ MacWindowManager::MacWindowManager(uint32 mode, MacPatterns *patterns) {
 	CursorMan.showMouse(true);
 
 	loadDataBundle();
-	loadDesktop();
+	if (!(_mode & Graphics::kWMNoScummVMWallpaper)) {
+		loadDesktop();
+	}
 }
 
 MacWindowManager::~MacWindowManager() {
@@ -230,6 +237,8 @@ MacWindowManager::~MacWindowManager() {
 
 	delete _desktopBmp;
 	delete _desktop;
+
+	cleanupDataBundle();
 
 	g_system->getTimerManager()->removeTimerProc(&menuTimerHandler);
 }
@@ -259,6 +268,14 @@ void MacWindowManager::setScreen(int w, int h) {
 	drawDesktop();
 }
 
+void MacWindowManager::resizeScreen(int w, int h) {
+	if (!_screen)
+		error("MacWindowManager::resizeScreen(): Trying to creating surface on non-existing screen");
+	_screenDims = Common::Rect(w, h);
+	_screen->free();
+	_screen->create(w, h, _pixelformat);
+}
+
 void MacWindowManager::setMode(uint32 mode) {
 	_mode = mode;
 
@@ -266,7 +283,21 @@ void MacWindowManager::setMode(uint32 mode) {
 		_fontMan->forceBuiltinFonts();
 }
 
+void MacWindowManager::clearHandlingWidgets() {
+	// pass a LBUTTONUP event to those widgets should clear those state
+	Common::Event event;
+	event.type = Common::EVENT_LBUTTONUP;
+	event.mouse = _lastClickPos;
+	processEvent(event);
+
+	setActiveWidget(nullptr);
+	_hoveredWidget = nullptr;
+}
+
 void MacWindowManager::setActiveWidget(MacWidget *widget) {
+	if (_activeWidget == widget)
+		return;
+
 	if (_activeWidget)
 		_activeWidget->setActive(false);
 
@@ -295,6 +326,16 @@ MacWindow *MacWindowManager::addWindow(bool scrollable, bool resizable, bool edi
 }
 
 MacTextWindow *MacWindowManager::addTextWindow(const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, MacMenu *menu, bool cursorHandler) {
+	MacTextWindow *w = new MacTextWindow(this, font, fgcolor, bgcolor, maxWidth, textAlignment, menu, cursorHandler);
+
+	addWindowInitialized(w);
+
+	setActiveWindow(getNextId());
+
+	return w;
+}
+
+MacTextWindow *MacWindowManager::addTextWindow(const Font *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, MacMenu *menu, bool cursorHandler) {
 	MacTextWindow *w = new MacTextWindow(this, font, fgcolor, bgcolor, maxWidth, textAlignment, menu, cursorHandler);
 
 	addWindowInitialized(w);
@@ -369,10 +410,117 @@ void MacWindowManager::disableScreenCopy() {
 		_screenCopyPauseToken = nullptr;
 	}
 
+	// add a check, we may not get the _screenCopy because we may not activate the menu
+	if (!_screenCopy)
+		return;
+
 	if (_screen)
 		*_screen = *_screenCopy; // restore screen
 
 	g_system->copyRectToScreen(_screenCopy->getBasePtr(0, 0), _screenCopy->pitch, 0, 0, _screenCopy->w, _screenCopy->h);
+}
+
+// this is refer to how we deal U32String in splitString in mactext
+// maybe we can optimize this specifically
+Common::U32String stripFormat(const Common::U32String &str) {
+	Common::U32String res, paragraph, tmp;
+	// calc the size of str
+	const Common::U32String::value_type *l = str.c_str();
+	while (*l) {
+		// split paragraph first
+		paragraph.clear();
+		while (*l) {
+			if (*l == '\r') {
+				l++;
+				if (*l == '\n')
+					l++;
+				break;
+			}
+			if (*l == '\n') {
+				l++;
+				break;
+			}
+			paragraph += *l++;
+		}
+		const Common::U32String::value_type *s = paragraph.c_str();
+		tmp.clear();
+		while (*s) {
+			if (*s == '\001') {
+				s++;
+				// if there are two \001, then we regard it as one character
+				if (*s == '\001') {
+					tmp += *s++;
+				}
+			} else if (*s == '\015') {	// binary format
+				// we are skipping the formatting stuffs
+				// this number 12, and the number 23, is the size of our format
+				s += 12;
+			} else if (*s == '\016') {	// human-readable format
+				s += 23;
+			} else {
+				tmp += *s++;
+			}
+		}
+		res += tmp;
+		if (*l)
+			res += '\n';
+	}
+	return res;
+}
+
+void MacWindowManager::setTextInClipboard(const Common::U32String &str) {
+	_clipboard = str;
+	g_system->setTextInClipboard(stripFormat(str));
+}
+
+// get the text size ignoring \n
+int getPureTextSize(const Common::U32String &str, bool global) {
+	const Common::U32String::value_type *l = str.c_str();
+	int res = 0;
+	if (global) {
+		// if we are in global, then we have no format in str. thus, we ignore all \r \n
+		while (*l) {
+			if (*l != '\n' && *l != '\r')
+				res++;
+			l++;
+		}
+	} else {
+		// if we are not in global, then we are using the wm clipboard, which use \n for new line
+		// i think that if statement can be optimized to, like if (*l != '\n' && (!global || *l != '\r'))
+		// but for the sake of readability, we keep codes here
+		while (*l) {
+			if (*l != '\n')
+				res++;
+			l++;
+		}
+	}
+	return res;
+}
+
+Common::U32String MacWindowManager::getTextFromClipboard(const Common::U32String &format, int *size) {
+	Common::U32String global_str = g_system->getTextFromClipboard();
+	// str is what we need
+	Common::U32String str;
+	if (_clipboard.empty()) {
+		// if wm clipboard is empty, then we use the global clipboard, which won't contain the format
+		str = format + global_str;
+		if (size)
+			*size = getPureTextSize(global_str, true);
+	} else {
+		Common::U32String tmp = stripFormat(_clipboard);
+		if (tmp == global_str) {
+			// if the text is equal, then we use wm one which contains the format
+			str = _clipboard;
+			if (size)
+				*size = getPureTextSize(tmp, false);
+		} else {
+			// otherwise, we prefer the global one
+			str = format + global_str;
+			if (size)
+				*size = getPureTextSize(global_str, true);
+		}
+	}
+	return str;
 }
 
 bool MacWindowManager::isMenuActive() {
@@ -448,11 +596,43 @@ void macDrawPixel(int x, int y, int color, void *data) {
 	}
 }
 
+void macDrawInvertPixel(int x, int y, int color, void *data) {
+	MacPlotData *p = (MacPlotData *)data;
+
+	if (p->fillType > p->patterns->size() || !p->fillType)
+		return;
+
+	if (x >= 0 && x < p->surface->w && y >= 0 && y < p->surface->h) {
+		uint xu = (uint)x; // for letting compiler optimize it
+		uint yu = (uint)y;
+
+		byte cur_color = *((byte *)p->surface->getBasePtr(xu, yu));
+		// 0 represent black in default palette, and 4 represent white
+		// if color is black, we invert it to white, otherwise, we invert it to black
+		byte invert_color = 0;
+		if (cur_color == 0) {
+			invert_color = 4;
+		}
+		*((byte *)p->surface->getBasePtr(xu, yu)) = invert_color;
+
+		if (p->mask)
+			*((byte *)p->mask->getBasePtr(xu, yu)) = 0xff;
+	}
+}
+
 MacDrawPixPtr MacWindowManager::getDrawPixel() {
 	if (_pixelformat.bytesPerPixel == 1)
 		return &macDrawPixel<byte *>;
 	else
 		return &macDrawPixel<uint32 *>;
+}
+
+// get the function of drawing invert pixel for default palette
+MacDrawPixPtr MacWindowManager::getDrawInvertPixel() {
+	if (_pixelformat.bytesPerPixel == 1)
+		return &macDrawInvertPixel;
+	warning("function of drawing invert pixel for default palette has not implemented yet");
+	return nullptr;
 }
 
 void MacWindowManager::loadDesktop() {
@@ -477,8 +657,8 @@ void MacWindowManager::loadDesktop() {
 
 void MacWindowManager::drawDesktop() {
 	if (_desktopBmp) {
-		for (uint i = 0; i < _desktop->w; ++i) {
-			for (uint j = 0; j < _desktop->h; ++j) {
+		for (int i = 0; i < _desktop->w; ++i) {
+			for (int j = 0; j < _desktop->h; ++j) {
 				uint32 color = *(uint32 *)_desktopBmp->getBasePtr(i % _desktopBmp->w, j % _desktopBmp->h);
 				if (_pixelformat.bytesPerPixel == 1) {
 					byte r, g, b;
@@ -506,21 +686,22 @@ void MacWindowManager::draw() {
 	Common::Rect bounds = getScreenBounds();
 
 	if (_fullRefresh) {
-		Common::Rect screen = getScreenBounds();
-		if (_desktop->w != screen.width() || _desktop->h != screen.height()) {
-			_desktop->free();
-			_desktop->create(screen.width(), screen.height(), _pixelformat);
-			drawDesktop();
-		}
+		if (!(_mode & kWMModeNoDesktop)) {
+			Common::Rect screen = getScreenBounds();
+			if (_desktop->w != screen.width() || _desktop->h != screen.height()) {
+				_desktop->free();
+				_desktop->create(screen.width(), screen.height(), _pixelformat);
+				drawDesktop();
+			}
 
-		if (_screen) {
-			_screen->blitFrom(*_desktop, Common::Point(0, 0));
-			g_system->copyRectToScreen(_screen->getPixels(), _screen->pitch, 0, 0, _screen->w, _screen->h);
-		} else {
-			_screenCopyPauseToken = new PauseToken(pauseEngine());
-			g_system->copyRectToScreen(_desktop->getPixels(), _desktop->pitch, 0, 0, _desktop->w, _desktop->h);
+			if (_screen) {
+				_screen->blitFrom(*_desktop, Common::Point(0, 0));
+				g_system->copyRectToScreen(_screen->getPixels(), _screen->pitch, 0, 0, _screen->w, _screen->h);
+			} else {
+				_screenCopyPauseToken = new PauseToken(pauseEngine());
+				g_system->copyRectToScreen(_desktop->getPixels(), _desktop->pitch, 0, 0, _desktop->w, _desktop->h);
+			}
 		}
-
 		if (_redrawEngineCallback != nullptr)
 			_redrawEngineCallback(_engineR);
 	}
@@ -604,7 +785,19 @@ void MacWindowManager::draw() {
 
 	// Menu is drawn on top of everything and always
 	if (_menu && !(_mode & kWMModeFullscreen)) {
-		_menu->draw(_screen, _fullRefresh);
+		if (_fullRefresh)
+			_menu->draw(_screen, _fullRefresh);
+		else {
+			// add intersection check with menu
+			bool menuRedraw = false;
+			for (Common::Array<Common::Rect>::iterator dirty = dirtyRects.begin(); dirty != dirtyRects.end(); dirty++) {
+				if (_menu->checkIntersects(*dirty)) {
+					menuRedraw = true;
+					break;
+				}
+			}
+			_menu->draw(_screen, menuRedraw);
+		}
 	}
 
 	_fullRefresh = false;
@@ -659,11 +852,16 @@ bool MacWindowManager::processEvent(Common::Event &event) {
 				 _activeWidget->getDimensions().contains(event.mouse.x, event.mouse.y))) {
 			if (_cursorType != kMacCursorBeam) {
 				_tempType = _cursorType;
+				_inEditableArea = true;
 				replaceCursor(kMacCursorBeam);
 			}
 		} else {
-			if (_cursorType == kMacCursorBeam)
+			// here, we use _inEditableArea is distinguish whether the current Beam cursor is set by director or ourself
+			// if we are not in the editable area but we are drawing the Beam cursor, then the cursor is set by director, thus we don't replace it
+			if (_cursorType == kMacCursorBeam && _inEditableArea) {
 				replaceCursor(_tempType, _cursor);
+				_inEditableArea = false;
+			}
 		}
 	}
 
@@ -672,8 +870,7 @@ bool MacWindowManager::processEvent(Common::Event &event) {
 		BaseMacWindow *w = *it;
 
 		if (w->hasAllFocus() || (w->isEditable() && event.type == Common::EVENT_KEYDOWN) ||
-				w->getDimensions().contains(event.mouse.x, event.mouse.y)
-				|| (_activeWidget && _activeWidget->isEditable())) {
+				w->getDimensions().contains(event.mouse.x, event.mouse.y)) {
 			if (event.type == Common::EVENT_LBUTTONDOWN || event.type == Common::EVENT_LBUTTONUP)
 				setActiveWindow(w->getId());
 
@@ -935,6 +1132,8 @@ void MacWindowManager::popCursor() {
 	} else {
 		CursorMan.popCursor();
 		CursorMan.popCursorPalette();
+		// since we may only have one cursor available when we using macCursor, so we restore the cursorType when we pop the cursor
+		_cursorType = kMacCursorArrow;
 	}
 }
 
@@ -947,8 +1146,10 @@ void MacWindowManager::passPalette(const byte *pal, uint size) {
 	if (_palette)
 		free(_palette);
 
-	_palette = (byte *)malloc(size * 3);
-	memcpy(_palette, pal, size * 3);
+	if (size) {
+		_palette = (byte *)malloc(size * 3);
+		memcpy(_palette, pal, size * 3);
+	}
 	_paletteSize = size;
 
 	_colorHash.clear();
@@ -963,6 +1164,12 @@ void MacWindowManager::passPalette(const byte *pal, uint size) {
 
 	drawDesktop();
 	setFullRefresh(true);
+}
+
+uint MacWindowManager::findBestColor(uint32 color) {
+	byte r, g, b;
+	decomposeColor(color, r, g, b);
+	return findBestColor(r, g, b);
 }
 
 uint MacWindowManager::findBestColor(byte cr, byte cg, byte cb) {

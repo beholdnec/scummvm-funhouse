@@ -33,7 +33,7 @@ class PetkaEngine;
 
 class VideoSystem : public Graphics::Screen {
 public:
-	VideoSystem(PetkaEngine &vm);
+	explicit VideoSystem(PetkaEngine &vm);
 
 	void updateTime();
 	void update() override;
@@ -47,10 +47,7 @@ public:
 
 	void setShake(bool shake);
 
-	const Common::List<Common::Rect> rects() const;
-
-private:
-	void sort();
+	const Common::List<Common::Rect> &rects() const;
 
 private:
 	PetkaEngine &_vm;
@@ -61,6 +58,6 @@ private:
 	bool _allowAddingRects;
 };
 
-}
+} // End of namespace Petka
 
 #endif

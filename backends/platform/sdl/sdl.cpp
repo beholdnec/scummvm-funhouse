@@ -27,8 +27,6 @@
 #include "gui/EventRecorder.h"
 #include "common/taskbar.h"
 #include "common/textconsole.h"
-#include "common/translation.h"
-#include "common/encoding.h"
 
 #ifdef USE_DISCORD
 #include "backends/presence/discord/discord.h"
@@ -53,6 +51,11 @@
 #include "backends/graphics/openglsdl/openglsdl-graphics.h"
 #include "graphics/cursorman.h"
 #endif
+#if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
+#include "backends/graphics3d/openglsdl/openglsdl-graphics3d.h"
+#include "graphics/opengl/context.h"
+#endif
+#include "graphics/renderer.h"
 
 #include <time.h>	// for getTimeAndDate()
 
@@ -92,6 +95,10 @@ OSystem_SDL::OSystem_SDL()
 
 OSystem_SDL::~OSystem_SDL() {
 	SDL_ShowCursor(SDL_ENABLE);
+
+#ifdef USE_OPENGL
+	clearGraphicsModes();
+#endif
 
 	// Delete the various managers here. Note that the ModularBackend
 	// destructors would also take care of this for us. However, various
@@ -175,6 +182,9 @@ bool OSystem_SDL::hasFeature(Feature f) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	if (f == kFeatureClipboardSupport) return true;
 #endif
+#if SDL_VERSION_ATLEAST(2, 0, 14)
+	if (f == kFeatureOpenUrl) return true;
+#endif
 	if (f == kFeatureJoystickDeadzone || f == kFeatureKbdMouseSpeed) {
 		return _eventSource->isJoystickConnected();
 	}
@@ -206,6 +216,11 @@ void OSystem_SDL::initBackend() {
 #endif
 	debug(1, "Using SDL Video Driver \"%s\"", sdlDriverName);
 
+#if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
+	detectFramebufferSupport();
+	detectAntiAliasingSupport();
+#endif
+
 	// Create the default event source, in case a custom backend
 	// manager didn't provide one yet.
 	if (!_eventSource)
@@ -221,6 +236,9 @@ void OSystem_SDL::initBackend() {
 		_eventManager = new DefaultEventManager(_eventSourceWrapper ? _eventSourceWrapper : _eventSource);
 	}
 
+	// Search for legacy gfx_mode and replace it
+	ScalerMan.updateOldSettings();
+
 	if (_graphicsManager == 0) {
 #ifdef USE_OPENGL
 		// Setup a list with both SDL and OpenGL graphics modes. We only do
@@ -231,7 +249,7 @@ void OSystem_SDL::initBackend() {
 		// subclass does not want any switching of graphics managers anyway.
 		setupGraphicsModes();
 
-		if (ConfMan.hasKey("gfx_mode")) {
+		if (!ConfMan.get("gfx_mode").empty()) {
 			// If the gfx_mode is from OpenGL, create the OpenGL graphics manager
 			Common::String gfxMode(ConfMan.get("gfx_mode"));
 			for (uint i = _firstGLMode; i < _graphicsModeIds.size(); ++i) {
@@ -287,9 +305,91 @@ void OSystem_SDL::initBackend() {
 	dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->activateManager();
 }
 
+#if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
+void OSystem_SDL::detectFramebufferSupport() {
+	_supportsFrameBuffer = false;
+#if defined(USE_GLES2)
+	// Framebuffers are always available with GLES2
+	_supportsFrameBuffer = true;
+#elif !defined(AMIGAOS)
+	// Spawn a 32x32 window off-screen with a GL context to test if framebuffers are supported
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_Window *window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 32, 32, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+	if (window) {
+		SDL_GLContext glContext = SDL_GL_CreateContext(window);
+		if (glContext) {
+			OpenGLContext.initialize(OpenGL::kOGLContextGL);
+			_supportsFrameBuffer = OpenGLContext.framebufferObjectSupported;
+			OpenGLContext.reset();
+			SDL_GL_DeleteContext(glContext);
+		}
+		SDL_DestroyWindow(window);
+	}
+#else
+	SDL_putenv(const_cast<char *>("SDL_VIDEO_WINDOW_POS=9000,9000"));
+	SDL_SetVideoMode(32, 32, 0, SDL_OPENGL);
+	SDL_putenv(const_cast<char *>("SDL_VIDEO_WINDOW_POS=center"));
+	OpenGLContext.initialize(OpenGL::kOGLContextGL);
+	_supportsFrameBuffer = OpenGLContext.framebufferObjectSupported;
+	OpenGLContext.reset();
+#endif
+#endif
+}
+
+void OSystem_SDL::detectAntiAliasingSupport() {
+#ifndef NINTENDO_SWITCH
+	_antiAliasLevels.clear();
+
+	int requestedSamples = 2;
+	while (requestedSamples <= 32) {
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, requestedSamples);
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		SDL_Window *window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 32, 32, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+		if (window) {
+			SDL_GLContext glContext = SDL_GL_CreateContext(window);
+			if (glContext) {
+				int actualSamples = 0;
+				SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &actualSamples);
+
+				if (actualSamples == requestedSamples) {
+					_antiAliasLevels.push_back(requestedSamples);
+				}
+
+				SDL_GL_DeleteContext(glContext);
+			}
+
+			SDL_DestroyWindow(window);
+		}
+#else
+		SDL_putenv(const_cast<char *>("SDL_VIDEO_WINDOW_POS=9000,9000"));
+		SDL_SetVideoMode(32, 32, 0, SDL_OPENGL);
+		SDL_putenv(const_cast<char *>("SDL_VIDEO_WINDOW_POS=center"));
+
+		int actualSamples = 0;
+		SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &actualSamples);
+
+		if (actualSamples == requestedSamples) {
+			_antiAliasLevels.push_back(requestedSamples);
+		}
+#endif
+
+		requestedSamples *= 2;
+	}
+
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+#endif
+}
+
+#endif // defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS)
+
 void OSystem_SDL::engineInit() {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->unlockWindowSize();
+	if (_graphicsManager) {
+		dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->unlockWindowSize();
+	}
 	// Disable screen saver when engine starts
 	SDL_DisableScreenSaver();
 #endif
@@ -311,7 +411,9 @@ void OSystem_SDL::engineInit() {
 
 void OSystem_SDL::engineDone() {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->unlockWindowSize();
+	if (_graphicsManager) {
+		dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->unlockWindowSize();
+	}
 	SDL_EnableScreenSaver();
 #endif
 #ifdef USE_TASKBAR
@@ -369,23 +471,16 @@ void OSystem_SDL::addSysArchivesToSearchSet(Common::SearchSet &s, int priority) 
 
 }
 
-void OSystem_SDL::setWindowCaption(const char *caption) {
-	Common::String cap;
-	byte c;
-
-	// The string caption is supposed to be in LATIN-1 encoding.
-	// SDL expects UTF-8. So we perform the conversion here.
-	while ((c = *(const byte *)caption++)) {
-		if (c < 0x80)
-			cap += c;
-		else {
-			cap += 0xC0 | (c >> 6);
-			cap += 0x80 | (c & 0x3F);
-		}
-	}
-
+void OSystem_SDL::setWindowCaption(const Common::U32String &caption) {
+	Common::String cap = caption.encode();
 	_window->setWindowCaption(cap);
 }
+
+#if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
+Common::Array<uint> OSystem_SDL::getSupportedAntiAliasingLevels() const {
+	return _antiAliasLevels;
+}
+#endif
 
 void OSystem_SDL::quit() {
 	destroy();
@@ -400,8 +495,8 @@ void OSystem_SDL::fatalError() {
 Common::KeymapArray OSystem_SDL::getGlobalKeymaps() {
 	Common::KeymapArray globalMaps = BaseBackend::getGlobalKeymaps();
 
-	SdlGraphicsManager *graphicsManager = dynamic_cast<SdlGraphicsManager *>(_graphicsManager);
-	globalMaps.push_back(graphicsManager->getKeymap());
+	Common::Keymap *keymap = dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->getKeymap();
+	globalMaps.push_back(keymap);
 
 	return globalMaps;
 }
@@ -464,7 +559,7 @@ Common::String OSystem_SDL::getSystemLanguage() const {
 
 	// Restore default C locale to prevent issues with
 	// portability of sscanf(), atof(), etc.
-	// See bug #3615148
+	// See bug #6434
 	setlocale(LC_ALL, "C");
 
 	// Detect the language from the locale
@@ -496,41 +591,33 @@ bool OSystem_SDL::hasTextInClipboard() {
 	return SDL_HasClipboardText() == SDL_TRUE;
 }
 
-Common::String OSystem_SDL::getTextFromClipboard() {
-	if (!hasTextInClipboard()) return "";
+Common::U32String OSystem_SDL::getTextFromClipboard() {
+	if (!hasTextInClipboard()) return Common::U32String();
 
 	char *text = SDL_GetClipboardText();
-	// The string returned by SDL is in UTF-8. Convert to the
-	// current TranslationManager encoding or ISO-8859-1.
-#ifdef USE_TRANSLATION
-	char *conv_text = SDL_iconv_string(TransMan.getCurrentCharset().c_str(), "UTF-8", text, SDL_strlen(text) + 1);
-#else
-	char *conv_text = SDL_iconv_string("ISO-8859-1", "UTF-8", text, SDL_strlen(text) + 1);
-#endif
-	if (conv_text) {
-		SDL_free(text);
-		text = conv_text;
-	}
-	Common::String strText = text;
+
+	Common::String utf8Text(text);
+	Common::U32String strText = utf8Text.decode();
 	SDL_free(text);
 
 	return strText;
 }
 
-bool OSystem_SDL::setTextInClipboard(const Common::String &text) {
-	// The encoding we need to use is UTF-8. Assume we currently have the
-	// current TranslationManager encoding or ISO-8859-1.
-#ifdef USE_TRANSLATION
-	char *utf8_text = SDL_iconv_string("UTF-8", TransMan.getCurrentCharset().c_str(), text.c_str(), text.size() + 1);
-#else
-	char *utf8_text = SDL_iconv_string("UTF-8", "ISO-8859-1", text.c_str(), text.size() + 1);
+bool OSystem_SDL::setTextInClipboard(const Common::U32String &text) {
+	// The encoding we need to use is UTF-8.
+	Common::String utf8Text = text.encode();
+	return SDL_SetClipboardText(utf8Text.c_str()) == 0;
+}
 #endif
-	if (utf8_text) {
-		int status = SDL_SetClipboardText(utf8_text);
-		SDL_free(utf8_text);
-		return status == 0;
+
+#if SDL_VERSION_ATLEAST(2, 0, 14)
+bool OSystem_SDL::openUrl(const Common::String &url) {
+	if (SDL_OpenURL(url.c_str()) != 0) {
+		warning("Failed to open URL: %s", SDL_GetError());
+		return false;
 	}
-	return SDL_SetClipboardText(text.c_str()) == 0;
+
+	return true;
 }
 #endif
 
@@ -551,7 +638,7 @@ void OSystem_SDL::delayMillis(uint msecs) {
 		SDL_Delay(msecs);
 }
 
-void OSystem_SDL::getTimeAndDate(TimeDate &td) const {
+void OSystem_SDL::getTimeAndDate(TimeDate &td, bool skipRecord) const {
 	time_t curTime = time(0);
 	struct tm t = *localtime(&curTime);
 	td.tm_sec = t.tm_sec;
@@ -561,6 +648,10 @@ void OSystem_SDL::getTimeAndDate(TimeDate &td) const {
 	td.tm_mon = t.tm_mon;
 	td.tm_year = t.tm_year;
 	td.tm_wday = t.tm_wday;
+
+#ifdef ENABLE_EVENTRECORDER
+	g_eventRec.processTimeAndDate(td, skipRecord);
+#endif
 }
 
 MixerManager *OSystem_SDL::getMixerManager() {
@@ -592,9 +683,9 @@ AudioCDManager *OSystem_SDL::createAudioCDManager() {
 
 Common::SaveFileManager *OSystem_SDL::getSavefileManager() {
 #ifdef ENABLE_EVENTRECORDER
-    return g_eventRec.getSaveManager(_savefileManager);
+	return g_eventRec.getSaveManager(_savefileManager);
 #else
-    return _savefileManager;
+	return _savefileManager;
 #endif
 }
 
@@ -628,8 +719,11 @@ int OSystem_SDL::getDefaultGraphicsMode() const {
 	}
 }
 
-bool OSystem_SDL::setGraphicsMode(int mode) {
-	if (_graphicsModes.empty()) {
+bool OSystem_SDL::setGraphicsMode(int mode, uint flags) {
+	bool render3d = flags & OSystem::kGfxModeRender3d;
+
+	// In 3d render mode gfx mode param is ignored.
+	if (_graphicsModes.empty() && !render3d) {
 		return _graphicsManager->setGraphicsMode(mode);
 	}
 
@@ -641,28 +735,40 @@ bool OSystem_SDL::setGraphicsMode(int mode) {
 	// Very hacky way to set up the old graphics manager state, in case we
 	// switch from SDL->OpenGL or OpenGL->SDL.
 	//
-	// This is a probably temporary workaround to fix bugs like #3368143
+	// This is a probably temporary workaround to fix bugs like #5799
 	// "SDL/OpenGL: Crash when switching renderer backend".
+	//
+	// It's also used to restore state from 3D to 2D GFX manager
 	SdlGraphicsManager *sdlGraphicsManager = dynamic_cast<SdlGraphicsManager *>(_graphicsManager);
-	SdlGraphicsManager::State state = sdlGraphicsManager->getState();
+	_gfxManagerState = sdlGraphicsManager->getState();
+	bool supports3D = sdlGraphicsManager->hasFeature(kFeatureOpenGLForGame);
 
 	bool switchedManager = false;
 
 	// If the new mode and the current mode are not from the same graphics
 	// manager, delete and create the new mode graphics manager
-	if (_graphicsMode >= _firstGLMode && mode < _firstGLMode) {
-		debug(1, "switching to plain SDL graphics");
+#if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
+	if (render3d && !supports3D) {
+		debug(1, "switching to OpenGL 3D graphics");
 		sdlGraphicsManager->deactivateManager();
-		delete _graphicsManager;
-		_graphicsManager = sdlGraphicsManager = new SurfaceSdlGraphicsManager(_eventSource, _window);
-
+		delete sdlGraphicsManager;
+		_graphicsManager = sdlGraphicsManager = new OpenGLSdlGraphics3dManager(_eventSource, _window, _supportsFrameBuffer);
 		switchedManager = true;
-	} else if (_graphicsMode < _firstGLMode && mode >= _firstGLMode) {
+	} else
+#endif
+	if ((supports3D || _graphicsMode >= _firstGLMode) && mode < _firstGLMode) {
+		debug(1, "switching to plain SDL graphics");
+		if (sdlGraphicsManager) {
+			sdlGraphicsManager->deactivateManager();
+			delete sdlGraphicsManager;
+		}
+		_graphicsManager = sdlGraphicsManager = new SurfaceSdlGraphicsManager(_eventSource, _window);
+		switchedManager = true;
+	} else if ((supports3D || _graphicsMode < _firstGLMode) && mode >= _firstGLMode) {
 		debug(1, "switching to OpenGL graphics");
 		sdlGraphicsManager->deactivateManager();
-		delete _graphicsManager;
+		delete sdlGraphicsManager;
 		_graphicsManager = sdlGraphicsManager = new OpenGLSdlGraphicsManager(_eventSource, _window);
-
 		switchedManager = true;
 	}
 
@@ -671,8 +777,17 @@ bool OSystem_SDL::setGraphicsMode(int mode) {
 	if (switchedManager) {
 		sdlGraphicsManager->activateManager();
 
+		// Setup the graphics mode and size first
+		// This is needed so that we can check the supported pixel formats when
+		// restoring the state.
+		_graphicsManager->beginGFXTransaction();
+		if (!_graphicsManager->setGraphicsMode(_graphicsModeIds[mode], flags))
+			return false;
+		_graphicsManager->initSize(_gfxManagerState.screenWidth, _gfxManagerState.screenHeight);
+		_graphicsManager->endGFXTransaction();
+
 		// This failing will probably have bad consequences...
-		if (!sdlGraphicsManager->setState(state)) {
+		if (!sdlGraphicsManager->setState(_gfxManagerState)) {
 			return false;
 		}
 
@@ -687,10 +802,9 @@ bool OSystem_SDL::setGraphicsMode(int mode) {
 		}
 
 		_graphicsManager->beginGFXTransaction();
-		// Oh my god if this failed the client code might just explode.
-		return _graphicsManager->setGraphicsMode(_graphicsModeIds[mode]);
+		return true;
 	} else {
-		return _graphicsManager->setGraphicsMode(_graphicsModeIds[mode]);
+		return _graphicsManager->setGraphicsMode(_graphicsModeIds[mode], flags);
 	}
 }
 
@@ -703,7 +817,7 @@ int OSystem_SDL::getGraphicsMode() const {
 }
 
 void OSystem_SDL::setupGraphicsModes() {
-	_graphicsModes.clear();
+	clearGraphicsModes();
 	_graphicsModeIds.clear();
 	_defaultSDLMode = _defaultGLMode = -1;
 
@@ -712,13 +826,18 @@ void OSystem_SDL::setupGraphicsModes() {
 	int defaultMode;
 
 	GraphicsManager *manager = new SurfaceSdlGraphicsManager(_eventSource, _window);
-	srcMode = manager->getSupportedGraphicsModes();
 	defaultMode = manager->getDefaultGraphicsMode();
+	srcMode = manager->getSupportedGraphicsModes();
 	while (srcMode->name) {
 		if (defaultMode == srcMode->id) {
 			_defaultSDLMode = _graphicsModes.size();
 		}
-		_graphicsModes.push_back(*srcMode);
+		OSystem::GraphicsMode mode = *srcMode;
+		// Do deep copy as we are going to delete the GraphicsManager and this may free
+		// the memory used for its graphics modes.
+		mode.name = scumm_strdup(srcMode->name);
+		mode.description = scumm_strdup(srcMode->description);
+		_graphicsModes.push_back(mode);
 		srcMode++;
 	}
 	delete manager;
@@ -732,11 +851,15 @@ void OSystem_SDL::setupGraphicsModes() {
 		if (defaultMode == srcMode->id) {
 			_defaultGLMode = _graphicsModes.size();
 		}
-		_graphicsModes.push_back(*srcMode);
+		OSystem::GraphicsMode mode = *srcMode;
+		// Do deep copy as we are going to delete the GraphicsManager and this may free
+		// the memory used for its graphics modes.
+		mode.name = scumm_strdup(srcMode->name);
+		mode.description = scumm_strdup(srcMode->description);
+		_graphicsModes.push_back(mode);
 		srcMode++;
 	}
 	delete manager;
-	manager = nullptr;
 	assert(_defaultGLMode != -1);
 
 	// Set a null mode at the end
@@ -753,51 +876,16 @@ void OSystem_SDL::setupGraphicsModes() {
 		mode++;
 	}
 }
-#endif
 
-char *OSystem_SDL::convertEncoding(const char *to, const char *from, const char *string, size_t length) {
-#if SDL_VERSION_ATLEAST(1, 2, 10) && !defined(__MORPHOS__)
-	int zeroBytes = 1;
-	if (Common::String(from).hasPrefixIgnoreCase("utf-16"))
-		zeroBytes = 2;
-	else if (Common::String(from).hasPrefixIgnoreCase("utf-32"))
-		zeroBytes = 4;
-
-	char *result;
-	// SDL_iconv_string() takes char * instead of const char * as it's third parameter
-	// with some older versions of SDL.
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	result = SDL_iconv_string(to, from, string, length + zeroBytes);
-#else
-	char *stringCopy = (char *) calloc(sizeof(char), length + zeroBytes);
-	memcpy(stringCopy, string, length);
-	result = SDL_iconv_string(to, from, stringCopy, length + zeroBytes);
-	free(stringCopy);
-#endif // SDL_VERSION_ATLEAST(2, 0, 0)
-	if (result == nullptr)
-		return nullptr;
-
-	// We need to copy the result, so that we can use SDL_free()
-	// on the string returned by SDL_iconv_string() and free()
-	// can then be used on the copyed and returned string.
-	// Sometimes free() and SDL_free() aren't compatible and
-	// using free() instead of SDL_free() can cause crashes.
-	size_t newLength = Common::Encoding::stringLength(result, to);
-	zeroBytes = 1;
-	if (Common::String(to).hasPrefixIgnoreCase("utf-16"))
-		zeroBytes = 2;
-	else if (Common::String(to).hasPrefixIgnoreCase("utf-32"))
-		zeroBytes = 4;
-	char *finalResult = (char *) malloc(newLength + zeroBytes);
-	if (!finalResult) {
-		warning("Could not allocate memory for encoding conversion");
-		SDL_free(result);
-		return nullptr;
+void OSystem_SDL::clearGraphicsModes() {
+	if (!_graphicsModes.empty()) {
+		OSystem::GraphicsMode *mode = _graphicsModes.begin();
+		while (mode->name) {
+			free(const_cast<char *>(mode->name));
+			free(const_cast<char *>(mode->description));
+			mode++;
+		}
+		_graphicsModes.clear();
 	}
-	memcpy(finalResult, result, newLength + zeroBytes);
-	SDL_free(result);
-	return finalResult;
-#else
-	return BaseBackend::convertEncoding(to, from, string, length);
-#endif // SDL_VERSION_ATLEAST(1, 2, 10)
 }
+#endif

@@ -5,7 +5,7 @@
 #include <iostream>
 
 // HACK to allow building with the SDL backend on MinGW
-// see bug #1800764 "TOOLS: MinGW tools building broken"
+// see bug #3412 "TOOLS: MinGW tools building broken"
 #ifdef main
 #undef main
 #endif // main
@@ -18,6 +18,7 @@
 
 const char *lang[] = {
 	"en",
+	"it",
 	NULL
 };
 
@@ -51,7 +52,7 @@ void writeDatafile(File& outputFile, int fileNumber, const char* language, int p
 	}
 
 	// Write block size
-	
+
 	dataFile.seek(0, SEEK_END);
 	int length = dataFile.pos();
 	dataFile.seek(0, SEEK_SET);
@@ -100,7 +101,7 @@ void writeDocFile(File& outputFile, const char *fileExtension, const char* langu
 	}
 
 	// Write block size
-	
+
 	docFile.seek(0, SEEK_END);
 	int length = docFile.pos();
 	docFile.seek(0, SEEK_SET);
@@ -263,7 +264,7 @@ void writeStrings(File& outputFile, const char* language, int part) {
 	sprintf(fileName, "strings%d-%s.po", part, language);
 	PoMessageList* poList = parsePoFile(fileName);
 	if (!poList) {
-		printf("Cannot find strings file for language '%s'.\n", language);
+		printf("Cannot find strings%d file for language '%s'.\n", part, language);
 		return;
 	}
 

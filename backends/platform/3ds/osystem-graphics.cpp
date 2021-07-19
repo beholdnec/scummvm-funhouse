@@ -31,27 +31,27 @@
 
 // Used to transfer the final rendered display to the framebuffer
 #define DISPLAY_TRANSFER_FLAGS                                                    \
-        (GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) |                    \
-         GX_TRANSFER_RAW_COPY(0) | GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | \
-         GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8) |                           \
-         GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
+		(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) |                    \
+		 GX_TRANSFER_RAW_COPY(0) | GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | \
+		 GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8) |                           \
+		 GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
 #define TEXTURE_TRANSFER_FLAGS(fmt)                             \
-        (GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) |  \
-         GX_TRANSFER_RAW_COPY(0) | GX_TRANSFER_IN_FORMAT(fmt) | \
-         GX_TRANSFER_OUT_FORMAT(fmt) | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
+		(GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) |  \
+		 GX_TRANSFER_RAW_COPY(0) | GX_TRANSFER_IN_FORMAT(fmt) | \
+		 GX_TRANSFER_OUT_FORMAT(fmt) | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
 #define DEFAULT_MODE _modeRGBA8
 
-namespace _3DS {
+namespace N3DS {
 /* Group the various enums, values, etc. needed for
  * each graphics mode into instaces of GfxMode3DS */
 static const GfxMode3DS _modeRGBA8 = { Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0),
-                                       GPU_RGBA8, TEXTURE_TRANSFER_FLAGS(GX_TRANSFER_FMT_RGBA8) };
+									   GPU_RGBA8, TEXTURE_TRANSFER_FLAGS(GX_TRANSFER_FMT_RGBA8) };
 static const GfxMode3DS _modeRGB565 = { Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0),
-                                        GPU_RGB565, TEXTURE_TRANSFER_FLAGS(GX_TRANSFER_FMT_RGB565) };
+										GPU_RGB565, TEXTURE_TRANSFER_FLAGS(GX_TRANSFER_FMT_RGB565) };
 static const GfxMode3DS _modeRGB555 = { Graphics::PixelFormat(2, 5, 5, 5, 1, 11, 6, 1, 0),
-                                        GPU_RGBA5551, TEXTURE_TRANSFER_FLAGS(GX_TRANSFER_FMT_RGB5A1) };
+										GPU_RGBA5551, TEXTURE_TRANSFER_FLAGS(GX_TRANSFER_FMT_RGB5A1) };
 static const GfxMode3DS _modeRGB5A1 = { Graphics::PixelFormat(2, 5, 5, 5, 1, 11, 6, 1, 0),
-                                        GPU_RGBA5551, TEXTURE_TRANSFER_FLAGS(GX_TRANSFER_FMT_RGB5A1) };
+										GPU_RGBA5551, TEXTURE_TRANSFER_FLAGS(GX_TRANSFER_FMT_RGB5A1) };
 static const GfxMode3DS _modeCLUT8 = _modeRGBA8;
 
 static const GfxMode3DS *gfxModes[] = { &_modeRGBA8, &_modeRGB565, &_modeRGB555, &_modeRGB5A1, &_modeCLUT8 };
@@ -187,7 +187,7 @@ bool OSystem_3DS::setGraphicsMode(GraphicsModeID modeID) {
 }
 
 void OSystem_3DS::initSize(uint width, uint height,
-                           const Graphics::PixelFormat *format) {
+						   const Graphics::PixelFormat *format) {
 	debug("3ds initsize w:%d h:%d", width, height);
 	int oldScreen = config.screen;
 	loadConfig();
@@ -361,7 +361,7 @@ static void copyRect555To5551(const Graphics::Surface &srcSurface, Graphics::Sur
 }
 
 void OSystem_3DS::copyRectToScreen(const void *buf, int pitch, int x,
-                                   int y, int w, int h) {
+								   int y, int w, int h) {
 	Common::Rect rect(x, y, x+w, y+h);
 	_gameScreen.copyRectToSurface(buf, pitch, x, y, w, h);
 	Graphics::Surface subSurface = _gameScreen.getSubArea(rect);
@@ -626,22 +626,22 @@ void OSystem_3DS::clearOverlay() {
 	_overlay.clear();
 }
 
-void OSystem_3DS::grabOverlay(void *buf, int pitch) {
-	byte *dst = (byte *)buf;
+void OSystem_3DS::grabOverlay(Graphics::Surface &surface) {
+	byte *dst = (byte *)surface.getPixels();
 
 	for (int y = 0; y < getOverlayHeight(); ++y) {
 		memcpy(dst, _overlay.getBasePtr(0, y), getOverlayWidth() * _overlay.format.bytesPerPixel);
-		dst += pitch;
+		dst += surface.pitch;
 	}
 }
 
 void OSystem_3DS::copyRectToOverlay(const void *buf, int pitch, int x,
-                                    int y, int w, int h) {
+									int y, int w, int h) {
 	_overlay.copyRectToSurface(buf, pitch, x, y, w, h);
 	_overlay.markDirty();
 }
 
-void OSystem_3DS::displayMessageOnOSD(const char *msg) {
+void OSystem_3DS::displayMessageOnOSD(const Common::U32String &msg) {
 	// The font we are going to use:
 	const Graphics::Font *font = FontMan.getFontByUsage(Graphics::FontManager::kLocalizedFont);
 	if (!font) {
@@ -650,15 +650,17 @@ void OSystem_3DS::displayMessageOnOSD(const char *msg) {
 	}
 
 	// Split the message into separate lines.
-	Common::Array<Common::String> lines;
-	const char *ptr;
-	for (ptr = msg; *ptr; ++ptr) {
-		if (*ptr == '\n') {
-			lines.push_back(Common::String(msg, ptr - msg));
-			msg = ptr + 1;
+	Common::Array<Common::U32String> lines;
+	Common::U32String::const_iterator strLineItrBegin = msg.begin();
+
+	for (Common::U32String::const_iterator itr = msg.begin(); itr != msg.end(); itr++) {
+		if (*itr == '\n') {
+			lines.push_back(Common::U32String(strLineItrBegin, itr));
+			strLineItrBegin = itr + 1;
 		}
 	}
-	lines.push_back(Common::String(msg, ptr - msg));
+	if (strLineItrBegin != msg.end())
+		lines.push_back(Common::U32String(strLineItrBegin, msg.end()));
 
 	// Determine a rect which would contain the message string (clipped to the
 	// screen dimensions).
@@ -758,16 +760,16 @@ void OSystem_3DS::setCursorDelta(float deltaX, float deltaY) {
 }
 
 void OSystem_3DS::setMouseCursor(const void *buf, uint w, uint h,
-                                 int hotspotX, int hotspotY,
-                                 uint32 keycolor, bool dontScale,
-                                 const Graphics::PixelFormat *format) {
+								 int hotspotX, int hotspotY,
+								 uint32 keycolor, bool dontScale,
+								 const Graphics::PixelFormat *format) {
 	_cursorScalable = !dontScale;
 	_cursorHotspotX = hotspotX;
 	_cursorHotspotY = hotspotY;
 	_cursorKeyColor = keycolor;
 	_pfCursor = !format ? Graphics::PixelFormat::createFormatCLUT8() : *format;
 
-	if (w != _cursor.w || h != _cursor.h || _cursor.format != _pfCursor) {
+	if (w != (uint)_cursor.w || h != (uint)_cursor.h || _cursor.format != _pfCursor) {
 		_cursor.create(w, h, _pfCursor);
 		_cursorTexture.create(w, h, &DEFAULT_MODE);
 	}
@@ -798,11 +800,11 @@ void applyKeyColor(Graphics::Surface *src, Graphics::Surface *dst, const SrcColo
 	assert(dst->format.bytesPerPixel == 4);
 	assert((dst->w >= src->w) && (dst->h >= src->h));
 
-	for (uint y = 0; y < src->h; ++y) {
+	for (uint y = 0; y < (uint)src->h; ++y) {
 		SrcColor *srcPtr = (SrcColor *)src->getBasePtr(0, y);
 		uint32 *dstPtr = (uint32 *)dst->getBasePtr(0, y);
 
-		for (uint x = 0; x < src->w; ++x) {
+		for (uint x = 0; x < (uint)src->w; ++x) {
 			const SrcColor color = *srcPtr++;
 
 			if (color == keyColor) {
@@ -833,4 +835,4 @@ void OSystem_3DS::flushCursor() {
 	}
 }
 
-} // namespace _3DS
+} // namespace N3DS

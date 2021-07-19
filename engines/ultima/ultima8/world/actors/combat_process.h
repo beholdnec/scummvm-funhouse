@@ -36,7 +36,6 @@ public:
 	CombatProcess();
 	CombatProcess(Actor *actor);
 
-	// p_dynamic_cast stuff
 	ENABLE_RUNTIME_CLASSTYPE()
 
 	void run() override;
@@ -44,7 +43,7 @@ public:
 	void terminate() override;
 
 	ObjId getTarget();
-	void setTarget(ObjId target_);
+	void setTarget(ObjId target);
 	ObjId seekTarget();
 
 	void dumpInfo() const override;
@@ -53,8 +52,8 @@ public:
 	void saveData(Common::WriteStream *ws) override;
 
 protected:
-	bool isValidTarget(const Actor *target_) const;
-	bool isEnemy(const Actor *target_) const;
+	bool isValidTarget(const Actor *target) const;
+	bool isEnemy(const Actor *target) const;
 	bool inAttackRange() const;
 	Direction getTargetDirection() const;
 

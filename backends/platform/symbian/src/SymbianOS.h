@@ -32,34 +32,21 @@ public:
 	OSystem_SDL_Symbian();
 
 	// Override from OSystem_SDL
-	virtual void init();
-	virtual void initBackend();
-#ifdef GUI_ENABLE_KEYSDIALOG
-	virtual void quit();
-	virtual void engineInit();
-	virtual void engineDone();
-#endif
-	virtual Common::String getDefaultConfigFileName();
-	virtual bool hasFeature(Feature f);
-
-	/**
-	 * Returns reference to File session
-	 */
-	RFs& FsSession();
+	virtual void init() override;
+	virtual void initBackend() override;
+	virtual Common::String getDefaultConfigFileName() override;
+	virtual bool hasFeature(Feature f) override;
 
 	void quitWithErrorMsg(const char *msg);
 
 	void addSysArchivesToSearchSet(Common::SearchSet &s, int priority = 0);
 
-protected:
-#ifdef GUI_ENABLE_KEYSDIALOG
-	/**
-	 * Used to intialized special game mappings
-	 */
-	void checkMappings();
-#endif
+	Common::KeymapperDefaultBindings *getKeymapperDefaultBindings() override;
 
-	RFs* _RFs;
+protected:
+	TFileName _localpath;
 };
 
+RFs &FsSession();
+	
 #endif

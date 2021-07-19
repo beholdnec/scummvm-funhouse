@@ -307,7 +307,7 @@ static void printGoodSectors(Common::Array<bool> &goodSectors, uint sectorsPerTr
 
 static Common::SeekableReadStream *readImage_NIB(Common::File &f, bool dos33, uint tracks = 35) {
 	if (f.size() != 35 * kNibTrackLen) {
-		warning("NIB: image '%s' has invalid size of %d bytes", f.getName(), f.size());
+		warning("NIB: image '%s' has invalid size of %d bytes", f.getName(), (int)f.size());
 		return nullptr;
 	}
 
@@ -394,7 +394,7 @@ static Common::SeekableReadStream *readTrack_WOZ(Common::File &f, uint track, bo
 		return nullptr;
 	}
 
-	Common::BitStreamMemory8MSB bitStream(new Common::BitStreamMemoryStream(inBuf, byteSize, DisposeAfterUse::YES), DisposeAfterUse::YES); 
+	Common::BitStreamMemory8MSB bitStream(new Common::BitStreamMemoryStream(inBuf, byteSize, DisposeAfterUse::YES), DisposeAfterUse::YES);
 
 	byte nibble = 0;
 	bool stop = false;
@@ -543,7 +543,7 @@ bool DiskImage::open(const Common::String &filename) {
 		return false;
 
 	if (_stream->size() != expectedSize)
-		error("Unrecognized disk image '%s' of size %d bytes (expected %d bytes)", filename.c_str(), _stream->size(), expectedSize);
+		error("Unrecognized disk image '%s' of size %d bytes (expected %d bytes)", filename.c_str(), (int)_stream->size(), expectedSize);
 
 	return true;
 }

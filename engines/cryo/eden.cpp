@@ -32,8 +32,6 @@
 #include "common/system.h"
 #include "graphics/surface.h"
 #include "graphics/screen.h"
-#include "graphics/palette.h"
-#include "common/timer.h"
 #include "audio/mixer.h"
 
 #include "cryo/defs.h"
@@ -93,7 +91,7 @@ EdenGame::EdenGame(CryoEngine *vm) : _vm(vm), kMaxMusicSize(2200000) {
 	_lastPhrasesFile = 0;
 	_dialogSkipFlags = 0;
 	_voiceSamplesBuffer = nullptr;
-	
+
 	_mainBankBuf = nullptr;
 	_musicBuf = nullptr;
 	_gameLipsync = nullptr;
@@ -112,7 +110,6 @@ EdenGame::EdenGame(CryoEngine *vm) : _vm(vm), kMaxMusicSize(2200000) {
 	_gameStarted = false;
 	_soundAllocated = false;
 	_musicChannel = _voiceChannel = nullptr;
-	_hnmSoundChannel = nullptr;
 	_cirsorPanX = 0;
 	_inventoryScrollDelay = 0;
 	_cursorPosY = _cursorPosX = 0;
@@ -166,6 +163,18 @@ EdenGame::EdenGame(CryoEngine *vm) : _vm(vm), kMaxMusicSize(2200000) {
 	_glowIndex = 0;
 	_torchCurIndex = 0;
 	_cursCenter = 11;
+
+	for (int i = 0; i < 42; ++i)
+		_objects[i].clear();
+
+	for (int i = 0; i < 58; ++i)
+		_persons[i].clear();
+
+	for (int i = 0; i < 7; ++i)
+		_citadelList[i].clear();
+
+	for (int i = 0; i < 12; ++i)
+		_areasTable[i].clear();
 }
 
 EdenGame::~EdenGame() {
@@ -209,11 +218,6 @@ void EdenGame::displayFrescoes() {
 	useBank(_globals->_frescoeImgBank + 1);
 	_graphics->drawSprite(0, 320, 16);
 	_paletteUpdateRequired = true;
-}
-
-void EdenGame::setVolume(uint16 vol) {
-	_hnmSoundChannel->setVolumeLeft(vol);
-	_hnmSoundChannel->setVolumeRight(vol);
 }
 
 void EdenGame::gametofresques() {
@@ -3081,16 +3085,11 @@ void EdenGame::tyranDies(perso_t *perso) {
 }
 
 void EdenGame::specialObjects(perso_t *perso, char objid) {
-
-#include "common/pack-start.h"	// START STRUCT PACKING
-
 	struct SpecialObject {
 		int8  _characterType;
 		int8  _objectId;
 		void  (EdenGame::*dispFct)(perso_t *perso);
 	};
-
-#include "common/pack-end.h"	// END STRUCT PACKING
 
 	static SpecialObject kSpecialObjectActions[] = {
 		//    persoType, objectId, dispFct
@@ -4080,14 +4079,10 @@ void EdenGame::run() {
 
 	word_378CE = 0;
 	CRYOLib_ManagersInit();
-	_vm->_video->setupSound(11025, false, false);
-	_vm->_video->setForceZero2Black(true);
-	_vm->_video->setupTimer(12.5);
-	_hnmSoundChannel = _vm->_video->getSoundChannel();
 
 	_musicChannel = new CSoundChannel(_vm->_mixer, 11025, false);
 	_voiceChannel = new CSoundChannel(_vm->_mixer, 11025, false);
-	_graphics = new EdenGraphics(this,_vm->_video);
+	_graphics = new EdenGraphics(this);
 	_graphics->setSavedUnderSubtitles(false);
 
 	allocateBuffers();
@@ -4188,19 +4183,11 @@ void EdenGame::edmain() {
 void EdenGame::intro() {
 	if (_vm->getPlatform() == Common::kPlatformMacintosh) {
 		// Play intro videos in HQ
-		_hnmSoundChannel->stop();
-		_vm->_video->closeSound();
-		_vm->_video->setupSound(22050, false, true);
-		_hnmSoundChannel = _vm->_video->getSoundChannel();
 		_graphics->playHNM(2012);
 		_graphics->playHNM(171);
 		CLBlitter_FillScreenView(0);
 		_specialTextMode = false;
 		_graphics->playHNM(2001);
-		_hnmSoundChannel->stop();
-		_vm->_video->closeSound();
-		_vm->_video->setupSound(11025, false, false);
-		_hnmSoundChannel = _vm->_video->getSoundChannel();
 	} else {
 		if (_vm->isDemo()) {
 			_graphics->playHNM(171);	// Virgin logo
@@ -5479,7 +5466,12 @@ void EdenGame::choseSubtitleOption() {
 		return;
 	if (lang > 5)
 		return;
+	
 	_globals->_prefLanguage = lang;
+	// save the new preferred language in the config
+	ConfMan.setInt("PrefLang", lang);
+	ConfMan.flushToDisk();
+	
 	_graphics->langbuftopanel();
 	displayLanguage();
 }
@@ -5972,6 +5964,11 @@ void EdenGame::handleEloiReturn() {
 }
 //// phase.c
 void EdenGame::incPhase() {
+	struct phase_t {
+		int16 _id;
+		void (EdenGame::*disp)();
+	};
+
 	static phase_t phases[] = {
 		{ 65, &EdenGame::dialautoon },
 		{ 113, &EdenGame::phase113 },
@@ -7846,7 +7843,16 @@ void EdenGame::enginePC() {
 }
 
 void EdenGame::LostEdenMac_InitPrefs() {
-	_globals->_prefLanguage = 1;
+	// Keep track of the preferred language previously selected in the option menu
+	int pref = ConfMan.getInt("PrefLang");
+	if (pref < 1 || pref > 5) {
+		pref = 1;
+		ConfMan.setInt("PrefLang", 1);
+		ConfMan.flushToDisk();
+	}
+
+	_globals->_prefLanguage = pref;
+	
 	_globals->_prefMusicVol[0] = 192;
 	_globals->_prefMusicVol[1] = 192;
 	_globals->_prefVoiceVol[0] = 255;

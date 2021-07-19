@@ -77,7 +77,7 @@ void ScummEngine::startScene(int room, Actor *a, int objectNr) {
 		stopCycle(0);
 
 	if (_game.id == GID_SAMNMAX) {
-		// WORKAROUND bug #85373 SAM: Overlapping music at Bigfoot convention
+		// WORKAROUND bug #1132 SAM: Overlapping music at Bigfoot convention
 		// Added sound queue processing between execution of exit
 		// script and entry script. In the case of this bug, the
 		// entry script required that the iMuse state be fully up
@@ -99,7 +99,7 @@ void ScummEngine::startScene(int room, Actor *a, int objectNr) {
 
 	if (_game.version >= 7) {
 		// Set the shadow palette(s) to all black. This fixes
-		// bug #795940, and actually makes some sense (after all,
+		// bug #1196, and actually makes some sense (after all,
 		// shadows tend to be rather black, don't they? ;-)
 		memset(_shadowPalette, 0, NUM_SHADOW_PALETTE * 256);
 	} else {
@@ -442,7 +442,7 @@ void ScummEngine::setupRoomSubBlocks() {
 	}
 
 
-	// WORKAROUND bug #1074444: The dreaded DOTT "Can't get teeth" bug
+	// WORKAROUND bug #1831: The dreaded DOTT "Can't get teeth" bug
 	// makes it impossible to go on playing w/o cheating in some way.
 	// It's not quite clear what causes it, but the effect is that object
 	// 182, the teeth, are still in class 32 (kObjectClassUntouchable),

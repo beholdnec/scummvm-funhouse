@@ -52,26 +52,24 @@
 #include "image/bmp.h"
 #endif
 
-#ifdef USE_TTS
 #include "common/text-to-speech.h"
-#endif
 
 namespace OpenGL {
 
 OpenGLGraphicsManager::OpenGLGraphicsManager()
-    : _currentState(), _oldState(), _transactionMode(kTransactionNone), _screenChangeID(1 << (sizeof(int) * 8 - 2)),
-      _pipeline(nullptr), _stretchMode(STRETCH_FIT),
-      _defaultFormat(), _defaultFormatAlpha(),
-      _gameScreen(nullptr), _overlay(nullptr),
-      _cursor(nullptr),
-      _cursorHotspotX(0), _cursorHotspotY(0),
-      _cursorHotspotXScaled(0), _cursorHotspotYScaled(0), _cursorWidthScaled(0), _cursorHeightScaled(0),
-      _cursorKeyColor(0), _cursorDontScale(false), _cursorPaletteEnabled(false)
+	: _currentState(), _oldState(), _transactionMode(kTransactionNone), _screenChangeID(1 << (sizeof(int) * 8 - 2)),
+	  _pipeline(nullptr), _stretchMode(STRETCH_FIT),
+	  _defaultFormat(), _defaultFormatAlpha(),
+	  _gameScreen(nullptr), _overlay(nullptr),
+	  _cursor(nullptr),
+	  _cursorHotspotX(0), _cursorHotspotY(0),
+	  _cursorHotspotXScaled(0), _cursorHotspotYScaled(0), _cursorWidthScaled(0), _cursorHeightScaled(0),
+	  _cursorKeyColor(0), _cursorDontScale(false), _cursorPaletteEnabled(false)
 #ifdef USE_OSD
-      , _osdMessageChangeRequest(false), _osdMessageAlpha(0), _osdMessageFadeStartTime(0), _osdMessageSurface(nullptr),
-      _osdIconSurface(nullptr)
+	  , _osdMessageChangeRequest(false), _osdMessageAlpha(0), _osdMessageFadeStartTime(0), _osdMessageSurface(nullptr),
+	  _osdIconSurface(nullptr)
 #endif
-    {
+	{
 	memset(_gamePalette, 0, sizeof(_gamePalette));
 	g_context.reset();
 }
@@ -124,6 +122,13 @@ void OpenGLGraphicsManager::setFeatureState(OSystem::Feature f, bool enable) {
 			_cursor->enableLinearFiltering(enable);
 		}
 
+		// The overlay UI should also obey the filtering choice (managed via the Filter Graphics checkbox in Graphics Tab).
+		// Thus, when overlay filtering is disabled, scaling in OPENGL is done with GL_NEAREST (nearest neighbor scaling).
+		// It may look crude, but it should be crispier and it's left to user choice to enable filtering.
+		if (_overlay) {
+			_overlay->enableLinearFiltering(enable);
+		}
+
 		break;
 
 	case OSystem::kFeatureCursorPalette:
@@ -169,7 +174,7 @@ int OpenGLGraphicsManager::getDefaultGraphicsMode() const {
 	return GFX_OPENGL;
 }
 
-bool OpenGLGraphicsManager::setGraphicsMode(int mode) {
+bool OpenGLGraphicsManager::setGraphicsMode(int mode, uint flags) {
 	assert(_transactionMode != kTransactionNone);
 
 	switch (mode) {
@@ -236,6 +241,7 @@ namespace {
 const OSystem::GraphicsMode glStretchModes[] = {
 	{"center", _s("Center"), STRETCH_CENTER},
 	{"pixel-perfect", _s("Pixel-perfect scaling"), STRETCH_INTEGRAL},
+	{"even-pixels", _s("Even pixels scaling"), STRETCH_INTEGRAL_AR},
 	{"fit", _s("Fit to window"), STRETCH_FIT},
 	{"stretch", _s("Stretch to window"), STRETCH_STRETCH},
 	{"fit_force_aspect", _s("Fit to window (4:3)"), STRETCH_FIT_FORCE_ASPECT},
@@ -632,15 +638,15 @@ void OpenGLGraphicsManager::clearOverlay() {
 	_overlay->fill(0);
 }
 
-void OpenGLGraphicsManager::grabOverlay(void *buf, int pitch) const {
+void OpenGLGraphicsManager::grabOverlay(Graphics::Surface &surface) const {
 	const Graphics::Surface *overlayData = _overlay->getSurface();
 
 	const byte *src = (const byte *)overlayData->getPixels();
-	byte *dst = (byte *)buf;
+	byte *dst = (byte *)surface.getPixels();
 
 	for (uint h = overlayData->h; h > 0; --h) {
 		memcpy(dst, src, overlayData->w * overlayData->format.bytesPerPixel);
-		dst += pitch;
+		dst += surface.pitch;
 		src += overlayData->pitch;
 	}
 }
@@ -648,8 +654,8 @@ void OpenGLGraphicsManager::grabOverlay(void *buf, int pitch) const {
 namespace {
 template<typename SrcColor, typename DstColor>
 void multiplyColorWithAlpha(const byte *src, byte *dst, const uint w, const uint h,
-                            const Graphics::PixelFormat &srcFmt, const Graphics::PixelFormat &dstFmt,
-                            const uint srcPitch, const uint dstPitch, const SrcColor keyColor) {
+							const Graphics::PixelFormat &srcFmt, const Graphics::PixelFormat &dstFmt,
+							const uint srcPitch, const uint dstPitch, const SrcColor keyColor) {
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
 			const uint32 color = *(const SrcColor *)src;
@@ -785,7 +791,7 @@ void OpenGLGraphicsManager::setCursorPalette(const byte *colors, uint start, uin
 	updateCursorPalette();
 }
 
-void OpenGLGraphicsManager::displayMessageOnOSD(const char *msg) {
+void OpenGLGraphicsManager::displayMessageOnOSD(const Common::U32String &msg) {
 #ifdef USE_OSD
 	_osdMessageChangeRequest = true;
 
@@ -796,8 +802,8 @@ void OpenGLGraphicsManager::displayMessageOnOSD(const char *msg) {
 #ifdef USE_OSD
 void OpenGLGraphicsManager::osdMessageUpdateSurface() {
 	// Split up the lines.
-	Common::Array<Common::String> osdLines;
-	Common::StringTokenizer tokenizer(_osdMessageNextData, "\n");
+	Common::Array<Common::U32String> osdLines;
+	Common::U32StringTokenizer tokenizer(_osdMessageNextData, "\n");
 	while (!tokenizer.empty()) {
 		osdLines.push_back(tokenizer.nextToken());
 	}
@@ -852,14 +858,12 @@ void OpenGLGraphicsManager::osdMessageUpdateSurface() {
 	_osdMessageAlpha = kOSDMessageInitialAlpha;
 	_osdMessageFadeStartTime = g_system->getMillis() + kOSDMessageFadeOutDelay;
 
-#ifdef USE_TTS
 	if (ConfMan.hasKey("tts_enabled", "scummvm") &&
 			ConfMan.getBool("tts_enabled", "scummvm")) {
 		Common::TextToSpeechManager *ttsMan = g_system->getTextToSpeechManager();
 		if (ttsMan)
 			ttsMan->say(_osdMessageNextData);
 	}
-#endif // USE_TTS
 	// Clear the text update request
 	_osdMessageNextData.clear();
 	_osdMessageChangeRequest = false;
@@ -915,7 +919,7 @@ void OpenGLGraphicsManager::grabPalette(byte *colors, uint start, uint num) cons
 	memcpy(colors, _gamePalette + start * 3, num * 3);
 }
 
-void OpenGLGraphicsManager::handleResizeImpl(const int width, const int height, const int xdpi, const int ydpi) {
+void OpenGLGraphicsManager::handleResizeImpl(const int width, const int height) {
 	// Setup backbuffer size.
 	_backBuffer.setDimensions(width, height);
 
@@ -948,20 +952,20 @@ void OpenGLGraphicsManager::handleResizeImpl(const int width, const int height, 
 	overlayWidth = MAX<uint>(overlayWidth, 256);
 	overlayHeight = MAX<uint>(overlayHeight, 200);
 
-	// HACK: Reduce the size of the overlay on high DPI screens.
-	overlayWidth = fracToInt(overlayWidth * (intToFrac(90) / xdpi));
-	overlayHeight = fracToInt(overlayHeight * (intToFrac(90) / ydpi));
-
 	if (!_overlay || _overlay->getFormat() != _defaultFormatAlpha) {
 		delete _overlay;
 		_overlay = nullptr;
 
 		_overlay = createSurface(_defaultFormatAlpha);
 		assert(_overlay);
-		// We always filter the overlay with GL_LINEAR. This assures it's
-		// readable in case it needs to be scaled and does not affect it
-		// otherwise.
-		_overlay->enableLinearFiltering(true);
+		// We should NOT always filter the overlay with GL_LINEAR.
+		// In previous versions we always did use GL_LINEAR to assure the UI
+		// would be readable in case it needed to be scaled -- it would not affect it otherwise.
+		// However in modern devices due to larger screen size the UI display looks blurry
+		// when using the linear filtering scaling, and we got bug report(s) for it.
+		//   eg. https://bugs.scummvm.org/ticket/11742
+		// So, we now respect the choice for "Filter Graphics" made via ScummVM GUI (under Graphics Tab)
+		_overlay->enableLinearFiltering(_currentState.filtering);
 	}
 	_overlay->allocate(overlayWidth, overlayHeight);
 	_overlay->fill(0);
@@ -1018,7 +1022,7 @@ void OpenGLGraphicsManager::notifyContextCreate(const Graphics::PixelFormat &def
 
 	// Refresh the output screen dimensions if some are set up.
 	if (_windowWidth != 0 && _windowHeight != 0) {
-		handleResize(_windowWidth, _windowHeight, _xdpi, _ydpi);
+		handleResize(_windowWidth, _windowHeight);
 	}
 
 	// TODO: Should we try to convert textures into one of those formats if
@@ -1104,27 +1108,26 @@ Surface *OpenGLGraphicsManager::createSurface(const Graphics::PixelFormat &forma
 		} else {
 			return new TextureCLUT8(glIntFormat, glFormat, glType, virtFormat);
 		}
-#if !USE_FORCED_GL
-	} else if (isGLESContext() && format == Graphics::PixelFormat(2, 5, 5, 5, 0, 10, 5, 0, 0)) {
+	} else if (getGLPixelFormat(format, glIntFormat, glFormat, glType)) {
+		return new Texture(glIntFormat, glFormat, glType, format);
+	} else if (g_context.packedPixelsSupported && format == Graphics::PixelFormat(2, 5, 5, 5, 0, 10, 5, 0, 0)) {
 		// OpenGL ES does not support a texture format usable for RGB555.
 		// Since SCUMM uses this pixel format for some games (and there is no
 		// hope for this to change anytime soon) we use pixel format
 		// conversion to a supported texture format.
 		return new TextureRGB555();
 #ifdef SCUMM_LITTLE_ENDIAN
-	} else if (isGLESContext() && format == Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0)) { // RGBA8888
+	} else if (format == Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0)) { // RGBA8888
 #else
-	} else if (isGLESContext() && format == Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24)) { // ABGR8888
+	} else if (format == Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24)) { // ABGR8888
 #endif
 		return new TextureRGBA8888Swap();
-#endif // !USE_FORCED_GL
 	} else {
-		const bool supported = getGLPixelFormat(format, glIntFormat, glFormat, glType);
-		if (!supported) {
-			return nullptr;
-		} else {
-			return new Texture(glIntFormat, glFormat, glType, format);
-		}
+#ifdef SCUMM_LITTLE_ENDIAN
+		return new FakeTexture(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24), format);
+#else
+		return new FakeTexture(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0), format);
+#endif
 	}
 }
 
@@ -1138,6 +1141,8 @@ bool OpenGLGraphicsManager::getGLPixelFormat(const Graphics::PixelFormat &pixelF
 		glFormat = GL_RGBA;
 		glType = GL_UNSIGNED_BYTE;
 		return true;
+	} else if (!g_context.packedPixelsSupported) {
+		return false;
 	} else if (pixelFormat == Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0)) { // RGB565
 		glIntFormat = GL_RGB;
 		glFormat = GL_RGB;
@@ -1285,16 +1290,6 @@ void OpenGLGraphicsManager::recalculateCursorScaling() {
 
 		_cursorHotspotYScaled = fracToInt(_cursorHotspotYScaled * screenScaleFactorY);
 		_cursorHeightScaled   = fracToInt(_cursorHeightScaled   * screenScaleFactorY);
-	} else {
-		const frac_t screenScaleFactorX = intToFrac(90) / _xdpi;
-		const frac_t screenScaleFactorY = intToFrac(90) / _ydpi;
-
-		// FIXME: Replace this with integer maths
-		_cursorHotspotXScaled /= fracToDouble(screenScaleFactorX);
-		_cursorWidthScaled    /= fracToDouble(screenScaleFactorX);
-
-		_cursorHotspotYScaled /= fracToDouble(screenScaleFactorY);
-		_cursorHeightScaled   /= fracToDouble(screenScaleFactorY);
 	}
 }
 

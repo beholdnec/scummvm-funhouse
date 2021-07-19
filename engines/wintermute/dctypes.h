@@ -198,9 +198,9 @@ enum TTextCharset {
 	CHARSET_BALTIC = 3,
 	CHARSET_CHINESEBIG5 = 4,
 	CHARSET_EASTEUROPE = 5,
-	CHARSET_GB2312 = 6, 
+	CHARSET_GB2312 = 6,
 	CHARSET_GREEK = 7,
-	CHARSET_HANGUL = 8, 
+	CHARSET_HANGUL = 8,
 	CHARSET_MAC = 9,
 	CHARSET_RUSSIAN = 10,
 	CHARSET_SHIFTJIS = 11,
@@ -231,6 +231,21 @@ enum TShadowType {
 	SHADOW_FLAT     = 2,
 	SHADOW_STENCIL  = 3
 };
+
+#ifdef ENABLE_WME3D
+
+struct FogParameters {
+	FogParameters() : _start(0.0f), _end(0.0f), _color(0x00000000), _enabled(false) {
+
+	}
+
+	float _start;
+	float _end;
+	uint32 _color;
+	bool _enabled;
+};
+
+#endif
 
 } // End of namespace Wintermute
 

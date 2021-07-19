@@ -65,15 +65,10 @@ Sword25Engine::Sword25Engine(OSystem *syst, const ADGameDescription *gameDesc):
 	// Setup mixer
 	syncSoundSettings();
 
-	DebugMan.addDebugChannel(kDebugScript, "Script", "Script debug level");
-	DebugMan.addDebugChannel(kDebugScript, "Scripts", "Script debug level");
-	DebugMan.addDebugChannel(kDebugSound, "Sound", "Sound debug level");
-
 	setDebugger(new Sword25Console(this));
 }
 
 Sword25Engine::~Sword25Engine() {
-	DebugMan.clearAllDebugChannels();
 }
 
 Common::Error Sword25Engine::run() {
@@ -109,7 +104,9 @@ Common::Error Sword25Engine::appStart() {
 	// Load packages
 	PackageManager *packageManagerPtr = Kernel::getInstance()->getPackage();
 	if (getGameFlags() & GF_EXTRACTED) {
-		if (!packageManagerPtr->loadDirectoryAsPackage(ConfMan.get("path"), "/"))
+		Common::String gameDirectory = ConfMan.get("path");
+		packageManagerPtr->setRunWithExtractedFiles(gameDirectory);
+		if (!packageManagerPtr->loadDirectoryAsPackage(gameDirectory, "/"))
 			return Common::kUnknownError;
 	} else {
 		if (!loadPackages())

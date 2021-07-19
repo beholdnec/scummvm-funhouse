@@ -52,7 +52,7 @@ Configuration::~Configuration() {
 }
 
 bool Configuration::readConfigFile(Std::string fname, Std::string root,
-                                   bool readonly) {
+								   bool readonly) {
 	_configFilename = fname;
 	Shared::XMLTree *tree = new Shared::XMLTree();
 
@@ -82,7 +82,7 @@ void Configuration::clear() {
 }
 
 void Configuration::value(const Std::string &key, Std::string &ret,
-                          const char *defaultvalue) {
+						  const char *defaultvalue) {
 	// Check for a .cfg file value in the trees
 	for (Std::vector<Shared::XMLTree *>::reverse_iterator i = _trees.rbegin();
 	        i != _trees.rend(); ++i) {
@@ -175,8 +175,6 @@ void Configuration::pathFromValue(const Std::string &key, Std::string file, Std:
 		full_path += U6PATH_DELIMITER + file;
 	else
 		full_path += file;
-
-	return;
 }
 
 bool Configuration::set(const Std::string &key, const Std::string &value) {
@@ -414,6 +412,8 @@ void Configuration::setCommonDefaults(GameId gameType) {
 		Common::String::format("%d", bg_color[i]);
 	_settings["newscroll/border_color"] =
 		Common::String::format("%d", border_color[i]);
+
+	_settings["townsdir"] = "townsu6";
 
 	//	_settings["newgamedata/name"] = "Avatar";
 	//	_settings["newgamedata/gender"] = "0";

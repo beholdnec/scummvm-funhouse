@@ -26,39 +26,7 @@
 #include "common/file.h"
 #include "common/translation.h"
 
-#include "neverhood/neverhood.h"
-
-enum NeverhoodGameFeatures {
-	GF_BIG_DEMO = (1 << 0)
-};
-
-namespace Neverhood {
-
-const char *NeverhoodEngine::getGameId() const {
-	return _gameDescription->gameId;
-}
-
-Common::Platform NeverhoodEngine::getPlatform() const {
-	return _gameDescription->platform;
-}
-
-Common::Language NeverhoodEngine::getLanguage() const {
-	return _gameDescription->language;
-}
-
-bool NeverhoodEngine::isDemo() const {
-	return _gameDescription->flags & ADGF_DEMO;
-}
-
-bool NeverhoodEngine::isBigDemo() const {
-	return _gameDescription->flags & GF_BIG_DEMO;
-}
-
-bool NeverhoodEngine::applyResourceFixes() const {
-	return getLanguage() == Common::RU_RUS;
-}
-
-}
+#include "neverhood/detection.h"
 
 static const PlainGameDescriptor neverhoodGames[] = {
 	{"neverhood", "The Neverhood Chronicles"},
@@ -135,6 +103,18 @@ static const ADGameDescription gameDescriptions[] = {
 		GUIO1(GUIO_NONE)
 	},
 
+	// Neverhood Japanese version
+	// Bugreport #11074
+	{
+		"neverhood",
+		_s("Missing game code"), // Reason for being unsupported
+		AD_ENTRY1s("hd.blb", "c791725bbbc23c0f8bf78eece4555565", 4308928),
+		Common::RU_RUS,
+		Common::kPlatformWindows,
+		ADGF_DROPPLATFORM | ADGF_UNSUPPORTED,
+		GUIO1(GUIO_NONE)
+	},
+
 	AD_TABLE_END_MARKER
 };
 
@@ -162,9 +142,9 @@ static const ExtraGuiOption neverhoodExtraGuiOption3 = {
 };
 
 
-class NeverhoodMetaEngine : public AdvancedMetaEngine {
+class NeverhoodMetaEngineDetection : public AdvancedMetaEngineDetection {
 public:
-	NeverhoodMetaEngine() : AdvancedMetaEngine(Neverhood::gameDescriptions, sizeof(ADGameDescription), neverhoodGames) {
+	NeverhoodMetaEngineDetection() : AdvancedMetaEngineDetection(Neverhood::gameDescriptions, sizeof(ADGameDescription), neverhoodGames) {
 		_guiOptions = GUIO2(GUIO_NOSUBTITLES, GUIO_NOMIDI);
 	}
 
@@ -180,43 +160,10 @@ public:
 		return "The Neverhood Chronicles (C) The Neverhood, Inc.";
 	}
 
-	bool hasFeature(MetaEngineFeature f) const override;
-	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 	const ExtraGuiOptions getExtraGuiOptions(const Common::String &target) const override;
-	SaveStateList listSaves(const char *target) const override;
-	int getMaximumSaveSlot() const override;
-	void removeSaveState(const char *target, int slot) const override;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
-
 };
 
-bool NeverhoodMetaEngine::hasFeature(MetaEngineFeature f) const {
-	return
-		(f == kSupportsListSaves) ||
-		(f == kSupportsLoadingDuringStartup) ||
-		(f == kSupportsDeleteSave) ||
-		(f == kSavesSupportMetaInfo) ||
-		(f == kSavesSupportThumbnail) ||
-		(f == kSavesSupportCreationDate) ||
-		(f == kSavesSupportPlayTime) ||
-		(f == kSimpleSavesNames);
-}
-
-bool Neverhood::NeverhoodEngine::hasFeature(EngineFeature f) const {
-	return
-		(f == kSupportsReturnToLauncher) ||
-		(f == kSupportsLoadingDuringRuntime) ||
-		(f == kSupportsSavingDuringRuntime);
-}
-
-bool NeverhoodMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
-	if (desc) {
-		*engine = new Neverhood::NeverhoodEngine(syst, desc);
-	}
-	return desc != 0;
-}
-
-const ExtraGuiOptions NeverhoodMetaEngine::getExtraGuiOptions(const Common::String &target) const {
+const ExtraGuiOptions NeverhoodMetaEngineDetection::getExtraGuiOptions(const Common::String &target) const {
 	ExtraGuiOptions options;
 	options.push_back(neverhoodExtraGuiOption1);
 	options.push_back(neverhoodExtraGuiOption2);
@@ -224,79 +171,4 @@ const ExtraGuiOptions NeverhoodMetaEngine::getExtraGuiOptions(const Common::Stri
 	return options;
 }
 
-SaveStateList NeverhoodMetaEngine::listSaves(const char *target) const {
-	Common::SaveFileManager *saveFileMan = g_system->getSavefileManager();
-	Neverhood::NeverhoodEngine::SaveHeader header;
-	Common::String pattern = target;
-	pattern += ".###";
-
-	Common::StringArray filenames;
-	filenames = saveFileMan->listSavefiles(pattern.c_str());
-
-	SaveStateList saveList;
-	for (Common::StringArray::const_iterator file = filenames.begin(); file != filenames.end(); file++) {
-		// Obtain the last 3 digits of the filename, since they correspond to the save slot
-		int slotNum = atoi(file->c_str() + file->size() - 3);
-		if (slotNum >= 0 && slotNum <= 999) {
-			Common::InSaveFile *in = saveFileMan->openForLoading(file->c_str());
-			if (in) {
-				if (Neverhood::NeverhoodEngine::readSaveHeader(in, header) == Neverhood::NeverhoodEngine::kRSHENoError) {
-					saveList.push_back(SaveStateDescriptor(slotNum, header.description));
-				}
-				delete in;
-			}
-		}
-	}
-
-	// Sort saves based on slot number.
-	Common::sort(saveList.begin(), saveList.end(), SaveStateDescriptorSlotComparator());
-	return saveList;
-}
-
-int NeverhoodMetaEngine::getMaximumSaveSlot() const {
-	return 999;
-}
-
-void NeverhoodMetaEngine::removeSaveState(const char *target, int slot) const {
-	Common::SaveFileManager *saveFileMan = g_system->getSavefileManager();
-	Common::String filename = Neverhood::NeverhoodEngine::getSavegameFilename(target, slot);
-	saveFileMan->removeSavefile(filename.c_str());
-}
-
-SaveStateDescriptor NeverhoodMetaEngine::querySaveMetaInfos(const char *target, int slot) const {
-	Common::String filename = Neverhood::NeverhoodEngine::getSavegameFilename(target, slot);
-	Common::InSaveFile *in = g_system->getSavefileManager()->openForLoading(filename.c_str());
-
-	if (in) {
-		Neverhood::NeverhoodEngine::SaveHeader header;
-		Neverhood::NeverhoodEngine::kReadSaveHeaderError error;
-
-		error = Neverhood::NeverhoodEngine::readSaveHeader(in, header, false);
-		delete in;
-
-		if (error == Neverhood::NeverhoodEngine::kRSHENoError) {
-			SaveStateDescriptor desc(slot, header.description);
-
-			desc.setDeletableFlag(false);
-			desc.setWriteProtectedFlag(false);
-			desc.setThumbnail(header.thumbnail);
-			int day = (header.saveDate >> 24) & 0xFF;
-			int month = (header.saveDate >> 16) & 0xFF;
-			int year = header.saveDate & 0xFFFF;
-			desc.setSaveDate(year, month, day);
-			int hour = (header.saveTime >> 16) & 0xFF;
-			int minutes = (header.saveTime >> 8) & 0xFF;
-			desc.setSaveTime(hour, minutes);
-			desc.setPlayTime(header.playTime * 1000);
-			return desc;
-		}
-	}
-
-	return SaveStateDescriptor();
-}
-
-#if PLUGIN_ENABLED_DYNAMIC(NEVERHOOD)
-	REGISTER_PLUGIN_DYNAMIC(NEVERHOOD, PLUGIN_TYPE_ENGINE, NeverhoodMetaEngine);
-#else
-	REGISTER_PLUGIN_STATIC(NEVERHOOD, PLUGIN_TYPE_ENGINE, NeverhoodMetaEngine);
-#endif
+REGISTER_PLUGIN_STATIC(NEVERHOOD_DETECTION, PLUGIN_TYPE_ENGINE_DETECTION, NeverhoodMetaEngineDetection);

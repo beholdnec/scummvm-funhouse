@@ -25,6 +25,15 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_sinetables Sine tables
+ * @ingroup common
+ *
+ * @brief API for managing sine tables.
+ *
+ * @{
+ */
+
 class SineTable {
 public:
 	/**
@@ -59,7 +68,7 @@ public:
 	 * Returns sin(2*pi * index / nPoints )
 	 * Index must be in range [0, nPoints - 1]
 	 */
-	float atLegacy(int index) const;	
+	float atLegacy(int index) const;
 
 private:
 	float *_tableEOS;
@@ -68,6 +77,8 @@ private:
 	int _refSize; // _nPoints / 4
 	int _nPoints; // range of operator[]
 };
+
+/** @} */
 
 } // End of namespace Common
 

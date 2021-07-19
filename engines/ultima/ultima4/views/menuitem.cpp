@@ -130,7 +130,7 @@ void BoolMenuItem::activate(MenuEvent &event) {
 }
 
 StringMenuItem::StringMenuItem(Common::String text, short xp, short yp, int shortcutKey,
-                               Common::String *val, const Std::vector<Common::String> &validSettings) :
+							   Common::String *val, const Std::vector<Common::String> &validSettings) :
 	MenuItem(text, xp, yp, shortcutKey),
 	_val(val),
 	_validSettings(validSettings) {
@@ -166,7 +166,7 @@ void StringMenuItem::activate(MenuEvent &event) {
 }
 
 IntMenuItem::IntMenuItem(Common::String text, short xp, short yp, int shortcutKey, int *val,
-                         int min, int max, int increment, menuOutputType output) :
+						 int min, int max, int increment, menuOutputType output) :
 	MenuItem(text, xp, yp, shortcutKey),
 	_val(val),
 	_min(min),
@@ -178,7 +178,7 @@ IntMenuItem::IntMenuItem(Common::String text, short xp, short yp, int shortcutKe
 Common::String IntMenuItem::getText() const {
 	// do custom formatting for some menu entries,
 	// and generate a Common::String of the results
-	char outputBuffer[10];
+	char outputBuffer[20];
 
 	switch (_output) {
 	case MENU_OUTPUT_REAGENT:

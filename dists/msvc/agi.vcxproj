@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -225,7 +240,6 @@
 		<ClCompile Include="..\..\engines\agi\checks.cpp" />
 		<ClCompile Include="..\..\engines\agi\console.cpp" />
 		<ClCompile Include="..\..\engines\agi\cycle.cpp" />
-		<ClCompile Include="..\..\engines\agi\detection.cpp" />
 		<ClCompile Include="..\..\engines\agi\font.cpp" />
 		<ClCompile Include="..\..\engines\agi\global.cpp" />
 		<ClCompile Include="..\..\engines\agi\graphics.cpp" />
@@ -237,6 +251,7 @@
 		<ClCompile Include="..\..\engines\agi\logic.cpp" />
 		<ClCompile Include="..\..\engines\agi\lzw.cpp" />
 		<ClCompile Include="..\..\engines\agi\menu.cpp" />
+		<ClCompile Include="..\..\engines\agi\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\agi\motion.cpp" />
 		<ClCompile Include="..\..\engines\agi\objects.cpp" />
 		<ClCompile Include="..\..\engines\agi\op_cmd.cpp" />
@@ -259,13 +274,13 @@
 		<ClCompile Include="..\..\engines\agi\systemui.cpp" />
 		<ClCompile Include="..\..\engines\agi\text.cpp" />
 		<ClCompile Include="..\..\engines\agi\view.cpp" />
-		<ClCompile Include="..\..\engines\agi\wagparser.cpp" />
 		<ClCompile Include="..\..\engines\agi\words.cpp" />
 	</ItemGroup>
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\agi\agi.h" />
 		<ClInclude Include="..\..\engines\agi\appleIIgs_timedelay_overwrite.h" />
 		<ClInclude Include="..\..\engines\agi\console.h" />
+		<ClInclude Include="..\..\engines\agi\detection.h" />
 		<ClInclude Include="..\..\engines\agi\detection_tables.h" />
 		<ClInclude Include="..\..\engines\agi\font.h" />
 		<ClInclude Include="..\..\engines\agi\graphics.h" />

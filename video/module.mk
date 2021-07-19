@@ -1,10 +1,12 @@
 MODULE := video
 
 MODULE_OBJS := \
+	3do_decoder.o \
 	avi_decoder.o \
 	coktel_decoder.o \
 	dxa_decoder.o \
 	flic_decoder.o \
+	hnm_decoder.o \
 	mpegps_decoder.o \
 	mve_decoder.o \
 	psx_decoder.o \

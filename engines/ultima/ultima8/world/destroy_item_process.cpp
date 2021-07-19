@@ -20,7 +20,6 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 
 #include "ultima/ultima8/world/destroy_item_process.h"
 #include "ultima/ultima8/world/item.h"
@@ -29,16 +28,15 @@
 namespace Ultima {
 namespace Ultima8 {
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(DestroyItemProcess)
 
 DestroyItemProcess::DestroyItemProcess() : Process() {
 
 }
 
-DestroyItemProcess::DestroyItemProcess(Item *item_) {
-	if (item_)
-		_itemNum = item_->getObjId();
+DestroyItemProcess::DestroyItemProcess(Item *item) {
+	if (item)
+		_itemNum = item->getObjId();
 	else
 		_itemNum = 0;
 

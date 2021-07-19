@@ -2,13 +2,13 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="dialogs">
-			<UniqueIdentifier>EEEE4239-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D73-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="swordsofxeen">
-			<UniqueIdentifier>EEEE423A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D74-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="worldofxeen">
-			<UniqueIdentifier>EEEE423B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D75-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -16,7 +16,6 @@
 		<ClCompile Include="..\..\engines\xeen\combat.cpp" />
 		<ClCompile Include="..\..\engines\xeen\cutscenes.cpp" />
 		<ClCompile Include="..\..\engines\xeen\debugger.cpp" />
-		<ClCompile Include="..\..\engines\xeen\detection.cpp" />
 		<ClCompile Include="..\..\engines\xeen\dialogs\credits_screen.cpp">
 			<Filter>dialogs</Filter>
 		</ClCompile>
@@ -95,6 +94,7 @@
 		<ClCompile Include="..\..\engines\xeen\item.cpp" />
 		<ClCompile Include="..\..\engines\xeen\locations.cpp" />
 		<ClCompile Include="..\..\engines\xeen\map.cpp" />
+		<ClCompile Include="..\..\engines\xeen\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\xeen\party.cpp" />
 		<ClCompile Include="..\..\engines\xeen\patcher.cpp" />
 		<ClCompile Include="..\..\engines\xeen\resources.cpp" />
@@ -137,6 +137,7 @@
 		<ClInclude Include="..\..\engines\xeen\combat.h" />
 		<ClInclude Include="..\..\engines\xeen\cutscenes.h" />
 		<ClInclude Include="..\..\engines\xeen\debugger.h" />
+		<ClInclude Include="..\..\engines\xeen\detection.h" />
 		<ClInclude Include="..\..\engines\xeen\detection_tables.h" />
 		<ClInclude Include="..\..\engines\xeen\dialogs\credits_screen.h">
 			<Filter>dialogs</Filter>

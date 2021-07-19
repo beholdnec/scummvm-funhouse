@@ -33,7 +33,7 @@ namespace CreateProjectTool {
 //////////////////////////////////////////////////////////////////////////
 
 MSBuildProvider::MSBuildProvider(StringList &global_warnings, std::map<std::string, StringList> &project_warnings, const int version, const MSVCVersion &msvc)
-    : MSVCProvider(global_warnings, project_warnings, version, msvc) {
+	: MSVCProvider(global_warnings, project_warnings, version, msvc) {
 
 	_archs.push_back(ARCH_X86);
 	_archs.push_back(ARCH_AMD64);
@@ -50,31 +50,39 @@ const char *MSBuildProvider::getPropertiesExtension() {
 
 namespace {
 
-inline void outputConfiguration(std::ostream &project, const std::string &config, const std::string &platform) {
-	project << "\t\t<ProjectConfiguration Include=\"" << config << "|" << platform << "\">\n"
+inline void outputConfiguration(std::ostream &project, const std::string &config, MSVC_Architecture arch) {
+	project << "\t\t<ProjectConfiguration Include=\"" << config << "|" << getMSVCConfigName(arch) << "\">\n"
 	        << "\t\t\t<Configuration>" << config << "</Configuration>\n"
-	        << "\t\t\t<Platform>" << platform << "</Platform>\n"
+	        << "\t\t\t<Platform>" << getMSVCConfigName(arch) << "</Platform>\n"
 	        << "\t\t</ProjectConfiguration>\n";
 }
 
-inline void outputConfigurationType(const BuildSetup &setup, std::ostream &project, const std::string &name, const std::string &config, const std::string &toolset) {
-	project << "\t<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='" << config << "'\" Label=\"Configuration\">\n"
-	        << "\t\t<ConfigurationType>" << ((name == setup.projectName || setup.devTools || setup.tests) ? "Application" : "StaticLibrary") << "</ConfigurationType>\n"
-	        << "\t\t<PlatformToolset>" << toolset << "</PlatformToolset>\n"
-	        << "\t</PropertyGroup>\n";
+inline void outputConfigurationType(const BuildSetup &setup, std::ostream &project, const std::string &name, const std::string &config, MSVC_Architecture arch, const MSVCVersion &msvc) {
+	project << "\t<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='" << config << "|" << getMSVCConfigName(arch) << "'\" Label=\"Configuration\">\n";
+	if (name == setup.projectName || setup.devTools || setup.tests) {
+		project << "\t\t<ConfigurationType>Application</ConfigurationType>\n";
+	} else {
+		project << "\t\t<ConfigurationType>StaticLibrary</ConfigurationType>\n";
+	}
+	project << "\t\t<PlatformToolset>" << (config == "LLVM" ? msvc.toolsetLLVM : msvc.toolsetMSVC ) << "</PlatformToolset>\n";
+	project << "\t\t<CharacterSet>" << (setup.useWindowsUnicode ? "Unicode" : "NotSet") << "</CharacterSet>\n";
+	if (msvc.version >= 16 && config == "Analysis") {
+		project << "\t\t<EnableASAN>true</EnableASAN>\n";
+	}	
+	project << "\t</PropertyGroup>\n";
 }
 
-inline void outputProperties(std::ostream &project, const std::string &config, const std::string &properties) {
-	project << "\t<ImportGroup Condition=\"'$(Configuration)|$(Platform)'=='" << config << "'\" Label=\"PropertySheets\">\n"
+inline void outputProperties(const BuildSetup &setup, std::ostream &project, const std::string &config, MSVC_Architecture arch) {
+	project << "\t<ImportGroup Condition=\"'$(Configuration)|$(Platform)'=='" << config << "|" << getMSVCConfigName(arch) << "'\" Label=\"PropertySheets\">\n"
 	        << "\t\t<Import Project=\"$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props\" Condition=\"exists('$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props')\" Label=\"LocalAppDataPlatform\" />\n"
-	        << "\t\t<Import Project=\"" << properties << "\" />\n"
+	        << "\t\t<Import Project=\"" << setup.projectDescription + '_' << config << getMSVCArchName(arch) << ".props" << "\" />\n"
 	        << "\t</ImportGroup>\n";
 }
 
 } // End of anonymous namespace
 
 void MSBuildProvider::createProjectFile(const std::string &name, const std::string &uuid, const BuildSetup &setup, const std::string &moduleDir,
-                                        const StringList &includeList, const StringList &excludeList) {
+										const StringList &includeList, const StringList &excludeList) {
 	const std::string projectFile = setup.outputDir + '/' + name + getProjectExtension();
 	std::ofstream project(projectFile.c_str());
 	if (!project || !project.is_open()) {
@@ -87,10 +95,10 @@ void MSBuildProvider::createProjectFile(const std::string &name, const std::stri
 	        << "\t<ItemGroup Label=\"ProjectConfigurations\">\n";
 
 	for (std::list<MSVC_Architecture>::const_iterator arch = _archs.begin(); arch != _archs.end(); ++arch) {
-		outputConfiguration(project, "Debug", getMSVCConfigName(*arch));
-		outputConfiguration(project, "Analysis", getMSVCConfigName(*arch));
-		outputConfiguration(project, "LLVM", getMSVCConfigName(*arch));
-		outputConfiguration(project, "Release", getMSVCConfigName(*arch));
+		outputConfiguration(project, "Debug", *arch);
+		outputConfiguration(project, "Analysis", *arch);
+		outputConfiguration(project, "LLVM", *arch);
+		outputConfiguration(project, "Release", *arch);
 	}
 	project << "\t</ItemGroup>\n";
 
@@ -111,10 +119,10 @@ void MSBuildProvider::createProjectFile(const std::string &name, const std::stri
 	project << "\t<Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.Default.props\" />\n";
 
 	for (std::list<MSVC_Architecture>::const_iterator arch = _archs.begin(); arch != _archs.end(); ++arch) {
-		outputConfigurationType(setup, project, name, "Release|" + getMSVCConfigName(*arch), _msvcVersion.toolsetMSVC);
-		outputConfigurationType(setup, project, name, "Analysis|" + getMSVCConfigName(*arch), _msvcVersion.toolsetMSVC);
-		outputConfigurationType(setup, project, name, "LLVM|" + getMSVCConfigName(*arch), _msvcVersion.toolsetLLVM);
-		outputConfigurationType(setup, project, name, "Debug|" + getMSVCConfigName(*arch), _msvcVersion.toolsetMSVC);
+		outputConfigurationType(setup, project, name, "Release", *arch, _msvcVersion);
+		outputConfigurationType(setup, project, name, "Analysis", *arch, _msvcVersion);
+		outputConfigurationType(setup, project, name, "LLVM", *arch, _msvcVersion);
+		outputConfigurationType(setup, project, name, "Debug", *arch, _msvcVersion);
 	}
 
 	project << "\t<Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.props\" />\n"
@@ -122,10 +130,10 @@ void MSBuildProvider::createProjectFile(const std::string &name, const std::stri
 	        << "\t</ImportGroup>\n";
 
 	for (std::list<MSVC_Architecture>::const_iterator arch = _archs.begin(); arch != _archs.end(); ++arch) {
-		outputProperties(project, "Release|" + getMSVCConfigName(*arch), setup.projectDescription + "_Release" + getMSVCArchName(*arch) + ".props");
-		outputProperties(project, "Analysis|" + getMSVCConfigName(*arch), setup.projectDescription + "_Analysis" + getMSVCArchName(*arch) + ".props");
-		outputProperties(project, "LLVM|" + getMSVCConfigName(*arch), setup.projectDescription + "_LLVM" + getMSVCArchName(*arch) + ".props");
-		outputProperties(project, "Debug|" + getMSVCConfigName(*arch), setup.projectDescription + "_Debug" + getMSVCArchName(*arch) + ".props");
+		outputProperties(setup, project, "Release", *arch);
+		outputProperties(setup, project, "Analysis", *arch);
+		outputProperties(setup, project, "LLVM", *arch);
+		outputProperties(setup, project, "Debug", *arch);
 	}
 
 	project << "\t<PropertyGroup Label=\"UserMacros\" />\n";
@@ -153,7 +161,7 @@ void MSBuildProvider::createProjectFile(const std::string &name, const std::stri
 			modulePath.erase(0, 1);
 	}
 
-	if (modulePath.size())
+	if (!modulePath.empty())
 		addFilesToProject(moduleDir, project, includeList, excludeList, setup.filePrefix + '/' + modulePath);
 	else
 		addFilesToProject(moduleDir, project, includeList, excludeList, setup.filePrefix);
@@ -255,10 +263,7 @@ void MSBuildProvider::outputFilter(std::ostream &filters, const FileEntries &fil
 void MSBuildProvider::writeReferences(const BuildSetup &setup, std::ofstream &output) {
 	output << "\t<ItemGroup>\n";
 
-	for (UUIDMap::const_iterator i = _uuidMap.begin(); i != _uuidMap.end(); ++i) {
-		if (i->first == setup.projectName)
-			continue;
-
+	for (UUIDMap::const_iterator i = _engineUuidMap.begin(); i != _engineUuidMap.end(); ++i) {
 		output << "\t<ProjectReference Include=\"" << i->first << ".vcxproj\">\n"
 		       << "\t\t<Project>{" << i->second << "}</Project>\n"
 		       << "\t</ProjectReference>\n";
@@ -382,11 +387,16 @@ void MSBuildProvider::outputGlobalPropFile(const BuildSetup &setup, std::ofstrea
 	           << "\t\t\t<CompileAs>Default</CompileAs>\n"
 	           << "\t\t\t<MultiProcessorCompilation>true</MultiProcessorCompilation>\n"
 	           << "\t\t\t<ConformanceMode>true</ConformanceMode>\n"
+	           << "\t\t\t<ObjectFileName>$(IntDir)dists\\msvc\\%(RelativeDir)</ObjectFileName>\n"
 	           << "\t\t\t<AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>\n"
 	           << "\t\t</ClCompile>\n"
 	           << "\t\t<Link>\n"
-	           << "\t\t\t<IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>\n"
-	           << "\t\t\t<SubSystem>Console</SubSystem>\n";
+	           << "\t\t\t<IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>\n";
+	if (!setup.featureEnabled("text-console") && !setup.devTools && !setup.tests) {
+		properties << "\t\t\t<SubSystem>Windows</SubSystem>\n";
+	} else {
+		properties << "\t\t\t<SubSystem>Console</SubSystem>\n";
+	}
 
 	if (!setup.devTools && !setup.tests)
 		properties << "\t\t\t<EntryPointSymbol>WinMainCRTStartup</EntryPointSymbol>\n";
@@ -416,7 +426,7 @@ void MSBuildProvider::createBuildProp(const BuildSetup &setup, bool isRelease, M
 	           << "\t</ImportGroup>\n"
 	           << "\t<PropertyGroup>\n"
 	           << "\t\t<_PropertySheetDisplayName>" << setup.projectDescription << "_" << configuration << getMSVCArchName(arch) << "</_PropertySheetDisplayName>\n"
-	           << "\t\t<LinkIncremental>" << (isRelease ? "false" : "true") << "</LinkIncremental>\n"
+			   << "\t\t<LinkIncremental>" << ((isRelease || configuration == "Analysis") ? "false" : "true") << "</LinkIncremental>\n"
 	           << "\t\t<GenerateManifest>false</GenerateManifest>\n"
 	           << "\t</PropertyGroup>\n"
 	           << "\t<ItemDefinitionGroup>\n"
@@ -445,13 +455,12 @@ void MSBuildProvider::createBuildProp(const BuildSetup &setup, bool isRelease, M
 		           << "\t\t\t<BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>\n"
 		           << "\t\t\t<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>\n"
 		           << "\t\t\t<FunctionLevelLinking>true</FunctionLevelLinking>\n"
-		           << "\t\t\t<TreatWarningAsError>false</TreatWarningAsError>\n";
-		if (_version >= 14) {
-			// Since MSVC 2015 Edit and Continue is supported for x86 and x86-64, but not for ARM.
-			properties << "\t\t\t<DebugInformationFormat>" << (arch != ARCH_ARM64 ? "EditAndContinue" : "ProgramDatabase") << "</DebugInformationFormat>\n";
+				   << "\t\t\t<TreatWarningAsError>false</TreatWarningAsError>\n";
+		// Since MSVC 2015 Edit and Continue is supported for x86 and x86-64, but not for ARM.
+		if (configuration != "Analysis" && (arch == ARCH_X86 || (arch == ARCH_AMD64 && _version >= 14))) {
+			properties << "\t\t\t<DebugInformationFormat>EditAndContinue</DebugInformationFormat>\n";
 		} else {
-			// Older MSVC versions did not support Edit and Continue for x64, thus we do not use it.
-			properties << "\t\t\t<DebugInformationFormat>" << (arch == ARCH_X86 ? "EditAndContinue" : "ProgramDatabase") << "</DebugInformationFormat>\n";
+			properties << "\t\t\t<DebugInformationFormat>ProgramDatabase</DebugInformationFormat>\n";
 		}
 		properties << "\t\t\t<EnablePREfast>" << (configuration == "Analysis" ? "true" : "false") << "</EnablePREfast>\n";
 
@@ -481,17 +490,17 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
 	}
 }
 
-namespace {
-
-inline void outputNasmCommand(std::ostream &projectFile, const std::string &config, const std::string &prefix) {
+void MSBuildProvider::outputNasmCommand(std::ostream &projectFile, const std::string &config, const std::string &prefix) {
 	projectFile << "\t\t\t<Command Condition=\"'$(Configuration)|$(Platform)'=='" << config << "|Win32'\">nasm.exe -f win32 -g -o \"$(IntDir)" << prefix << "%(Filename).obj\" \"%(FullPath)\"</Command>\n"
 	            << "\t\t\t<Outputs Condition=\"'$(Configuration)|$(Platform)'=='" << config << "|Win32'\">$(IntDir)" << prefix << "%(Filename).obj;%(Outputs)</Outputs>\n";
+	if (_version >= 15) {
+		projectFile << "\t\t\t<OutputItemType Condition=\"'$(Configuration)|$(Platform)'=='" << config << "|Win32'\">Object</OutputItemType>\n"
+		            << "\t\t\t<BuildInParallel Condition=\"'$(Configuration)|$(Platform)'=='" << config << "|Win32'\">true</BuildInParallel>\n";
+	}
 }
 
-} // End of anonymous namespace
-
-void MSBuildProvider::writeFileListToProject(const FileNode &dir, std::ofstream &projectFile, const int, const StringList &duplicate,
-                                             const std::string &objPrefix, const std::string &filePrefix) {
+void MSBuildProvider::writeFileListToProject(const FileNode &dir, std::ofstream &projectFile, const int,
+											 const std::string &objPrefix, const std::string &filePrefix) {
 	// Reset lists
 	_filters.clear();
 	_compileFiles.clear();
@@ -502,31 +511,11 @@ void MSBuildProvider::writeFileListToProject(const FileNode &dir, std::ofstream 
 
 	// Compute the list of files
 	_filters.push_back(""); // init filters
-	computeFileList(dir, duplicate, objPrefix, filePrefix);
+	computeFileList(dir, objPrefix, filePrefix);
 	_filters.pop_back(); // remove last empty filter
 
-	// Output compile files
-	if (!_compileFiles.empty()) {
-		projectFile << "\t<ItemGroup>\n";
-		for (std::list<FileEntry>::const_iterator entry = _compileFiles.begin(); entry != _compileFiles.end(); ++entry) {
-			std::string fileName = (*entry).name + ".o";
-			std::transform(fileName.begin(), fileName.end(), fileName.begin(), tolower);
-			const bool isDuplicate = (std::find(duplicate.begin(), duplicate.end(), fileName) != duplicate.end());
-
-			// Deal with duplicated file names
-			if (isDuplicate) {
-				projectFile << "\t\t<ClCompile Include=\"" << (*entry).path << "\">\n"
-				            << "\t\t\t<ObjectFileName>$(IntDir)" << (*entry).prefix << "%(Filename).obj</ObjectFileName>\n";
-
-				projectFile << "\t\t</ClCompile>\n";
-			} else {
-				projectFile << "\t\t<ClCompile Include=\"" << (*entry).path << "\" />\n";
-			}
-		}
-		projectFile << "\t</ItemGroup>\n";
-	}
-
-	// Output include, other and resource files
+	// Output compile, include, other and resource files
+	outputFiles(projectFile, _compileFiles, "ClCompile");
 	outputFiles(projectFile, _includeFiles, "ClInclude");
 	outputFiles(projectFile, _otherFiles, "None");
 	outputFiles(projectFile, _resourceFiles, "ResourceCompile");
@@ -536,15 +525,13 @@ void MSBuildProvider::writeFileListToProject(const FileNode &dir, std::ofstream 
 		projectFile << "\t<ItemGroup>\n";
 		for (std::list<FileEntry>::const_iterator entry = _asmFiles.begin(); entry != _asmFiles.end(); ++entry) {
 
-			const bool isDuplicate = (std::find(duplicate.begin(), duplicate.end(), (*entry).name + ".o") != duplicate.end());
-
 			projectFile << "\t\t<CustomBuild Include=\"" << (*entry).path << "\">\n"
 			            << "\t\t\t<FileType>Document</FileType>\n";
 
-			outputNasmCommand(projectFile, "Debug", (isDuplicate ? (*entry).prefix : ""));
-			outputNasmCommand(projectFile, "Analysis", (isDuplicate ? (*entry).prefix : ""));
-			outputNasmCommand(projectFile, "Release", (isDuplicate ? (*entry).prefix : ""));
-			outputNasmCommand(projectFile, "LLVM", (isDuplicate ? (*entry).prefix : ""));
+			outputNasmCommand(projectFile, "Debug", (*entry).prefix);
+			outputNasmCommand(projectFile, "Analysis", (*entry).prefix);
+			outputNasmCommand(projectFile, "Release", (*entry).prefix);
+			outputNasmCommand(projectFile, "LLVM", (*entry).prefix);
 
 			projectFile << "\t\t</CustomBuild>\n";
 		}
@@ -562,7 +549,7 @@ void MSBuildProvider::outputFiles(std::ostream &projectFile, const FileEntries &
 	}
 }
 
-void MSBuildProvider::computeFileList(const FileNode &dir, const StringList &duplicate, const std::string &objPrefix, const std::string &filePrefix) {
+void MSBuildProvider::computeFileList(const FileNode &dir, const std::string &objPrefix, const std::string &filePrefix) {
 	for (FileNode::NodeList::const_iterator i = dir.children.begin(); i != dir.children.end(); ++i) {
 		const FileNode *node = *i;
 
@@ -571,7 +558,7 @@ void MSBuildProvider::computeFileList(const FileNode &dir, const StringList &dup
 			std::string _currentFilter = _filters.back();
 			_filters.back().append((_filters.back() == "" ? "" : "\\") + node->name);
 
-			computeFileList(*node, duplicate, objPrefix + node->name + '_', filePrefix + node->name + '/');
+			computeFileList(*node, objPrefix + node->name + '_', filePrefix + node->name + '/');
 
 			// Reset filter
 			_filters.push_back(_currentFilter);

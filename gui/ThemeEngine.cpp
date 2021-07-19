@@ -27,11 +27,13 @@
 #include "common/unzip.h"
 #include "common/tokenizer.h"
 #include "common/translation.h"
+#include "common/unicode-bidi.h"
 
+#include "graphics/conversion.h"
 #include "graphics/cursorman.h"
 #include "graphics/fontman.h"
 #include "graphics/surface.h"
-#include "graphics/transparent_surface.h"
+#include "graphics/svg.h"
 #include "graphics/VectorRenderer.h"
 #include "graphics/fonts/bdf.h"
 #include "graphics/fonts/ttf.h"
@@ -188,11 +190,15 @@ ThemeEngine::ThemeEngine(Common::String id, GraphicsMode mode) :
 	_system(nullptr), _vectorRenderer(nullptr),
 	_layerToDraw(kDrawLayerBackground), _bytesPerPixel(0),  _graphicsMode(kGfxDisabled),
 	_font(nullptr), _initOk(false), _themeOk(false), _enabled(false), _themeFiles(),
-	_cursor(nullptr) {
+	_cursor(nullptr), _scaleFactor(1.0f) {
+
+	_baseWidth = 640;	// Default sane values
+	_baseHeight = 480;
 
 	_system = g_system;
 	_parser = new ThemeParser(this);
 	_themeEval = new GUI::ThemeEval();
+	_themeEval->setScaleFactor(_scaleFactor);
 
 	_useCursor = false;
 
@@ -224,7 +230,11 @@ ThemeEngine::ThemeEngine(Common::String id, GraphicsMode mode) :
 
 	_cursorHotspotX = _cursorHotspotY = 0;
 	_cursorWidth = _cursorHeight = 0;
+	_cursorTransparent = 255;
+#ifndef USE_RGB_COLOR
+	_cursorFormat = Graphics::PixelFormat::createFormatCLUT8();
 	_cursorPalSize = 0;
+#endif
 
 	// We prefer files in archive bundles over the common search paths.
 	_themeFiles.add("default", &SearchMan, 0, false);
@@ -237,25 +247,17 @@ ThemeEngine::~ThemeEngine() {
 	_backBuffer.free();
 
 	unloadTheme();
+	unloadExtraFont();
 
 	// Release all graphics surfaces
 	for (ImagesMap::iterator i = _bitmaps.begin(); i != _bitmaps.end(); ++i) {
-		Graphics::Surface *surf = i->_value;
+		Graphics::ManagedSurface *surf = i->_value;
 		if (surf) {
 			surf->free();
 			delete surf;
 		}
 	}
 	_bitmaps.clear();
-
-	for (AImagesMap::iterator i = _abitmaps.begin(); i != _abitmaps.end(); ++i) {
-		Graphics::TransparentSurface *surf = i->_value;
-		if (surf) {
-			surf->free();
-			delete surf;
-		}
-	}
-	_abitmaps.clear();
 
 	delete _parser;
 	delete _themeEval;
@@ -303,8 +305,14 @@ const char *ThemeEngine::findModeConfigName(GraphicsMode mode) {
 }
 
 
+void ThemeEngine::setBaseResolution(int w, int h, float s) {
+	_baseWidth = w;
+	_baseHeight = h;
+	_scaleFactor = s;
 
-
+	_parser->setBaseResolution(w, h, s);
+	_themeEval->setScaleFactor(s);
+}
 
 /**********************************************************
  * Theme setup/initialization
@@ -365,7 +373,7 @@ bool ThemeEngine::init() {
 void ThemeEngine::clearAll() {
 	if (_initOk) {
 		_system->clearOverlay();
-		_system->grabOverlay(_backBuffer.getPixels(), _backBuffer.pitch);
+		_system->grabOverlay(*_backBuffer.surfacePtr());
 	}
 }
 
@@ -374,22 +382,13 @@ void ThemeEngine::refresh() {
 	// Flush all bitmaps if the overlay pixel format changed.
 	if (_overlayFormat != _system->getOverlayFormat()) {
 		for (ImagesMap::iterator i = _bitmaps.begin(); i != _bitmaps.end(); ++i) {
-			Graphics::Surface *surf = i->_value;
+			Graphics::ManagedSurface *surf = i->_value;
 			if (surf) {
 				surf->free();
 				delete surf;
 			}
 		}
 		_bitmaps.clear();
-
-		for (AImagesMap::iterator i = _abitmaps.begin(); i != _abitmaps.end(); ++i) {
-			Graphics::TransparentSurface *surf = i->_value;
-			if (surf) {
-				surf->free();
-				delete surf;
-			}
-		}
-		_abitmaps.clear();
 	}
 
 	init();
@@ -398,8 +397,10 @@ void ThemeEngine::refresh() {
 		_system->showOverlay();
 
 		if (_useCursor) {
+#ifndef USE_RGB_COLOR
 			CursorMan.replaceCursorPalette(_cursorPal, 0, _cursorPalSize);
-			CursorMan.replaceCursor(_cursor, _cursorWidth, _cursorHeight, _cursorHotspotX, _cursorHotspotY, 255, true);
+#endif
+			CursorMan.replaceCursor(_cursor, _cursorWidth, _cursorHeight, _cursorHotspotX, _cursorHotspotY, _cursorTransparent, true, &_cursorFormat);
 		}
 	}
 }
@@ -518,9 +519,22 @@ bool ThemeEngine::addTextData(const Common::String &drawDataId, TextData textId,
 	return true;
 }
 
-bool ThemeEngine::addFont(TextData textId, const Common::String &file, const Common::String &scalableFile, const int pointsize) {
+bool ThemeEngine::addFont(TextData textId, const Common::String &language, const Common::String &file, const Common::String &scalableFile, const int pointsize) {
 	if (textId == -1)
 		return false;
+
+	if (!language.empty()) {
+#ifdef USE_TRANSLATION
+		Common::String cl = TransMan.getCurrentLanguage();
+#else
+		Common::String cl("C");
+#endif
+		if (!cl.matchString(language, true))
+			return true;	// Skip
+
+		if (_texts[textId] != nullptr)	// We already loaded something
+			return true;
+	}
 
 	if (_texts[textId] != nullptr)
 		delete _texts[textId];
@@ -533,7 +547,7 @@ bool ThemeEngine::addFont(TextData textId, const Common::String &file, const Com
 		Common::String localized = FontMan.genLocalizedFontFilename(file);
 		const Common::String charset
 #ifdef USE_TRANSLATION
-		                            (TransMan.getCurrentCharset())
+		                            (textId == kTextDataExtraLang ? "" : TransMan.getCurrentCharset())
 #endif
 		                            ;
 
@@ -549,12 +563,15 @@ bool ThemeEngine::addFont(TextData textId, const Common::String &file, const Com
 				error("Couldn't load font '%s'/'%s'", file.c_str(), scalableFile.c_str());
 #ifdef USE_TRANSLATION
 				TransMan.setLanguage("C");
-#ifdef USE_TTS
 				Common::TextToSpeechManager *ttsMan;
 				if ((ttsMan = g_system->getTextToSpeechManager()) != nullptr)
 					ttsMan->setLanguage("en");
-#endif // USE_TTS
 #endif // USE_TRANSLATION
+
+				// No font, cleanup TextDrawData
+				delete _texts[textId];
+				_texts[textId] = nullptr;
+
 				return false; // fall-back attempt failed
 			}
 			// Success in fall-back attempt to standard (non-localized) font.
@@ -562,20 +579,79 @@ bool ThemeEngine::addFont(TextData textId, const Common::String &file, const Com
 			// FIXME If we return false anyway why would we attempt the fall-back in the first place?
 #ifdef USE_TRANSLATION
 			TransMan.setLanguage("C");
-#ifdef USE_TTS
-				Common::TextToSpeechManager *ttsMan;
-				if ((ttsMan = g_system->getTextToSpeechManager()) != nullptr)
-					ttsMan->setLanguage("en");
-#endif // USE_TTS
+			Common::TextToSpeechManager *ttsMan;
+			if ((ttsMan = g_system->getTextToSpeechManager()) != nullptr)
+				ttsMan->setLanguage("en");
 #endif // USE_TRANSLATION
 			// Returning true here, would allow falling back to standard fonts for the missing ones,
 			// but that leads to "garbage" glyphs being displayed on screen for non-Latin languages
+			// No font, cleanup TextDrawData
+			delete _texts[textId];
+			_texts[textId] = nullptr;
+
 			return false;
 		}
 	}
 
 	return true;
 
+}
+
+// This should work independently of the translation manager, since it is is just about displaying
+// correct ingame messages in Chinese, Korean and Japanese games, even if the launcher is set to
+// English and/or the translations are disabled.
+Common::Array<Common::Language> getLangIdentifiers(const Common::String &language) {
+	struct IdStr2Lang {
+		const char strId[6];
+		Common::Language lang;
+	};
+
+	// I have added only the languages that currently make sense (the only other extra font that we
+	// currently have is for Hindi, but that language is only supported in the launcher, there are
+	// no games in Hindi).
+	IdStr2Lang matchPairs[] = {
+	//  { "hi", Common::UNK_LANG },
+		{ "ja", Common::JA_JPN },
+		{ "ko", Common::KO_KOR },
+		{ "zh", Common::ZH_ANY },
+		{ "zh", Common::ZH_CNA },
+		{ "zh", Common::ZH_TWN }
+	};
+
+	Common::Array<Common::Language> result;
+
+	for (int i = 0; i < ARRAYSIZE(matchPairs); ++i) {
+		if (language.contains(matchPairs[i].strId))
+			result.push_back(matchPairs[i].lang);
+	}
+
+	return result;
+}
+
+void ThemeEngine::storeFontNames(TextData textId, const Common::String &language, const Common::String &file, const Common::String &scalableFile, const int pointsize) {
+	if (language.empty())
+		return;
+
+	Common::Array<Common::Language> langs = getLangIdentifiers(language);
+	if (langs.empty())
+		return;
+
+	Common::Array<LangExtraFont>::iterator entry = Common::find(_langExtraFonts.begin(), _langExtraFonts.end(), langs[0]);
+	if (entry == _langExtraFonts.end())
+		_langExtraFonts.push_back(LangExtraFont(textId, langs, file, scalableFile, pointsize));
+	else
+		entry->storeFileNames(textId, file, scalableFile, pointsize);
+}
+
+bool ThemeEngine::loadExtraFont(FontStyle style, Common::Language lang) {
+	if (style >= kFontStyleMax)
+		return false;
+
+	Common::Array<LangExtraFont>::iterator entry = Common::find(_langExtraFonts.begin(), _langExtraFonts.end(), lang);
+	if (entry == _langExtraFonts.end())
+		return false;
+	TextData td = fontStyleToData(style);
+	return addFont(kTextDataExtraLang, Common::String(), entry->file(td), entry->sclFile(td), entry->fntSize(td));
 }
 
 bool ThemeEngine::addTextColor(TextColor colorId, int r, int g, int b) {
@@ -594,11 +670,40 @@ bool ThemeEngine::addTextColor(TextColor colorId, int r, int g, int b) {
 	return true;
 }
 
-bool ThemeEngine::addBitmap(const Common::String &filename) {
+bool ThemeEngine::addBitmap(const Common::String &filename, const Common::String &scalablefile, int width, int height) {
 	// Nothing has to be done if the bitmap already has been loaded.
-	Graphics::Surface *surf = _bitmaps[filename];
-	if (surf)
+	Graphics::ManagedSurface *surf = _bitmaps[filename];
+	if (surf) {
+		surf->free();
+		delete surf;
+		surf = nullptr;
+
+		_bitmaps.erase(filename);
+	}
+
+	if (!scalablefile.empty()) {
+		Graphics::SVGBitmap *image = nullptr;
+		Common::ArchiveMemberList members;
+		_themeFiles.listMatchingMembers(members, scalablefile);
+		for (Common::ArchiveMemberList::const_iterator i = members.begin(), end = members.end(); i != end; ++i) {
+			Common::SeekableReadStream *stream = (*i)->createReadStream();
+			if (stream) {
+				image = new Graphics::SVGBitmap(stream);
+				break;
+			}
+		}
+
+		if (image) {
+			_bitmaps[filename] = new Graphics::ManagedSurface(width * _scaleFactor, height * _scaleFactor, *image->getPixelFormat());
+			image->render(*_bitmaps[filename], width * _scaleFactor, height * _scaleFactor);
+
+			delete image;
+		} else {
+			return false;
+		}
+
 		return true;
+	}
 
 	const Graphics::Surface *srcSurface = nullptr;
 
@@ -622,7 +727,7 @@ bool ThemeEngine::addBitmap(const Common::String &filename) {
 		}
 
 		if (srcSurface && srcSurface->format.bytesPerPixel != 1)
-			surf = srcSurface->convertTo(_overlayFormat);
+			surf = new Graphics::ManagedSurface(srcSurface->convertTo(_overlayFormat));
 #else
 		error("No PNG support compiled in");
 #endif
@@ -643,55 +748,19 @@ bool ThemeEngine::addBitmap(const Common::String &filename) {
 		}
 
 		if (srcSurface && srcSurface->format.bytesPerPixel != 1)
-			surf = srcSurface->convertTo(_overlayFormat);
+			surf = new Graphics::ManagedSurface(srcSurface->convertTo(_overlayFormat));
 	}
 
+	if (_scaleFactor != 1.0 && surf) {
+		Graphics::Surface *tmp2 = surf->rawSurface().scale(surf->w * _scaleFactor, surf->h * _scaleFactor, false);
+
+		surf->free();
+		delete surf;
+
+		surf = new Graphics::ManagedSurface(tmp2);
+	}
 	// Store the surface into our hashmap (attention, may store NULL entries!)
 	_bitmaps[filename] = surf;
-
-	return surf != nullptr;
-}
-
-bool ThemeEngine::addAlphaBitmap(const Common::String &filename) {
-	// Nothing has to be done if the bitmap already has been loaded.
-	Graphics::TransparentSurface *surf = _abitmaps[filename];
-	if (surf)
-		return true;
-
-#ifdef USE_PNG
-	const Graphics::TransparentSurface *srcSurface = nullptr;
-#endif
-
-	if (filename.hasSuffix(".png")) {
-		// Maybe it is PNG?
-#ifdef USE_PNG
-		Image::PNGDecoder decoder;
-		Common::ArchiveMemberList members;
-		_themeFiles.listMatchingMembers(members, filename);
-		for (Common::ArchiveMemberList::const_iterator i = members.begin(), end = members.end(); i != end; ++i) {
-			Common::SeekableReadStream *stream = (*i)->createReadStream();
-			if (stream) {
-				if (!decoder.loadStream(*stream))
-					error("Error decoding PNG");
-
-				srcSurface = new Graphics::TransparentSurface(*decoder.getSurface(), true);
-				delete stream;
-				if (srcSurface)
-					break;
-			}
-		}
-
-		if (srcSurface && srcSurface->format.bytesPerPixel != 1)
-			surf = srcSurface->convertTo(_overlayFormat);
-#else
-		error("No PNG support compiled in");
-#endif
-	} else {
-		error("Only PNG is supported as alphabitmap");
-	}
-
-	// Store the surface into our hashmap (attention, may store NULL entries!)
-	_abitmaps[filename] = surf;
 
 	return surf != nullptr;
 }
@@ -752,6 +821,9 @@ void ThemeEngine::unloadTheme() {
 	}
 
 	for (int i = 0; i < kTextDataMAX; ++i) {
+		// Don't unload the language specific extra font here or it will be lost after a refresh() call.
+		if (i == kTextDataExtraLang)
+			continue;
 		delete _texts[i];
 		_texts[i] = nullptr;
 	}
@@ -763,6 +835,11 @@ void ThemeEngine::unloadTheme() {
 
 	_themeEval->reset();
 	_themeOk = false;
+}
+
+void ThemeEngine::unloadExtraFont() {
+	delete _texts[kTextDataExtraLang];
+	_texts[kTextDataExtraLang] = nullptr;
 }
 
 bool ThemeEngine::loadDefaultXML() {
@@ -906,9 +983,9 @@ void ThemeEngine::drawDD(DrawData type, const Common::Rect &r, uint32 dynamic, b
 	}
 }
 
-void ThemeEngine::drawDDText(TextData type, TextColor color, const Common::Rect &r, const Common::String &text,
-                             bool restoreBg, bool ellipsis, Graphics::TextAlign alignH, TextAlignVertical alignV,
-                             int deltax, const Common::Rect &drawableTextArea) {
+void ThemeEngine::drawDDText(TextData type, TextColor color, const Common::Rect &r, const Common::U32String &text,
+	bool restoreBg, bool ellipsis, Graphics::TextAlign alignH, TextAlignVertical alignV,
+	int deltax, const Common::Rect &drawableTextArea) {
 
 	if (type == kTextDataNone || !_texts[type] || _layerToDraw == kDrawLayerBackground)
 		return;
@@ -931,8 +1008,8 @@ void ThemeEngine::drawDDText(TextData type, TextColor color, const Common::Rect 
 		restoreBackground(dirty);
 
 	_vectorRenderer->setFgColor(_textColors[color]->r, _textColors[color]->g, _textColors[color]->b);
-#ifdef USE_TRANSLATION
-	_vectorRenderer->drawString(_texts[type]->_fontPtr, TransMan.convertBiDiString(text), area, alignH, alignV, deltax, ellipsis, dirty);
+#ifdef USE_FRIBIDI
+	_vectorRenderer->drawString(_texts[type]->_fontPtr, Common::convertBiDiU32String(text), area, alignH, alignV, deltax, ellipsis, dirty);
 #else
 	_vectorRenderer->drawString(_texts[type]->_fontPtr, text, area, alignH, alignV, deltax, ellipsis, dirty);
 #endif
@@ -943,7 +1020,7 @@ void ThemeEngine::drawDDText(TextData type, TextColor color, const Common::Rect 
 /**********************************************************
  * Widget drawing functions
  *********************************************************/
-void ThemeEngine::drawButton(const Common::Rect &r, const Common::String &str, WidgetStateInfo state, uint16 hints) {
+void ThemeEngine::drawButton(const Common::Rect &r, const Common::U32String &str, WidgetStateInfo state, uint16 hints) {
 	if (!ready())
 		return;
 
@@ -963,8 +1040,8 @@ void ThemeEngine::drawButton(const Common::Rect &r, const Common::String &str, W
 	           _widgets[dd]->_textAlignV);
 }
 
-void ThemeEngine::drawDropDownButton(const Common::Rect &r, uint32 dropdownWidth, const Common::String &str,
-                                     ThemeEngine::WidgetStateInfo buttonState, bool inButton, bool inDropdown, bool rtl) {
+void ThemeEngine::drawDropDownButton(const Common::Rect &r, uint32 dropdownWidth, const Common::U32String &str,
+									 ThemeEngine::WidgetStateInfo buttonState, bool inButton, bool inDropdown, bool rtl) {
 	if (!ready())
 		return;
 
@@ -989,6 +1066,12 @@ void ThemeEngine::drawDropDownButton(const Common::Rect &r, uint32 dropdownWidth
 	Common::Rect textRect = r;
 	textRect.left  = r.left  + dropdownWidth;
 	textRect.right = r.right - dropdownWidth;
+
+	// Don't draw text if we don't have enough room for it
+	if (!textRect.isValidRect()) {
+		return;
+	}
+
 	drawDDText(getTextData(dd), getTextColor(dd), textRect, str, false, true, convertTextAlignH(_widgets[dd]->_textAlignH, rtl),
 	           _widgets[dd]->_textAlignV);
 }
@@ -1000,7 +1083,7 @@ void ThemeEngine::drawLineSeparator(const Common::Rect &r) {
 	drawDD(kDDSeparator, r);
 }
 
-void ThemeEngine::drawCheckbox(const Common::Rect &r, const Common::String &str, bool checked, WidgetStateInfo state, bool rtl) {
+void ThemeEngine::drawCheckbox(const Common::Rect &r, const Common::U32String &str, bool checked, WidgetStateInfo state, bool rtl) {
 	if (!ready())
 		return;
 
@@ -1035,7 +1118,7 @@ void ThemeEngine::drawCheckbox(const Common::Rect &r, const Common::String &str,
 	}
 }
 
-void ThemeEngine::drawRadiobutton(const Common::Rect &r, const Common::String &str, bool checked, WidgetStateInfo state, bool rtl) {
+void ThemeEngine::drawRadiobutton(const Common::Rect &r, const Common::U32String &str, bool checked, WidgetStateInfo state, bool rtl) {
 	if (!ready())
 		return;
 
@@ -1161,7 +1244,7 @@ void ThemeEngine::drawCaret(const Common::Rect &r, bool erase) {
 		drawDD(kDDCaret, r);
 }
 
-void ThemeEngine::drawPopUpWidget(const Common::Rect &r, const Common::String &sel, int deltax, WidgetStateInfo state, bool rtl) {
+void ThemeEngine::drawPopUpWidget(const Common::Rect &r, const Common::U32String &sel, int deltax, WidgetStateInfo state, bool rtl) {
 	if (!ready())
 		return;
 
@@ -1183,7 +1266,7 @@ void ThemeEngine::drawPopUpWidget(const Common::Rect &r, const Common::String &s
 	}
 }
 
-void ThemeEngine::drawSurface(const Common::Point &p, const Graphics::Surface &surface, bool themeTrans) {
+void ThemeEngine::drawSurface(const Common::Point &p, const Graphics::ManagedSurface &surface, bool themeTrans) {
 	if (!ready())
 		return;
 
@@ -1191,10 +1274,7 @@ void ThemeEngine::drawSurface(const Common::Point &p, const Graphics::Surface &s
 		return;
 
 	_vectorRenderer->setClippingRect(_clip);
-	if (themeTrans)
-		_vectorRenderer->blitKeyBitmap(&surface, p);
-	else
-		_vectorRenderer->blitSubSurface(&surface, p);
+	_vectorRenderer->blitKeyBitmap(&surface, p, themeTrans);
 
 	Common::Rect dirtyRect = Common::Rect(p.x, p.y, p.x + surface.w, p.y + surface.h);
 	dirtyRect.clip(_clip);
@@ -1228,7 +1308,7 @@ void ThemeEngine::drawWidgetBackground(const Common::Rect &r, WidgetBackground b
 }
 
 void ThemeEngine::drawTab(const Common::Rect &r, int tabHeight, const Common::Array<int> &tabWidths,
-                          const Common::Array<Common::String> &tabs, int active, bool rtl) {
+						  const Common::Array<Common::U32String> &tabs, int active, bool rtl) {
 	if (!ready())
 		return;
 
@@ -1279,9 +1359,9 @@ void ThemeEngine::drawTab(const Common::Rect &r, int tabHeight, const Common::Ar
 	}
 }
 
-void ThemeEngine::drawText(const Common::Rect &r, const Common::String &str, WidgetStateInfo state,
-                           Graphics::TextAlign align, TextInversionState inverted, int deltax, bool useEllipsis,
-                           FontStyle font, FontColor color, bool restore, const Common::Rect &drawableTextArea) {
+void ThemeEngine::drawText(const Common::Rect &r, const Common::U32String &str, WidgetStateInfo state,
+						   Graphics::TextAlign align, TextInversionState inverted, int deltax, bool useEllipsis,
+						   FontStyle font, FontColor color, bool restore, const Common::Rect &drawableTextArea) {
 	if (!ready())
 		return;
 
@@ -1447,19 +1527,10 @@ void ThemeEngine::applyScreenShading(ShadingStyle style) {
 }
 
 bool ThemeEngine::createCursor(const Common::String &filename, int hotspotX, int hotspotY) {
-	if (!_system->hasFeature(OSystem::kFeatureCursorPalette))
-		return true;
-
 	// Try to locate the specified file among all loaded bitmaps
-	const Graphics::Surface *cursor = _bitmaps[filename];
+	const Graphics::ManagedSurface *cursor = _bitmaps[filename];
 	if (!cursor)
 		return false;
-
-#ifdef USE_RGB_COLOR
-	_cursorFormat.bytesPerPixel = 1;
-	_cursorFormat.rLoss = _cursorFormat.gLoss = _cursorFormat.bLoss = _cursorFormat.aLoss = 8;
-	_cursorFormat.rShift = _cursorFormat.gShift = _cursorFormat.bShift = _cursorFormat.aShift = 0;
-#endif
 
 	// Set up the cursor parameters
 	_cursorHotspotX = hotspotX;
@@ -1467,6 +1538,23 @@ bool ThemeEngine::createCursor(const Common::String &filename, int hotspotX, int
 
 	_cursorWidth = cursor->w;
 	_cursorHeight = cursor->h;
+
+#ifdef USE_RGB_COLOR
+	_cursorFormat = cursor->format;
+	_cursorTransparent = _cursorFormat.RGBToColor(0xFF, 0, 0xFF);
+
+	// Allocate a new buffer for the cursor
+	delete[] _cursor;
+	_cursor = new byte[_cursorWidth * _cursorHeight * _cursorFormat.bytesPerPixel];
+	assert(_cursor);
+	Graphics::copyBlit(_cursor, (const byte *)cursor->getPixels(),
+	                   _cursorWidth * _cursorFormat.bytesPerPixel, cursor->pitch,
+	                   _cursorWidth, _cursorHeight, _cursorFormat.bytesPerPixel);
+
+	_useCursor = true;
+#else
+	if (!_system->hasFeature(OSystem::kFeatureCursorPalette))
+		return true;
 
 	// Allocate a new buffer for the cursor
 	delete[] _cursor;
@@ -1525,6 +1613,7 @@ bool ThemeEngine::createCursor(const Common::String &filename, int hotspotX, int
 
 	_useCursor = true;
 	_cursorPalSize = colorsFound;
+#endif
 
 	return true;
 }
@@ -1542,7 +1631,7 @@ int ThemeEngine::getFontHeight(FontStyle font) const {
 	return ready() ? _texts[fontStyleToData(font)]->_fontPtr->getFontHeight() : 0;
 }
 
-int ThemeEngine::getStringWidth(const Common::String &str, FontStyle font) const {
+int ThemeEngine::getStringWidth(const Common::U32String &str, FontStyle font) const {
 	return ready() ? _texts[fontStyleToData(font)]->_fontPtr->getStringWidth(str) : 0;
 }
 
@@ -1576,11 +1665,6 @@ DrawData ThemeEngine::parseDrawDataId(const Common::String &name) const {
 
 const Graphics::Font *ThemeEngine::loadScalableFont(const Common::String &filename, const Common::String &charset, const int pointsize, Common::String &name) {
 #ifdef USE_FREETYPE2
-#ifdef USE_TRANSLATION
-	const uint32 *mapping = TransMan.getCharsetMapping();
-#else
-	const uint32 *mapping = 0;
-#endif
 	name = Common::String::format("%s-%s@%d", filename.c_str(), charset.c_str(), pointsize);
 
 	// Try already loaded fonts.
@@ -1594,7 +1678,7 @@ const Graphics::Font *ThemeEngine::loadScalableFont(const Common::String &filena
 	for (Common::ArchiveMemberList::const_iterator i = members.begin(), end = members.end(); i != end; ++i) {
 		Common::SeekableReadStream *stream = (*i)->createReadStream();
 		if (stream) {
-			font = Graphics::loadTTFFont(*stream, pointsize, Graphics::kTTFSizeModeCharacter, 0, Graphics::kTTFRenderModeLight, mapping);
+			font = Graphics::loadTTFFont(*stream, pointsize, Graphics::kTTFSizeModeCharacter, 0, Graphics::kTTFRenderModeLight);
 			delete stream;
 
 			if (font)
@@ -1603,7 +1687,7 @@ const Graphics::Font *ThemeEngine::loadScalableFont(const Common::String &filena
 	}
 
 	// Try loading the font from the common fonts archive.
-	font = Graphics::loadTTFFontFromArchive(filename, pointsize, Graphics::kTTFSizeModeCharacter, 0, Graphics::kTTFRenderModeLight, mapping);
+	font = Graphics::loadTTFFontFromArchive(filename, pointsize, Graphics::kTTFSizeModeCharacter, 0, Graphics::kTTFRenderModeLight);
 	if (font)
 		return font;
 #endif
@@ -1975,15 +2059,19 @@ Common::String ThemeEngine::getThemeId(const Common::String &filename) {
 
 void ThemeEngine::showCursor() {
 	if (_useCursor) {
+#ifndef USE_RGB_COLOR
 		CursorMan.pushCursorPalette(_cursorPal, 0, _cursorPalSize);
-		CursorMan.pushCursor(_cursor, _cursorWidth, _cursorHeight, _cursorHotspotX, _cursorHotspotY, 255, true);
+#endif
+		CursorMan.pushCursor(_cursor, _cursorWidth, _cursorHeight, _cursorHotspotX, _cursorHotspotY, _cursorTransparent, true, &_cursorFormat);
 		CursorMan.showMouse(true);
 	}
 }
 
 void ThemeEngine::hideCursor() {
 	if (_useCursor) {
+#ifndef USE_RGB_COLOR
 		CursorMan.popCursorPalette();
+#endif
 		CursorMan.popCursor();
 	}
 }

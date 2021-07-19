@@ -2,16 +2,16 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="minigames">
-			<UniqueIdentifier>EEEE4148-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C57-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\bbvs\bbvs.cpp" />
-		<ClCompile Include="..\..\engines\bbvs\detection.cpp" />
 		<ClCompile Include="..\..\engines\bbvs\dialogs.cpp" />
 		<ClCompile Include="..\..\engines\bbvs\gamemodule.cpp" />
 		<ClCompile Include="..\..\engines\bbvs\graphics.cpp" />
 		<ClCompile Include="..\..\engines\bbvs\logic.cpp" />
+		<ClCompile Include="..\..\engines\bbvs\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\bbvs\minigames\bbairguitar.cpp">
 			<Filter>minigames</Filter>
 		</ClCompile>
@@ -48,6 +48,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\bbvs\bbvs.h" />
+		<ClInclude Include="..\..\engines\bbvs\detection.h" />
 		<ClInclude Include="..\..\engines\bbvs\dialogs.h" />
 		<ClInclude Include="..\..\engines\bbvs\gamemodule.h" />
 		<ClInclude Include="..\..\engines\bbvs\graphics.h" />

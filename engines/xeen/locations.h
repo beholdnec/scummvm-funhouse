@@ -220,8 +220,12 @@ private:
 	int _charIndex;
 	bool _charsTrained[MAX_ACTIVE_PARTY];
 	uint _experienceToNextLevel;
-	uint _maxLevel;
 protected:
+	/**
+	 * Computes the maximum training level allowed at this location
+	 */
+	int maxLevel() const;
+
 	/**
 	 * Generates the display text for the location, for a given character
 	 */
@@ -284,7 +288,7 @@ private:
 	/**
 	 * Get the new location
 	 */
-	void getNewLocation(); 
+	void getNewLocation();
 public:
 	GolemCutscene();
 	~GolemCutscene() override {}

@@ -52,13 +52,11 @@ class Cursor;
 class Channel;
 class Sprite;
 class CastMember;
+class AudioDecoder;
 
 enum RenderMode {
 	kRenderModeNormal,
-	kRenderForceUpdate,
-	kRenderUpdateStageOnly,
-	kRenderNoUnrender,
-	kRenderNoWindowRender
+	kRenderForceUpdate
 };
 
 class Score {
@@ -68,9 +66,10 @@ public:
 
 	Movie *getMovie() const { return _movie; }
 
-	void loadFrames(Common::SeekableReadStreamEndian &stream);
+	void loadFrames(Common::SeekableReadStreamEndian &stream, uint16 version);
 	void loadLabels(Common::SeekableReadStreamEndian &stream);
 	void loadActions(Common::SeekableReadStreamEndian &stream);
+	void loadSampleSounds(uint type);
 
 	static int compareLabels(const void *a, const void *b);
 	uint16 getLabel(Common::String &label);
@@ -93,6 +92,7 @@ public:
 
 	Channel *getChannelById(uint16 id);
 	Sprite *getSpriteById(uint16 id);
+	Sprite *getOriginalSpriteById(uint16 id);
 
 	void setSpriteCasts();
 
@@ -105,9 +105,10 @@ public:
 	uint16 getActiveSpriteIDFromPos(Common::Point pos);
 	bool checkSpriteIntersection(uint16 spriteId, Common::Point pos);
 	Common::List<Channel *> getSpriteIntersections(const Common::Rect &r);
+	uint16 getSpriteIdByMemberId(CastMemberID id);
 
 	bool renderTransition(uint16 frameId);
-	void renderFrame(uint16 frameId, RenderMode mode = kRenderModeNormal);
+	bool renderFrame(uint16 frameId, RenderMode mode = kRenderModeNormal);
 	void renderSprites(uint16 frameId, RenderMode mode = kRenderModeNormal);
 	void renderCursor(Common::Point pos);
 
@@ -126,6 +127,7 @@ public:
 	Common::SortedArray<Label *> *_labels;
 	Common::HashMap<uint16, Common::String> _actions;
 	Common::HashMap<uint16, bool> _immediateActions;
+	Common::Array<AudioDecoder *> _sampleSounds;
 
 	byte _currentFrameRate;
 

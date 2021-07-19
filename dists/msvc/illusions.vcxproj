@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -203,7 +218,6 @@
 		<ClCompile Include="..\..\engines\illusions\actor.cpp" />
 		<ClCompile Include="..\..\engines\illusions\camera.cpp" />
 		<ClCompile Include="..\..\engines\illusions\cursor.cpp" />
-		<ClCompile Include="..\..\engines\illusions\detection.cpp" />
 		<ClCompile Include="..\..\engines\illusions\dictionary.cpp" />
 		<ClCompile Include="..\..\engines\illusions\fileresourcereader.cpp" />
 		<ClCompile Include="..\..\engines\illusions\fixedpoint.cpp" />
@@ -214,6 +228,7 @@
 		<ClCompile Include="..\..\engines\illusions\illusions.cpp" />
 		<ClCompile Include="..\..\engines\illusions\input.cpp" />
 		<ClCompile Include="..\..\engines\illusions\menusystem.cpp" />
+		<ClCompile Include="..\..\engines\illusions\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\illusions\pathfinder.cpp" />
 		<ClCompile Include="..\..\engines\illusions\resourcesystem.cpp" />
 		<ClCompile Include="..\..\engines\illusions\saveload.cpp" />
@@ -271,6 +286,7 @@
 		<ClInclude Include="..\..\engines\illusions\actor.h" />
 		<ClInclude Include="..\..\engines\illusions\camera.h" />
 		<ClInclude Include="..\..\engines\illusions\cursor.h" />
+		<ClInclude Include="..\..\engines\illusions\detection.h" />
 		<ClInclude Include="..\..\engines\illusions\dictionary.h" />
 		<ClInclude Include="..\..\engines\illusions\fileresourcereader.h" />
 		<ClInclude Include="..\..\engines\illusions\fixedpoint.h" />

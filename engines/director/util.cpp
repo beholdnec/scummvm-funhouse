@@ -23,9 +23,14 @@
 #include "common/file.h"
 #include "common/keyboard.h"
 #include "common/memstream.h"
+#include "common/tokenizer.h"
 #include "common/zlib.h"
 
+#include "graphics/macgui/macwindowmanager.h"
+#include "graphics/macgui/macfontmanager.h"
+
 #include "director/director.h"
+#include "director/movie.h"
 #include "director/util.h"
 
 namespace Director {
@@ -200,44 +205,13 @@ char *numToCastNum(int num) {
 	return res;
 }
 
-// This is table for built-in Macintosh font lowercasing.
-// '.' means that the symbol should be not changed, rest
-// of the symbols are stripping the diacritics
-// The table starts from 0x80
-//
-// TODO: Check it for correctness.
-static char lowerCaseConvert[] =
-"aacenoua" // 80
-"aaaaacee" // 88
-"eeiiiino" // 90
-"oooouuuu" // 98
-"........" // a0
-".......o" // a8
-"........" // b0
-".......o" // b8
-"........" // c0
-".. aao.." // c8
-"--.....y";// d0-d8
+Common::String CastMemberID::asString() const {
+	Common::String res = Common::String::format("member %d", member);
 
-Common::String toLowercaseMac(const Common::String &s) {
-	Common::String res;
-	const unsigned char *p = (const unsigned char *)s.c_str();
-
-	while (*p) {
-		if (*p >= 0x80 && *p <= 0xd8) {
-			if (lowerCaseConvert[*p - 0x80] != '.')
-				res += lowerCaseConvert[*p - 0x80];
-			else
-				res += *p;
-		} else if (*p < 0x80) {
-			res += tolower(*p);
-		} else {
-			warning("Unacceptable symbol in toLowercaseMac: %c", *p);
-
-			res += *p;
-		}
-		p++;
-	}
+	if (g_director->getVersion() < 400 || g_director->getCurrentMovie()->_allowOutdatedLingo)
+		res += "(" + Common::String(numToCastNum(member)) + ")";
+	else if (g_director->getVersion() >= 500)
+		res += Common::String::format(" of castLib %d", castLib);
 
 	return res;
 }
@@ -246,15 +220,18 @@ Common::String convertPath(Common::String &path) {
 	if (path.empty())
 		return path;
 
-	if (!path.contains(':') && !path.contains('/') && !path.contains('\\')) {
+	if (!path.contains(':') && !path.contains('/') && !path.contains('\\') && !path.contains('@')) {
 		return path;
 	}
 
 	Common::String res;
 	uint32 idx = 0;
 
-	if (path.hasPrefix("::")) {
+	if (path.hasPrefix("::")) { // Parent directory
 		res = "..\\";
+		idx = 2;
+	} else if (path.hasPrefix("@:")) { // Root of the game
+		res = ".\\";
 		idx = 2;
 	} else {
 		res = ".\\";
@@ -309,12 +286,26 @@ Common::String getPath(Common::String path, Common::String cwd) {
 
 bool testPath(Common::String &path, bool directory) {
 	if (directory) {
-		// TOOD: This directory-searching branch only works for one level from the
-		// current directory, but it fixes current game loading issues.
-		if (path.contains('/'))
-			return false;
+		Common::FSNode d = Common::FSNode(*g_director->getGameDataDir());
 
-		Common::FSNode d = Common::FSNode(*g_director->getGameDataDir()).getChild(path);
+		// check for the game data dir
+		if (!path.contains("/") && path.equalsIgnoreCase(d.getName())) {
+			path = "";
+			return true;
+		}
+
+		Common::StringTokenizer directory_list(path, "/");
+
+		if (d.getChild(directory_list.nextToken()).exists()) {
+			// then this part is for the "relative to current directory"
+			// we find the child directory recursively
+			directory_list.reset();
+			while (!directory_list.empty() && d.exists())
+				d = d.getChild(directory_list.nextToken());
+		} else {
+			return false;
+		}
+
 		return d.exists();
 	}
 
@@ -327,11 +318,11 @@ bool testPath(Common::String &path, bool directory) {
 	return false;
 }
 
+// if we are finding the file path, then this func will return exactly the executable file path
+// if we are finding the directory path, then we will get the path relative to the game data dir.
+// e.g. if we have game data dir as SSwarlock, then "A:SSwarlock" -> "", "A:SSwarlock:Nav" -> "Nav"
 Common::String pathMakeRelative(Common::String path, bool recursive, bool addexts, bool directory) {
 	Common::String initialPath(path);
-
-	if (testPath(initialPath, directory))
-		return initialPath;
 
 	if (recursive) // first level
 		initialPath = convertPath(initialPath);
@@ -688,6 +679,100 @@ Common::SeekableReadStreamEndian *readZlibData(Common::SeekableReadStream &strea
 # else
 	return nullptr;
 # endif
+}
+
+uint16 humanVersion(uint16 ver) {
+	if (ver >= kFileVer1201)
+		return 1201;
+	if (ver >= kFileVer1200)
+		return 1200;
+	if (ver >= kFileVer1150)
+		return 1150;
+	if (ver >= kFileVer1100)
+		return 1100;
+	if (ver >= kFileVer1000)
+		return 1000;
+	if (ver >= kFileVer850)
+		return 850;
+	if (ver >= kFileVer800)
+		return 800;
+	if (ver >= kFileVer700)
+		return 700;
+	if (ver >= kFileVer600)
+		return 600;
+	if (ver >= kFileVer500)
+		return 500;
+	if (ver >= kFileVer404)
+		return 404;
+	if (ver >= kFileVer400)
+		return 400;
+	if (ver >= kFileVer310)
+		return 310;
+	if (ver >= kFileVer300)
+		return 300;
+	return 200;
+}
+
+Common::Platform platformFromID(uint16 id) {
+	switch (id) {
+	case 1:
+		return Common::kPlatformMacintosh;
+	case 2:
+		return Common::kPlatformWindows;
+	default:
+		warning("platformFromID: Unknown platform ID %d", id);
+		break;
+	}
+	return Common::kPlatformUnknown;
+}
+
+Common::CodePage getEncoding(Common::Platform platform, Common::Language language) {
+	switch (language) {
+	case Common::JA_JPN:
+		return Common::kWindows932; // Shift JIS
+	default:
+		break;
+	}
+	return (platform == Common::kPlatformWindows)
+				? Common::kWindows1252
+				: Common::kMacRoman;
+}
+
+Common::CodePage detectFontEncoding(Common::Platform platform, uint16 fontId) {
+	return getEncoding(platform, g_director->_wm->_fontMan->getFontLanguage(fontId));
+}
+
+int charToNum(Common::u32char_type_t ch) {
+	Common::String encodedCh = Common::U32String(ch).encode(g_director->getPlatformEncoding());
+	int res = 0;
+	while (encodedCh.size()) {
+		res = (res << 8) | (byte)encodedCh.firstChar();
+		encodedCh.deleteChar(0);
+	}
+	return res;
+}
+
+Common::u32char_type_t numToChar(int num) {
+	Common::String encodedCh;
+	while (num) {
+		encodedCh.insertChar((char)(num & 0xFF), 0);
+		num >>= 8;
+	}
+	Common::U32String str = encodedCh.decode(g_director->getPlatformEncoding());
+	return str.lastChar();
+}
+
+int compareStrings(const Common::String &s1, const Common::String &s2) {
+	Common::U32String u32S1 = s1.decode(Common::kUtf8);
+	Common::U32String u32S2 = s2.decode(Common::kUtf8);
+	const Common::u32char_type_t *p1 = u32S1.c_str();
+	const Common::u32char_type_t *p2 = u32S2.c_str();
+	uint32 c1, c2;
+	while ((c1 = charToNum(*p1)) && (c2 = charToNum(*p2)) && c1 == c2) {
+		p1++;
+		p2++;
+	}
+	return c1 - c2;
 }
 
 } // End of namespace Director

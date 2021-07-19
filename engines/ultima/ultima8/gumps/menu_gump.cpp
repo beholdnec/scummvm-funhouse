@@ -20,41 +20,36 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
+#include "common/config-manager.h"
+
 #include "ultima/ultima8/gumps/menu_gump.h"
-#include "ultima/ultima8/gumps/remorse_menu_gump.h"
+#include "ultima/ultima8/gumps/cru_menu_gump.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/graphics/gump_shape_archive.h"
 #include "ultima/ultima8/graphics/shape.h"
 #include "ultima/ultima8/graphics/shape_frame.h"
 #include "ultima/ultima8/ultima8.h"
-#include "ultima/ultima8/gumps/desktop_gump.h"
+#include "ultima/ultima8/kernel/mouse.h"
 #include "ultima/ultima8/gumps/widgets/button_widget.h"
 #include "ultima/ultima8/gumps/widgets/text_widget.h"
 #include "ultima/ultima8/gumps/quit_gump.h"
-#include "ultima/ultima8/gumps/paged_gump.h"
 #include "ultima/ultima8/games/game.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
-#include "ultima/ultima8/graphics/fonts/font.h"
-#include "ultima/ultima8/graphics/fonts/rendered_text.h"
-#include "ultima/ultima8/graphics/fonts/font_manager.h"
 #include "ultima/ultima8/graphics/palette_manager.h"
-#include "ultima/ultima8/conf/setting_manager.h"
 #include "ultima/ultima8/audio/music_process.h"
 #include "ultima/ultima8/gumps/widgets/edit_widget.h"
 #include "ultima/ultima8/gumps/u8_save_gump.h"
 #include "ultima/ultima8/world/get_object.h"
 #include "ultima/ultima8/meta_engine.h"
-#include "engines/dialogs.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
 DEFINE_RUNTIME_CLASSTYPE_CODE(MenuGump)
 
-MenuGump::MenuGump(bool nameEntryMode_)
+MenuGump::MenuGump(bool nameEntryMode)
 	: ModalGump(0, 0, 5, 5, 0, FLAG_DONT_SAVE) {
-	_nameEntryMode = nameEntryMode_;
+	_nameEntryMode = nameEntryMode;
 
 	Mouse *mouse = Mouse::get_instance();
 	mouse->pushMouseCursor();
@@ -130,14 +125,11 @@ void MenuGump::InitGump(Gump *newparent, bool take_focus) {
 	logo->InitGump(this, false);
 
 	if (!_nameEntryMode) {
-		SettingManager *settingman = SettingManager::get_instance();
-		bool endgame = false;
-		bool quotes = false;
-		settingman->get("endgame", endgame);
-		settingman->get("quotes", quotes);
+		bool endgame = ConfMan.getBool("endgame");
+		bool quotes = ConfMan.getBool("quotes");
 
-		int x_ = _dims.width() / 2 + 14;
-		int y_ = 18;
+		int x = _dims.width() / 2 + 14;
+		int y = 18;
 		for (int i = 0; i < 8; ++i) {
 			if ((quotes || i != 6) && (endgame || i != 7)) {
 				FrameID frame_up(GameData::GUMPS, menuEntryShape, i * 2);
@@ -146,16 +138,16 @@ void MenuGump::InitGump(Gump *newparent, bool take_focus) {
 				frame_down = _TL_SHP_(frame_down);
 				Gump *widget;
 				if (frame_up._shapeNum) {
-					widget = new ButtonWidget(x_, y_, frame_up, frame_down, true);
+					widget = new ButtonWidget(x, y, frame_up, frame_down, true);
 				} else {
 					// JA U8 has text labels
-					widget = new ButtonWidget(x_, y_, _TL_(MENU_TXT[i]), true, 0);
+					widget = new ButtonWidget(x, y, _TL_(MENU_TXT[i]), true, 0);
 				}
 				widget->InitGump(this, false);
 				widget->SetIndex(i + 1);
 			}
 
-			y_ += 14;
+			y += 14;
 		}
 
 		const MainActor *av = getMainActor();
@@ -228,10 +220,8 @@ void MenuGump::ChildNotify(Gump *child, uint32 message) {
 }
 
 void MenuGump::selectEntry(int entry) {
-	SettingManager *settingman = SettingManager::get_instance();
-	bool endgame, quotes;
-	settingman->get("endgame", endgame);
-	settingman->get("quotes", quotes);
+	bool endgame = ConfMan.getBool("endgame");
+	bool quotes = ConfMan.getBool("quotes");
 
 	switch (entry) {
 	case 1: // Intro
@@ -242,9 +232,7 @@ void MenuGump::selectEntry(int entry) {
 		U8SaveGump::showLoadSaveGump(this, entry == 3);
 		break;
 	case 4: {
-		// Options - show the ScummVM options dialog
-		GUI::ConfigDialog dlg;
-		dlg.runModal();
+		Ultima8Engine::get_instance()->openConfigDialog();
 	}
 	break;
 	case 5: // Credits
@@ -280,7 +268,7 @@ void MenuGump::showMenu() {
 		if (GAME_IS_U8)
 			gump = new MenuGump();
 		else
-			gump = new RemorseMenuGump();
+			gump = new CruMenuGump();
 		gump->InitGump(0);
 		gump->setRelativePosition(CENTER);
 	}
@@ -292,7 +280,7 @@ void MenuGump::inputName() {
 	if (GAME_IS_U8)
 		gump = new MenuGump(true);
 	else
-		gump = new RemorseMenuGump();
+		gump = new CruMenuGump();
 	gump->InitGump(0);
 	gump->setRelativePosition(CENTER);
 }

@@ -133,7 +133,9 @@ static const Plugin *detectPlugin() {
 
 	// Query the plugin for the game descriptor
 	printf("   Looking for a plugin supporting this target... %s\n", plugin->getName());
-	PlainGameDescriptor game = plugin->get<MetaEngine>().findGame(gameId.c_str());
+	const MetaEngineDetection &metaEngine = plugin->get<MetaEngineDetection>();
+	DebugMan.addAllDebugChannels(metaEngine.getDebugChannels());
+	PlainGameDescriptor game = metaEngine.findGame(gameId.c_str());
 	if (!game.gameId) {
 		warning("'%s' is an invalid game ID for the engine '%s'. Use the --list-games option to list supported game IDs", gameId.c_str(), engineId.c_str());
 		return 0;
@@ -152,7 +154,10 @@ void saveLastLaunchedTarget(const Common::String &target) {
 }
 
 // TODO: specify the possible return values here
-static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common::String &edebuglevels) {
+static Common::Error runGame(const Plugin *plugin, const Plugin *enginePlugin, OSystem &system, const Common::String &debugLevels) {
+	assert(plugin);
+	assert(enginePlugin);
+
 	// Determine the game data path, for validation and error messages
 	Common::FSNode dir(ConfMan.get("path"));
 	Common::String target = ConfMan.getActiveDomainName();
@@ -179,16 +184,21 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 		err = Common::kPathNotDirectory;
 	}
 
-	// Create the game engine
-	const MetaEngine &metaEngine = plugin->get<MetaEngine>();
+	// Create the game's MetaEngineDetection.
+	const MetaEngineDetection &metaEngineDetection = plugin->get<MetaEngineDetection>();
 	if (err.getCode() == Common::kNoError) {
 		// Set default values for all of the custom engine options
 		// Apparently some engines query them in their constructor, thus we
 		// need to set this up before instance creation.
-		metaEngine.registerDefaultSettings(target);
-
-		err = metaEngine.createInstance(&system, &engine);
+		metaEngineDetection.registerDefaultSettings(target);
 	}
+
+	// before we instantiate the engine, we register debug channels for it
+	DebugMan.addAllDebugChannels(metaEngineDetection.getDebugChannels());
+
+	// Create the game's MetaEngine.
+	MetaEngine &metaEngine = enginePlugin->get<MetaEngine>();
+	err = metaEngine.createInstance(&system, &engine);
 
 	// Check for errors
 	if (!engine || err.getCode() != Common::kNoError) {
@@ -209,14 +219,19 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 			ConfMan.removeGameDomain(target.c_str());
 		}
 
+		DebugMan.removeAllDebugChannels();
 		return err;
 	}
+
+	// Set up the metaengine
+	engine->setMetaEngine(&metaEngine);
 
 	// Set the window caption to the game name
 	Common::String caption(ConfMan.get("description"));
 
 	if (caption.empty()) {
-		PlainGameDescriptor game = metaEngine.findGame(ConfMan.get("gameid").c_str());
+		// here, we don't need to set the debug channels because it has been set earlier
+		PlainGameDescriptor game = metaEngineDetection.findGame(ConfMan.get("gameid").c_str());
 		if (game.description) {
 			caption = game.description;
 		}
@@ -224,7 +239,7 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 	if (caption.empty())
 		caption = target;
 	if (!caption.empty())	{
-		system.setWindowCaption(caption.c_str());
+		system.setWindowCaption(caption.decode());
 	}
 
 	//
@@ -254,13 +269,13 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 
 	// On creation the engine should have set up all debug levels so we can use
 	// the command line arguments here
-	Common::StringTokenizer tokenizer(edebuglevels, " ,");
+	Common::StringTokenizer tokenizer(debugLevels, " ,");
 	while (!tokenizer.empty()) {
 		Common::String token = tokenizer.nextToken();
 		if (token.equalsIgnoreCase("all"))
 			DebugMan.enableAllDebugChannels();
 		else if (!DebugMan.enableDebugChannel(token))
-			warning(_("Engine does not support debug level '%s'"), token.c_str());
+			warning("Engine does not support debug level '%s'", token.c_str());
 	}
 
 #ifdef USE_TRANSLATION
@@ -269,12 +284,10 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 	    && ConfMan.getBool("gui_use_game_language")
 	    && ConfMan.hasKey("language")) {
 		TransMan.setLanguage(ConfMan.get("language"));
-#ifdef USE_TTS
 		Common::TextToSpeechManager *ttsMan;
 		if ((ttsMan = g_system->getTextToSpeechManager()) != nullptr) {
 			ttsMan->setLanguage(ConfMan.get("language"));
 		}
-#endif // USE_TTS
 	}
 #endif // USE_TRANSLATION
 
@@ -285,11 +298,17 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 		keymapper->addGameKeymap(gameKeymaps[i]);
 	}
 
+	system.applyBackendSettings();
+
 	// Inform backend that the engine is about to be run
 	system.engineInit();
 
 	// Run the engine
 	Common::Error result = engine->run();
+
+	// Make sure we do not return to the launcher if this is not possible.
+	if (!engine->hasFeature(Engine::kSupportsReturnToLauncher))
+		ConfMan.setBool("gui_return_to_launcher_at_exit", false, Common::ConfigManager::kTransientDomain);
 
 	// Inform backend that the engine finished
 	system.engineDone();
@@ -300,20 +319,17 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 	// Free up memory
 	delete engine;
 
-	// We clear all debug levels again even though the engine should do it
-	DebugMan.clearAllDebugChannels();
+	DebugMan.removeAllDebugChannels();
 
 	// Reset the file/directory mappings
 	SearchMan.clear();
 
 #ifdef USE_TRANSLATION
 	TransMan.setLanguage(previousLanguage);
-#ifdef USE_TTS
-		Common::TextToSpeechManager *ttsMan;
-		if ((ttsMan = g_system->getTextToSpeechManager()) != nullptr) {
-			ttsMan->setLanguage(ConfMan.get("language"));
-		}
-#endif // USE_TTS
+	Common::TextToSpeechManager *ttsMan;
+	if ((ttsMan = g_system->getTextToSpeechManager()) != nullptr) {
+		ttsMan->setLanguage(ConfMan.get("language"));
+	}
 #endif // USE_TRANSLATION
 
 	// Return result (== 0 means no error)
@@ -325,6 +341,9 @@ static void setupGraphics(OSystem &system) {
 	system.beginGFXTransaction();
 		// Set the user specified graphics mode (if any).
 		system.setGraphicsMode(ConfMan.get("gfx_mode").c_str());
+		system.setStretchMode(ConfMan.get("stretch_mode").c_str());
+		system.setShader(ConfMan.get("shader").c_str());
+		system.setScaler(ConfMan.get("scaler").c_str(), ConfMan.getInt("scale_factor"));
 
 		system.initSize(320, 200);
 
@@ -334,11 +353,9 @@ static void setupGraphics(OSystem &system) {
 			system.setFeatureState(OSystem::kFeatureFullscreenMode, ConfMan.getBool("fullscreen"));
 		if (ConfMan.hasKey("filtering"))
 			system.setFeatureState(OSystem::kFeatureFilteringMode, ConfMan.getBool("filtering"));
-		if (ConfMan.hasKey("stretch_mode"))
-			system.setStretchMode(ConfMan.get("stretch_mode").c_str());
-		if (ConfMan.hasKey("shader"))
-			system.setShader(ConfMan.get("shader").c_str());
 	system.endGFXTransaction();
+
+	system.applyBackendSettings();
 
 	// When starting up launcher for the first time, the user might have specified
 	// a --gui-theme option, to allow that option to be working, we need to initialize
@@ -347,7 +364,7 @@ static void setupGraphics(OSystem &system) {
 	GUI::GuiManager::instance();
 
 	// Set initial window caption
-	system.setWindowCaption(gScummVMFullVersion);
+	system.setWindowCaption(Common::U32String(gScummVMFullVersion));
 
 	// Clear the main screen
 	system.fillScreen(0);
@@ -387,6 +404,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 
 	// Register config manager defaults
 	Base::registerDefaults();
+	system.registerDefaultSettings(Common::ConfigManager::kApplicationDomain);
 
 	// Parse the command line
 	Common::StringMap settings;
@@ -423,8 +441,10 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 		gDebugChannelsOnly = true;
 
 
+	ConfMan.registerDefault("always_run_fallback_detection_extern", true);
 	PluginManager::instance().init();
  	PluginManager::instance().loadAllPlugins(); // load plugins for cached plugin manager
+	PluginManager::instance().loadDetectionPlugin(); // load detection plugin for uncached plugin manager
 
 	// If we received an invalid music parameter via command line we check this here.
 	// We can't check this before loading the music plugins.
@@ -444,6 +464,11 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 	if (Base::processSettings(command, settings, res)) {
 		if (res.getCode() != Common::kNoError)
 			warning("%s", res.getDesc().c_str());
+
+		PluginManager::instance().unloadDetectionPlugin();
+		PluginManager::instance().unloadAllPlugins();
+		PluginManager::destroy();
+
 		return res.getCode();
 	}
 
@@ -452,6 +477,12 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 		ConfMan.registerDefault("dump_midi", true);
 	}
 
+#ifdef USE_OPENGL
+	if (settings.contains("last_window_width")) {
+		ConfMan.setInt("last_window_width", atoi(settings["last_window_width"].c_str()));
+		ConfMan.setInt("last_window_height", atoi(settings["last_window_height"].c_str()));
+	}
+#endif
 
 	// Init the backend. Must take place after all config data (including
 	// the command line params) was read.
@@ -529,12 +560,26 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 
 		EngineMan.upgradeTargetIfNecessary(ConfMan.getActiveDomainName());
 
-		// Try to find a plugin which feels responsible for the specified game.
+		// Try to find a MetaEnginePlugin which feels responsible for the specified game.
 		const Plugin *plugin = detectPlugin();
-		if (plugin) {
-			// Unload all plugins not needed for this game,
-			// to save memory
-			PluginManager::instance().unloadPluginsExcept(PLUGIN_TYPE_ENGINE, plugin);
+
+		// Then, get the relevant Engine plugin from MetaEngine.
+		const Plugin *enginePlugin = nullptr;
+		if (plugin)
+			enginePlugin = PluginMan.getEngineFromMetaEngine(plugin);
+
+		if (enginePlugin) {
+			// Unload all plugins not needed for this game, to save memory
+			// Right now, we have a MetaEngine plugin, and we want to unload all except Engine.
+
+			// Pass in the pointer to enginePlugin, with the matching type, so our function behaves as-is.
+			PluginManager::instance().unloadPluginsExcept(PLUGIN_TYPE_ENGINE, enginePlugin);
+
+#if defined(UNCACHED_PLUGINS) && defined(DYNAMIC_MODULES) && !defined(DETECTION_STATIC)
+			// Unload all MetaEngines not needed for the current engine, if we're using uncached plugins
+			// to save extra memory.
+			PluginManager::instance().unloadPluginsExcept(PLUGIN_TYPE_ENGINE_DETECTION, plugin);
+#endif
 
 #ifdef ENABLE_EVENTRECORDER
 			Common::String recordMode = ConfMan.get("record_mode");
@@ -551,20 +596,15 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 				break;
 			}
 #endif
-#ifdef USE_TTS
 			Common::TextToSpeechManager *ttsMan = g_system->getTextToSpeechManager();
 			if (ttsMan != nullptr) {
 				ttsMan->pushState();
 			}
-#endif
 			// Try to run the game
-			Common::Error result = runGame(plugin, system, specialDebug);
-
-#ifdef USE_TTS
+			Common::Error result = runGame(plugin, enginePlugin, system, specialDebug);
 			if (ttsMan != nullptr) {
 				ttsMan->popState();
 			}
-#endif
 
 #ifdef ENABLE_EVENTRECORDER
 			// Flush Event recorder file. The recorder does not get reinitialized for next game
@@ -575,6 +615,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 #if defined(UNCACHED_PLUGINS) && defined(DYNAMIC_MODULES)
 			// do our best to prevent fragmentation by unloading as soon as we can
 			PluginManager::instance().unloadPluginsExcept(PLUGIN_TYPE_ENGINE, NULL, false);
+			PluginManager::instance().unloadDetectionPlugin();
 			// reallocate the config manager to get rid of any fragmentation
 			ConfMan.defragment();
 			// The keymapper keeps pointers to the configuration domains. It needs to be reinitialized.
@@ -588,15 +629,14 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 			}
 
 			// Quit unless an error occurred, or Return to launcher was requested
-#ifndef FORCE_RETURN_TO_LAUNCHER
-			if (result.getCode() == Common::kNoError && !g_system->getEventManager()->shouldReturnToLauncher())
+			if (result.getCode() == Common::kNoError && !g_system->getEventManager()->shouldReturnToLauncher() &&
+			    !g_system->hasFeature(OSystem::kFeatureNoQuit) && !ConfMan.getBool("gui_return_to_launcher_at_exit"))
 				break;
-#endif
-			// Reset the return to launcher flag in case we want to load another engine
+
+			// Reset the return to launcher and quit flags in case we want to load another engine
 			g_system->getEventManager()->resetReturnToLauncher();
-#ifdef FORCE_RETURN_TO_LAUNCHER
 			g_system->getEventManager()->resetQuit();
-#endif
+
 #ifdef ENABLE_EVENTRECORDER
 			if (g_eventRec.checkForContinueGame()) {
 				continue;
@@ -630,6 +670,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 			}
 
 			PluginManager::instance().loadAllPluginsOfType(PLUGIN_TYPE_ENGINE); // only for cached manager
+			PluginManager::instance().loadDetectionPlugin(); // only for uncached manager
 		} else {
 			GUI::displayErrorDialog(_("Could not find any engine capable of running the selected game"));
 
@@ -653,6 +694,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 	Cloud::CloudManager::destroy();
 #endif
 #endif
+	PluginManager::instance().unloadDetectionPlugin();
 	PluginManager::instance().unloadAllPlugins();
 	PluginManager::destroy();
 	GUI::GuiManager::destroy();
@@ -664,7 +706,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 #endif
 	Common::SearchManager::destroy();
 #ifdef USE_TRANSLATION
-	Common::TranslationManager::destroy();
+	Common::MainTranslationManager::destroy();
 #endif
 	MusicManager::destroy();
 	Graphics::CursorManager::destroy();

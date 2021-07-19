@@ -3,6 +3,7 @@ MODULE := common
 MODULE_OBJS := \
 	achievements.o \
 	archive.o \
+	base-str.o \
 	config-manager.o \
 	coroutines.o \
 	dcl.o \
@@ -16,12 +17,14 @@ MODULE_OBJS := \
 	iff_container.o \
 	ini-file.o \
 	installshield_cab.o \
+	installshieldv3_archive.o \
 	json.o \
 	language.o \
 	localization.o \
 	macresman.o \
 	memorypool.o \
 	md5.o \
+	mdct.o \
 	mutex.o \
 	osd_message_queue.o \
 	platform.o \
@@ -29,9 +32,13 @@ MODULE_OBJS := \
 	random.o \
 	rational.o \
 	rendermode.o \
+	sinewindows.o \
 	str.o \
-	str-enc.o \
 	stream.o \
+	streamdebug.o \
+	str-enc.o \
+	encodings/singlebyte.o \
+	stuffit.o \
 	system.o \
 	textconsole.o \
 	tokenizer.o \
@@ -52,7 +59,6 @@ MODULE_OBJS += \
 	dct.o \
 	fft.o \
 	rdft.o \
-	encoding.o \
 	sinetables.o
 
 ifdef ENABLE_EVENTRECORDER
@@ -101,10 +107,8 @@ MODULE_OBJS += \
 	lua/scummvm_file.o
 endif
 
-ifdef USE_TTS
 MODULE_OBJS += \
 	text-to-speech.o
-endif
 
 # Include common rules
 include $(srcdir)/rules.mk

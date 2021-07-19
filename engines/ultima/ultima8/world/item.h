@@ -47,7 +47,6 @@ public:
 	Item();
 	~Item() override;
 
-	// p_dynamic_cast stuff
 	ENABLE_RUNTIME_CLASSTYPE()
 
 	//! Get the Container this Item is in, if any. (0 if not in a Container)
@@ -73,7 +72,7 @@ public:
 
 	//! Move an item. This moves an item to the new location, and updates
 	//! CurrentMap and fastArea if necessary.
-	void move(int32 x, int32 y, int32 z);
+	virtual void move(int32 x, int32 y, int32 z);
 
 	//! Move, but with a point struct.
 	void move(const Point3 &pt);
@@ -194,7 +193,7 @@ public:
 	}
 
 	//! Set this Item's shape number
-	void setShape(uint32 shape_);
+	void setShape(uint32 shape);
 
 	//! Get this Item's frame number
 	uint32 getFrame() const {
@@ -202,8 +201,8 @@ public:
 	}
 
 	//! Set this Item's frame number
-	void setFrame(uint32 frame_) {
-		_frame = frame_;
+	void setFrame(uint32 frame) {
+		_frame = frame;
 	}
 
 	//! Get this Item's quality (a.k.a. 'Q')
@@ -212,8 +211,8 @@ public:
 	}
 
 	//! Set this Item's quality (a.k.a 'Q');
-	void setQuality(uint16 quality_) {
-		_quality = quality_;
+	void setQuality(uint16 quality) {
+		_quality = quality;
 	}
 
 	//! Get the 'NpcNum' of this Item. Note that this can represent various
@@ -224,8 +223,8 @@ public:
 
 	//! Set the 'NpcNum' of this Item. Note that this can represent various
 	//! things depending on the family of this Item.
-	void setNpcNum(uint16 npcnum_) {
-		_npcNum = npcnum_;
+	void setNpcNum(uint16 npcnum) {
+		_npcNum = npcnum;
 	}
 
 	//! Get the 'MapNum' of this Item. Note that this can represent various
@@ -236,18 +235,18 @@ public:
 
 	//! Set the 'MapNum' of this Item. Note that this can represent various
 	//! things depending on the family of this Item.
-	void setMapNum(uint16 mapnum_) {
-		_mapNum = mapnum_;
+	void setMapNum(uint16 mapnum) {
+		_mapNum = mapnum;
 	}
 
 	//! Get the ShapeInfo object for this Item. (The pointer will be cached.)
 	inline const ShapeInfo *getShapeInfo() const;
 
 	//! Get the ShapeInfo object for this Item from the game instance.
-	const ShapeInfo *getShapeInfoFromGameInstance() const;
+	virtual const ShapeInfo *getShapeInfoFromGameInstance() const;
 
 	//! Get the Shape object for this Item. (The pointer will be cached.)
-	Shape *getShapeObject() const;
+	const Shape *getShapeObject() const;
 
 	//! Get the family of the shape number of this Item. (This is a
 	//! member of the ShapeInfo object.)
@@ -285,11 +284,14 @@ public:
 	//! Check if the centre of this item is on top of another item
 	bool isCentreOn(const Item &item2) const;
 
-	//! Check if the item is currently visible on screen
+	//! Check if the item is currently entirely visible on screen
 	bool isOnScreen() const;
 
+	//! Check if the item is currently partly visible on screen
+	bool isPartlyOnScreen() const;
+
 	//! Check if this item can exist at the given coordinates
-	bool canExistAt(int32 x_, int32 y_, int32 z_, bool needsupport = false) const;
+	bool canExistAt(int32 x, int32 y, int32 z, bool needsupport = false) const;
 
 	//! Get direction from centre to another item's centre.
 	//! Undefined if either item is contained or equipped.
@@ -351,8 +353,9 @@ public:
 	//! Hurl the item in the given direction
 	void hurl(int xs, int ys, int zs, int grav);
 
-	//! Set the PID of the GravityProcess for this Item
+	//! Set the PID of the GravityProcess for this Item.  There should be only one.
 	void setGravityPID(ProcId pid) {
+		assert(_gravityPid == 0 || pid == 0);
 		_gravityPid = pid;
 	}
 
@@ -388,7 +391,11 @@ public:
 	virtual void receiveHit(ObjId other, Direction dir, int damage, uint16 type);
 
 	//! fire the given weapon type in the given direction from location x, y, z.
-	uint16 fireWeapon(int32 x, int32 y, int32 z, Direction dir, int firetype, char someflag);
+	uint16 fireWeapon(int32 x, int32 y, int32 z, Direction dir, int firetype, bool findtarget);
+
+	//! get the distance (in map tiles) if we were to fire in this direction to "other"
+	//! and could hit, otherwise return 0.
+	uint16 fireDistance(const Item *other, Direction dir, int16 xoff, int16 yoff, int16 zoff) const;
 
 	//! get damage points, used in Crusader for item damage.
 	uint8 getDamagePoints() const {
@@ -400,8 +407,12 @@ public:
 		_damagePoints = points;
 	}
 
+	//! Get the right Z which an attacker should aim for, given the attacker's z.
+	//! (Crusader only)
+	int32 getTargetZRelativeToAttackerZ(int32 attackerz) const;
+
 	//! count nearby objects of a given shape
-	unsigned int countNearby(uint32 shape_, uint16 range);
+	unsigned int countNearby(uint32 shape, uint16 range);
 
 	//! can this item be dragged?
 	bool canDrag();
@@ -428,6 +439,7 @@ public:
 	uint32 callUsecodeEvent_equip();                            // event A
 	uint32 callUsecodeEvent_equipWithParam(ObjId param);        // event A
 	uint32 callUsecodeEvent_unequip();                          // event B
+	uint32 callUsecodeEvent_unequipWithParam(ObjId param);      // event B
 	uint32 callUsecodeEvent_combine();                          // event C
 	uint32 callUsecodeEvent_calledFromAnim();                   // event E
 	uint32 callUsecodeEvent_enterFastArea();                    // event F
@@ -480,7 +492,7 @@ public:
 	void setupLerp(int32 gametick);
 
 	//! The item has entered the fast area
-	virtual void enterFastArea();
+	virtual uint32 enterFastArea();
 
 	//! The item has left the fast area
 	//! \note This can destroy the object
@@ -507,6 +519,7 @@ public:
 	INTRINSIC(I_setFrame);
 	INTRINSIC(I_getQuality);
 	INTRINSIC(I_getUnkEggType);
+	INTRINSIC(I_setUnkEggType);
 	INTRINSIC(I_getQuantity);
 	INTRINSIC(I_getContainer);
 	INTRINSIC(I_getRootContainer);
@@ -589,8 +602,9 @@ public:
 	INTRINSIC(I_equip);
 	INTRINSIC(I_unequip);
 	INTRINSIC(I_avatarStoleSomething);
-	INTRINSIC(I_isOnScreen);
+	INTRINSIC(I_isPartlyOnScreen);
 	INTRINSIC(I_fireWeapon);
+	INTRINSIC(I_fireDistance);
 
 private:
 	uint32 _shape;   // DO NOT modify this directly! Always use setShape()!
@@ -608,7 +622,7 @@ protected:
 
 	ObjId _parent; // objid container this item is in (or 0 for top-level items)
 
-	mutable Shape *_cachedShape;
+	mutable const Shape *_cachedShape;
 	mutable const ShapeInfo *_cachedShapeInfo;
 
 	// This is stuff that is used for displaying and interpolation

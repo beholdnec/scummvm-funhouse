@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -166,7 +181,6 @@
 		<ClCompile Include="..\..\engines\saga\actor_walk.cpp" />
 		<ClCompile Include="..\..\engines\saga\animation.cpp" />
 		<ClCompile Include="..\..\engines\saga\console.cpp" />
-		<ClCompile Include="..\..\engines\saga\detection.cpp" />
 		<ClCompile Include="..\..\engines\saga\events.cpp" />
 		<ClCompile Include="..\..\engines\saga\font.cpp" />
 		<ClCompile Include="..\..\engines\saga\font_map.cpp" />
@@ -176,16 +190,15 @@
 		<ClCompile Include="..\..\engines\saga\interface.cpp" />
 		<ClCompile Include="..\..\engines\saga\introproc_ihnm.cpp" />
 		<ClCompile Include="..\..\engines\saga\introproc_ite.cpp" />
-		<ClCompile Include="..\..\engines\saga\introproc_saga2.cpp" />
 		<ClCompile Include="..\..\engines\saga\isomap.cpp" />
 		<ClCompile Include="..\..\engines\saga\itedata.cpp" />
+		<ClCompile Include="..\..\engines\saga\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\saga\music.cpp" />
 		<ClCompile Include="..\..\engines\saga\objectmap.cpp" />
 		<ClCompile Include="..\..\engines\saga\palanim.cpp" />
 		<ClCompile Include="..\..\engines\saga\puzzle.cpp" />
 		<ClCompile Include="..\..\engines\saga\render.cpp" />
 		<ClCompile Include="..\..\engines\saga\resource.cpp" />
-		<ClCompile Include="..\..\engines\saga\resource_hrs.cpp" />
 		<ClCompile Include="..\..\engines\saga\resource_res.cpp" />
 		<ClCompile Include="..\..\engines\saga\resource_rsc.cpp" />
 		<ClCompile Include="..\..\engines\saga\saga.cpp" />
@@ -194,7 +207,6 @@
 		<ClCompile Include="..\..\engines\saga\script.cpp" />
 		<ClCompile Include="..\..\engines\saga\sfuncs.cpp" />
 		<ClCompile Include="..\..\engines\saga\sfuncs_ihnm.cpp" />
-		<ClCompile Include="..\..\engines\saga\shorten.cpp" />
 		<ClCompile Include="..\..\engines\saga\sndres.cpp" />
 		<ClCompile Include="..\..\engines\saga\sound.cpp" />
 		<ClCompile Include="..\..\engines\saga\sprite.cpp" />
@@ -204,6 +216,7 @@
 		<ClInclude Include="..\..\engines\saga\actor.h" />
 		<ClInclude Include="..\..\engines\saga\animation.h" />
 		<ClInclude Include="..\..\engines\saga\console.h" />
+		<ClInclude Include="..\..\engines\saga\detection.h" />
 		<ClInclude Include="..\..\engines\saga\detection_tables.h" />
 		<ClInclude Include="..\..\engines\saga\displayinfo.h" />
 		<ClInclude Include="..\..\engines\saga\events.h" />
@@ -221,7 +234,7 @@
 		<ClInclude Include="..\..\engines\saga\saga.h" />
 		<ClInclude Include="..\..\engines\saga\scene.h" />
 		<ClInclude Include="..\..\engines\saga\script.h" />
-		<ClInclude Include="..\..\engines\saga\shorten.h" />
+		<ClInclude Include="..\..\engines\saga\shared_detection_defines.h" />
 		<ClInclude Include="..\..\engines\saga\sndres.h" />
 		<ClInclude Include="..\..\engines\saga\sound.h" />
 		<ClInclude Include="..\..\engines\saga\sprite.h" />

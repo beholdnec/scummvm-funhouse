@@ -25,6 +25,8 @@
 #include "common/memstream.h"
 #include "common/substream.h"
 
+#include "audio/audiostream.h"
+
 #include "graphics/macgui/mactext.h"
 
 #ifdef USE_PNG
@@ -90,6 +92,9 @@ Score::~Score() {
 		for (Common::SortedArray<Label *>::iterator it = _labels->begin(); it != _labels->end(); ++it)
 			delete *it;
 
+	for (uint i = 0; i < _sampleSounds.size(); i++)
+		delete _sampleSounds[i];
+
 	delete _labels;
 }
 
@@ -98,8 +103,12 @@ int Score::getCurrentPalette() {
 }
 
 int Score::resolvePaletteId(int id) {
-	if (id > 0) {
-		CastMember *member = _movie->getCastMember(id);
+	// TODO: Palette ID should be a CastMemberID to allow for palettes in different casts
+	// 255 represent system palette in D2
+	if (id == 255) {
+		id = g_director->getCurrentMovie()->getCast()->_defaultPalette;
+	} else if (id > 0) {
+		CastMember *member = _movie->getCastMember(CastMemberID(id, 0));
 		id = (member && member->_type == kCastPalette) ? ((PaletteCastMember *)member)->getPaletteId() : 0;
 	}
 
@@ -304,30 +313,33 @@ void Score::update() {
 			_activeFade = 0;
 	}
 
-	if (_movie->_videoPlayback) {
-		renderFrame(_currentFrame);
-	}
-
 	if (!debugChannelSet(-1, kDebugFast)) {
+		bool keepWaiting = false;
+
 		if (_waitForChannel) {
-			if (_soundManager->isChannelActive(_waitForChannel))
-				return;
-
-			_waitForChannel = 0;
-		}
-
-		if (_waitForClick) {
+			if (_soundManager->isChannelActive(_waitForChannel)) {
+				keepWaiting = true; 
+			} else {
+				_waitForChannel = 0;
+			}
+		} else if (_waitForClick) {
 			if (g_system->getMillis() >= _nextFrameTime + 1000) {
 				_waitForClickCursor = !_waitForClickCursor;
 				_vm->setCursor(kCursorDefault);
 				_vm->setCursor(_waitForClickCursor ? kCursorMouseDown : kCursorMouseUp);
 				_nextFrameTime = g_system->getMillis();
 			}
-			return;
+			keepWaiting = true;
+		} else if (g_system->getMillis() < _nextFrameTime && !_nextFrame) {
+			keepWaiting = true;
 		}
 
-		if (g_system->getMillis() < _nextFrameTime && !_nextFrame)
+		if (keepWaiting) {
+			if (_movie->_videoPlayback) {
+				renderFrame(_currentFrame);
+			}
 			return;
+		}
 	}
 
 	// For previous frame
@@ -358,12 +370,26 @@ void Score::update() {
 	_vm->_skipFrameAdvance = false;
 
 	if (_currentFrame >= _frames.size()) {
-		if (debugChannelSet(-1, kDebugNoLoop)) {
-			_playState = kPlayStopped;
-			return;
-		}
+		Window *window = _vm->getCurrentWindow();
+		if (!window->_movieStack.empty()) {
+			MovieReference ref = window->_movieStack.back();
+			window->_movieStack.pop_back();
+			if (!ref.movie.empty()) {
+				_playState = kPlayStopped;
+				window->setNextMovie(ref.movie);
+				window->_nextMovie.frameI = ref.frameI;
+				return;
+			}
 
-		_currentFrame = 1;
+			_currentFrame = ref.frameI;
+		} else {
+			if (debugChannelSet(-1, kDebugNoLoop)) {
+				_playState = kPlayStopped;
+				return;
+			}
+
+			_currentFrame = 1;
+		}
 	}
 
 	Common::SortedArray<Label *>::iterator i;
@@ -442,26 +468,31 @@ void Score::update() {
 		_nextFrameTime += 1000;
 }
 
-void Score::renderFrame(uint16 frameId, RenderMode mode) {
+bool Score::renderFrame(uint16 frameId, RenderMode mode) {
+	bool updated = false;
+
 	if (!renderTransition(frameId))
 		renderSprites(frameId, mode);
 
 	int currentPalette = _frames[frameId]->_palette.paletteId;
-	if (!_puppetPalette && currentPalette != 0 && currentPalette != _lastPalette) {
+	if (!_puppetPalette && currentPalette != _lastPalette) {
 		_lastPalette = currentPalette;
 		g_director->setPalette(resolvePaletteId(currentPalette));
 	}
 
-	if (mode != kRenderNoWindowRender)
-		_window->render();
+	if (_window->render())
+		updated = true;
 
-	if (_frames[frameId]->_sound1 || _frames[frameId]->_sound2)
+	if (_frames[frameId]->_sound1.member || _frames[frameId]->_sound2.member)
 		playSoundChannel(frameId);
 
 	if (_cursorDirty) {
 		renderCursor(_movie->getWindow()->getMousePos());
 		_cursorDirty = false;
+		updated = true;
 	}
+
+	return updated;
 }
 
 bool Score::renderTransition(uint16 frameId) {
@@ -471,7 +502,7 @@ bool Score::renderTransition(uint16 frameId) {
 	if (tp) {
 		_window->playTransition(tp->duration, tp->area, tp->chunkSize, tp->type, frameId);
 
-		delete _window->_puppetTransition;;
+		delete _window->_puppetTransition;
 		_window->_puppetTransition = nullptr;
 		return true;
 	} else if (currentFrame->_transType) {
@@ -497,9 +528,6 @@ void Score::renderSprites(uint16 frameId, RenderMode mode) {
 		// this doesn't include changes in dimension or position!
 		bool widgetRedrawn = channel->updateWidget();
 
-		if (channel->isActiveText())
-			_movie->_currentEditableTextChannel = i;
-
 		if (channel->isActiveVideo())
 			_movie->_videoPlayback = true;
 
@@ -508,11 +536,20 @@ void Score::renderSprites(uint16 frameId, RenderMode mode) {
 				_window->addDirtyRect(channel->getBbox());
 
 			channel->setClean(nextSprite, i);
+			// Check again to see if a video has just been started by setClean.
+			if (channel->isActiveVideo())
+				_movie->_videoPlayback = true;
+
 			_window->addDirtyRect(channel->getBbox());
-			debugC(2, kDebugImages, "Score::renderSprites(): CH: %-3d castId: %03d(%s) [ink: %d, puppet: %d, moveable: %d, visible: %d] [bbox: %d,%d,%d,%d] [type: %d fg: %d bg: %d] [script: %d]", i, currentSprite->_castId, numToCastNum(currentSprite->_castId), currentSprite->_ink, currentSprite->_puppet, currentSprite->_moveable, channel->_visible, PRINT_RECT(channel->getBbox()), currentSprite->_spriteType, currentSprite->_foreColor, currentSprite->_backColor, currentSprite->_scriptId);
+			debugC(2, kDebugImages, "Score::renderSprites(): CH: %-3d castId: %s [ink: %d, puppet: %d, moveable: %d, visible: %d] [bbox: %d,%d,%d,%d] [type: %d fg: %d bg: %d] [script: %s]", i, currentSprite->_castId.asString().c_str(), currentSprite->_ink, currentSprite->_puppet, currentSprite->_moveable, channel->_visible, PRINT_RECT(channel->getBbox()), currentSprite->_spriteType, currentSprite->_foreColor, currentSprite->_backColor, currentSprite->_scriptId.asString().c_str());
 		} else {
 			channel->setClean(nextSprite, i, true);
 		}
+
+		// update editable text channel after we render the sprites. because for the current frame, we may get those sprites only when we finished rendering
+		// (because we are creating widgets and setting active state when we rendering sprites)
+		if (channel->isActiveText())
+			_movie->_currentEditableTextChannel = i;
 	}
 }
 
@@ -522,9 +559,11 @@ void Score::renderCursor(Common::Point pos) {
 	if (_channels.empty())
 		return;
 
-	for (int i = _channels.size() - 1; i >=0; i--)
-		if (_channels[i]->isMouseIn(pos) && !_channels[i]->_cursor.isEmpty())
+	for (int i = _channels.size() - 1; i >= 0; i--)
+		if (_channels[i]->isMouseIn(pos) && !_channels[i]->_cursor.isEmpty()) {
 			spriteId = i;
+			break;
+		}
 
 	if (_channels[spriteId]->_cursor.isEmpty()) {
 		if (_currentCursor) {
@@ -607,6 +646,14 @@ Common::List<Channel *> Score::getSpriteIntersections(const Common::Rect &r) {
 	return intersections;
 }
 
+uint16 Score::getSpriteIdByMemberId(CastMemberID id) {
+	for (uint i = 0; i < _channels.size(); i++)
+		if (_channels[i]->_sprite->_castId == id)
+			return i;
+
+	return 0;
+}
+
 Sprite *Score::getSpriteById(uint16 id) {
 	Channel *channel = getChannelById(id);
 
@@ -616,6 +663,14 @@ Sprite *Score::getSpriteById(uint16 id) {
 		warning("Score::getSpriteById(): sprite on frame %d with id %d not found", _currentFrame, id);
 		return nullptr;
 	}
+}
+
+Sprite *Score::getOriginalSpriteById(uint16 id) {
+	Frame *frame = _frames[_currentFrame];
+	if (id < frame->_sprites.size())
+		return frame->_sprites[id];
+	warning("Score::getOriginalSpriteById(%d): out of bounds", id);
+	return nullptr;
 }
 
 Channel *Score::getChannelById(uint16 id) {
@@ -630,13 +685,80 @@ Channel *Score::getChannelById(uint16 id) {
 void Score::playSoundChannel(uint16 frameId) {
 	Frame *frame = _frames[frameId];
 
-	debugC(5, kDebugLoading, "playSoundChannel(): Sound1 %d Sound2 %d", frame->_sound1, frame->_sound2);
+	debugC(5, kDebugLoading, "playSoundChannel(): Sound1 %s Sound2 %s", frame->_sound1.asString().c_str(), frame->_sound2.asString().c_str());
 	DirectorSound *sound = _vm->getSoundManager();
-	sound->playCastMember(frame->_sound1, 1, false);
-	sound->playCastMember(frame->_sound2, 2, false);
+
+	// 0x0f represent sample sound
+	if (frame->_soundType1 == 0x0f) {
+		if (_sampleSounds.empty())
+			loadSampleSounds(0x0f);
+
+		if ((uint)frame->_sound1.member <= _sampleSounds.size()) {
+			sound->playExternalSound(_sampleSounds[frame->_sound1.member - 1], 1, frame->_sound1.member);
+		}
+	} else {
+		sound->playCastMember(frame->_sound1, 1, false);
+	}
+
+	if (frame->_soundType2 == 0x0f) {
+		if (_sampleSounds.empty())
+			loadSampleSounds(0x0f);
+
+		if ((uint)frame->_sound2.member <= _sampleSounds.size())
+			sound->playExternalSound(_sampleSounds[frame->_sound2.member - 1], 2, frame->_sound2.member);
+	} else {
+		sound->playCastMember(frame->_sound2, 2, false);
+	}
 }
 
-void Score::loadFrames(Common::SeekableReadStreamEndian &stream) {
+void Score::loadSampleSounds(uint type) {
+	// trying to load external sample sounds
+	// lazy loading
+	uint32 tag = MKTAG('C', 'S', 'N', 'D');
+	uint id = 0xFF;
+	Archive *archive = nullptr;
+
+	for (Common::HashMap<Common::String, Archive *, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo>::iterator it = g_director->_openResFiles.begin(); it != g_director->_openResFiles.end(); ++it) {
+		Common::Array<uint16> idList = it->_value->getResourceIDList(tag);
+		for (uint j = 0; j < idList.size(); j++) {
+			if ((idList[j] & 0xFF) == type) {
+				id = idList[j];
+				archive = it->_value;
+				break;
+			}
+		}
+	}
+
+	if (id == 0xFF) {
+		warning("Score::loadSampleSounds: can not find CSND resource with id %d", type);
+		return;
+	}
+
+	Common::SeekableReadStreamEndian *csndData = archive->getResource(tag, id);
+
+	/*uint32 flag = */ csndData->readUint32();
+
+	// the flag should be 0x604E
+	// i'm not sure what's that mean, but it occurs in those csnd files
+
+	// contains how many csnd data
+	uint16 num = csndData->readUint16();
+
+	// read the offset first;
+	Common::Array<uint32> offset(num);
+	for (uint i = 0; i < num; i++)
+		offset[i] = csndData->readUint32();
+
+	for (uint i = 0; i < num; i++) {
+		csndData->seek(offset[i]);
+
+		SNDDecoder *ad = new SNDDecoder();
+		ad->loadExternalSoundStream(*csndData);
+		_sampleSounds.push_back(ad);
+	}
+}
+
+void Score::loadFrames(Common::SeekableReadStreamEndian &stream, uint16 version) {
 	debugC(1, kDebugLoading, "****** Loading frames VWSC");
 
 	//stream.hexdump(stream.size());
@@ -644,20 +766,20 @@ void Score::loadFrames(Common::SeekableReadStreamEndian &stream) {
 	uint32 size = stream.readUint32();
 	size -= 4;
 
-	if (_vm->getVersion() < 400) {
+	if (version < kFileVer400) {
 		_numChannelsDisplayed = 30;
-	} else if (_vm->getVersion() >= 400 && _vm->getVersion() < 500) {
+	} else if (version >= kFileVer400 && version < kFileVer500) {
 		uint32 frame1Offset = stream.readUint32();
 		uint32 numFrames = stream.readUint32();
-		uint16 version = stream.readUint16();
+		uint16 framesVersion = stream.readUint16();
 		uint16 spriteRecordSize = stream.readUint16();
 		uint16 numChannels = stream.readUint16();
 		size -= 14;
 
-		if (version > 13) {
+		if (framesVersion > 13) {
 			_numChannelsDisplayed = stream.readUint16();
 		} else {
-			if (version <= 7)	// Director5
+			if (framesVersion <= 7)	// Director5
 				_numChannelsDisplayed = 48;
 			else
 				_numChannelsDisplayed = 120;	// D6
@@ -668,9 +790,9 @@ void Score::loadFrames(Common::SeekableReadStreamEndian &stream) {
 		size -= 2;
 
 		warning("STUB: Score::loadFrames. frame1Offset: %x numFrames: %x version: %x spriteRecordSize: %x numChannels: %x numChannelsDisplayed: %x",
-			frame1Offset, numFrames, version, spriteRecordSize, numChannels, _numChannelsDisplayed);
+			frame1Offset, numFrames, framesVersion, spriteRecordSize, numChannels, _numChannelsDisplayed);
 		// Unknown, some bytes - constant (refer to contuinity).
-	} else if (_vm->getVersion() >= 500) {
+	} else if (version >= kFileVer500) {
 		//what data is up the top of D5 VWSC?
 		uint32 unk1 = stream.readUint32();
 		uint32 unk2 = stream.readUint32();
@@ -746,10 +868,10 @@ void Score::loadFrames(Common::SeekableReadStreamEndian &stream) {
 
 			Common::MemoryReadStreamEndian *str = new Common::MemoryReadStreamEndian(channelData, ARRAYSIZE(channelData), stream.isBE());
 			// str->hexdump(str->size(), 32);
-			frame->readChannels(str);
+			frame->readChannels(str, version);
 			delete str;
 
-			debugC(8, kDebugLoading, "Score::loadFrames(): Frame %d actionId: %d", _frames.size(), frame->_actionId);
+			debugC(8, kDebugLoading, "Score::loadFrames(): Frame %d actionId: %s", _frames.size(), frame->_actionId.asString().c_str());
 
 			_frames.push_back(frame);
 		} else {
@@ -765,7 +887,7 @@ void Score::setSpriteCasts() {
 		for (uint16 j = 0; j < _frames[i]->_sprites.size(); j++) {
 			_frames[i]->_sprites[j]->setCast(_frames[i]->_sprites[j]->_castId);
 
-			debugC(1, kDebugImages, "Score::setSpriteCasts(): Frame: %d Channel: %d castId: %d type: %d", i, j, _frames[i]->_sprites[j]->_castId, _frames[i]->_sprites[j]->_spriteType);
+			debugC(1, kDebugImages, "Score::setSpriteCasts(): Frame: %d Channel: %d castId: %s type: %d", i, j, _frames[i]->_sprites[j]->_castId.asString().c_str(), _frames[i]->_sprites[j]->_spriteType);
 		}
 	}
 }
@@ -833,15 +955,8 @@ void Score::loadActions(Common::SeekableReadStreamEndian &stream) {
 
 		stream.seek(stringPos);
 
-		Common::String script;
-		for (uint16 j = stringPos; j < nextStringPos; j++) {
-			byte ch = stream.readByte();
-			if (ch == 0x0d) {
-				ch = '\n';
-			}
-			script += ch;
-		}
-		_actions[i] = script;
+		Common::String script = stream.readString(0, nextStringPos - stringPos);
+		_actions[i] = script.decode(Common::kMacRoman).encode(Common::kUtf8);
 
 		debugC(3, kDebugLoading, "Action index: %d id: %d nextId: %d subId: %d, code: %s", i, id, nextId, subId, _actions[i].c_str());
 
@@ -859,12 +974,12 @@ void Score::loadActions(Common::SeekableReadStreamEndian &stream) {
 
 	// Now let's scan which scripts are actually referenced
 	for (uint i = 0; i < _frames.size(); i++) {
-		if (_frames[i]->_actionId <= _actions.size())
-			scriptRefs[_frames[i]->_actionId] = true;
+		if ((uint)_frames[i]->_actionId.member <= _actions.size())
+			scriptRefs[_frames[i]->_actionId.member] = true;
 
 		for (uint16 j = 0; j <= _frames[i]->_numChannels; j++) {
-			if (_frames[i]->_sprites[j]->_scriptId <= _actions.size())
-				scriptRefs[_frames[i]->_sprites[j]->_scriptId] = true;
+			if ((uint)_frames[i]->_sprites[j]->_scriptId.member <= _actions.size())
+				scriptRefs[_frames[i]->_sprites[j]->_scriptId.member] = true;
 		}
 	}
 
@@ -880,8 +995,9 @@ void Score::loadActions(Common::SeekableReadStreamEndian &stream) {
 		if (!scriptRefs[j->_key]) {
 			// Check if it is empty
 			bool empty = true;
-			for (const char *ptr = j->_value.c_str(); *ptr; ptr++)
-				if (!(*ptr == ' ' || *ptr == '-' || *ptr == '\n' || *ptr == '\r' || *ptr == '\t' || *ptr == '\xc2')) {
+			Common::U32String u32Script(j->_value);
+			for (const Common::u32char_type_t *ptr = u32Script.c_str(); *ptr; ptr++)
+				if (!(*ptr == ' ' || *ptr == '-' || *ptr == '\n' || *ptr == '\r' || *ptr == '\t' || *ptr == CONTINUATION)) {
 					empty = false;
 					break;
 				}
@@ -892,7 +1008,7 @@ void Score::loadActions(Common::SeekableReadStreamEndian &stream) {
 			continue;
 		}
 		if (!j->_value.empty()) {
-			_movie->getMainLingoArch()->addCode(j->_value.c_str(), kScoreScript, j->_key);
+			_movie->getMainLingoArch()->addCode(j->_value, kScoreScript, j->_key);
 
 			processImmediateFrameScript(j->_value, j->_key);
 		}

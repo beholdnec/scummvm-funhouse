@@ -46,9 +46,6 @@ namespace CGE2 {
 CGE2Engine::CGE2Engine(OSystem *syst, const ADGameDescription *gameDescription)
 	: Engine(syst), _gameDescription(gameDescription), _randomSource("cge2") {
 
-	// Debug/console setup
-	DebugMan.addDebugChannel(kCGE2DebugOpcode, "opcode", "CGE2 opcode debug channel");
-
 	_resman = nullptr;
 	_vga = nullptr;
 	_midiPlayer = nullptr;
@@ -145,9 +142,6 @@ void CGE2Engine::init() {
 }
 
 void CGE2Engine::deinit() {
-	// Remove all of our debug levels here
-	DebugMan.clearAllDebugChannels();
-
 	delete _spare;
 	delete _resman;
 	delete _vga;

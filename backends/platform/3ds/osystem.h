@@ -34,11 +34,12 @@
 #include "backends/platform/3ds/sprite.h"
 #include "common/rect.h"
 #include "common/queue.h"
+#include "common/ustr.h"
 #include "engines/engine.h"
 
 #define TICKS_PER_MSEC 268123
 
-namespace _3DS {
+namespace N3DS {
 
 enum MagnifyMode {
 	MODE_MAGON,
@@ -114,7 +115,7 @@ public:
 
 	virtual uint32 getMillis(bool skipRecord = false);
 	virtual void delayMillis(uint msecs);
-	virtual void getTimeAndDate(TimeDate &t) const;
+	virtual void getTimeAndDate(TimeDate &td, bool skipRecord = false) const;
 
 	virtual MutexRef createMutex();
 	virtual void lockMutex(MutexRef mutex);
@@ -158,14 +159,15 @@ public:
 	void clearFocusRectangle();
 	void showOverlay();
 	void hideOverlay();
+	bool isOverlayVisible() const { return _overlayVisible; }
 	Graphics::PixelFormat getOverlayFormat() const;
 	void clearOverlay();
-	void grabOverlay(void *buf, int pitch);
+	void grabOverlay(Graphics::Surface &surface);
 	void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w,
 	                       int h);
 	virtual int16 getOverlayHeight();
 	virtual int16 getOverlayWidth();
-	void displayMessageOnOSD(const char *msg) override;
+	void displayMessageOnOSD(const Common::U32String &msg) override;
 	void displayActivityIconOnOSD(const Graphics::Surface *icon) override;
 
 	bool showMouse(bool visible);
@@ -290,6 +292,6 @@ public:
 	PauseToken _sleepPauseToken;
 };
 
-} // namespace _3DS
+} // namespace N3DS
 
 #endif

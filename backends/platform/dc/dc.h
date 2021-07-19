@@ -142,7 +142,7 @@ public:
   void delayMillis(uint msecs);
 
   // Get the current time and date. Correspond to time()+localtime().
-  void getTimeAndDate(TimeDate &t) const;
+  void getTimeAndDate(TimeDate &td, bool skipRecord = false) const;
 
   // Get the next event.
   // Returns true if an event was retrieved.
@@ -154,10 +154,11 @@ public:
   // Overlay
   int16 getOverlayHeight();
   int16 getOverlayWidth();
+  bool isOverlayVisible() const { return _overlay_visible; }
   void showOverlay();
   void hideOverlay();
   void clearOverlay();
-  void grabOverlay(void *buf, int pitch);
+  void grabOverlay(Graphics::Surface &surface);
   void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h);
   virtual Graphics::PixelFormat getOverlayFormat() const { return Graphics::PixelFormat(2, 4, 4, 4, 4, 8, 4, 0, 12); }
 
@@ -169,7 +170,7 @@ public:
 
   // Set a window caption or any other comparable status display to the
   // given value.
-  void setWindowCaption(const char *caption);
+  void setWindowCaption(const Common::U32String &caption);
 
   // Modulatized backend
   Audio::Mixer *getMixer() { return _mixer; }

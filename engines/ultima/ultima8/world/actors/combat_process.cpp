@@ -20,22 +20,16 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/world/actors/combat_process.h"
 #include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/current_map.h"
 #include "ultima/ultima8/world/world.h"
 #include "ultima/ultima8/usecode/uc_list.h"
 #include "ultima/ultima8/world/loop_script.h"
-#include "ultima/ultima8/world/weapon_info.h"
 #include "ultima/ultima8/world/actors/animation_tracker.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/kernel/delay_process.h"
 #include "ultima/ultima8/world/actors/pathfinder_process.h"
-#include "ultima/ultima8/graphics/shape_info.h"
-#include "ultima/ultima8/world/actors/monster_info.h"
-#include "ultima/ultima8/misc/direction.h"
-#include "ultima/ultima8/misc/direction_util.h"
 #include "ultima/ultima8/world/get_object.h"
 #include "ultima/ultima8/world/actors/loiter_process.h"
 #include "ultima/ultima8/world/actors/ambush_process.h"
@@ -43,16 +37,15 @@
 namespace Ultima {
 namespace Ultima8 {
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(CombatProcess)
 
 CombatProcess::CombatProcess() : Process(), _target(0), _fixedTarget(0), _combatMode(CM_WAITING) {
 
 }
 
-CombatProcess::CombatProcess(Actor *actor_) : _target(0), _fixedTarget(0), _combatMode(CM_WAITING) {
-	assert(actor_);
-	_itemNum = actor_->getObjId();
+CombatProcess::CombatProcess(Actor *actor) : _target(0), _fixedTarget(0), _combatMode(CM_WAITING) {
+	assert(actor);
+	_itemNum = actor->getObjId();
 
 	_type = 0x00F2; // CONSTANT !
 }
@@ -174,22 +167,22 @@ void CombatProcess::setTarget(ObjId newtarget) {
 	_target = newtarget;
 }
 
-bool CombatProcess::isValidTarget(const Actor *target_) const {
-	assert(target_);
+bool CombatProcess::isValidTarget(const Actor *target) const {
+	assert(target);
 	const Actor *a = getActor(_itemNum);
 	if (!a) return false; // uh oh
 
 	// don't target_ self
-	if (target_ == a) return false;
+	if (target == a) return false;
 
 	// not in the fastarea
-	if (!target_->hasFlags(Item::FLG_FASTAREA)) return false;
+	if (!target->hasFlags(Item::FLG_FASTAREA)) return false;
 
 	// dead actors don't make good targets
-	if (target_->isDead()) return false;
+	if (target->isDead()) return false;
 
 	// feign death only works on undead and demons
-	if (target_->hasActorFlags(Actor::ACT_FEIGNDEATH)) {
+	if (target->hasActorFlags(Actor::ACT_FEIGNDEATH)) {
 
 		if ((a->getDefenseType() & WeaponInfo::DMG_UNDEAD) ||
 		        (a->getShape() == 96)) return false; // CONSTANT!
@@ -199,13 +192,13 @@ bool CombatProcess::isValidTarget(const Actor *target_) const {
 	return true;
 }
 
-bool CombatProcess::isEnemy(const Actor *target_) const {
-	assert(target_);
+bool CombatProcess::isEnemy(const Actor *target) const {
+	assert(target);
 
 	const Actor *a = getActor(_itemNum);
 	if (!a) return false; // uh oh
 
-	return ((a->getEnemyAlignment() & target_->getAlignment()) != 0);
+	return ((a->getEnemyAlignment() & target->getAlignment()) != 0);
 }
 
 ObjId CombatProcess::seekTarget() {
@@ -224,7 +217,7 @@ ObjId CombatProcess::seekTarget() {
 	cm->areaSearch(&itemlist, script, sizeof(script), a, 768, false);
 
 	for (unsigned int i = 0; i < itemlist.getSize(); ++i) {
-		Actor *t = getActor(itemlist.getuint16(i));
+		const Actor *t = getActor(itemlist.getuint16(i));
 
 		if (t && isValidTarget(t) && isEnemy(t)) {
 			// found _target

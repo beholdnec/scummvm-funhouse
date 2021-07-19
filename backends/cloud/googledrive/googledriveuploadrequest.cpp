@@ -199,7 +199,7 @@ void GoogleDriveUploadRequest::uploadNextPart() {
 	uint32 oldPos = _contentsStream->pos();
 	if (oldPos != _serverReceivedBytes) {
 		if (!_contentsStream->seek(_serverReceivedBytes)) {
-			warning("GoogleDriveUploadRequest: cannot upload because stream couldn't seek(%lu)", _serverReceivedBytes);
+			warning("GoogleDriveUploadRequest: cannot upload because stream couldn't seek(%llu)", (unsigned long long)_serverReceivedBytes);
 			finishError(Networking::ErrorResponse(this, false, true, "GoogleDriveUploadRequest::uploadNextPart: seek() didn't work", -1));
 			return;
 		}
@@ -215,7 +215,7 @@ void GoogleDriveUploadRequest::uploadNextPart() {
 		if (_contentsStream->pos() == 0)
 			request->addHeader(Common::String::format("Content-Length: 0"));
 		else
-			request->addHeader(Common::String::format("Content-Range: bytes %u-%u/%u", oldPos, _contentsStream->pos() - 1, _contentsStream->size()));
+			request->addHeader(Common::String::format("Content-Range: bytes %u-%lu/%lu", oldPos, _contentsStream->pos() - 1, _contentsStream->size()));
 	}
 
 	_workingRequest = ConnMan.addRequest(request);

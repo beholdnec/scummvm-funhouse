@@ -220,7 +220,7 @@ void SwitchEventSource::preprocessFingerMotion(SDL_Event *event) {
 	if (numFingersDown >= 1) {
 		int x = _mouseX;
 		int y = _mouseY;
-		int xMax = _graphicsManager->getWindowWidth()  - 1;
+		int xMax = _graphicsManager->getWindowWidth() - 1;
 		int yMax = _graphicsManager->getWindowHeight() - 1;
 
 		if (port == 0 && !ConfMan.getBool("touchpad_mouse_mode")) {
@@ -290,7 +290,7 @@ void SwitchEventSource::preprocessFingerMotion(SDL_Event *event) {
 					}
 				}
 				if (numFingersDownLong >= 2) {
-					// starting drag, so push mouse down at current location (back) 
+					// starting drag, so push mouse down at current location (back)
 					// or location of "oldest" finger (front)
 					int mouseDownX = _mouseX;
 					int mouseDownY = _mouseY;

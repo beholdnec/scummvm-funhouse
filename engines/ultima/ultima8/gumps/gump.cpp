@@ -20,7 +20,6 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/gumps/gump.h"
 #include "ultima/ultima8/graphics/render_surface.h"
 #include "ultima/ultima8/graphics/shape.h"
@@ -30,7 +29,6 @@
 #include "ultima/ultima8/gumps/gump_notify_process.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/kernel/object_manager.h"
-#include "ultima/ultima8/gumps/scaler_gump.h"
 #include "ultima/ultima8/ultima8.h"
 
 namespace Ultima {
@@ -45,7 +43,7 @@ Gump::Gump() : Object(), _parent(nullptr), _owner(0),
 }
 
 Gump::Gump(int inX, int inY, int width, int height, uint16 inOwner,
-           uint32 inFlags, int32 inLayer) :
+		   uint32 inFlags, int32 inLayer) :
 	Object(), _owner(inOwner), _parent(nullptr), _x(inX), _y(inY),
 	_dims(0, 0, width, height), _flags(inFlags), _layer(inLayer), _index(-1),
 	_shape(nullptr), _frameNum(0), _children(), _focusChild(nullptr),
@@ -123,12 +121,14 @@ void Gump::Close(bool no_del) {
 	}
 	_notifier = 0;
 
+	_flags |= FLAG_CLOSING;
 	if (!_parent) {
-		_flags |= FLAG_CLOSING;
-		if (!no_del) delete this;
+		if (!no_del)
+			delete this;
 	} else {
-		_flags |= FLAG_CLOSING;
-		if (!no_del) _flags |= FLAG_CLOSE_AND_DEL;
+		_parent->ChildNotify(this, Gump::GUMP_CLOSING);
+		if (!no_del)
+			_flags |= FLAG_CLOSE_AND_DEL;
 	}
 }
 
@@ -194,7 +194,7 @@ void Gump::CloseItemDependents() {
 	}
 }
 
-bool Gump::GetMouseCursor(int32 mx, int32 my, Shape &shape_, int32 &frame) {
+bool Gump::GetMouseCursor(int32 mx, int32 my, Shape &shape, int32 &frame) {
 	ParentToGump(mx, my);
 
 	bool ret = false;
@@ -210,7 +210,7 @@ bool Gump::GetMouseCursor(int32 mx, int32 my, Shape &shape_, int32 &frame) {
 
 		// It's got the point
 		if (g->PointOnGump(mx, my))
-			ret = g->GetMouseCursor(mx, my, shape_, frame);
+			ret = g->GetMouseCursor(mx, my, shape, frame);
 
 		if (ret) break;
 	}
@@ -254,23 +254,8 @@ void Gump::Paint(RenderSurface *surf, int32 lerp_factor, bool scaled) {
 }
 
 void Gump::PaintThis(RenderSurface *surf, int32 /*lerp_factor*/, bool /*scaled*/) {
-	if (_shape) {
-#if 0
-		Rect sr;
-		ShapeFrame *f = shape->getFrame(_frameNum);
-		sr.h = f->height;
-		sr.w = f->height;
-		sr.x = -f->xoff;
-		sr.y = -f->yoff;
-
-		if (surf->CheckClipped(sr))
-#endif
-			surf->Paint(_shape, _frameNum, 0, 0);
-#if 0
-		else
-			surf->PaintNoClip(shape, _frameNum, 0, 0);
-#endif
-	}
+	if (_shape)
+		surf->Paint(_shape, _frameNum, 0, 0);
 }
 
 void Gump::PaintChildren(RenderSurface *surf, int32 lerp_factor, bool scaled) {
@@ -289,7 +274,7 @@ void Gump::PaintChildren(RenderSurface *surf, int32 lerp_factor, bool scaled) {
 }
 
 void Gump::PaintCompositing(RenderSurface *surf, int32 lerp_factor,
-                            int32 sx, int32 sy) {
+							int32 sx, int32 sy) {
 	// Don't paint if hidden
 	if (IsHidden()) return;
 
@@ -527,13 +512,13 @@ uint16 Gump::TraceObjId(int32 mx, int32 my) {
 }
 
 bool Gump::GetLocationOfItem(uint16 itemid, int32 &gx, int32 &gy,
-                             int32 lerp_factor) {
+							 int32 lerp_factor) {
 	gx = 0;
 	gy = 0;
 	return false;
 }
 
-// Find a child gump that matches the matching function 
+// Find a child gump that matches the matching function
 Gump *Gump::FindGump(const FindGumpPredicate predicate, bool recursive) {
 	if (predicate(this))
 		return this;
@@ -847,6 +832,10 @@ bool Gump::loadData(Common::ReadStream *rs, uint32 version) {
 	uint32 shapenum = rs->readUint32LE();
 	if (flex) {
 		_shape = flex->getShape(shapenum);
+		if (shapenum > 0 && !_shape) {
+			warning("Gump shape %d is not valid. Corrupt save?", shapenum);
+			return false;
+		}
 	}
 
 	_frameNum = rs->readUint32LE();
@@ -857,6 +846,11 @@ bool Gump::loadData(Common::ReadStream *rs, uint32 version) {
 
 	// read children
 	uint32 childcount = rs->readUint32LE();
+
+	if (childcount > 65535) {
+		warning("Improbable gump child count %d.  Corrupt save?", childcount);
+		return false;
+	}
 	for (unsigned int i = 0; i < childcount; ++i) {
 		Object *obj = ObjectManager::get_instance()->loadObject(rs, version);
 		Gump *child = dynamic_cast<Gump *>(obj);

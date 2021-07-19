@@ -2,16 +2,16 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="script">
-			<UniqueIdentifier>EEEE4149-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C58-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="script\ai">
-			<UniqueIdentifier>EEEE414A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C59-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="script\scene">
-			<UniqueIdentifier>EEEE414B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C5A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ui">
-			<UniqueIdentifier>EEEE414C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C5B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -31,12 +31,12 @@
 		<ClCompile Include="..\..\engines\bladerunner\bladerunner.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\boundingbox.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\chapters.cpp" />
+		<ClCompile Include="..\..\engines\bladerunner\color.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\combat.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\crimes_database.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\debugger.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\decompress_lcw.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\decompress_lzo.cpp" />
-		<ClCompile Include="..\..\engines\bladerunner\detection.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\dialogue_menu.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\fog.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\font.cpp" />
@@ -50,6 +50,7 @@
 		<ClCompile Include="..\..\engines\bladerunner\light.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\lights.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\matrix.cpp" />
+		<ClCompile Include="..\..\engines\bladerunner\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\mouse.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\movement_track.cpp" />
 		<ClCompile Include="..\..\engines\bladerunner\music.cpp" />

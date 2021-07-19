@@ -244,12 +244,12 @@ DisplayedText Text::displayText(char *textPtr, uint8 *dest, bool center, uint16 
 	uint32 numLines = 0;
 	_numLetters = 2;
 
-	// work around bug #778105 (line width exceeded)
+	// work around bug #1080 (line width exceeded)
 	char *tmpPtr = strstr(textPtr, "MUND-BEATMUNG!");
 	if (tmpPtr)
 		strcpy(tmpPtr, "MUND BEATMUNG!");
 
-	// work around bug #1151924 (line width exceeded when talking to gardener using spanish text)
+	// work around bug #1940 (line width exceeded when talking to gardener using spanish text)
 	// This text apparently only is broken in the floppy versions, the CD versions contain
 	// the correct string "MANIFESTACION - ARTISTICA.", which doesn't break the algorithm/game.
 	tmpPtr = strstr(textPtr, "MANIFESTACION-ARTISTICA.");

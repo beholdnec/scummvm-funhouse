@@ -332,8 +332,8 @@ public:
 	void playerGainsControl(bool force = false);
 	void playerDied();
 
-	bool saveGame(Common::WriteStream &stream, Graphics::Surface &thumbnail);
-	bool loadGame(Common::SeekableReadStream &stream);
+	bool saveGame(Common::WriteStream &stream, Graphics::Surface *thumb = NULL, bool origformat = false);
+	bool loadGame(Common::SeekableReadStream &stream, int version);
 	void newGame(int difficulty);
 	void autoSaveGame(int textId, bool endgame);
 
@@ -367,17 +367,17 @@ static inline const Graphics::PixelFormat screenPixelFormat() {
 
 static inline void drawPixel(Graphics::Surface &surface, void* dst, uint32 value) {
 	switch (surface.format.bytesPerPixel) {
-		case 1:
-			*(uint8*)dst = (uint8)value;
-			break;
-		case 2:
-			*(uint16*)dst = (uint16)value;
-			break;
-		case 4:
-			*(uint32*)dst = (uint32)value;
-			break;
-		default:
-			break;
+	case 1:
+		*(uint8*)dst = (uint8)value;
+		break;
+	case 2:
+		*(uint16*)dst = (uint16)value;
+		break;
+	case 4:
+		*(uint32*)dst = (uint32)value;
+		break;
+	default:
+		break;
 	}
 }
 

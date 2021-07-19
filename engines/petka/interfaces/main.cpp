@@ -38,6 +38,7 @@
 #include "petka/objects/object_case.h"
 #include "petka/objects/heroes.h"
 #include "petka/objects/text.h"
+#include "petka/walk.h"
 
 namespace Petka {
 
@@ -81,25 +82,49 @@ void InterfaceMain::start(int id) {
 
 void InterfaceMain::loadRoom(int id, bool fromSave) {
 	QSystem *sys = g_vm->getQSystem();
+
 	sys->_currInterface->stop();
 	if (_roomId == id)
 		return;
+
 	unloadRoom(fromSave);
-	_roomId = id;
+
 	const BGInfo *info = findBGInfo(id);
 	QObjectBG *room = (QObjectBG *)sys->findObject(id);
+	QManager *resMgr = g_vm->resMgr();
+
+	_roomId = id;
 	sys->_room = room;
-	g_vm->resMgr()->loadBitmap(room->_resourceId);
 	_objs.push_back(room);
+
+	auto surface = resMgr->getSurface(room->_resourceId);
+	if (surface) {
+		sys->_sceneWidth = surface->w;
+		sys->_xOffset = 0;
+	}
+
 	for (uint i = 0; i < info->attachedObjIds.size(); ++i) {
 		QMessageObject *obj = sys->findObject(info->attachedObjIds[i]);
 		obj->loadSound();
 		if (obj->_isShown || obj->_isActive)
-			g_vm->resMgr()->loadFlic(obj->_resourceId);
+			g_vm->resMgr()->getFlic(obj->_resourceId);
 		_objs.push_back(obj);
 	}
+
+	auto petka = sys->getPetka();
+	auto chapay = sys->getChapay();
+
+	auto bkgName = resMgr->findResourceName(room->_resourceId);
+
+	petka->_walk->setBackground(bkgName);
+	chapay->_walk->setBackground(bkgName);
+
+	petka->setPos(Common::Point(petka->_x, petka->_y), false);
+	chapay->setPos(Common::Point(chapay->_x, chapay->_y), false);
+
 	playSound(room->_musicId, Audio::Mixer::kMusicSoundType);
 	playSound(room->_fxId, Audio::Mixer::kSFXSoundType);
+
 	if (!fromSave)
 		sys->addMessageForAllObjects(kInitBG, 0, 0, 0, 0, room);
 	g_vm->videoSystem()->updateTime();
@@ -229,7 +254,7 @@ void InterfaceMain::onMouseMove(Common::Point p) {
 			setText(Common::convertToU32String(obj->_name.c_str(), Common::kWindows1251), fmt.RGBToColor(0x80, 0, 0), fmt.RGBToColor(0xA, 0xA, 0xA));
 		}
 	} else if (prevObj && !_objUnderCursor && !_dialog.isActive()) {
-		setText(Common::U32String(""), 0, 0);
+		setText(Common::U32String(), 0, 0);
 	}
 }
 
@@ -253,6 +278,24 @@ void InterfaceMain::removeTextDescription() {
 	_objUnderCursor = nullptr;
 	g_vm->getQSystem()->getStar()->_isActive = true;
 	removeTexts();
+}
+
+void InterfaceMain::update(uint time) {
+	QSystem *sys = g_vm->getQSystem();
+	int xOff = sys->_xOffset;
+	int reqOffset = sys->_reqOffset;
+	if (xOff != reqOffset && ((xOff != sys->_sceneWidth - 640 && xOff < reqOffset) || (xOff > 0 && xOff > reqOffset))) {
+		if (xOff <= reqOffset) {
+			xOff += 8;
+			xOff = MIN<int>(xOff, reqOffset);
+		} else {
+			xOff -= 8;
+			xOff = MAX<int>(xOff, reqOffset);
+		}
+		sys->_xOffset = CLIP(xOff, 0, sys->_sceneWidth - 640);
+		g_vm->videoSystem()->makeAllDirty();
+	}
+	Interface::update(time);
 }
 
 } // End of namespace Petka

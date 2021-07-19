@@ -27,17 +27,17 @@
 #include "common/fs.h"
 #include "common/hash-str.h"
 #include "common/hashmap.h"
+#include "common/language.h"
 #include "common/list.h"
 #include "common/str.h"
 #include "common/rect.h"
 
-#include "graphics/surface.h"
-#include "graphics/transparent_surface.h"
+#include "graphics/managed_surface.h"
 #include "graphics/font.h"
 #include "graphics/pixelformat.h"
 
 
-#define SCUMMVM_THEME_VERSION_STR "SCUMMVM_STX0.8.38"
+#define SCUMMVM_THEME_VERSION_STR "SCUMMVM_STX0.8.47"
 
 class OSystem;
 
@@ -151,6 +151,7 @@ enum TextData {
 	kTextDataNormalFont,
 	kTextDataTooltip,
 	kTextDataConsole,
+	kTextDataExtraLang,
 	kTextDataMAX
 };
 
@@ -169,10 +170,37 @@ enum TextColor {
 	kTextColorMAX
 };
 
+class LangExtraFont {
+public:
+	LangExtraFont(TextData textId, Common::Array<Common::Language> &lngs, const Common::String &filename, const Common::String &scalableFile, int ps) : _langs(lngs) {
+		storeFileNames(textId, filename, scalableFile, ps);
+	}
+
+	void storeFileNames(TextData textId, const Common::String &filename, const Common::String &scalableFile, int ps) {
+		assert(textId < kTextDataMAX);
+		_fontFilesStd[textId] = filename;
+		_fontFilesScalable[textId] = scalableFile;
+		_fontSize[textId] = ps;
+	}
+
+	bool operator==(Common::Language l) const {
+		return (Common::find(_langs.begin(), _langs.end(), l) != _langs.end());
+	}
+
+	Common::String file(TextData textId) const { return _fontFilesStd[textId]; }
+	Common::String sclFile(TextData textId) const { return _fontFilesScalable[textId]; }
+	int fntSize(TextData textId) const { return _fontSize[textId]; }
+
+private:
+	Common::Array<Common::Language> _langs;
+	Common::String _fontFilesStd[kTextDataMAX];
+	Common::String _fontFilesScalable[kTextDataMAX];
+	int _fontSize[kTextDataMAX];
+};
+
 class ThemeEngine {
 protected:
-	typedef Common::HashMap<Common::String, Graphics::Surface *> ImagesMap;
-	typedef Common::HashMap<Common::String, Graphics::TransparentSurface *> AImagesMap;
+	typedef Common::HashMap<Common::String, Graphics::ManagedSurface *> ImagesMap;
 
 	friend class GUI::Dialog;
 	friend class GUI::GuiObject;
@@ -241,6 +269,7 @@ public:
 		kFontStyleFixedItalic = 5,  ///< Fixed size italic font.
 		kFontStyleTooltip = 6,      ///< Tiny console font
 		kFontStyleConsole = 7,      ///< Debug console font
+		kFontStyleLangExtra = 8,	///< Language specific font for ingame dialogs (e. g. the SCUMM pause/restart dialogs)
 		kFontStyleMax
 	};
 
@@ -318,6 +347,7 @@ public:
 	/** Default destructor */
 	~ThemeEngine();
 
+	void setBaseResolution(int w, int h, float s);
 	bool init();
 	void clearAll();
 
@@ -380,6 +410,8 @@ public:
 			return kTextDataTooltip;
 		if (font == kFontStyleConsole)
 			return kTextDataConsole;
+		if (font == kFontStyleLangExtra)
+			return kTextDataExtraLang;
 		return kTextDataDefault;
 	}
 
@@ -387,7 +419,7 @@ public:
 
 	int getFontHeight(FontStyle font = kFontStyleBold) const;
 
-	int getStringWidth(const Common::String &str, FontStyle font = kFontStyleBold) const;
+	int getStringWidth(const Common::U32String &str, FontStyle font = kFontStyleBold) const;
 
 	int getCharWidth(byte c, FontStyle font = kFontStyleBold) const;
 
@@ -416,28 +448,28 @@ public:
 
 	void drawWidgetBackground(const Common::Rect &r, WidgetBackground background);
 
-	void drawButton(const Common::Rect &r, const Common::String &str, WidgetStateInfo state = kStateEnabled,
+	void drawButton(const Common::Rect &r, const Common::U32String &str, WidgetStateInfo state = kStateEnabled,
 	                uint16 hints = 0);
 
-	void drawDropDownButton(const Common::Rect &r, uint32 dropdownWidth, const Common::String &str,
+	void drawDropDownButton(const Common::Rect &r, uint32 dropdownWidth, const Common::U32String &str,
 	                        WidgetStateInfo buttonState, bool inButton, bool inDropdown, bool rtl = false);
 
-	void drawSurface(const Common::Point &p, const Graphics::Surface &surface, bool themeTrans = false);
+	void drawSurface(const Common::Point &p, const Graphics::ManagedSurface &surface, bool themeTrans = false);
 
 	void drawSlider(const Common::Rect &r, int width, WidgetStateInfo state = kStateEnabled, bool rtl = false);
 
-	void drawCheckbox(const Common::Rect &r, const Common::String &str, bool checked,
+	void drawCheckbox(const Common::Rect &r, const Common::U32String &str, bool checked,
 	                  WidgetStateInfo state = kStateEnabled, bool rtl = false);
 
-	void drawRadiobutton(const Common::Rect &r, const Common::String &str, bool checked,
+	void drawRadiobutton(const Common::Rect &r, const Common::U32String &str, bool checked,
 	                     WidgetStateInfo state = kStateEnabled, bool rtl = false);
 
 	void drawTab(const Common::Rect &r, int tabHeight, const Common::Array<int> &tabWidths,
-	             const Common::Array<Common::String> &tabs, int active, bool rtl = false);
+	             const Common::Array<Common::U32String> &tabs, int active, bool rtl = false);
 
 	void drawScrollbar(const Common::Rect &r, int sliderY, int sliderHeight, ScrollbarState scrollState);
 
-	void drawPopUpWidget(const Common::Rect &r, const Common::String &sel, int deltax,
+	void drawPopUpWidget(const Common::Rect &r, const Common::U32String &sel, int deltax,
 	                     WidgetStateInfo state = kStateEnabled, bool rtl = false);
 
 	void drawCaret(const Common::Rect &r, bool erase);
@@ -446,7 +478,7 @@ public:
 
 	void drawDialogBackground(const Common::Rect &r, DialogBackground type);
 
-	void drawText(const Common::Rect &r, const Common::String &str, WidgetStateInfo state = kStateEnabled,
+	void drawText(const Common::Rect &r, const Common::U32String &str, WidgetStateInfo state = kStateEnabled,
 	              Graphics::TextAlign align = Graphics::kTextAlignCenter,
 	              TextInversionState inverted = kTextInversionNone, int deltax = 0, bool useEllipsis = true,
 	              FontStyle font = kFontStyleBold, FontColor color = kFontColorNormal, bool restore = true,
@@ -511,11 +543,28 @@ public:
 	 * filename.
 	 *
 	 * @param textId            Identifier name for the font.
+	 * @param language          Wildcard for the language(s) to use.
 	 * @param file              Filename of the non-scalable font version.
 	 * @param scalableFile      Filename of the scalable version. (Optional)
 	 * @param pointsize         Point size for the scalable font. (Optional)
 	 */
-	bool addFont(TextData textId, const Common::String &file, const Common::String &scalableFile, const int pointsize);
+	bool addFont(TextData textId, const Common::String &language, const Common::String &file, const Common::String &scalableFile, const int pointsize);
+
+	/**
+	 * Store language specific font names for ingame GUI dialogs which might require
+	 * a different language than the current GUI setting
+	 *
+	 * @param textId, language, file, scalableFile, pointsize			All exactly the same as with addFont()
+	*/
+	void storeFontNames(TextData textId, const Common::String &language, const Common::String &file, const Common::String &scalableFile, const int pointsize);
+
+	/**
+	 * Load language specific font for ingame use
+	 * @param style				font style associated with the font file
+	 * @param lang				language associated with the font file
+	 * @return
+	*/
+	bool loadExtraFont(FontStyle style, Common::Language lang);
 
 	/**
 	 * Interface for the ThemeParser class: adds a text color value.
@@ -531,16 +580,10 @@ public:
 	 * The filename is also used as its identifier.
 	 *
 	 * @param filename Name of the bitmap file.
+	 * @param filename Name of the scalable (SVG) file, could be empty
+	 * @param width, height Default image dimensions
 	 */
-	bool addBitmap(const Common::String &filename);
-
-	/**
-	 * Interface for the ThemeParser class: Loads a bitmap with transparency file to use on the GUI.
-	 * The filename is also used as its identifier.
-	 *
-	 * @param filename Name of the bitmap file.
-	 */
-	bool addAlphaBitmap(const Common::String &filename);
+	bool addBitmap(const Common::String &filename, const Common::String &scalablefile, int widht, int height);
 
 	/**
 	 * Adds a new TextStep from the ThemeParser. This will be deprecated/removed once the
@@ -575,20 +618,8 @@ public:
 	inline bool supportsImages() const { return true; }
 	inline bool ownCursor() const { return _useCursor; }
 
-	Graphics::Surface *getBitmap(const Common::String &name) {
+	Graphics::ManagedSurface *getImageSurface(const Common::String &name) const {
 		return _bitmaps.contains(name) ? _bitmaps[name] : 0;
-	}
-
-	Graphics::TransparentSurface *getAlphaBitmap(const Common::String &name) {
-		return _abitmaps.contains(name) ? _abitmaps[name] : 0;
-	}
-
-	const Graphics::Surface *getImageSurface(const Common::String &name) const {
-		return _bitmaps.contains(name) ? _bitmaps[name] : 0;
-	}
-
-	const Graphics::TransparentSurface *getAImageSurface(const Common::String &name) const {
-		return _abitmaps.contains(name) ? _abitmaps[name] : 0;
 	}
 
 	/**
@@ -636,6 +667,11 @@ protected:
 	 */
 	void unloadTheme();
 
+	/**
+	 * Unload the language specific font loaded via loadExtraFont()
+	*/
+	void unloadExtraFont();
+
 	const Graphics::Font *loadScalableFont(const Common::String &filename, const Common::String &charset, const int pointsize, Common::String &name);
 	const Graphics::Font *loadFont(const Common::String &filename, Common::String &name);
 	Common::String genCacheFilename(const Common::String &filename) const;
@@ -656,7 +692,7 @@ protected:
 	 * These functions are called from all the Widget drawing methods.
 	 */
 	void drawDD(DrawData type, const Common::Rect &r, uint32 dynamic = 0, bool forceRestore = false);
-	void drawDDText(TextData type, TextColor color, const Common::Rect &r, const Common::String &text, bool restoreBg,
+	void drawDDText(TextData type, TextColor color, const Common::Rect &r, const Common::U32String &text, bool restoreBg,
 	                bool elipsis, Graphics::TextAlign alignH = Graphics::kTextAlignLeft,
 	                TextAlignVertical alignV = kTextAlignVTop, int deltax = 0,
 	                const Common::Rect &drawableTextArea = Common::Rect(0, 0, 0, 0));
@@ -700,10 +736,10 @@ protected:
 	GUI::ThemeEval *_themeEval;
 
 	/** Main screen surface. This is blitted straight into the overlay. */
-	Graphics::TransparentSurface _screen;
+	Graphics::ManagedSurface _screen;
 
 	/** Backbuffer surface. Stores previous states of the screen to blit back */
-	Graphics::TransparentSurface _backBuffer;
+	Graphics::ManagedSurface _backBuffer;
 
 	/**
 	 * Filter the submitted DrawData descriptors according to their layer attribute
@@ -718,6 +754,9 @@ protected:
 
 	/** Current graphics mode */
 	GraphicsMode _graphicsMode;
+
+	int16 _baseWidth, _baseHeight;
+	float _scaleFactor;
 
 	/** Font info. */
 	const Graphics::Font *_font;
@@ -734,12 +773,14 @@ protected:
 	/** Array of all font colors available. */
 	TextColorData *_textColors[kTextColorMAX];
 
+	/** Extra font file names for languages like Japanese, Korean or Chinese
+	 *  for use in ingame dialogs (like the SCUMM pause/restart dialogs)
+	 */
+	Common::Array<LangExtraFont> _langExtraFonts;
+
 	ImagesMap _bitmaps;
-	AImagesMap _abitmaps;
 	Graphics::PixelFormat _overlayFormat;
-#ifdef USE_RGB_COLOR
 	Graphics::PixelFormat _cursorFormat;
-#endif
 
 	/** List of all the dirty screens that must be blitted to the overlay. */
 	Common::List<Common::Rect> _dirtyScreen;
@@ -756,13 +797,16 @@ protected:
 
 	bool _useCursor;
 	int _cursorHotspotX, _cursorHotspotY;
+	uint32 _cursorTransparent;
+	byte *_cursor;
+	uint _cursorWidth, _cursorHeight;
+#ifndef USE_RGB_COLOR
 	enum {
 		MAX_CURS_COLORS = 255
 	};
-	byte *_cursor;
-	uint _cursorWidth, _cursorHeight;
 	byte _cursorPal[3 * MAX_CURS_COLORS];
 	byte _cursorPalSize;
+#endif
 
 	Common::Rect _clip;
 };

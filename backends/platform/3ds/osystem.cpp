@@ -41,7 +41,7 @@
 #include <unistd.h>
 #include <time.h>
 
-namespace _3DS {
+namespace N3DS {
 
 OSystem_3DS::OSystem_3DS():
 	_focusDirty(true),
@@ -169,7 +169,7 @@ void OSystem_3DS::delayMillis(uint msecs) {
 	svcSleepThread(msecs * 1000000);
 }
 
-void OSystem_3DS::getTimeAndDate(TimeDate& td) const {
+void OSystem_3DS::getTimeAndDate(TimeDate& td, bool skipRecord) const {
 	time_t curTime = time(0);
 	struct tm t = *localtime(&curTime);
 	td.tm_sec = t.tm_sec;
@@ -224,4 +224,4 @@ void OSystem_3DS::logMessage(LogMessageType::Type type, const char *message) {
 	printf("%s", message);
 }
 
-} // namespace _3DS
+} // namespace N3DS

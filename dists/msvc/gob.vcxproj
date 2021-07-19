@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -164,7 +179,6 @@
 		<ClCompile Include="..\..\engines\gob\demos\batplayer.cpp" />
 		<ClCompile Include="..\..\engines\gob\demos\demoplayer.cpp" />
 		<ClCompile Include="..\..\engines\gob\demos\scnplayer.cpp" />
-		<ClCompile Include="..\..\engines\gob\detection\detection.cpp" />
 		<ClCompile Include="..\..\engines\gob\minigames\geisha\diving.cpp" />
 		<ClCompile Include="..\..\engines\gob\minigames\geisha\evilfish.cpp" />
 		<ClCompile Include="..\..\engines\gob\minigames\geisha\meter.cpp" />
@@ -266,6 +280,7 @@
 		<ClCompile Include="..\..\engines\gob\map.cpp" />
 		<ClCompile Include="..\..\engines\gob\map_v1.cpp" />
 		<ClCompile Include="..\..\engines\gob\map_v2.cpp" />
+		<ClCompile Include="..\..\engines\gob\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\gob\mult.cpp" />
 		<ClCompile Include="..\..\engines\gob\mult_v1.cpp" />
 		<ClCompile Include="..\..\engines\gob\mult_v2.cpp" />
@@ -290,28 +305,6 @@
 		<ClInclude Include="..\..\engines\gob\demos\batplayer.h" />
 		<ClInclude Include="..\..\engines\gob\demos\demoplayer.h" />
 		<ClInclude Include="..\..\engines\gob\demos\scnplayer.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_adi2.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_adi4.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_adibou.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_ajworld.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_bargon.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_crousti.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_dynasty.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_fallback.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_fascin.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_geisha.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_gob1.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_gob2.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_gob3.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_inca2.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_lit.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_littlered.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_onceupon.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_playtoons.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_urban.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_ween.h" />
-		<ClInclude Include="..\..\engines\gob\detection\tables_woodruff.h" />
 		<ClInclude Include="..\..\engines\gob\minigames\geisha\diving.h" />
 		<ClInclude Include="..\..\engines\gob\minigames\geisha\evilfish.h" />
 		<ClInclude Include="..\..\engines\gob\minigames\geisha\meter.h" />

@@ -130,7 +130,7 @@ void Screen::setScrolling(int16 offsetX, int16 offsetY) {
 	} else {
 		// SCROLL_FLAG == 0, this usually means that the screen is smaller than 640x400 and doesn't need scrolling at all
 		// however, it can also mean that the gamescript overwrote the scrolling flag to take care of scrolling directly,
-		// (see bug report #1345130) so we ignore the offset arguments in this case
+		// (see bug report #2327) so we ignore the offset arguments in this case
 		Logic::_scriptVars[SCROLL_OFFSET_X] = CLIP<int32>(Logic::_scriptVars[SCROLL_OFFSET_X], 0, Logic::_scriptVars[MAX_SCROLL_OFFSET_X]);
 		Logic::_scriptVars[SCROLL_OFFSET_Y] = CLIP<int32>(Logic::_scriptVars[SCROLL_OFFSET_Y], 0, Logic::_scriptVars[MAX_SCROLL_OFFSET_Y]);
 		if ((Logic::_scriptVars[SCROLL_OFFSET_X] != _oldScrollX) || (Logic::_scriptVars[SCROLL_OFFSET_Y] != _oldScrollY)) {
@@ -158,7 +158,7 @@ void Screen::fnSetPalette(uint8 start, uint16 length, uint32 id, bool fadeUp) {
 	if (start == 0) // force color 0 to black
 		palData[0] = palData[1] = palData[2] = 0;
 
-	if (SwordEngine::isMac()) {  // see bug #1701058
+	if (SwordEngine::isMac()) {  // see bug #8636
 		if (start != 0 && start + length == 256) // and force color 255 to black as well
 			palData[(length - 1) * 3 + 0] = palData[(length - 1) * 3 + 1] = palData[(length - 1) * 3 + 2] = 0;
 	}
@@ -408,7 +408,7 @@ void Screen::draw() {
 			for (uint16 cnty = scrnScrlY; (cnty < _scrnSizeY) && (cnty < scrnHeight + scrnScrlY); cnty++)
 				for (uint16 cntx = 0; cntx < _scrnSizeX; cntx++) {
 					if (*src)
-						if (!(SwordEngine::isMac()) || *src != 255) // see bug #1701058
+						if (!(SwordEngine::isMac()) || *src != 255) // see bug #8636
 							*dest = *src;
 					src++;
 					dest++;
@@ -604,7 +604,7 @@ void Screen::verticalMask(uint16 x, uint16 y, uint16 bWidth, uint16 bHeight) {
 
 	for (uint16 blkx = 0; blkx < bWidth; blkx++) {
 		// A sprite can be masked by several layers at the same time,
-		// so we have to check them all. See bug #917427.
+		// so we have to check them all. See bug #1536.
 		for (int16 level = _roomDefTable[_currentScreen].totalLayers - 2; level >= 0; level--) {
 			if (_layerGrid[level][gridX + blkx + gridY * lGridSizeX]) {
 				uint16 *grid = _layerGrid[level] + gridX + blkx + gridY * lGridSizeX;

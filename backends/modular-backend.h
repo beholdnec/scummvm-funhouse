@@ -66,7 +66,7 @@ public:
 	GraphicsManager *getGraphicsManager();
 	virtual const GraphicsMode *getSupportedGraphicsModes() const override;
 	virtual int getDefaultGraphicsMode() const override;
-	virtual bool setGraphicsMode(int mode) override;
+	virtual bool setGraphicsMode(int mode, uint flags = kGfxModeNoFlags) override;
 	virtual int getGraphicsMode() const override;
 	virtual const GraphicsMode *getSupportedShaders() const override final;
 	virtual int getDefaultShader() const override final;
@@ -76,7 +76,11 @@ public:
 	virtual int getDefaultStretchMode() const override final;
 	virtual bool setStretchMode(int mode) override final;
 	virtual int getStretchMode() const override final;
-	virtual void resetGraphicsScale() override final;
+	virtual uint getDefaultScaler() const override final;
+	virtual uint getDefaultScaleFactor() const override final;
+	using BaseBackend::setScaler;
+	virtual bool setScaler(uint mode, int factor) override final;
+	virtual uint getScaler() const override final;
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const override final;
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const override final;
@@ -102,9 +106,10 @@ public:
 
 	virtual void showOverlay() override final;
 	virtual void hideOverlay() override final;
+	virtual bool isOverlayVisible() const override final;
 	virtual Graphics::PixelFormat getOverlayFormat() const override final;
 	virtual void clearOverlay() override final;
-	virtual void grabOverlay(void *buf, int pitch) override final;
+	virtual void grabOverlay(Graphics::Surface &surface) override final;
 	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h) override final;
 	virtual int16 getOverlayHeight() override final;
 	virtual int16 getOverlayWidth() override final;
@@ -113,14 +118,17 @@ public:
 	virtual void warpMouse(int x, int y) override final;
 	virtual void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor, bool dontScale = false, const Graphics::PixelFormat *format = NULL) override final;
 	virtual void setCursorPalette(const byte *colors, uint start, uint num) override final;
+	virtual bool lockMouse(bool lock) override final;
 
 	//@}
 
 	/** @name Miscellaneous */
 	//@{
 
-	virtual void displayMessageOnOSD(const char *msg) override final;
+	virtual void displayMessageOnOSD(const Common::U32String &msg) override final;
 	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) override final;
+
+	virtual void saveScreenshot() override final;
 
 	//@}
 

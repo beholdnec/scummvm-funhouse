@@ -2,13 +2,13 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="dragonsphere">
-			<UniqueIdentifier>EEEE4187-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CA4-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nebular">
-			<UniqueIdentifier>EEEE4188-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CA5-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="phantom">
-			<UniqueIdentifier>EEEE4189-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CA6-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -20,7 +20,6 @@
 		<ClCompile Include="..\..\engines\mads\compression.cpp" />
 		<ClCompile Include="..\..\engines\mads\conversations.cpp" />
 		<ClCompile Include="..\..\engines\mads\debugger.cpp" />
-		<ClCompile Include="..\..\engines\mads\detection.cpp" />
 		<ClCompile Include="..\..\engines\mads\dialogs.cpp" />
 		<ClCompile Include="..\..\engines\mads\dragonsphere\dragonsphere_scenes.cpp">
 			<Filter>dragonsphere</Filter>
@@ -44,6 +43,7 @@
 		<ClCompile Include="..\..\engines\mads\mads.cpp" />
 		<ClCompile Include="..\..\engines\mads\menu_views.cpp" />
 		<ClCompile Include="..\..\engines\mads\messages.cpp" />
+		<ClCompile Include="..\..\engines\mads\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\mads\msurface.cpp" />
 		<ClCompile Include="..\..\engines\mads\nebular\dialogs_nebular.cpp">
 			<Filter>nebular</Filter>
@@ -133,6 +133,7 @@
 		<ClInclude Include="..\..\engines\mads\compression.h" />
 		<ClInclude Include="..\..\engines\mads\conversations.h" />
 		<ClInclude Include="..\..\engines\mads\debugger.h" />
+		<ClInclude Include="..\..\engines\mads\detection.h" />
 		<ClInclude Include="..\..\engines\mads\detection_tables.h" />
 		<ClInclude Include="..\..\engines\mads\dialogs.h" />
 		<ClInclude Include="..\..\engines\mads\dragonsphere\dragonsphere_scenes.h">

@@ -41,6 +41,8 @@ SdlGraphicsManager::SdlGraphicsManager(SdlEventSource *source, SdlWindow *window
 	, _allowWindowSizeReset(false), _hintedWidth(0), _hintedHeight(0), _lastFlags(0)
 #endif
 {
+	ConfMan.registerDefault("fullscreen_res", "desktop");
+
 	SDL_GetMouseState(&_cursorX, &_cursorY);
 }
 
@@ -77,7 +79,15 @@ SdlGraphicsManager::State SdlGraphicsManager::getState() const {
 bool SdlGraphicsManager::setState(const State &state) {
 	beginGFXTransaction();
 #ifdef USE_RGB_COLOR
-		initSize(state.screenWidth, state.screenHeight, &state.pixelFormat);
+		// When switching between the SDL and OpenGL graphics manager, the list
+		// of supported format changes. This means that the pixel format in the
+		// state may not be supported. In that case use the preferred supported
+		// pixel format instead.
+		Graphics::PixelFormat format = state.pixelFormat;
+		Common::List<Graphics::PixelFormat> supportedFormats = getSupportedFormats();
+		if (Common::find(supportedFormats.begin(), supportedFormats.end(), format) == supportedFormats.end())
+			format = supportedFormats.front();
+		initSize(state.screenWidth, state.screenHeight, &format);
 #else
 		initSize(state.screenWidth, state.screenHeight, nullptr);
 #endif
@@ -92,19 +102,36 @@ bool SdlGraphicsManager::setState(const State &state) {
 	}
 }
 
+Common::Rect SdlGraphicsManager::getPreferredFullscreenResolution() {
+	// Default to the desktop resolution, unless the user has set a
+	// resolution in the configuration file
+	const Common::String &fsres = ConfMan.get("fullscreen_res");
+	if (fsres != "desktop") {
+		uint newW, newH;
+		int converted = sscanf(fsres.c_str(), "%ux%u", &newW, &newH);
+		if (converted == 2) {
+			return Common::Rect(newW, newH);
+		} else {
+			warning("Could not parse 'fullscreen_res' option: expected WWWxHHH, got %s", fsres.c_str());
+		}
+	}
+
+	return _window->getDesktopResolution();
+}
+
 bool SdlGraphicsManager::defaultGraphicsModeConfig() const {
 	const Common::ConfigManager::Domain *transientDomain = ConfMan.getDomain(Common::ConfigManager::kTransientDomain);
-	if (transientDomain && transientDomain->contains("gfx_mode")) {
-		const Common::String &mode = transientDomain->getVal("gfx_mode");
-		if (!mode.equalsIgnoreCase("normal") && !mode.equalsIgnoreCase("default")) {
+	if (transientDomain && transientDomain->contains("scaler")) {
+		const Common::String &mode = transientDomain->getVal("scaler");
+		if (!mode.equalsIgnoreCase("default")) {
 			return false;
 		}
 	}
 
 	const Common::ConfigManager::Domain *gameDomain = ConfMan.getActiveDomain();
-	if (gameDomain && gameDomain->contains("gfx_mode")) {
-		const Common::String &mode = gameDomain->getVal("gfx_mode");
-		if (!mode.equalsIgnoreCase("normal") && !mode.equalsIgnoreCase("default")) {
+	if (gameDomain && gameDomain->contains("scaler")) {
+		const Common::String &mode = gameDomain->getVal("scaler");
+		if (!mode.equalsIgnoreCase("default")) {
 			return false;
 		}
 	}
@@ -191,8 +218,19 @@ bool SdlGraphicsManager::showMouse(bool visible) {
 	return WindowedGraphicsManager::showMouse(visible);
 }
 
+bool SdlGraphicsManager::lockMouse(bool lock) {
+	return _window->lockMouse(lock);
+}
+
 bool SdlGraphicsManager::notifyMousePosition(Common::Point &mouse) {
+	mouse.x = CLIP<int16>(mouse.x, 0, _windowWidth - 1);
+	mouse.y = CLIP<int16>(mouse.y, 0, _windowHeight - 1);
+
 	int showCursor = SDL_DISABLE;
+	// DPI aware scaling to mouse position
+	uint scale = getFeatureState(BaseBackend::kFeatureHiDPI) ? 2 : 1;
+	mouse.x *= scale;
+	mouse.y *= scale;
 	bool valid = true;
 	if (_activeArea.drawRect.contains(mouse)) {
 		_cursorLastInActiveArea = true;
@@ -242,7 +280,7 @@ void SdlGraphicsManager::setSystemMousePosition(const int x, const int y) {
 	}
 }
 
-void SdlGraphicsManager::handleResizeImpl(const int width, const int height, const int xdpi, const int ydpi) {
+void SdlGraphicsManager::handleResizeImpl(const int width, const int height) {
 	_forceRedraw = true;
 }
 
@@ -251,6 +289,9 @@ bool SdlGraphicsManager::createOrUpdateWindow(int width, int height, const Uint3
 	if (!_window) {
 		return false;
 	}
+
+	// width *=3;
+	// height *=3;
 
 	// We only update the actual window when flags change (which usually means
 	// fullscreen mode is entered/exited), when updates are forced so that we
@@ -328,7 +369,7 @@ bool SdlGraphicsManager::notifyEvent(const Common::Event &event) {
 
 	switch ((CustomEventAction) event.customType) {
 	case kActionToggleMouseCapture:
-		getWindow()->toggleMouseGrab();
+		getWindow()->grabMouse(!getWindow()->mouseIsGrabbed());
 		return true;
 
 	case kActionToggleFullscreen:
@@ -345,8 +386,10 @@ bool SdlGraphicsManager::notifyEvent(const Common::Event &event) {
 }
 
 void SdlGraphicsManager::toggleFullScreen() {
-	if (!g_system->hasFeature(OSystem::kFeatureFullscreenMode))
+	if (!g_system->hasFeature(OSystem::kFeatureFullscreenMode) ||
+	   (!g_system->hasFeature(OSystem::kFeatureFullscreenToggleKeepsContext) && g_system->hasFeature(OSystem::kFeatureOpenGLForGame))) {
 		return;
+	}
 
 	beginGFXTransaction();
 	setFeatureState(OSystem::kFeatureFullscreenMode, !getFeatureState(OSystem::kFeatureFullscreenMode));
@@ -416,32 +459,15 @@ Common::Keymap *SdlGraphicsManager::getKeymap() {
 	act->setCustomBackendActionEvent(kActionDecreaseScaleFactor);
 	keymap->addAction(act);
 
-#ifdef USE_SCALERS
-	struct ActionEntry {
-		const char *id;
-		const char *description;
-	};
-	static const ActionEntry filters[] = {
-			{ "FLT1", _s("Switch to nearest neighbour scaling") },
-			{ "FLT2", _s("Switch to AdvMame 2x/3x scaling")     },
-#ifdef USE_HQ_SCALERS
-			{ "FLT3", _s("Switch to HQ 2x/3x scaling")          },
-#endif
-			{ "FLT4", _s("Switch to 2xSai scaling")             },
-			{ "FLT5", _s("Switch to Super2xSai scaling")        },
-			{ "FLT6", _s("Switch to SuperEagle scaling")        },
-			{ "FLT7", _s("Switch to TV 2x scaling")             },
-			{ "FLT8", _s("Switch to DotMatrix scaling")         }
-	};
+	act = new Action("FLTN", _("Switch to the next scaler"));
+	act->addDefaultInputMapping("C+A+0");
+	act->setCustomBackendActionEvent(kActionNextScaleFilter);
+	keymap->addAction(act);
 
-	for (uint i = 0; i < ARRAYSIZE(filters); i++) {
-		act = new Action(filters[i].id, filters[i].description);
-		act->addDefaultInputMapping(String::format("C+A+%d", i + 1));
-		act->addDefaultInputMapping(String::format("C+A+KP%d", i + 1));
-		act->setCustomBackendActionEvent(kActionSetScaleFilter1 + i);
-		keymap->addAction(act);
-	}
-#endif
+	act = new Action("FLTP", _("Switch to the previous scaler"));
+	act->addDefaultInputMapping("C+A+9");
+	act->setCustomBackendActionEvent(kActionPreviousScaleFilter);
+	keymap->addAction(act);
 
 	return keymap;
 }

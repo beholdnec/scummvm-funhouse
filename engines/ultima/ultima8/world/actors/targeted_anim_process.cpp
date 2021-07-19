@@ -20,7 +20,6 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 
 #include "ultima/ultima8/world/actors/targeted_anim_process.h"
 #include "ultima/ultima8/world/actors/animation_tracker.h"
@@ -28,15 +27,15 @@
 namespace Ultima {
 namespace Ultima8 {
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(TargetedAnimProcess)
 
 TargetedAnimProcess::TargetedAnimProcess() : ActorAnimProcess(),
 		_x(0), _y(0), _z(0) {
 }
 
-TargetedAnimProcess::TargetedAnimProcess(Actor *actor_, Animation::Sequence action_, Direction dir_, int32 coords[3]) : ActorAnimProcess(actor_, action_, dir_),
-		_x(coords[0]), _y(coords[1]), _z(coords[2]) {
+TargetedAnimProcess::TargetedAnimProcess(Actor *actor, Animation::Sequence action, Direction dir, int32 coords[3]) :
+	ActorAnimProcess(actor, action, dir),
+	_x(coords[0]), _y(coords[1]), _z(coords[2]) {
 }
 
 bool TargetedAnimProcess::init() {

@@ -23,15 +23,30 @@
 #ifndef GLK_COMPREHEND_GAME_TM_H
 #define GLK_COMPREHEND_GAME_TM_H
 
-#include "glk/comprehend/game.h"
+#include "glk/comprehend/game_opcodes.h"
 
 namespace Glk {
 namespace Comprehend {
 
-class TalismanGame : public ComprehendGame {
+class TalismanGame : public ComprehendGameV2 {
+private:
+	Common::String _savedAction;
+private:
+	/**
+	 * Load strings from the executable
+	 */
+	void loadStrings();
 public:
 	TalismanGame();
 	~TalismanGame() override {}
+
+	void playGame() override;
+	void beforeGame() override;
+	void beforeTurn() override;
+	void beforePrompt() override;
+	void afterPrompt() override;
+	void handleAction(Sentence *sentence) override;
+	void handleSpecialOpcode() override;
 };
 
 } // namespace Comprehend

@@ -32,8 +32,6 @@ namespace Director {
 int castNumToNum(const char *str);
 char *numToCastNum(int num);
 
-Common::String toLowercaseMac(const Common::String &s);
-
 Common::String convertPath(Common::String &path);
 
 Common::String unixToMacPath(const Common::String &path);
@@ -58,27 +56,38 @@ bool processQuitEvent(bool click = false); // events.cpp
 
 class RandomState {
 public:
-    uint32 _seed;
-    uint32 _mask;
-    uint32 _len;
+	uint32 _seed;
+	uint32 _mask;
+	uint32 _len;
 
-    RandomState() {
-        _seed = _mask = _len = 0;
-    }
+	RandomState() {
+		_seed = _mask = _len = 0;
+	}
 
-    void setSeed(int seed);
-    uint32 getSeed() { return _seed; }
-    int32 getRandom(int32 range);
+	void setSeed(int seed);
+	uint32 getSeed() { return _seed; }
+	int32 getRandom(int32 range);
 
 private:
-    void init(int len);
-    int32 genNextRandom();
-    int32 perlin(int32 val);
+	void init(int len);
+	int32 genNextRandom();
+	int32 perlin(int32 val);
 };
 
 uint32 readVarInt(Common::SeekableReadStream &stream);
 
 Common::SeekableReadStreamEndian *readZlibData(Common::SeekableReadStream &stream, unsigned long len, unsigned long *outLen, bool bigEndian);
+
+uint16 humanVersion(uint16 ver);
+
+Common::Platform platformFromID(uint16 id);
+
+Common::CodePage getEncoding(Common::Platform platform, Common::Language language);
+Common::CodePage detectFontEncoding(Common::Platform platform, uint16 fontId);
+
+int charToNum(Common::u32char_type_t ch);
+Common::u32char_type_t numToChar(int num);
+int compareStrings(const Common::String &s1, const Common::String &s2);
 
 } // End of namespace Director
 

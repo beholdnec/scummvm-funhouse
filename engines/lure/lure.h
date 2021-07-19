@@ -24,6 +24,8 @@
 #define LURE_LURE_H
 
 #include "engines/engine.h"
+#include "engines/advancedDetector.h"
+
 #include "common/rect.h"
 #include "common/file.h"
 #include "common/savefile.h"
@@ -38,6 +40,7 @@
 #include "lure/strings.h"
 #include "lure/room.h"
 #include "lure/fights.h"
+#include "lure/detection.h"
 
 /**
  * This is the namespace of the Lure engine.
@@ -58,6 +61,7 @@ enum LureLanguage {
 	LANG_ES_ESP = 17,
 	LANG_EN_ANY = 3,
 	LANG_RU_RUS = 3,	// English data has been overridden
+	LANG_EN_KONAMI = 4,
 	LANG_UNKNOWN = -1
 };
 
@@ -117,6 +121,7 @@ public:
 	Common::Language getLanguage() const;
 	Common::Platform getPlatform() const;
 	bool isEGA() const { return (getFeatures() & GF_EGA) != 0; }
+	bool isKonami() const { return (getFeatures() & GF_KONAMI) != 0; }
 
 	Common::Error loadGameState(int slot) override {
 		return loadGame(slot) ? Common::kNoError : Common::kReadingFailed;
@@ -132,7 +137,9 @@ public:
 		return _saveLoadAllowed && !Fights.isFighting();
 	}
 };
-	Common::String getSaveName(Common::InSaveFile *in);
+
+Common::String getSaveName(Common::InSaveFile *in);
+
 } // End of namespace Lure
 
 #endif

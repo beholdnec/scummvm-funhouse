@@ -302,7 +302,8 @@ private:
 	void writeSettings() override;
 	void readSettings() override;
 
-	static const char *const kKeymapName;
+	static const char *const kMouseKeymapName;
+	static const char *const kKeyboardKeymapName;
 
 	const char *const *_pakFileList;
 	int _pakFileListSize;
@@ -1218,7 +1219,6 @@ private:
 	int8 _availableSpells[8];
 	int _selectedSpell;
 	const SpellProperty *_spellProperties;
-	//int _spellPropertiesSize;
 	int _subMenuIndex;
 
 	LightningProperty *_lightningProps;

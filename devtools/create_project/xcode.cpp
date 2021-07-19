@@ -23,18 +23,16 @@
 #include "config.h"
 #include "xcode.h"
 
+#include <limits.h>
+#include <stdlib.h>
+
 #include <fstream>
 #include <algorithm>
 
 #ifdef MACOSX
 #include <sstream>
 #include <iomanip>
-#include <CommonCrypto/CommonCrypto.h>
-
-// If we want to unset the sdk version in the executable to work around bug #11430
-// (blury display on retina screens when building with SDK 10.14+).
-// This workaround only works with Xcode 11+.
-//#define MACOSX_NO_SDKVERSION
+#include <CommonCrypto/CommonDigest.h>
 #endif
 
 namespace CreateProjectTool {
@@ -320,7 +318,7 @@ void XcodeProvider::createOtherBuildFiles(const BuildSetup &setup) {
 
 // Store information about a project here, for use at the end
 void XcodeProvider::createProjectFile(const std::string &, const std::string &, const BuildSetup &setup, const std::string &moduleDir,
-                                      const StringList &includeList, const StringList &excludeList) {
+									  const StringList &includeList, const StringList &excludeList) {
 	std::string modulePath;
 	if (!moduleDir.compare(0, setup.srcDir.size(), setup.srcDir)) {
 		modulePath = moduleDir.substr(setup.srcDir.size());
@@ -329,7 +327,7 @@ void XcodeProvider::createProjectFile(const std::string &, const std::string &, 
 	}
 
 	std::ofstream project;
-	if (modulePath.size())
+	if (!modulePath.empty())
 		addFilesToProject(moduleDir, project, includeList, excludeList, setup.filePrefix + '/' + modulePath);
 	else
 		addFilesToProject(moduleDir, project, includeList, excludeList, setup.filePrefix);
@@ -379,7 +377,7 @@ void XcodeProvider::outputMainProjectFile(const BuildSetup &setup) {
 // Files
 //////////////////////////////////////////////////////////////////////////
 void XcodeProvider::writeFileListToProject(const FileNode &dir, std::ofstream &projectFile, const int indentation,
-                                           const StringList &duplicate, const std::string &objPrefix, const std::string &filePrefix) {
+										   const std::string &objPrefix, const std::string &filePrefix) {
 
 	// Ensure that top-level groups are generated for i.e. engines/
 	Group *group = touchGroupsForPath(filePrefix);
@@ -393,7 +391,7 @@ void XcodeProvider::writeFileListToProject(const FileNode &dir, std::ofstream &p
 		}
 		// Process child nodes
 		if (!node->children.empty())
-			writeFileListToProject(*node, projectFile, indentation + 1, duplicate, objPrefix + node->name + '_', filePrefix + node->name + '/');
+			writeFileListToProject(*node, projectFile, indentation + 1, objPrefix + node->name + '_', filePrefix + node->name + '/');
 	}
 }
 
@@ -446,6 +444,7 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	DEF_SYSFRAMEWORK("CoreFoundation");
 	DEF_SYSFRAMEWORK("Foundation");
 	DEF_SYSFRAMEWORK("IOKit");
+	DEF_SYSFRAMEWORK("OpenGL");
 	DEF_SYSFRAMEWORK("OpenGLES");
 	DEF_SYSFRAMEWORK("QuartzCore");
 	DEF_SYSFRAMEWORK("UIKit");
@@ -454,6 +453,9 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	DEF_SYSTBD("libiconv");
 
 	// Local libraries
+	if (CONTAINS_DEFINE(setup.defines, "USE_FAAD")) {
+		DEF_LOCALLIB_STATIC("libfaad");
+	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_FLAC")) {
 		DEF_LOCALLIB_STATIC("libFLAC");
 	}
@@ -462,6 +464,9 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 		DEF_LOCALLIB_STATIC("libffi");
 		DEF_LOCALLIB_STATIC("libglib-2.0");
 		DEF_SYSTBD("libffi");
+	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_FLUIDLITE")) {
+		DEF_LOCALLIB_STATIC("libfluidlite");
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_FREETYPE2")) {
 		DEF_LOCALLIB_STATIC("libfreetype");
@@ -475,11 +480,17 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	if (CONTAINS_DEFINE(setup.defines, "USE_MAD")) {
 		DEF_LOCALLIB_STATIC("libmad");
 	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_MPEG2")) {
+		DEF_LOCALLIB_STATIC("libmpeg2");
+	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_FRIBIDI")) {
 		DEF_LOCALLIB_STATIC("libfribidi");
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_PNG")) {
 		DEF_LOCALLIB_STATIC("libpng");
+	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_GIF")) {
+		DEF_LOCALLIB_STATIC("libgif");
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_OGG")) {
 		DEF_LOCALLIB_STATIC("libogg");
@@ -493,6 +504,9 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_THEORADEC")) {
 		DEF_LOCALLIB_STATIC("libtheoradec");
+	if (CONTAINS_DEFINE(setup.defines, "USE_GLEW")) {
+		DEF_LOCALLIB_STATIC("libGLEW");
+	}
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_ZLIB")) {
 		DEF_SYSTBD("libz");
@@ -547,6 +561,9 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	frameworks_iOS.push_back("QuartzCore.framework");
 	frameworks_iOS.push_back("OpenGLES.framework");
 
+	if (CONTAINS_DEFINE(setup.defines, "USE_FAAD")) {
+		frameworks_iOS.push_back("libfaad.a");
+	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_FLAC")) {
 		frameworks_iOS.push_back("libFLAC.a");
 	}
@@ -558,6 +575,9 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_PNG")) {
 		frameworks_iOS.push_back("libpng.a");
+	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_GIF")) {
+		frameworks_iOS.push_back("libgif.a");
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_OGG")) {
 		frameworks_iOS.push_back("libogg.a");
@@ -574,6 +594,9 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_MAD")) {
 		frameworks_iOS.push_back("libmad.a");
+	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_MPEG2")) {
+		frameworks_iOS.push_back("libmpeg2.a");
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_FRIBIDI")) {
 		frameworks_iOS.push_back("libfribidi.a");
@@ -635,8 +658,12 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	frameworks_osx.push_back("ApplicationServices.framework");
 	frameworks_osx.push_back("IOKit.framework");
 	frameworks_osx.push_back("Cocoa.framework");
+	frameworks_osx.push_back("OpenGL.framework");
 	frameworks_osx.push_back("AudioUnit.framework");
 
+	if (CONTAINS_DEFINE(setup.defines, "USE_FAAD")) {
+		frameworks_osx.push_back("libfaad.a");
+	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_FLAC")) {
 		frameworks_osx.push_back("libFLAC.a");
 	}
@@ -657,11 +684,17 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	if (CONTAINS_DEFINE(setup.defines, "USE_MAD")) {
 		frameworks_osx.push_back("libmad.a");
 	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_MPEG2")) {
+		frameworks_osx.push_back("libmpeg2.a");
+	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_FRIBIDI")) {
 		frameworks_osx.push_back("libfribidi.a");
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_PNG")) {
 		frameworks_osx.push_back("libpng.a");
+	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_GIF")) {
+		frameworks_osx.push_back("libgif.a");
 	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_OGG")) {
 		frameworks_osx.push_back("libogg.a");
@@ -676,8 +709,14 @@ void XcodeProvider::setupFrameworksBuildPhase(const BuildSetup &setup) {
 	if (CONTAINS_DEFINE(setup.defines, "USE_THEORADEC")) {
 		frameworks_osx.push_back("libtheoradec.a");
 	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_GLEW")) {
+		frameworks_osx.push_back("libGLEW.a");
+	}
 	if (CONTAINS_DEFINE(setup.defines, "USE_ZLIB")) {
 		frameworks_osx.push_back("libz.tbd");
+	}
+	if (CONTAINS_DEFINE(setup.defines, "USE_DISCORD")) {
+		frameworks_osx.push_back("libdiscord-rpc.a");
 	}
 
 	if (setup.useSDL2) {
@@ -787,15 +826,24 @@ XcodeProvider::ValueList& XcodeProvider::getResourceFiles() const {
 		files.push_back("gui/themes/scummclassic.zip");
 		files.push_back("gui/themes/scummmodern.zip");
 		files.push_back("gui/themes/scummremastered.zip");
+		files.push_back("gui/themes/residualvm.zip");
 		files.push_back("gui/themes/translations.dat");
 		files.push_back("dists/engine-data/access.dat");
+		files.push_back("dists/engine-data/achievements.dat");
 		files.push_back("dists/engine-data/cryo.dat");
 		files.push_back("dists/engine-data/cryomni3d.dat");
 		files.push_back("dists/engine-data/drascula.dat");
+		files.push_back("dists/engine-data/encoding.dat");
 		files.push_back("dists/engine-data/fonts.dat");
+		files.push_back("dists/engine-data/hadesch_translations.dat");
 		files.push_back("dists/engine-data/hugo.dat");
 		files.push_back("dists/engine-data/kyra.dat");
 		files.push_back("dists/engine-data/lure.dat");
+		files.push_back("dists/engine-data/macgui.dat");
+		files.push_back("dists/engine-data/myst3.dat");
+		files.push_back("dists/engine-data/monkey4-patch.m4b");
+		files.push_back("dists/engine-data/grim-patch.lab");
+		files.push_back("dists/engine-data/macventure.dat");
 		files.push_back("dists/engine-data/mort.dat");
 		files.push_back("dists/engine-data/neverhood.dat");
 		files.push_back("dists/engine-data/queen.tbl");
@@ -807,7 +855,6 @@ XcodeProvider::ValueList& XcodeProvider::getResourceFiles() const {
 		files.push_back("dists/engine-data/toon.dat");
 		files.push_back("dists/engine-data/ultima.dat");
 		files.push_back("dists/engine-data/wintermute.zip");
-		files.push_back("dists/engine-data/macventure.dat");
 		files.push_back("dists/engine-data/xeen.ccs");
 		files.push_back("dists/ios7/LaunchScreen_ios.storyboard");
 		files.push_back("dists/pred.dic");
@@ -907,9 +954,9 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 
 	std::string projectOutputDirectory;
 #ifdef POSIX
-	char *rp = realpath(setup.outputDir.c_str(), NULL);
+	char tmpbuf[PATH_MAX];
+	char *rp = realpath(setup.outputDir.c_str(), tmpbuf);
 	projectOutputDirectory = rp;
-	free(rp);
 #endif
 
 	/****************************************
@@ -922,6 +969,9 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 	ADD_SETTING(scummvm_Debug, "ALWAYS_SEARCH_USER_PATHS", "NO");
 	ADD_SETTING_QUOTE(scummvm_Debug, "USER_HEADER_SEARCH_PATHS", "$(SRCROOT) $(SRCROOT)/engines");
 	ADD_SETTING(scummvm_Debug, "CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED", "YES");
+	if (CONTAINS_DEFINE(setup.defines, "USE_CXX11")) {
+		ADD_SETTING(scummvm_Debug, "CLANG_CXX_LANGUAGE_STANDARD", "\"c++0x\"");
+	}
 	ADD_SETTING(scummvm_Debug, "CLANG_WARN_BOOL_CONVERSION", "YES");
 	ADD_SETTING(scummvm_Debug, "CLANG_WARN_CONSTANT_CONVERSION", "YES");
 	ADD_SETTING(scummvm_Debug, "CLANG_WARN_EMPTY_BODY", "YES");
@@ -981,6 +1031,10 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 	REMOVE_SETTING(scummvm_Release, "GCC_WARN_UNUSED_VARIABLE");
 	REMOVE_SETTING(scummvm_Release, "ONLY_ACTIVE_ARCH");
 	REMOVE_SETTING(scummvm_Release, "ENABLE_TESTABILITY");
+	REMOVE_SETTING(scummvm_Release, "GCC_PREPROCESSOR_DEFINITIONS");
+	ValueList scummvm_Release_defines(scummvm_defines);
+	ADD_DEFINE(scummvm_Release_defines, "RELEASE_BUILD");
+	ADD_SETTING_LIST(scummvm_Release, "GCC_PREPROCESSOR_DEFINITIONS", scummvm_Release_defines, kSettingsNoQuote | kSettingsAsList, 5);
 
 	scummvm_Release_Object->addProperty("name", "Release", "", kSettingsNoValue);
 	scummvm_Release_Object->_properties["buildSettings"] = scummvm_Release;
@@ -1076,6 +1130,9 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 	ADD_SETTING(scummvmOSX_Debug, "COPY_PHASE_STRIP", "NO");
 	ADD_SETTING_QUOTE(scummvmOSX_Debug, "DEBUG_INFORMATION_FORMAT", "dwarf");
 	ADD_SETTING_QUOTE(scummvmOSX_Debug, "FRAMEWORK_SEARCH_PATHS", "");
+	if (CONTAINS_DEFINE(setup.defines, "USE_CXX11")) {
+		ADD_SETTING(scummvmOSX_Debug, "CLANG_CXX_LANGUAGE_STANDARD", "\"c++0x\"");
+	}
 	ADD_SETTING(scummvmOSX_Debug, "GCC_C_LANGUAGE_STANDARD", "c99");
 	ADD_SETTING(scummvmOSX_Debug, "GCC_ENABLE_CPP_EXCEPTIONS", "NO");
 	ADD_SETTING(scummvmOSX_Debug, "GCC_ENABLE_CPP_RTTI", "YES");
@@ -1092,11 +1149,15 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 	ValueList scummvmOSX_HeaderPaths;
 	if (setup.useSDL2) {
 		scummvmOSX_HeaderPaths.push_back("/usr/local/include/SDL2");
+		scummvmOSX_HeaderPaths.push_back("/opt/local/include/SDL2");
 	} else {
 		scummvmOSX_HeaderPaths.push_back("/usr/local/include/SDL");
+		scummvmOSX_HeaderPaths.push_back("/opt/local/include/SDL");
 	}
 	scummvmOSX_HeaderPaths.push_back("/usr/local/include");
+	scummvmOSX_HeaderPaths.push_back("/opt/local/include");
 	scummvmOSX_HeaderPaths.push_back("/usr/local/include/freetype2");
+	scummvmOSX_HeaderPaths.push_back("/opt/local/include/freetype2");
 	scummvmOSX_HeaderPaths.push_back("include/");
 	scummvmOSX_HeaderPaths.push_back("$(SRCROOT)/engines/");
 	scummvmOSX_HeaderPaths.push_back("$(SRCROOT)");
@@ -1104,24 +1165,12 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 	ADD_SETTING_QUOTE(scummvmOSX_Debug, "INFOPLIST_FILE", "$(SRCROOT)/dists/macosx/Info.plist");
 	ValueList scummvmOSX_LibPaths;
 	scummvmOSX_LibPaths.push_back("/usr/local/lib");
+	scummvmOSX_LibPaths.push_back("/opt/local/lib");
 	scummvmOSX_LibPaths.push_back("\"$(inherited)\"");
 	scummvmOSX_LibPaths.push_back("\"\\\"$(SRCROOT)/lib\\\"\"");
 	ADD_SETTING_LIST(scummvmOSX_Debug, "LIBRARY_SEARCH_PATHS", scummvmOSX_LibPaths, kSettingsNoQuote | kSettingsAsList, 5);
 	ADD_SETTING_QUOTE(scummvmOSX_Debug, "OTHER_CFLAGS", "");
 	ADD_SETTING(scummvmOSX_Debug, "PRODUCT_NAME", PROJECT_NAME);
-	ValueList scummvmOSX_LinkerFlags;
-#ifdef MACOSX_NO_SDKVERSION
-	scummvmOSX_LinkerFlags.push_back("-Xlinker");
-	scummvmOSX_LinkerFlags.push_back("-platform_version");
-	scummvmOSX_LinkerFlags.push_back("-Xlinker");
-	scummvmOSX_LinkerFlags.push_back("macos");
-	scummvmOSX_LinkerFlags.push_back("-Xlinker");
-	// Since the option can only be used with Xcode 11, assume the min version targetted is 10.14
-	scummvmOSX_LinkerFlags.push_back("10.14");
-	scummvmOSX_LinkerFlags.push_back("-Xlinker");
-	scummvmOSX_LinkerFlags.push_back("0.0.0");
-	ADD_SETTING_LIST(scummvmOSX_Debug, "OTHER_LDFLAGS", scummvmOSX_LinkerFlags, kSettingsAsList, 5);
-#endif
 
 	scummvmOSX_Debug_Object->addProperty("name", "Debug", "", kSettingsNoValue);
 	scummvmOSX_Debug_Object->_properties["buildSettings"] = scummvmOSX_Debug;
@@ -1132,12 +1181,10 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 	ADD_SETTING(scummvmOSX_Release, "COPY_PHASE_STRIP", "YES");
 	REMOVE_SETTING(scummvmOSX_Release, "GCC_DYNAMIC_NO_PIC");
 	REMOVE_SETTING(scummvmOSX_Release, "GCC_OPTIMIZATION_LEVEL");
+	ADD_SETTING(scummvmOSX_Release, "GCC_OPTIMIZATION_LEVEL", "3");
 	ADD_SETTING(scummvmOSX_Release, "WRAPPER_EXTENSION", "app");
 	REMOVE_SETTING(scummvmOSX_Release, "DEBUG_INFORMATION_FORMAT");
 	ADD_SETTING_QUOTE(scummvmOSX_Release, "DEBUG_INFORMATION_FORMAT", "dwarf-with-dsym");
-#ifdef MACOSX_NO_SDKVERSION
-	ADD_SETTING_LIST(scummvmOSX_Release, "OTHER_LDFLAGS", scummvmOSX_LinkerFlags, kSettingsAsList, 5);
-#endif
 
 	scummvmOSX_Release_Object->addProperty("name", "Release", "", kSettingsNoValue);
 	scummvmOSX_Release_Object->_properties["buildSettings"] = scummvmOSX_Release;

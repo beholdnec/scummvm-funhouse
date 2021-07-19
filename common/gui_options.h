@@ -64,6 +64,8 @@
 #define GUIO_LINKMUSICTOSFX  "\x25"
 #define GUIO_NOSPEECHVOLUME  "\x26"
 
+#define GUIO_NOLANG          "\x27"
+
 // Special GUIO flags for the AdvancedDetector's caching of game specific
 // options.
 #define GUIO_GAMEOPTIONS1    "\x30"
@@ -95,6 +97,15 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_gui_options GUI options
+ * @ingroup common
+ *
+ * @brief API for managing the options of the graphical user interface (GUI).
+ *
+ * @{
+ */
+
 class String;
 
 bool checkGameGUIOption(const String &option, const String &str);
@@ -102,12 +113,13 @@ String parseGameGUIOptions(const String &str);
 const String getGameGUIOptionsDescription(const String &options);
 
 /**
- * Updates the GUI options of the current config manager
- * domain, when they differ to the ones passed as
+ * Update the GUI options of the current config manager
+ * domain when they differ to the ones passed as
  * parameter.
  */
 void updateGameGUIOptions(const String &options, const String &langOption);
 
+/** @} */
 
 } // End of namespace Common
 

@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -166,6 +181,7 @@
 		<ClCompile Include="..\..\engines\pegasus\ai\ai_condition.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\ai\ai_rule.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\items\biochips\aichip.cpp" />
+		<ClCompile Include="..\..\engines\pegasus\items\biochips\arthurchip.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\items\biochips\biochipitem.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\items\biochips\mapchip.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\items\biochips\mapimage.cpp" />
@@ -188,6 +204,7 @@
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\caldoria\caldoriabomb.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\caldoria\caldoriamessages.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\caldoria\caldoriamirror.cpp" />
+		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\canyonchase.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\energybeam.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\gravitoncannon.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\hermite.cpp" />
@@ -201,11 +218,13 @@
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\spacechase3d.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\spacejunk.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\tractorbeam.cpp" />
+		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\tunnelpod.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\alpha\ecrmonitor.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\alpha\fillingstation.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\alpha\noradalpha.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\alpha\panorama.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\alpha\panoramascroll.cpp" />
+		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\alpha\subchase.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\delta\globegame.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\delta\noraddelta.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\norad.cpp" />
@@ -228,10 +247,10 @@
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\turn.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\view.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\zoom.cpp" />
+		<ClCompile Include="..\..\engines\pegasus\chase.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\compass.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\console.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\cursor.cpp" />
-		<ClCompile Include="..\..\engines\pegasus\detection.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\elements.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\energymonitor.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\fader.cpp" />
@@ -242,6 +261,7 @@
 		<ClCompile Include="..\..\engines\pegasus\interaction.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\interface.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\menu.cpp" />
+		<ClCompile Include="..\..\engines\pegasus\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\movie.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\notification.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\pegasus.cpp" />
@@ -257,6 +277,7 @@
 		<ClInclude Include="..\..\engines\pegasus\ai\ai_condition.h" />
 		<ClInclude Include="..\..\engines\pegasus\ai\ai_rule.h" />
 		<ClInclude Include="..\..\engines\pegasus\items\biochips\aichip.h" />
+		<ClInclude Include="..\..\engines\pegasus\items\biochips\arthurchip.h" />
 		<ClInclude Include="..\..\engines\pegasus\items\biochips\biochipitem.h" />
 		<ClInclude Include="..\..\engines\pegasus\items\biochips\mapchip.h" />
 		<ClInclude Include="..\..\engines\pegasus\items\biochips\mapimage.h" />
@@ -279,6 +300,7 @@
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\caldoria\caldoriabomb.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\caldoria\caldoriamessages.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\caldoria\caldoriamirror.h" />
+		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\canyonchase.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\constants.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\energybeam.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\gravitoncannon.h" />
@@ -293,11 +315,13 @@
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\spacechase3d.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\spacejunk.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\tractorbeam.h" />
+		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\tunnelpod.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\alpha\ecrmonitor.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\alpha\fillingstation.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\alpha\noradalpha.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\alpha\panorama.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\alpha\panoramascroll.h" />
+		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\alpha\subchase.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\delta\globegame.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\delta\noraddelta.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\constants.h" />
@@ -321,10 +345,12 @@
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\turn.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\view.h" />
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\zoom.h" />
+		<ClInclude Include="..\..\engines\pegasus\chase.h" />
 		<ClInclude Include="..\..\engines\pegasus\compass.h" />
 		<ClInclude Include="..\..\engines\pegasus\console.h" />
 		<ClInclude Include="..\..\engines\pegasus\constants.h" />
 		<ClInclude Include="..\..\engines\pegasus\cursor.h" />
+		<ClInclude Include="..\..\engines\pegasus\detection.h" />
 		<ClInclude Include="..\..\engines\pegasus\elements.h" />
 		<ClInclude Include="..\..\engines\pegasus\energymonitor.h" />
 		<ClInclude Include="..\..\engines\pegasus\fader.h" />

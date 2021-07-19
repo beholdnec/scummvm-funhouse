@@ -20,19 +20,22 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/kernel/process.h"
 #include "ultima/ultima8/kernel/kernel.h"
+#include "ultima/ultima8/ultima8.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(Process)
 
 Process::Process(ObjId it, uint16 ty)
-	: _pid(0xFFFF), _flags(0), _itemNum(it), _type(ty), _result(0) {
+	: _pid(0xFFFF), _flags(0), _itemNum(it), _type(ty), _result(0), _ticksPerRun(2) {
 	Kernel::get_instance()->assignPID(this);
+	if (GAME_IS_CRUSADER) {
+		// Default kernel ticks per run of processes in Crusader
+		_ticksPerRun = 1;
+	}
 }
 
 void Process::fail() {
@@ -59,8 +62,8 @@ void Process::terminate() {
 	_flags |= PROC_TERMINATED;
 }
 
-void Process::wakeUp(uint32 result_) {
-	_result = result_;
+void Process::wakeUp(uint32 result) {
+	_result = result;
 
 	_flags &= ~PROC_SUSPENDED;
 
@@ -69,15 +72,23 @@ void Process::wakeUp(uint32 result_) {
 	onWakeUp();
 }
 
-void Process::waitFor(ProcId pid_) {
-	assert(pid_ != _pid);
-	if (pid_) {
+void Process::waitFor(ProcId pid) {
+	assert(pid != _pid);
+	if (pid) {
 		Kernel *kernel = Kernel::get_instance();
 
-		// add this process to waiting list of process pid_
-		Process *p = kernel->getProcess(pid_);
+		// add this process to waiting list of other process
+		Process *p = kernel->getProcess(pid);
 		assert(p);
+		if (p->getProcessFlags() & PROC_TERMINATED) {
+			//warning("Proc %d wait for proc %d which is already terminated", _pid, pid);
+			return;
+		}
 		p->_waiting.push_back(_pid);
+
+		// Note: The original games sync itemnum between processes
+		// here if either one is zero, but that seems to break things
+		// for us so we don't do it.
 	}
 
 	_flags |= PROC_SUSPENDED;
@@ -85,10 +96,10 @@ void Process::waitFor(ProcId pid_) {
 
 void Process::waitFor(Process *proc) {
 	assert(this != proc);
-	ProcId pid_ = 0;
-	if (proc) pid_ = proc->getPid();
+	ProcId pid = 0;
+	if (proc) pid = proc->getPid();
 
-	waitFor(pid_);
+	waitFor(pid);
 }
 
 void Process::suspend() {
@@ -110,7 +121,7 @@ void Process::dumpInfo() const {
 		info += ", notify: ";
 		for (Std::vector<ProcId>::const_iterator i = _waiting.begin(); i != _waiting.end(); ++i) {
 			if (i != _waiting.begin()) info += ", ";
-			info += *i;
+			info += Common::String::format("%d", *i);
 		}
 	}
 
@@ -135,10 +146,32 @@ bool Process::loadData(Common::ReadStream *rs, uint32 version) {
 	_type = rs->readUint16LE();
 	_result = rs->readUint32LE();
 	uint32 waitcount = rs->readUint32LE();
+
+	if (waitcount > 1024*1024) {
+		warning("Improbable waitcount %d for proc %d. Corrupt save?", waitcount, _pid);
+		return false;
+	}
+
 	_waiting.resize(waitcount);
 	for (unsigned int i = 0; i < waitcount; ++i)
 		_waiting[i] = rs->readUint16LE();
 
+	return true;
+}
+
+bool Process::validateWaiters() const {
+	for (Std::vector<ProcId>::const_iterator i = _waiting.begin();
+			i != _waiting.end(); ++i) {
+		const Process *p = Kernel::get_instance()->getProcess(*i);
+		if (!p) {
+			// This can happen if a waiting process gets forcibly terminated.
+			warning("Invalid procid %d in waitlist for proc %d. Maybe a bug?", *i, _pid);
+		} else if (!p->is_suspended()) {
+			// This should never happen.
+			warning("Procid %d in waitlist for proc %d but not marked suspended", *i, _pid);
+			return false;
+		}
+	}
 	return true;
 }
 

@@ -2,31 +2,31 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="he">
-			<UniqueIdentifier>EEEE41AD-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CCF-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="he\logic">
-			<UniqueIdentifier>EEEE41AE-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD0-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="he\moonbase">
-			<UniqueIdentifier>EEEE41AF-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD1-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="imuse">
-			<UniqueIdentifier>EEEE41B0-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD2-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="imuse\drivers">
-			<UniqueIdentifier>EEEE41B1-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD3-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="imuse_digi">
-			<UniqueIdentifier>EEEE41B2-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD4-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="insane">
-			<UniqueIdentifier>EEEE41B3-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD5-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="players">
-			<UniqueIdentifier>EEEE41B4-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD6-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="smush">
-			<UniqueIdentifier>EEEE41B5-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CD7-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -42,11 +42,11 @@
 		<ClCompile Include="..\..\engines\scumm\costume.cpp" />
 		<ClCompile Include="..\..\engines\scumm\cursor.cpp" />
 		<ClCompile Include="..\..\engines\scumm\debugger.cpp" />
-		<ClCompile Include="..\..\engines\scumm\detection.cpp" />
 		<ClCompile Include="..\..\engines\scumm\dialogs.cpp" />
 		<ClCompile Include="..\..\engines\scumm\file.cpp" />
 		<ClCompile Include="..\..\engines\scumm\file_nes.cpp" />
 		<ClCompile Include="..\..\engines\scumm\gfx.cpp" />
+		<ClCompile Include="..\..\engines\scumm\gfx_mac.cpp" />
 		<ClCompile Include="..\..\engines\scumm\gfx_towns.cpp" />
 		<ClCompile Include="..\..\engines\scumm\he\animation_he.cpp">
 			<Filter>he</Filter>
@@ -55,6 +55,9 @@
 			<Filter>he</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\scumm\he\floodfill_he.cpp">
+			<Filter>he</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\scumm\he\localizer.cpp">
 			<Filter>he</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\scumm\he\logic\baseball2001.cpp">
@@ -224,6 +227,8 @@
 		<ClCompile Include="..\..\engines\scumm\insane\insane_scenes.cpp">
 			<Filter>insane</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\scumm\ks_check.cpp" />
+		<ClCompile Include="..\..\engines\scumm\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\scumm\midiparser_ro.cpp" />
 		<ClCompile Include="..\..\engines\scumm\nut_renderer.cpp" />
 		<ClCompile Include="..\..\engines\scumm\object.cpp" />
@@ -346,6 +351,8 @@
 		<ClInclude Include="..\..\engines\scumm\costume.h" />
 		<ClInclude Include="..\..\engines\scumm\debugger.h" />
 		<ClInclude Include="..\..\engines\scumm\detection.h" />
+		<ClInclude Include="..\..\engines\scumm\detection_internal.h" />
+		<ClInclude Include="..\..\engines\scumm\detection_steam.h" />
 		<ClInclude Include="..\..\engines\scumm\detection_tables.h" />
 		<ClInclude Include="..\..\engines\scumm\dialogs.h" />
 		<ClInclude Include="..\..\engines\scumm\file.h" />
@@ -361,6 +368,9 @@
 			<Filter>he</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\scumm\he\intern_he.h">
+			<Filter>he</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\scumm\he\localizer.h">
 			<Filter>he</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\scumm\he\logic_he.h">
@@ -460,9 +470,12 @@
 		<ClInclude Include="..\..\engines\scumm\insane\insane.h">
 			<Filter>insane</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\scumm\ks_check.h" />
+		<ClInclude Include="..\..\engines\scumm\metaengine.h" />
 		<ClInclude Include="..\..\engines\scumm\music.h" />
 		<ClInclude Include="..\..\engines\scumm\nut_renderer.h" />
 		<ClInclude Include="..\..\engines\scumm\object.h" />
+		<ClInclude Include="..\..\engines\scumm\obsolete.h" />
 		<ClInclude Include="..\..\engines\scumm\players\player_ad.h">
 			<Filter>players</Filter>
 		</ClInclude>

@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -203,7 +218,6 @@
 		<ClCompile Include="..\..\engines\neverhood\background.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\blbarchive.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\console.cpp" />
-		<ClCompile Include="..\..\engines\neverhood\detection.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\diskplayerscene.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\entity.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\gamemodule.cpp" />
@@ -211,8 +225,9 @@
 		<ClCompile Include="..\..\engines\neverhood\graphics.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\klaymen.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\menumodule.cpp" />
+		<ClCompile Include="..\..\engines\neverhood\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\microtiles.cpp" />
-		<ClCompile Include="..\..\engines\neverhood\module.cpp" />
+		<ClCompile Include="..\..\engines\neverhood\module_scene.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\mouse.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\navigationscene.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\neverhood.cpp" />
@@ -271,6 +286,7 @@
 		<ClInclude Include="..\..\engines\neverhood\background.h" />
 		<ClInclude Include="..\..\engines\neverhood\blbarchive.h" />
 		<ClInclude Include="..\..\engines\neverhood\console.h" />
+		<ClInclude Include="..\..\engines\neverhood\detection.h" />
 		<ClInclude Include="..\..\engines\neverhood\diskplayerscene.h" />
 		<ClInclude Include="..\..\engines\neverhood\entity.h" />
 		<ClInclude Include="..\..\engines\neverhood\gamemodule.h" />

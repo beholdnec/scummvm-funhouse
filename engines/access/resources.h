@@ -35,6 +35,7 @@ namespace Access {
 extern const byte INITIAL_PALETTE[18 * 3];
 
 extern const char *const GENERAL_MESSAGES[];
+extern const char *const ESP_GENERAL_MESSAGES[];
 
 extern const int INVCOORDS[][4];
 
@@ -95,7 +96,7 @@ public:
 	/**
 	 * Load the access.dat file
 	 */
-	bool load(Common::String &errorMessage);
+	bool load(Common::U32String &errorMessage);
 };
 
 } // End of namespace Access

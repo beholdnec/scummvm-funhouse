@@ -2,16 +2,16 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="blue_force">
-			<UniqueIdentifier>EEEE41DD-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D0C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ringworld">
-			<UniqueIdentifier>EEEE41DE-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D0D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ringworld2">
-			<UniqueIdentifier>EEEE41DF-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D0E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sherlock">
-			<UniqueIdentifier>EEEE41E0-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D0F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -57,11 +57,11 @@
 		<ClCompile Include="..\..\engines\tsage\converse.cpp" />
 		<ClCompile Include="..\..\engines\tsage\core.cpp" />
 		<ClCompile Include="..\..\engines\tsage\debugger.cpp" />
-		<ClCompile Include="..\..\engines\tsage\detection.cpp" />
 		<ClCompile Include="..\..\engines\tsage\dialogs.cpp" />
 		<ClCompile Include="..\..\engines\tsage\events.cpp" />
 		<ClCompile Include="..\..\engines\tsage\globals.cpp" />
 		<ClCompile Include="..\..\engines\tsage\graphics.cpp" />
+		<ClCompile Include="..\..\engines\tsage\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\tsage\resources.cpp" />
 		<ClCompile Include="..\..\engines\tsage\ringworld2\ringworld2_airduct.cpp">
 			<Filter>ringworld2</Filter>
@@ -183,6 +183,7 @@
 		<ClInclude Include="..\..\engines\tsage\converse.h" />
 		<ClInclude Include="..\..\engines\tsage\core.h" />
 		<ClInclude Include="..\..\engines\tsage\debugger.h" />
+		<ClInclude Include="..\..\engines\tsage\detection.h" />
 		<ClInclude Include="..\..\engines\tsage\detection_tables.h" />
 		<ClInclude Include="..\..\engines\tsage\dialogs.h" />
 		<ClInclude Include="..\..\engines\tsage\events.h" />

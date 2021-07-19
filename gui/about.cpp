@@ -27,7 +27,9 @@
 #include "common/system.h"
 #include "common/translation.h"
 #include "common/util.h"
-#include "graphics/managed_surface.h"
+#include "graphics/conversion.h"
+#include "graphics/surface.h"
+#include "graphics/fonts/amigafont.h"
 #include "gui/about.h"
 #include "gui/gui-manager.h"
 #include "gui/ThemeEval.h"
@@ -65,7 +67,7 @@ enum {
 
 static const char *copyright_text[] = {
 "",
-"C0""Copyright (C) 2001-2020 The ScummVM Team",
+"C0""Copyright (C) 2001-2021 The ScummVM Team",
 "C0""https://www.scummvm.org",
 "",
 "C0""ScummVM is the legal property of its developers, whose names are too numerous to list here. Please refer to the COPYRIGHT file distributed with this binary.",
@@ -93,83 +95,75 @@ AboutDialog::AboutDialog()
 	int i;
 
 	for (i = 0; i < 1; i++)
-		_lines.push_back("");
+		_lines.push_back(U32String());
 
 	Common::String version("C0""ScummVM ");
 	version += gScummVMVersion;
 	_lines.push_back(version);
 
-	Common::String date = Common::String::format(_("(built on %s)"), gScummVMBuildDate);
-	_lines.push_back("C2" + date);
+	Common::U32String date = Common::U32String::format(_("(built on %s)"), gScummVMBuildDate);
+	_lines.push_back(U32String("C2") + date);
 
 	for (i = 0; i < ARRAYSIZE(copyright_text); i++)
-		addLine(copyright_text[i]);
+		addLine(U32String(copyright_text[i]));
 
-	Common::String features("C1");
+	Common::U32String features("C1");
 	features += _("Features compiled in:");
-	addLine(features.c_str());
+	addLine(features);
 	Common::String featureList("C0");
 	featureList += gScummVMFeatures;
-	addLine(featureList.c_str());
+	addLine(featureList);
 
-	_lines.push_back("");
+	_lines.push_back(U32String());
 
-	Common::String engines("C1");
+	Common::U32String engines("C1");
 	engines += _("Available engines:");
-	addLine(engines.c_str());
+	addLine(engines);
 
-	const PluginList &plugins = EngineMan.getPlugins();
+	const PluginList &plugins = EngineMan.getPlugins(PLUGIN_TYPE_ENGINE);
 	PluginList::const_iterator iter = plugins.begin();
 	for (; iter != plugins.end(); ++iter) {
 		Common::String str;
 		str = "C0";
 		str += (*iter)->getName();
-		addLine(str.c_str());
+		addLine(str);
+
+		const Plugin *p = EngineMan.findPlugin((*iter)->getName());
+
+		if (!p) {
+			warning("Cannot find plugin for %s", (*iter)->getName());
+			continue;
+		}
 
 		str = "C2";
-		str += (*iter)->get<MetaEngine>().getOriginalCopyright();
-		addLine(str.c_str());
+		str += p->get<MetaEngineDetection>().getOriginalCopyright();
+		addLine(str);
 
 		//addLine("");
 	}
 
 	for (i = 0; i < ARRAYSIZE(gpl_text); i++)
-		addLine(gpl_text[i]);
+		addLine(U32String(gpl_text[i]));
 
-	_lines.push_back("");
+	_lines.push_back(U32String());
 
 	for (i = 0; i < ARRAYSIZE(credits); i++)
-		addLine(credits[i]);
+		addLine(U32String(credits[i], Common::kUtf8));
 }
 
-void AboutDialog::addLine(const char *str) {
-	if (*str == 0) {
-		_lines.push_back("");
+void AboutDialog::addLine(const U32String &str) {
+	U32String::const_iterator strBeginItr = str.begin();
+	if (*strBeginItr == 0) {
+		_lines.push_back(U32String());
 	} else {
-		Common::String format(str, 2);
-		str += 2;
+		Common::U32String format(str.begin(), str.begin() + 2);
+		strBeginItr += 2;
+		U32String renderStr(strBeginItr, str.end());
 
-		static Common::String asciiStr;
-		if (format[0] == 'A') {
-			bool useAscii = false;
-#ifdef USE_TRANSLATION
-			// We could use TransMan.getCurrentCharset() but rather than compare strings
-			// it is easier to use TransMan.getCharsetMapping() (non null in case of non
-			// ISO-8859-1 mapping)
-			useAscii = (TransMan.getCharsetMapping() != nullptr);
-#endif
-			if (useAscii)
-				asciiStr = str;
-			return;
-		}
-		StringArray wrappedLines;
-		if (!asciiStr.empty()) {
-			g_gui.getFont().wordWrapText(asciiStr, _w - 2 * _xOff, wrappedLines);
-			asciiStr.clear();
-		} else
-			g_gui.getFont().wordWrapText(str, _w - 2 * _xOff, wrappedLines);
+		U32StringArray wrappedLines;
+		g_gui.getFont().wordWrapText(renderStr, _w - 2 * _xOff, wrappedLines);
 
-		for (StringArray::const_iterator i = wrappedLines.begin(); i != wrappedLines.end(); ++i) {
+		for (U32StringArray::const_iterator i = wrappedLines.begin(); i != wrappedLines.end(); ++i) {
 			_lines.push_back(format + *i);
 		}
 	}
@@ -203,11 +197,14 @@ void AboutDialog::drawDialog(DrawLayer layerToDraw) {
 	int y = _y + _yOff - (_scrollPos % _lineHeight);
 
 	for (int line = firstLine; line < lastLine; line++) {
-		const char *str = _lines[line].c_str();
+		U32String str = _lines[line];
+		U32String::const_iterator strLineItrBegin = _lines[line].begin();
+		U32String::const_iterator strLineItrEnd = _lines[line].end();
+
 		Graphics::TextAlign align = Graphics::kTextAlignCenter;
 		ThemeEngine::WidgetStateInfo state = ThemeEngine::kStateEnabled;
-		if (*str) {
-			switch (str[0]) {
+		if (strLineItrBegin != strLineItrEnd) {
+			switch (*strLineItrBegin) {
 			case 'C':
 				align = Graphics::kTextAlignCenter;
 				break;
@@ -221,7 +218,7 @@ void AboutDialog::drawDialog(DrawLayer layerToDraw) {
 				error("Unknown scroller opcode '%c'", str[0]);
 				break;
 			}
-			switch (str[1]) {
+			switch (*(strLineItrBegin + 1)) {
 			case '0':
 				state = ThemeEngine::kStateEnabled;
 				break;
@@ -242,16 +239,17 @@ void AboutDialog::drawDialog(DrawLayer layerToDraw) {
 			default:
 				error("Unknown color type '%c'", str[1]);
 			}
-			str += 2;
+			strLineItrBegin += 2;
 		}
 		// Trim leading whitespaces if center mode is on
 		if (align == Graphics::kTextAlignCenter)
-			while (*str && *str == ' ')
-				str++;
+			while (strLineItrBegin != strLineItrEnd && *strLineItrBegin == ' ')
+				strLineItrBegin++;
 
-		if (*str)
+		U32String renderStr(strLineItrBegin, strLineItrEnd);
+		if (!renderStr.empty())
 			g_gui.theme()->drawText(Common::Rect(_x + _xOff, y, _x + _w - _xOff, y + g_gui.theme()->getFontHeight()),
-			                        str, state, align, ThemeEngine::kTextInversionNone, 0, false,
+			                        renderStr, state, align, ThemeEngine::kTextInversionNone, 0, false,
 			                        ThemeEngine::kFontStyleBold, ThemeEngine::kFontColorNormal, true, _textDrawableArea);
 		y += _lineHeight;
 	}
@@ -352,6 +350,20 @@ enum { kPlComp, kPlHuman };
 
 enum { kSndPoint, kSndHit, kSndLoss };
 
+
+enum {
+	kSpL1, kSpL2, kSpL3,
+	kSpR1, kSpR2, kSpR3,
+	kSpB1, kSpB2, kSpB3, kSpB4,
+	kSp0, kSp1, kSp2, kSp3, kSp4,
+	kSp5, kSp6, kSp7, kSp8, kSp9,
+	kSpCode1,
+	kSpCode1h = kSpCode1 + 6,
+	kSpNum0 = kSpCode1h + 6,
+	kSpStar = kSpNum0 + 10,
+	kSpSpace,
+	kSpLast
+};
 class EE  {
 public:
 	EE();
@@ -360,7 +372,7 @@ public:
 	void run();
 
 private:
-	Graphics::ManagedSurface _back;
+	Graphics::Surface _back;
 	int _hits;
 	bool _rmode; // animation after loosing
 	int _score[2];
@@ -393,12 +405,16 @@ private:
 	int _opts;
 	int _opt;
 
-	Graphics::Surface _sp[10];
+	Graphics::AmigaFont _font;
+
+	Graphics::Surface _sp[kSpLast];
 
 	Graphics::PixelFormat _format;
-	int _windowX, _windowY;
+	int _windowX, _windowY, _windowW, _windowH;
+	float _scale;
+	bool _inited;
 
-	uint32 _colorBlue, _colorOrange;
+	uint32 _colorBlack, _colorBlue, _colorOrange, _colorKey;
 
 	void cls(bool update = true);
 	void loadSounds();
@@ -420,8 +436,8 @@ private:
 	void game();
 	void playSound(int d);
 
-	void genSprites();
-	void drawStatus(Common::String str, int x, uint32 color, int y = 0, int color2 = 0, int w = 16);
+	void setupGraphics();
+	void genField();
 };
 
 bool EEHandler::handleKeyDown(Common::KeyState &state) {
@@ -439,32 +455,37 @@ bool EEHandler::handleKeyDown(Common::KeyState &state) {
 }
 
 EE::EE() {
-	_windowX = (g_system->getOverlayWidth() > 320) ? (g_system->getOverlayWidth() - 320) / 2 : 0;
-	_windowY = (g_system->getOverlayHeight() > 200) ? (g_system->getOverlayHeight() - 200) / 2 : 0;
+	init();
+
+	_scale = 1.0;
+	_windowW = 320;
+	_windowH = 200;
+	_windowX = _windowY = 0;
 
 	_format = g_system->getOverlayFormat();
-	_back.create(MIN<int>(g_system->getOverlayWidth(), 320), MIN<int>(g_system->getOverlayHeight(), 200), _format);
 
-	_colorBlue   = _format.RGBToColor(5 * 16, 7 * 16, 8 * 16);
-	_colorOrange = _format.RGBToColor(15 * 16, 7 * 16, 8 * 16);
-
-	init();
+	_colorBlack = _colorBlue = _colorOrange = _colorKey = 0;
 }
 
 EE::~EE() {
+	for (int i = 0; i < kSpLast; i++)
+		_sp[i].free();
 }
 
 void EE::cls(bool update) {
-	_back.fillRect(Common::Rect(0, 0, MIN<int>(g_system->getOverlayWidth(), 320), MIN<int>(g_system->getOverlayHeight(), 200)), 0);
+	_back.fillRect(Common::Rect(0, 0, _windowW, _windowH), _colorBlack);
 
 	if (update)
-		g_system->copyRectToOverlay(_back.getPixels(), _back.pitch, _windowX, _windowY, MIN<int>(g_system->getOverlayWidth(), 320), MIN<int>(g_system->getOverlayHeight(), 200));
+		g_system->copyRectToOverlay(_back.getPixels(), _back.pitch, _windowX, _windowY, _windowW, _windowH);
 }
 
 void EE::run() {
+	if (!_inited)
+		return;
+
 	_shouldQuit = false;
 
-	genSprites();
+	setupGraphics();
 
 	init();
 
@@ -475,6 +496,10 @@ void EE::run() {
 			case Common::EVENT_QUIT:
 			case Common::EVENT_RETURN_TO_LAUNCHER:
 				_shouldQuit = true;
+				break;
+			case Common::EVENT_SCREEN_CHANGED:
+				if (g_gui.checkScreenChange())
+					setupGraphics();
 				break;
 			case Common::EVENT_LBUTTONDOWN:
 				break;
@@ -496,15 +521,6 @@ void EE::run() {
 		g_system->delayMillis(10);
 	}
 }
-
-enum {
-	kSpL1, kSpL2, kSpL3,
-	kSpR1, kSpR2, kSpR3,
-	kSpB1, kSpB2, kSpB3, kSpB4,
-	kSp0, kSp1, kSp2, kSp3, kSp4,
-	kSp5, kSp6, kSp7, kSp8, kSp9,
-	kSpSt
-};
 
 const int polecol[] = {0, 1, 2, 3, 3, 4, 6, 7, 9, 14};
 const int jump[] = {-4, -4, -3, -3, -3, -3, -2, -2, -2, -2, -2, -1, -1, -1, -1, -1, -1, 0, 0,
@@ -1028,8 +1044,6 @@ void EE::computer1() {
 }
 
 void EE::init() {
-	cls();
-
 	_rnd = 0;
 	_starter = _winner = _hits = 0;
 	_bvelx = _bvely = 0;
@@ -1077,27 +1091,17 @@ void EE::init() {
 	_rmode = false;
 
 	_shouldQuit = false;
+
+	_inited = true;
 }
 
-void EE::drawStatus(Common::String str, int x, uint32 color, int y, int color2, int w) {
-	if (color2)
-		_back.fillRect(Common::Rect(x, y, x + w, y + 10), color2);
-	g_gui.theme()->getFont(ThemeEngine::kFontStyleConsole)->drawString(&_back, str, x, y, 160, color);
-}
+void EE::draw(int sn, int x1, int y1) {
+	int x = x1 * _scale;
+	int y = y1 * _scale;
 
-void EE::draw(int sn, int x, int y) {
-	_back.transBlitFrom(_sp[sn], Common::Point(x, y), 0);
-	g_system->copyRectToOverlay(_back.getBasePtr(x, y),
-	                           _back.pitch,
-	                           MIN<int>(_windowX + x, g_system->getOverlayWidth()),
-	                           MIN<int>(_windowY + y, g_system->getOverlayHeight()),
-	                           MIN<int>(_sp[sn].w, g_system->getOverlayWidth() - MIN<int>(_windowX + x, g_system->getOverlayWidth())),
-	                           MIN<int>(_sp[sn].h, g_system->getOverlayHeight() - MIN<int>(_windowY + y, g_system->getOverlayHeight()) ));
+	Graphics::keyBlit((byte *)_back.getBasePtr(x, y), (const byte *)_sp[sn].getPixels(), _back.pitch, _sp[sn].pitch, _sp[sn].w, _sp[sn].h, _back.format.bytesPerPixel, _colorKey);
+	g_system->copyRectToOverlay(_back.getBasePtr(x, y), _back.pitch, _windowX + x, _windowY + y, _sp[sn].w, _sp[sn].h);
 }
-
-const char *codes =
-"Dvhgkm#Ztrsm|ffrs(#$%&'#$%&O}pes&}{1$M{tiq$%&'#$M{tiq${y5(Fsrv||hv%&'#$"
-"Hutxxxjx'~v2%N|udr%&'#Gtsw}wiw&}{1$Hutxxxjx'#$%&'(#$%W|qw$%&'(#$%&'";
 
 void EE::putshapes() {
 	int sprite;
@@ -1105,24 +1109,12 @@ void EE::putshapes() {
 	cls(false);
 
 	if (_oCoords) {
-		g_system->copyRectToOverlay(_back.getBasePtr(_obx, _oby),
-		                            _back.pitch,
-		                            MIN<int>(_windowX + _obx, g_system->getOverlayWidth()),
-		                            MIN<int>(_windowY + _oby, g_system->getOverlayHeight()),
-		                            MIN<int>(_sp[kSpB1].w, g_system->getOverlayWidth() - MIN<int>(_windowX + _obx, g_system->getOverlayWidth())),
-		                            MIN<int>(_sp[kSpB1].h, g_system->getOverlayHeight() - MIN<int>(_windowY + _oby, g_system->getOverlayHeight()) ));
-		g_system->copyRectToOverlay(_back.getBasePtr(_olx, _oly),
-		                            _back.pitch,
-		                            MIN<int>(_windowX + _olx, g_system->getOverlayWidth()),
-		                            MIN<int>(_windowY + _oly, g_system->getOverlayHeight()),
-		                            MIN<int>(_sp[kSpL1].w, g_system->getOverlayWidth() - MIN<int>(_windowX + _olx, g_system->getOverlayWidth())),
-		                            MIN<int>(_sp[kSpL1].h, g_system->getOverlayHeight() - MIN<int>(_windowY + _oly, g_system->getOverlayHeight()) ));
-		g_system->copyRectToOverlay(_back.getBasePtr(_orx, _ory),
-		                            _back.pitch,
-		                            MIN<int>(_windowX + _orx, g_system->getOverlayWidth()),
-		                            MIN<int>(_windowY + _ory, g_system->getOverlayHeight()),
-		                            MIN<int>(_sp[kSpR1].w, g_system->getOverlayWidth() - MIN<int>(_windowX + _orx, g_system->getOverlayWidth())),
-		                            MIN<int>(_sp[kSpR1].h, g_system->getOverlayHeight() - MIN<int>(_windowY + _ory, g_system->getOverlayHeight()) ));
+		int obx = _obx * _scale, oby = _oby * _scale;
+		int olx = _olx * _scale, oly = _oly * _scale;
+		int orx = _orx * _scale, ory = _ory * _scale;
+		g_system->copyRectToOverlay(_back.getBasePtr(obx, oby), _back.pitch, _windowX + obx, _windowY + oby, _sp[kSpB1].w, _sp[kSpB1].h);
+		g_system->copyRectToOverlay(_back.getBasePtr(olx, oly), _back.pitch, _windowX + olx, _windowY + oly, _sp[kSpL1].w, _sp[kSpL1].h);
+		g_system->copyRectToOverlay(_back.getBasePtr(orx, ory), _back.pitch, _windowX + orx, _windowY + ory, _sp[kSpR1].w, _sp[kSpR1].h);
 	}
 
 	sprite = kSpB1 + (_tbx / 16) % 4;
@@ -1170,65 +1162,30 @@ void EE::putshapes() {
 
 	const int *ptr = frames;
 	for (int i = 0; i < 6; i++, ptr += 4) {
-		Common::Rect r(ptr[0], ptr[1], ptr[2], ptr[3]);
+		Common::Rect r(ptr[0] * _scale, ptr[1] * _scale, ptr[2] * _scale, ptr[3] * _scale);
 		_back.fillRect(r, (i < 5 ? color1 : color2));
-		g_system->copyRectToOverlay(_back.getBasePtr(ptr[0], ptr[1]),
-		                            _back.pitch,
-		                            MIN<int>(_windowX + ptr[0], g_system->getOverlayWidth()),
-		                            MIN<int>(_windowY + ptr[1], g_system->getOverlayHeight()),
-		                            MIN<int>(r.width(), g_system->getOverlayWidth() - MIN<int>(_windowX + ptr[0], g_system->getOverlayWidth())),
-		                            MIN<int>(r.height(), g_system->getOverlayHeight() - MIN<int>(_windowY + ptr[1], g_system->getOverlayHeight()) ));
+		g_system->copyRectToOverlay(_back.getBasePtr(r.left, r.top), _back.pitch, _windowX + r.left, _windowY + r.top, r.width(), r.height());
 	}
 
-	int startx = 32;
+	for (int i = 0; i < 2; i++) {
+		int startx = i ? 264 : 32;
 
-	Common::String str = Common::String::format("%02d", _score[0]);
-	drawStatus(str, startx, _colorOrange);
-
-	startx += 16;
-
-	drawStatus((_server == 0) ? "*" : "  ", startx, _colorBlue);
-
-	startx = 264;
-
-	str = Common::String::format("%02d", _score[1]);
-	drawStatus(str, startx, _colorOrange);
-
-	startx += 16;
-
-	drawStatus((_server == 1) ? "*" : "  ", startx, _colorBlue);
+		draw(kSpNum0 + _score[i] / 10, startx, 1);
+		startx += 8;
+		draw(kSpNum0 + _score[i] % 10, startx, 1);
+		startx += 8;
+		draw(_server == i ? kSpStar : kSpSpace, startx, 1);
+	}
 
 	for (int i = 0; i < 6; i++) {
-		char buf[100];
-		int c;
-		for (c = 0; c < 23; c++)
-			buf[c] = codes[c + 23 * i] - 3 - c % 6;
-		buf[c] = 0;
+		int sx = i == 0 ? 92 : 80;
+		int sy = i == 0 ? 2 : 20;
 
-		int sx = i == 0 ? 110 : 92;
-		int sy = i == 0 ? 0 : 20;
-		int c1 = i == 0 ? _colorOrange : (i - 1 == _opt) ? 0 : _colorBlue;
-		int c2 = i - 1 == _opt ? _colorBlue : 0;
-		drawStatus(buf, sx, c1, sy + i * 10, c2, 135);
+		int code = i == 0 ? kSpCode1 : i - 1 == _opt ? kSpCode1h + i : kSpCode1 + i;
+		draw(code, sx, sy + i * 10);
 
 		if (_mode != kModeMenu)
 			break;
-	}
-
-	g_system->copyRectToOverlay(_back.getPixels(),
-	                            _back.pitch,
-	                            MIN<int>(_windowX, g_system->getOverlayWidth()),
-	                            MIN<int>(_windowY, g_system->getOverlayHeight()),
-	                            MIN<int>(320, g_system->getOverlayWidth() - MIN<int>(_windowX, g_system->getOverlayWidth())),
-	                            MIN<int>(10, g_system->getOverlayHeight() - MIN<int>(_windowY, g_system->getOverlayHeight()) ));
-
-	if (_mode == kModeMenu) {
-		g_system->copyRectToOverlay(_back.getBasePtr(92, 30),
-		                            _back.pitch,
-		                            MIN<int>(_windowX + 92, g_system->getOverlayWidth()),
-		                            MIN<int>(_windowY + 30, g_system->getOverlayHeight()),
-		                            MIN<int>(135, g_system->getOverlayWidth() - MIN<int>(_windowX + 92, g_system->getOverlayWidth())),
-		                            MIN<int>(5 * 10, g_system->getOverlayHeight() - MIN<int>(_windowY + 30, g_system->getOverlayHeight()) ));
 	}
 }
 
@@ -1338,47 +1295,79 @@ static const int spcolors[10 * 3] = {
 	0, 0, 0, 12, 12, 12
 };
 
-void EE::genSprites() {
+const char *codes =
+"Dvhgkm#Ztrsm|ffrs(#$%&'#$%&O}pes&}{1$M{tiq$%&'#$M{tiq${y5(Fsrv||hv%&'#$"
+"Hutxxxjx'~v2%N|udr%&'#Gtsw}wiw&}{1$Hutxxxjx'#$%&'(#$%W|qw$%&'(#$%&'";
+
+void EE::setupGraphics() {
+	// Determine scale factor
+	float scaleX = g_system->getOverlayWidth() * 0.9 / 320;
+	float scaleY = g_system->getOverlayHeight() * 0.9 / 200;
+	_scale = MIN(scaleX, scaleY);
+
+	_windowW = 320 * _scale;
+	_windowH = 200 * _scale;
+	_windowX = (g_system->getOverlayWidth() > 320) ? (g_system->getOverlayWidth() - _windowW) / 2 : 0;
+	_windowY = (g_system->getOverlayHeight() > 200) ? (g_system->getOverlayHeight() - _windowH) / 2 : 0;
+
+	_format = g_system->getOverlayFormat();
+	_back.create(_windowW, _windowH, _format);
+
+	_colorBlack  = _format.RGBToColor( 0 * 16,  0 * 16,  0 * 16);
+	_colorBlue   = _format.RGBToColor( 5 * 16,  7 * 16,  8 * 16);
+	_colorOrange = _format.RGBToColor(15 * 16,  7 * 16,  8 * 16);
+	_colorKey    = _colorBlack;
+
+	cls();
+
 	uint32 palette[12];
 	for (int i = 0; i < 10 * 3; i += 3)
 		palette[i / 3] = _back.format.RGBToColor(spcolors[i] * 16, spcolors[i + 1] * 16, spcolors[i + 2] * 16);
 
+	Graphics::Surface tmp;
+	int w = 25, h = 21;
+	tmp.create(w, h, g_system->getOverlayFormat());
+
 	for (int s = 0; s < 4; s++) {
-		_sp[kSpB1 + s].create(25, 21, g_system->getOverlayFormat());
 
 		int posy = 0, dy = 1;
 		if (s & 2) { posy = 20; dy = -1; }
 
-		for (int y = 0; y < 21; y++, posy += dy) {
+		for (int y = 0; y < h; y++, posy += dy) {
 			uint32 pixels = ball[y];
 
 			int posx = 0, dx = 1;
 			if (s & 1) { posx = 24; dx = -1; }
 
-			for (int x = 0; x < 25; x++, posx += dx) {
+			for (int x = 0; x < w; x++, posx += dx) {
 				int color = pixels & 1;
 
 				pixels >>= 1;
 
-				if (_back.format.bytesPerPixel == 2)
-					*((uint16 *)_sp[kSpB1 + s].getBasePtr(posx, posy)) = (uint16)palette[color + 8];
-				else if (_back.format.bytesPerPixel == 4)
-					*((uint32 *)_sp[kSpB1 + s].getBasePtr(posx, posy)) = palette[color + 8];
+				tmp.setPixel(posx, posy, palette[color + 8]);
 			}
 		}
+
+		Graphics::Surface *tmp2 = tmp.scale(w * _scale, h * _scale);
+		_sp[kSpB1 + s].copyFrom(*tmp2);
+		tmp2->free();
+		delete tmp2;
 	}
+	tmp.free();
+
+	w = 32;
+	h = 26;
+	tmp.create(w, h, g_system->getOverlayFormat());
 
 	for (int s = 0; s < 6; s++) {
-		_sp[kSpL1 + s].create(32, 26, g_system->getOverlayFormat());
-
-		for (int y = 0; y < 26; y++) {
+		for (int y = 0; y < h; y++) {
 			const uint32 *ptr = (y < 19) ? &head[y * 2] : &legs[(y - 19 + (s % 3) * 7) * 2];
 			uint32 pixels = *ptr++;
 
 			int posx = 0, dx = 1;
 			if (s > 2) { posx = 31; dx = -1; }
 
-			for (int x = 0; x < 32; x++, posx += dx) {
+			for (int x = 0; x < w; x++, posx += dx) {
 				int color = pixels & 3;
 
 				pixels >>= 2;
@@ -1386,13 +1375,62 @@ void EE::genSprites() {
 				if (x == 15)
 					pixels = *ptr;
 
-				if (_back.format.bytesPerPixel == 2)
-					*((uint16 *)_sp[kSpL1 + s].getBasePtr(posx, y)) = (uint16)palette[color + 4 * (s / 3)];
-				else if (_back.format.bytesPerPixel == 4)
-					*((uint32 *)_sp[kSpL1 + s].getBasePtr(posx, y)) = palette[color + 4 * (s / 3)];
+				tmp.setPixel(posx, y, palette[color + 4 * (s / 3)]);
 			}
 		}
+
+		Graphics::Surface *tmp2 = tmp.scale(w * _scale, h * _scale);
+		_sp[kSpL1 + s].copyFrom(*tmp2);
+		tmp2->free();
+		delete tmp2;
 	}
+	tmp.free();
+
+	w = 23 * 8;
+	h = 10;
+	tmp.create(w, h, g_system->getOverlayFormat());
+	for (int hl = 0; hl < 2; hl++) {
+		for (int i = 0; i < 6; i++) {
+			tmp.fillRect(Common::Rect(0, 0, w, h), hl == 1 ? _colorBlue : _colorKey);
+
+			char buf[100];
+			int c;
+			for (c = 0; c < 23; c++)
+				buf[c] = codes[c + 23 * i] - 3 - c % 6;
+			buf[c] = 0;
+
+			int c1 = i == 0 ? _colorOrange : hl == 1 ? _colorKey : _colorBlue;
+
+			_font.drawString(&tmp, buf, 0, 1, w, c1, Graphics::kTextAlignLeft, 0, false);
+
+			Graphics::Surface *tmp2 = tmp.scale(w * _scale, h * _scale, true);
+			_sp[kSpCode1 + hl * 6 + i].copyFrom(*tmp2);
+			tmp2->free();
+			delete tmp2;
+		}
+	}
+	tmp.free();
+
+	w = 8;
+	h = 10;
+	tmp.create(w, h, g_system->getOverlayFormat());
+	for (int i = 0; i < 12; i++) {
+		tmp.fillRect(Common::Rect(0, 0, w, h), _colorKey);
+
+		char buf[2];
+		buf[0] = i == 10 ? '*' : i == 11 ? ' ' : '0' + i;
+		buf[1] = 0;
+
+		int c = i > 9 ? _colorBlue : _colorOrange;
+
+		_font.drawString(&tmp, buf, 0, 1, w, c, Graphics::kTextAlignLeft, 0, false);
+
+		Graphics::Surface *tmp2 = tmp.scale(w * _scale, h * _scale, true);
+		_sp[kSpNum0 + i].copyFrom(*tmp2);
+		tmp2->free();
+		delete tmp2;
+	}
+	tmp.free();
 }
 
 } // End of namespace GUI

@@ -57,12 +57,6 @@ namespace Tinsel {
  */
 #define CURRENT_VER 3
 
-//----------------- GLOBAL GLOBAL DATA --------------------
-
-int	g_thingHeld = 0;
-int	g_restoreCD = 0;
-SRSTATE g_SRstate = SR_IDLE;
-
 //----------------- EXTERN FUNCTIONS --------------------
 
 // in DOS_DW.C
@@ -86,7 +80,7 @@ struct SaveGameHeader {
 	uint32 ver;
 	char desc[SG_DESC_LEN];
 	TimeDate dateTime;
-	uint32 playTime;	
+	uint32 playTime;
 	bool scnFlag;
 	byte language;
 	uint16 numInterpreters;			// Savegame version 2 or later only
@@ -112,23 +106,47 @@ struct SFILES {
 	TimeDate dateTime;
 };
 
+//----------------- GLOBAL GLOBAL DATA --------------------
+
+int g_thingHeld = 0;
+int g_restoreCD = 0;
+SRSTATE g_SRstate = SR_IDLE;
+
 //----------------- LOCAL GLOBAL DATA --------------------
 
-// FIXME: Avoid non-const global vars
+// These vars are reset upon engine destruction
 
 static int	g_numSfiles = 0;
 static SFILES	g_savedFiles[MAX_SAVED_FILES];
 
 static bool g_NeedLoad = true;
 
-static SAVED_DATA *g_srsd = 0;
+static SAVED_DATA *g_srsd = nullptr;
 static int g_RestoreGameNumber = 0;
-static char *g_SaveSceneName = 0;
-static const char *g_SaveSceneDesc = 0;
+static char *g_SaveSceneName = nullptr;
+static const char *g_SaveSceneDesc = nullptr;
 static int *g_SaveSceneSsCount = 0;
-static SAVED_DATA *g_SaveSceneSsData = 0;	// points to 'SAVED_DATA ssdata[MAX_NEST]'
+static SAVED_DATA *g_SaveSceneSsData = nullptr;	// points to 'SAVED_DATA ssdata[MAX_NEST]'
 
 //------------- SAVE/LOAD SUPPORT METHODS ----------------
+
+void ResetVarsSaveLoad() {
+	g_thingHeld = 0;
+	g_restoreCD = 0;
+	g_SRstate = SR_IDLE;
+
+	g_numSfiles = 0;
+	memset(g_savedFiles, 0, sizeof(g_savedFiles));
+
+	g_NeedLoad = true;
+
+	g_srsd = nullptr;
+	g_RestoreGameNumber = 0;
+	g_SaveSceneName = nullptr;
+	g_SaveSceneDesc = nullptr;
+	g_SaveSceneSsCount = 0;
+	g_SaveSceneSsData = nullptr;
+}
 
 void setNeedLoad() {
 	g_NeedLoad = true;
@@ -163,7 +181,7 @@ static bool syncSaveGameHeader(Common::Serializer &s, SaveGameHeader &hdr) {
 	// NOTE: We can't use SAVEGAME_ID here when attempting to remove a saved game from the launcher,
 	// as there is no TinselEngine initialized then. This means that we can't check if this is a DW1
 	// or DW2 savegame in this case, but it doesn't really matter, as the saved game is about to be
-	// deleted anyway. Refer to bug #3387551.
+	// deleted anyway. Refer to bug #5819.
 	bool correctID = _vm ? (hdr.id == SAVEGAME_ID) : (hdr.id == DW1_SAVEGAME_ID || hdr.id == DW2_SAVEGAME_ID);
 
 	// Perform sanity check
@@ -190,7 +208,7 @@ static bool syncSaveGameHeader(Common::Serializer &s, SaveGameHeader &hdr) {
 		hdr.numInterpreters = NUM_INTERPRET;
 		s.syncAsUint16LE(hdr.numInterpreters);
 	} else {
-		if(_vm) // See comment above about bug #3387551
+		if(_vm) // See comment above about bug #5819
 			hdr.numInterpreters = (TinselV2 ? 70 : 64) - 20;
 		else
 			hdr.numInterpreters = 50; // This value doesn't matter since the saved game is being deleted.
@@ -245,8 +263,6 @@ static void syncSavedActor(Common::Serializer &s, SAVED_ACTOR &sa) {
 	s.syncAsUint16LE(sa.presPlayX);
 	s.syncAsUint16LE(sa.presPlayY);
 }
-
-extern void syncAllActorsAlive(Common::Serializer &s);
 
 static void syncNoScrollB(Common::Serializer &s, NOSCROLLB &ns) {
 	s.syncAsSint32LE(ns.ln);
@@ -442,25 +458,25 @@ static bool DoSync(Common::Serializer &s, int numInterp) {
 	}
 
 	if (TinselV2 && s.isLoading())
-		HoldItem(INV_NOICON);
+		_vm->_dialogs->HoldItem(INV_NOICON);
 
 	syncSavedData(s, *g_srsd, numInterp);
 	syncGlobInfo(s);		// Glitter globals
-	syncInvInfo(s);			// Inventory data
+	_vm->_dialogs->syncInvInfo(s); // Inventory data
 
 	// Held object
 	if (s.isSaving())
-		sg = WhichItemHeld();
+		sg = _vm->_dialogs->WhichItemHeld();
 	s.syncAsSint32LE(sg);
 	if (s.isLoading()) {
-		if (sg != -1 && !GetIsInvObject(sg))
+		if (sg != -1 && !_vm->_dialogs->GetIsInvObject(sg))
 			// Not a valid inventory object, so return false
 			return false;
 
 		if (TinselV2)
 			g_thingHeld = sg;
 		else
-			HoldItem(sg);
+			_vm->_dialogs->HoldItem(sg);
 	}
 
 	syncTimerInfo(s);		// Timer data
@@ -482,7 +498,7 @@ static bool DoSync(Common::Serializer &s, int numInterp) {
 	}
 
 	if (!TinselV2)
-		syncAllActorsAlive(s);
+		_vm->_actor->syncAllActorsAlive(s);
 
 	return true;
 }

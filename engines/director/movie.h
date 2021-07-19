@@ -68,22 +68,7 @@ struct InfoEntry {
 		return *this;
 	}
 
-	Common::String readString(bool pascal = true) {
-		Common::String res;
-
-		if (len == 0)
-			return res;
-
-		int start = pascal ? 1 : 0;
-
-		for (uint i = start; i < len; i++)
-			if (data[i] == '\r')
-				res += '\n';
-			else if (data[i] >= 0x20)
-				res += data[i];
-
-		return res;
-	}
+	Common::String readString(bool pascal = true);
 };
 
 struct InfoEntries {
@@ -102,7 +87,7 @@ public:
 	~Movie();
 
 	static Common::Rect readRect(Common::ReadStreamEndian &stream);
-	static InfoEntries loadInfoEntries(Common::SeekableReadStreamEndian &stream);
+	static InfoEntries loadInfoEntries(Common::SeekableReadStreamEndian &stream, uint16 version);
 
 	bool loadArchive();
 	void setArchive(Archive *archive);
@@ -117,15 +102,14 @@ public:
 	void clearSharedCast();
 	void loadSharedCastsFrom(Common::String filename);
 
-	CastMember *getCastMember(int castId);
-	CastMember *getCastMemberByName(const Common::String &name);
-	CastMember *getCastMemberByScriptId(int scriptId);
-	CastMemberInfo *getCastMemberInfo(int castId);
-	const Stxt *getStxt(int castId);
+	CastMember *getCastMember(CastMemberID memberID);
+	CastMember *getCastMemberByName(const Common::String &name, int castLib);
+	CastMemberInfo *getCastMemberInfo(CastMemberID memberID);
+	const Stxt *getStxt(CastMemberID memberID);
 
 	LingoArchive *getMainLingoArch();
 	LingoArchive *getSharedLingoArch();
-	ScriptContext *getScriptContext(ScriptType type, uint16 id);
+	ScriptContext *getScriptContext(ScriptType type, CastMemberID id);
 	Symbol getHandler(const Common::String &name);
 
 	// events.cpp
@@ -146,6 +130,8 @@ private:
 
 public:
 	Archive *_movieArchive;
+	uint16 _version;
+	Common::Platform _platform;
 	Common::Rect _movieRect;
 	uint16 _currentClickOnSpriteId;
 	uint16 _currentEditableTextChannel;
@@ -168,6 +154,13 @@ public:
 	int _keyCode;
 	byte _keyFlags;
 
+	int _selStart;
+	int _selEnd;
+
+	int _checkBoxType;
+
+	uint16 _currentHiliteChannelId;
+
 private:
 	Window *_window;
 	DirectorEngine *_vm;
@@ -183,6 +176,7 @@ private:
 	Common::String _script;
 	Common::String _directory;
 
+	uint16 _currentHandlingChannelId;
 	Channel *_currentDraggedChannel;
 	Common::Point _draggingSpritePos;
 };

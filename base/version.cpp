@@ -117,7 +117,9 @@ const char *gScummVMFeatures = ""
 	"MPEG2 "
 #endif
 
-#ifdef USE_FLUIDSYNTH
+#ifdef USE_FLUIDLITE
+	"FluidLite "
+#elif defined(USE_FLUIDSYNTH)
 	"FluidSynth "
 #endif
 
@@ -149,8 +151,20 @@ const char *gScummVMFeatures = ""
 	"PNG "
 #endif
 
+#ifdef USE_GIF
+	"GIF "
+#endif
+
 #ifdef ENABLE_VKEYBD
-	"virtual keyboard "
+	"VirtualKeyboard "
+#endif
+
+#ifdef ENABLE_EVENTRECORDER
+	"EventRecorder "
+#endif
+
+#ifdef USE_TASKBAR
+	"taskbar "
 #endif
 
 #ifdef USE_CLOUD
@@ -172,5 +186,20 @@ const char *gScummVMFeatures = ""
 #ifdef USE_SDL_NET
 	"SDL_net "
 #endif
+#endif
+#ifdef USE_TINYGL
+	"TinyGL "
+#endif
+#ifdef USE_OPENGL
+	"OpenGL "
+#ifdef USE_OPENGL_SHADERS
+	"(with shaders) "
+#endif
+#endif
+#ifdef USE_GLES2
+	"OpenGL ES 2 "
+#endif
+#ifdef USE_GLEW
+	"GLEW "
 #endif
 	;

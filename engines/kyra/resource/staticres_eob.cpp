@@ -91,7 +91,7 @@ bool StaticResource::loadEoBNpcData(Common::SeekableReadStream &stream, void *&p
 	for (int i = 0; i < size; i++, s++) {
 		s->id = stream.readByte();
 		s->flags = stream.readByte();
-		stream.read(s->name, 11);
+		s->name[0] = 0;
 		s->strengthCur = stream.readSByte();
 		s->strengthMax = stream.readSByte();
 		s->strengthExtCur = stream.readSByte();
@@ -351,7 +351,7 @@ void EoBCoreEngine::initStaticResource() {
 	_characterStatusStrings12 = _staticres->loadStrings(kEoBBaseCharStatusStrings12, temp);
 	_characterStatusStrings13 = _staticres->loadStrings(_flags.gameID == GI_EOB2 ? kEoBBaseCharStatusStrings132 : kEoBBaseCharStatusStrings131, temp);
 
-	_textInputCharacterLines = _staticres->loadStrings(kEoBBaseTextInputCharacterLines, temp);
+	_textInputCharacterLines = _staticres->loadStrings(kEoBBaseTextInputCharacterLines, _textInputCharacterLinesSize);
 	_textInputSelectStrings = _staticres->loadStrings(kEoBBaseTextInputSelectStrings, temp);
 
 	_levelGainStrings = _staticres->loadStrings(kEoBBaseLevelGainStrings, temp);
@@ -371,6 +371,7 @@ void EoBCoreEngine::initStaticResource() {
 
 	_encodeMonsterShpTable = _staticres->loadRawDataBe16(kEoBBaseEncodeMonsterDefs, temp);
 	_npcPreset = _staticres->loadEoBNpcData(kEoBBaseNpcPresets, temp);
+	_npcPresetNames = _staticres->loadStrings(kEoBBaseNpcPresetsNames, temp);
 
 	_teleporterShapeCoords = _staticres->loadRawData(kEoBBaseDscTelptrShpCoords, temp);
 	_portalSeq = (const int8 *)_staticres->loadRawData(kEoBBasePortalSeqData, temp);
@@ -468,9 +469,7 @@ void EoBCoreEngine::initStaticResource() {
 	_coneOfColdDest4 = (const int8 *)_staticres->loadRawData(kEoBBaseConeOfColdDest4, temp);
 	_coneOfColdGfxTbl = _staticres->loadRawData(kEoBBaseConeOfColdGfxTbl, _coneOfColdGfxTblSize);
 
-	void *sndInfo_ingame = 0;
-	void *sndInfo_intro = 0;
-	void *sndInfo_finale = 0;
+	_saveNamePatterns = _staticres->loadStrings(kEoBBaseSaveNamePatterns, temp);
 
 	if (_flags.platform == Common::kPlatformAmiga) {
 		const char *const *map = _staticres->loadStrings(kEoBBaseSoundMap, temp2);
@@ -485,41 +484,42 @@ void EoBCoreEngine::initStaticResource() {
 
 		const char *const *files = _staticres->loadStrings(kEoBBaseSoundFilesIngame, temp);
 		SoundResourceInfo_AmigaEoB ingame(files, temp, _amigaSoundMap, temp2);
-		sndInfo_ingame = &ingame;
 		files = _staticres->loadStrings(kEoBBaseSoundFilesIntro, temp);
 		SoundResourceInfo_AmigaEoB intro(files, temp, 0, 0);
-		sndInfo_intro = &intro;
 		files = _staticres->loadStrings(kEoBBaseSoundFilesFinale, temp);
 		SoundResourceInfo_AmigaEoB finale(files, temp, 0, 0);
-		sndInfo_finale = &finale;
+
+		_sound->initAudioResourceInfo(kMusicIngame, &ingame);
+		_sound->initAudioResourceInfo(kMusicIntro, &intro);
+		_sound->initAudioResourceInfo(kMusicFinale, &finale);
+
 	} else if (_flags.platform == Common::kPlatformFMTowns) {
 		const char *const *files = _staticres->loadStrings(kEoBBaseSoundFilesIngame, temp);
 		const uint8 *data = _staticres->loadRawData(kEoB2PcmSoundEffectsIngame, temp2);
 		SoundResourceInfo_TownsEoB ingame(files, temp, data, temp2, 127);
-		sndInfo_ingame = &ingame;
 		files = _staticres->loadStrings(kEoBBaseSoundFilesIntro, temp);
 		data = _staticres->loadRawData(kEoB2PcmSoundEffectsIntro, temp2);
 		SoundResourceInfo_TownsEoB intro(files, temp, data, temp2, 40);
-		sndInfo_intro = &intro;
 		files = _staticres->loadStrings(kEoBBaseSoundFilesFinale, temp);
 		data = _staticres->loadRawData(kEoB2PcmSoundEffectsFinale, temp2);
 		SoundResourceInfo_TownsEoB finale(files, temp, data, temp2, 40);
-		sndInfo_finale = &finale;
+
+		_sound->initAudioResourceInfo(kMusicIngame, &ingame);
+		_sound->initAudioResourceInfo(kMusicIntro, &intro);
+		_sound->initAudioResourceInfo(kMusicFinale, &finale);
+
 	} else if (_flags.platform != Common::kPlatformPC98) {
 		const char *const *files = _staticres->loadStrings(kEoBBaseSoundFilesIngame, temp);
 		SoundResourceInfo_PC ingame(files, temp);
-		sndInfo_ingame = &ingame;
 		files = _staticres->loadStrings(kEoBBaseSoundFilesIntro, temp);
 		SoundResourceInfo_PC intro(files, temp);
-		sndInfo_intro = &intro;
 		files = _staticres->loadStrings(kEoBBaseSoundFilesFinale, temp);
 		SoundResourceInfo_PC finale(files, temp);
-		sndInfo_finale = &finale;
-	}
 
-	_sound->initAudioResourceInfo(kMusicIngame, sndInfo_ingame);
-	_sound->initAudioResourceInfo(kMusicIntro, sndInfo_intro);
-	_sound->initAudioResourceInfo(kMusicFinale, sndInfo_finale);
+		_sound->initAudioResourceInfo(kMusicIngame, &ingame);
+		_sound->initAudioResourceInfo(kMusicIntro, &intro);
+		_sound->initAudioResourceInfo(kMusicFinale, &finale);
+	}
 
 	// Hard code the following strings, since EOB I doesn't have them in the original.
 	// EOB I doesn't have load and save menus, because there is only one single
@@ -527,22 +527,24 @@ void EoBCoreEngine::initStaticResource() {
 	// EOB I SegaCD actually has save/load menus with more than 1 slot if there is
 	// a RAM cart present). I supply the strings here, too...
 
-	static const char *const saveLoadStrings[7][4] = {
+	static const char *const saveLoadStrings[8][4] = {
 		{   "Cancel",   "Empty Slot",		"Save Game",    "Load Game"     },
 		{   "Abbr.",    "Leerer Slot",		"Speichern",    "  Laden"       },
 		{	" < < ",	"Posizione Vuota",	"Salva",		"Carica"	    },
 		{	"Anular",	"Sin Uso",			"Grabar",		"Cargar"	    },
 		{   0,          0,					0,					0			},
 		{	0,          0,					0,					0			},
-		{   "Cancel",   "\x82""d""\x82\x8d\x82\x90\x82\x94\x82\x99\x81""@""\x82\x92\x82\x85\x82\x87\x82\x89\x82\x8f\x82\x8e",		"Select save area",    "Select load data"     }
+		{   "Cancel",   "\x82""d""\x82\x8d\x82\x90\x82\x94\x82\x99\x81""@""\x82\x92\x82\x85\x82\x87\x82\x89\x82\x8f\x82\x8e",		"Select save area",    "Select load data"     },
+		{   "\x82\xe2\x82\xdf\x82\xe9",   "\x8b\xf3\x82\xab\x97\xcc\x88\xe6",	"\x82\xc7\x82\xb1\x82\xc9\x83""Z""\x81""|""\x83""u""\x82\xb5\x82\xdc\x82\xb7\x82\xa9\x81""H",	"\x82\xc7\x82\xea\x82\xf0\x83\x8d\x81""|""\x83""h""\x82\xb5\x82\xdc\x82\xb7\x82\xa9\x81""H"    }
 	};
 
-	static const char *const errorSlotEmptyString[6] = {
+	static const char *const errorSlotEmptyString[8] = {
 		"There is no game\rsaved in that slot!",
 		"Hier ist noch kein\rSpiel gespeichert!",
 		"Non c'\x0E alcun gioco\rsalvato in quella\rposizione!",
 		"No hay partidas\rgrabadas!",
 		"\r ""\x82\xBB\x82\xCC\x83""X""\x83\x8D\x83""b""\x83""g""\x82\xC9\x82\xCD\x83""Q""\x81""[""\x83\x80\x82\xAA\x83""Z""\x81""[""\x83""u\r ""\x82\xB3\x82\xEA\x82\xC4\x82\xA2\x82\xDC\x82\xB9\x82\xF1\x81""B",
+		"\x8b\xf3\x82\xab\x97\xcc\x88\xe6",
 		0
 	};
 
@@ -570,14 +572,19 @@ void EoBCoreEngine::initStaticResource() {
 		_errorSlotEmptyString = errorSlotEmptyString[3];
 		break;
 	case Common::JA_JPN:
-		// EOB II FM-Towns uses English here.
-		// Only the empty slot warning is in Japanese.
-		_saveLoadStrings = saveLoadStrings[0];
-		_errorSlotEmptyString = errorSlotEmptyString[4];
+		if (_flags.platform == Common::kPlatformSegaCD) {
+			_saveLoadStrings = saveLoadStrings[7];
+			_errorSlotEmptyString = errorSlotEmptyString[6];
+		} else {
+			// EOB II FM-Towns uses English here.
+			// Only the empty slot warning is in Japanese.
+			_saveLoadStrings = saveLoadStrings[0];
+			_errorSlotEmptyString = errorSlotEmptyString[4];
+		}
 		break;
 	default:
 		_saveLoadStrings = saveLoadStrings[5];
-		_errorSlotEmptyString = errorSlotEmptyString[5];
+		_errorSlotEmptyString = errorSlotEmptyString[7];
 		break;
 	}
 
@@ -1723,7 +1730,6 @@ void DarkMoonEngine::initStaticResource() {
 
 	_ascii2SjisTables = _staticres->loadStrings(kEoB2Ascii2SjisTables, temp);
 	_ascii2SjisTables2 = _staticres->loadStrings(kEoB2Ascii2SjisTables2, temp);
-	_saveNamePatterns = _staticres->loadStrings(kEoB2SaveNamePatterns, temp);
 
 	_monsterAcHitChanceTable1 = _monsterAcHitChanceTbl1;
 	_monsterAcHitChanceTable2 = _monsterAcHitChanceTbl2;
@@ -1760,7 +1766,7 @@ void DarkMoonEngine::initStaticResource() {
 		{
 			"\r No se ha encontrado ninguna partida\r de EOB. Comprueba que el fichero de la partida que quieres\r transferir se encuentra en el\r directorio de ScummVM para los\r juegos guardados. Si tienes\r varios de estos directorios debes\r copiar el fichero en tu directorio\r de guardado de EOB II.\r Quieres volver a intentarlo?",
 			"Game ID",
-			"\r Parece que ya se ha vencido\r Xanathar aqui. Deseas transferir\r el grupo que ha\r finalizado el juego? En caso contrario\r puedes seleccionar otra partida\r de las anteriores guardadas.",
+			"\r Parece que ya se ha vencido\r Xanathar aqui. Deseas transferir\r el grupo que ha finalizado el\r juego? En caso contrario puedes\r seleccionar otra partida de las\r anteriores guardadas.",
 			"Escoge Fichero",
 			"\r\r   Un momento\r   por favor..."
 		},
@@ -1794,18 +1800,18 @@ void DarkMoonEngine::initSpells() {
 
 	int temp;
 	const uint8 *data = _staticres->loadRawData(kEoBBaseSpellProperties, temp);
-	Common::MemoryReadStreamEndian *src = new Common::MemoryReadStreamEndian(data, temp, _flags.platform == Common::kPlatformAmiga);
+	Common::MemoryReadStreamEndian src(data, temp, _flags.platform == Common::kPlatformAmiga);
 
 	for (int i = 0; i < _numSpells; i++) {
 		EoBSpell *s = &_spells[i];
-		src->skip(8);
-		s->flags = src->readUint16();
-		src->skip(8);
-		s->sound = src->readByte();
+		src.skip(8);
+		s->flags = src.readUint16();
+		src.skip(8);
+		s->sound = src.readByte();
 		if (_flags.platform == Common::kPlatformAmiga)
-			src->skip(1);
-		s->effectFlags = src->readUint32();
-		s->damageFlags = src->readUint16();
+			src.skip(1);
+		s->effectFlags = src.readUint32();
+		s->damageFlags = src.readUint16();
 	}
 }
 

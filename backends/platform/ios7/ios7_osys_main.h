@@ -25,12 +25,12 @@
 
 #include "graphics/surface.h"
 #include "backends/platform/ios7/ios7_common.h"
-#include "backends/base-backend.h"
+#include "backends/modular-backend.h"
 #include "common/events.h"
 #include "common/str.h"
+#include "common/ustr.h"
 #include "audio/mixer_intern.h"
 #include "backends/fs/posix/posix-fs-factory.h"
-#include "graphics/colormasks.h"
 #include "graphics/palette.h"
 
 #include <AudioToolbox/AudioQueue.h>
@@ -53,9 +53,8 @@ struct AQCallbackStruct {
 	AudioStreamBasicDescription dataFormat;
 };
 
-class OSystem_iOS7 : public EventsBaseBackend, public PaletteManager {
+class OSystem_iOS7 : public EventsBaseBackend, public ModularMutexBackend, public PaletteManager {
 protected:
-	static const OSystem::GraphicsMode s_supportedGraphicsModes[];
 	static AQCallbackStruct s_AudioQueue;
 	static SoundProc s_soundCallback;
 	static void *s_soundParam;
@@ -123,98 +122,90 @@ public:
 
 	static OSystem_iOS7 *sharedInstance();
 
-	virtual void initBackend();
+	virtual void initBackend() override;
 
-	virtual void engineInit();
-	virtual void engineDone();
+	virtual void engineInit() override;
+	virtual void engineDone() override;
 
-	virtual bool hasFeature(Feature f);
-	virtual void setFeatureState(Feature f, bool enable);
-	virtual bool getFeatureState(Feature f);
-	virtual const GraphicsMode *getSupportedGraphicsModes() const;
-	virtual int getDefaultGraphicsMode() const;
-	virtual bool setGraphicsMode(int mode);
-	virtual int getGraphicsMode() const;
-	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format);
+	virtual bool hasFeature(Feature f) override;
+	virtual void setFeatureState(Feature f, bool enable) override;
+	virtual bool getFeatureState(Feature f) override;
+	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format) override;
 
-	virtual void beginGFXTransaction();
-	virtual TransactionError endGFXTransaction();
+	virtual void beginGFXTransaction() override;
+	virtual TransactionError endGFXTransaction() override;
 
-	virtual int16 getHeight();
-	virtual int16 getWidth();
+	virtual int16 getHeight() override;
+	virtual int16 getWidth() override;
 
-    bool touchpadModeEnabled() const;
+	bool touchpadModeEnabled() const;
 
 #ifdef USE_RGB_COLOR
-	virtual Graphics::PixelFormat getScreenFormat() const { return _framebuffer.format; }
-	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const;
+	virtual Graphics::PixelFormat getScreenFormat() const override { return _framebuffer.format; }
+	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const override;
 #endif
 
-	virtual PaletteManager *getPaletteManager() { return this; }
+	virtual PaletteManager *getPaletteManager() override { return this; }
 protected:
 	// PaletteManager API
-	virtual void setPalette(const byte *colors, uint start, uint num);
-	virtual void grabPalette(byte *colors, uint start, uint num) const;
+	virtual void setPalette(const byte *colors, uint start, uint num) override;
+	virtual void grabPalette(byte *colors, uint start, uint num) const override;
 
 public:
-	virtual void copyRectToScreen(const void *buf, int pitch, int x, int y, int w, int h);
-	virtual void updateScreen();
-	virtual Graphics::Surface *lockScreen();
-	virtual void unlockScreen();
-	virtual void setShakePos(int shakeXOffset, int shakeYOffset);
+	virtual void copyRectToScreen(const void *buf, int pitch, int x, int y, int w, int h) override;
+	virtual void updateScreen() override;
+	virtual Graphics::Surface *lockScreen() override;
+	virtual void unlockScreen() override;
+	virtual void setShakePos(int shakeXOffset, int shakeYOffset) override;
 
-	virtual void showOverlay();
-	virtual void hideOverlay();
-	virtual void clearOverlay();
-	virtual void grabOverlay(void *buf, int pitch);
-	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h);
-	virtual int16 getOverlayHeight();
-	virtual int16 getOverlayWidth();
-	virtual Graphics::PixelFormat getOverlayFormat() const { return Graphics::createPixelFormat<5551>(); }
+	virtual void showOverlay() override;
+	virtual void hideOverlay() override;
+	virtual bool isOverlayVisible() const override { return _videoContext->overlayVisible; }
+	virtual void clearOverlay() override;
+	virtual void grabOverlay(Graphics::Surface &surface) override;
+	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h) override;
+	virtual int16 getOverlayHeight() override;
+	virtual int16 getOverlayWidth() override;
+	virtual Graphics::PixelFormat getOverlayFormat() const override;
 
-	virtual bool showMouse(bool visible);
+	virtual bool showMouse(bool visible) override;
 
-	virtual void warpMouse(int x, int y);
-	virtual void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor = 255, bool dontScale = false, const Graphics::PixelFormat *format = NULL);
-	virtual void setCursorPalette(const byte *colors, uint start, uint num);
+	virtual void warpMouse(int x, int y) override;
+	virtual void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor = 255, bool dontScale = false, const Graphics::PixelFormat *format = NULL) override;
+	virtual void setCursorPalette(const byte *colors, uint start, uint num) override;
 
-	virtual bool pollEvent(Common::Event &event);
-	virtual uint32 getMillis(bool skipRecord = false);
-	virtual void delayMillis(uint msecs);
-
-	virtual MutexRef createMutex(void);
-	virtual void lockMutex(MutexRef mutex);
-	virtual void unlockMutex(MutexRef mutex);
-	virtual void deleteMutex(MutexRef mutex);
+	virtual bool pollEvent(Common::Event &event) override;
+	virtual uint32 getMillis(bool skipRecord = false) override;
+	virtual void delayMillis(uint msecs) override;
 
 	static void mixCallback(void *sys, byte *samples, int len);
 	virtual void setupMixer(void);
 	virtual void setTimerCallback(TimerProc callback, int interval);
-	virtual int getScreenChangeID() const { return _screenChangeCount; }
-	virtual void quit();
+	virtual int getScreenChangeID() const override { return _screenChangeCount; }
+	virtual void quit() override;
 
-	virtual void addSysArchivesToSearchSet(Common::SearchSet &s, int priority = 0);
-	virtual void getTimeAndDate(TimeDate &t) const;
+	virtual void addSysArchivesToSearchSet(Common::SearchSet &s, int priority = 0) override;
+	virtual void getTimeAndDate(TimeDate &td, bool skipRecord = false) const override;
 
-	virtual Audio::Mixer *getMixer();
+	virtual Audio::Mixer *getMixer() override;
 
 	void startSoundsystem();
 	void stopSoundsystem();
 
-	virtual Common::String getDefaultConfigFileName();
+	virtual Common::String getDefaultConfigFileName() override;
 
-	virtual void logMessage(LogMessageType::Type type, const char *message);
+	virtual void logMessage(LogMessageType::Type type, const char *message) override;
 	virtual void fatalError() override;
 
-	virtual bool hasTextInClipboard();
-	virtual Common::String getTextFromClipboard();
-	virtual bool setTextInClipboard(const Common::String &text);
+	virtual bool hasTextInClipboard() override;
+	virtual Common::U32String getTextFromClipboard() override;
+	virtual bool setTextInClipboard(const Common::U32String &text) override;
 
-	virtual bool openUrl(const Common::String &url);
+	virtual bool openUrl(const Common::String &url) override;
 
-	virtual Common::String getSystemLanguage() const;
+	virtual Common::String getSystemLanguage() const override;
 
-	virtual bool isConnectionLimited();
+	virtual bool isConnectionLimited() override;
 
 protected:
 	void initVideoContext();

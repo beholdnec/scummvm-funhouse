@@ -69,11 +69,11 @@ enum Sequence {
 	//36: Vividos only: magic?
 	//37: Mythran only: magic?
 	//38: Vividos only: ?
-	//39: unused
+	//39: unused in u8
 	//40: ? - could be a slow attack or quick block ???
-	//41: unused
+	//41: unused in u8
 	keepBalance = 42,
-	//43: unused
+	//43: unused in u8
 	fallBackwards = 44,
 	hang = 45,
 	climbUp = 46,
@@ -91,30 +91,71 @@ enum Sequence {
 	kick = 58,
 	startBlock = 59,
 	stopBlock = 60,
-	            //61: unused
-	            //62: unused
-	            //63: unused
-	// Some crusader-specific animations (some use the same IDs as above)
-	reload = 15,
-	combatRollLeft = 23,
-	combatRollRight = 24,
-	walkWithGun = 25,
+	            //61: unused in u8
+	            //62: unused in u8
+	            //63: unused in u8
+
+	// All belowa are crusader-specific animations (some use the same IDs as above)
+	standCru = 0,
+	walkCru = 1,
+	retreatSmallWeapon = 2,
+	runCru = 3,
+	combatStandSmallWeapon = 4,
+	readySmallWeapon = 7,
+	fireSmallWeapon = 8,
+	reloadSmallWeapon = 10,
+	unreadySmallWeapon = 11,
+	readyLargeWeapon = 12,
+	fireLargeWeapon = 13,
+	reload = 14,
+	reloadLargeWeapon = 15,
+	unreadyLargeWeapon = 16,
+	fallBackwardsCru = 18,
+	fallForwardsCru = 20,
+	kneelCombatRollLeft = 23,
+	kneelCombatRollRight = 24,
+	stopRunningAndDrawLargeWeapon = 25,
 	kneelAndFire = 26,
+	slideLeft = 28,
 	slideRight = 29,
-	startRunWithLargeWeapon = 31,
+	unknownAnim30 = 30,
+	startRunLargeWeapon = 31,
 	teleportIn = 32,
 	teleportOut = 33,
-	startRunWithSmallWeapon = 34,
-	startRunWithLargeWeapon2 = 35,
+	startRunSmallWeapon = 34,
+	startRunLargeWeapon2 = 35,
+	advanceSmallWeapon = 36,
+	combatStandLargeWeapon = 37,
 	startRun = 38,
-	stopRunningAndDrawWeapon = 39,
-	kneelAndFire2 = 42,
-	kneelAndFire3 = 43,
-	runWithLargeWeapon = 50,
+	stopRunningAndDrawSmallWeapon = 39,
+	kneelStartCru = 40,
+	kneelEndCru = 41,
+	kneelAndFireSmallWeapon = 42,
+	kneelAndFireLargeWeapon = 43,
+	advanceLargeWeapon = 44,
+	retreatLargeWeapon = 45,
+	kneelingWithSmallWeapon = 46,
+	kneelingWithLargeWeapon = 47,
+	combatRunSmallWeapon = 48,
+	combatRunLargeWeapon = 49,
+	brightKneelAndFireLargeWeapon = 50,
+	kneelingRetreat = 51,
+	kneelingAdvance = 52,
+	kneelingSlowRetreat = 53,
+	brightFireLargeWpn = 54,
+	electrocuted = 55,
+	jumpForward = 56,
 	surrender = 57,
+	quickJumpCru = 58,
+	jumpLanding = 59,
 	surrenderStand = 60,
-	teleportInReplacement = 0x1020,	//!< See notes in Actor::I_doAnim
-	teleportOutReplacement = 0x1021	//!< See notes in Actor::I_doAnim
+	combatRollLeft = 61,
+	combatRollRight = 62,
+	finishFiring = 63,
+
+	crusaderAbsoluteAnimFlag = 0x1000, //!< Bit mask magic to say we want an exact number, don't do mapping from U8 animation numbers
+	teleportInReplacement = crusaderAbsoluteAnimFlag | teleportIn,	//!< See notes in Actor::receiveHitCru
+	teleportOutReplacement = crusaderAbsoluteAnimFlag | teleportOut	//!< See notes in Actor::receiveHitCru
 };
 
 enum Result {
@@ -124,6 +165,9 @@ enum Result {
 };
 
 bool isCombatAnim(const Sequence anim);
+bool isCombatAnimU8(const Sequence anim);
+bool isCombatAnimCru(const Sequence anim);
+bool isCastAnimU8(const Sequence anim);
 Sequence checkWeapon(const Sequence nextanim, const Sequence lastanim);
 
 } // End of namespace Animation

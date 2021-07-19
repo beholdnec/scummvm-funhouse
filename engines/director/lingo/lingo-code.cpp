@@ -43,7 +43,11 @@
 // ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 // THIS SOFTWARE.
 
+#include "graphics/macgui/macwindowmanager.h"
+#include "graphics/macgui/mactext.h"
+
 #include "director/director.h"
+#include "director/castmember.h"
 #include "director/movie.h"
 #include "director/score.h"
 #include "director/sprite.h"
@@ -56,7 +60,6 @@
 #include "director/lingo/lingo-code.h"
 #include "director/lingo/lingo-object.h"
 #include "director/lingo/lingo-the.h"
-#include "director/lingo/lingo-gr.h"
 
 namespace Director {
 
@@ -69,41 +72,41 @@ static struct FuncDescr {
 	{ LC::c_asserterror,	"c_asserterror",	"" },
 	{ LC::c_asserterrordone,"c_asserterrordone","" },
 	{ LC::c_add,			"c_add",			"" },
-	{ LC::c_putafter,		"c_putafter",		"" },	// D3
 	{ LC::c_ampersand,		"c_ampersand",		"" },
 	{ LC::c_and,			"c_and",			"" },
 	{ LC::c_argcnoretpush,	"c_argcnoretpush",	"i" },
 	{ LC::c_argcpush,		"c_argcpush",		"i" },
 	{ LC::c_arraypush,		"c_arraypush",		"i" },
 	{ LC::c_assign,			"c_assign",			""  },
-	{ LC::c_putbefore,		"c_putbefore",		"" },	// D3
 	{ LC::c_callcmd,		"c_callcmd",		"si" },
 	{ LC::c_callfunc,		"c_callfunc",		"si" },
-	{ LC::c_charOf,			"c_charOf",			"" },	// D3
 	{ LC::c_charToOf,		"c_charToOf",		"" },	// D3
+	{ LC::c_charToOfRef,	"c_charToOfRef",	"" },	// D3
 	{ LC::c_concat,			"c_concat",			"" },
 	{ LC::c_constpush,		"c_constpush",		"s" },
 	{ LC::c_contains,		"c_contains",		"" },
+	{ LC::c_delete,			"c_delete", 		"" },
 	{ LC::c_div,			"c_div",			"" },
 	{ LC::c_eq,				"c_eq",				"" },
-	{ LC::c_eval,			"c_eval",			"s" },
+	{ LC::c_field,			"c_field",			"" },
+	{ LC::c_fieldref,		"c_fieldref",		"" },
 	{ LC::c_floatpush,		"c_floatpush",		"f" },
+	{ LC::c_globalpush,		"c_globalpush",		"s" },
+	{ LC::c_globalrefpush,	"c_globalrefpush",	"s" },
 	{ LC::c_ge,				"c_ge",				"" },
-	{ LC::c_goto,			"c_goto",			"" },
-	{ LC::c_gotoloop,		"c_gotoloop",		"" },
-	{ LC::c_gotonext,		"c_gotonext",		"" },
-	{ LC::c_gotoprevious,	"c_gotoprevious",	"" },
 	{ LC::c_gt,				"c_gt",				"" },
 	{ LC::c_hilite,			"c_hilite",			"" },
 	{ LC::c_intersects,		"c_intersects",		"" },
 	{ LC::c_intpush,		"c_intpush",		"i" },
-	{ LC::c_itemOf,			"c_itemOf",			"" },	// D3
 	{ LC::c_itemToOf,		"c_itemToOf",		"" },	// D3
+	{ LC::c_itemToOfRef,	"c_itemToOfRef",	"" },	// D3
 	{ LC::c_jump,			"c_jump",			"o" },
 	{ LC::c_jumpifz,		"c_jumpifz",		"o" },
 	{ LC::c_le,				"c_le",				"" },
-	{ LC::c_lineOf,			"c_lineOf",			"" },	// D3
 	{ LC::c_lineToOf,		"c_lineToOf",		"" },	// D3
+	{ LC::c_lineToOfRef,	"c_lineToOfRef",	"" },	// D3
+	{ LC::c_localpush,		"c_localpush",		"s" },
+	{ LC::c_localrefpush,	"c_localrefpush",	"s" },
 	{ LC::c_lt,				"c_lt",				"" },
 	{ LC::c_mod,			"c_mod",			"" },
 	{ LC::c_mul,			"c_mul",			"" },
@@ -111,14 +114,16 @@ static struct FuncDescr {
 	{ LC::c_negate,			"c_negate",			"" },
 	{ LC::c_neq,			"c_neq",			"" },
 	{ LC::c_not,			"c_not",			"" },
-	{ LC::c_objectpropassign,"c_objectpropassign","ss" }, // object, prop
-	{ LC::c_objectproppush,	"c_objectproppush","ss" }, // object, prop
+	{ LC::c_objectpropassign,"c_objectpropassign","s" }, // prop
+	{ LC::c_objectproppush,	"c_objectproppush","s" }, // prop
 	{ LC::c_of,				"c_of",				"" },
 	{ LC::c_or,				"c_or",				"" },
-	{ LC::c_play,			"c_play",			"" },
 	{ LC::c_procret,		"c_procret",		"" },
 	{ LC::c_proparraypush,	"c_proparraypush",	"i" },
-	{ LC::c_setImmediate,	"c_setImmediate",	"i" },
+	{ LC::c_proppush,		"c_proppush",		"s" },
+	{ LC::c_proprefpush,	"c_proprefpush",	"s" },
+	{ LC::c_putafter,		"c_putafter",		"" },	// D3
+	{ LC::c_putbefore,		"c_putbefore",		"" },	// D3
 	{ LC::c_starts,			"c_starts",			"" },
 	{ LC::c_stringpush,		"c_stringpush",		"s" },
 	{ LC::c_sub,			"c_sub",			"" },
@@ -131,15 +136,16 @@ static struct FuncDescr {
 	{ LC::c_themenuentitypush,"c_themenuentitypush","EF" },
 	{ LC::c_themenuitementityassign,"c_themenuitementityassign","EF" },
 	{ LC::c_varpush,		"c_varpush",		"s" },
+	{ LC::c_varrefpush,		"c_varrefpush",		"s" },
 	{ LC::c_voidpush,		"c_voidpush",		""  },
 	{ LC::c_whencode,		"c_whencode",		"s" },
 	{ LC::c_within,			"c_within",			"" },
-	{ LC::c_wordOf,			"c_wordOf",			"" },	// D3
 	{ LC::c_wordToOf,		"c_wordToOf",		"" },	// D3
+	{ LC::c_wordToOfRef,	"c_wordToOfRef",	"" },	// D3
 	{ LC::c_xpop,			"c_xpop",			""  },
 	{ LC::cb_call,			"cb_call",			"N" },
 	{ LC::cb_delete,		"cb_delete",		"i" },
-	{ LC::cb_field,			"cb_field",			"" },
+	{ LC::cb_hilite,		"cb_hilite",		"" },
 	{ LC::cb_globalassign,	"cb_globalassign",	"N" },
 	{ LC::cb_globalpush,	"cb_globalpush",	"N" },
 	{ LC::cb_list,			"cb_list",			"" },
@@ -193,25 +199,19 @@ void Lingo::pushVoid() {
 	push(d);
 }
 
-Datum Lingo::pop(bool eval) {
+Datum Lingo::pop() {
 	assert (_stack.size() != 0);
 
 	Datum ret = _stack.back();
 	_stack.pop_back();
-	if (eval) {
-		ret = ret.eval();
-	}
 
 	return ret;
 }
 
-Datum Lingo::peek(uint offset, bool eval) {
+Datum Lingo::peek(uint offset) {
 	assert (_stack.size() > offset);
 
 	Datum ret = _stack[_stack.size() - 1 - offset];
-	if (eval) {
-		ret = ret.eval();
-	}
 
 	return ret;
 }
@@ -265,11 +265,8 @@ void Lingo::pushContext(const Symbol funcSym, bool allowRetVal, Datum defaultRet
 		for (int i = symNArgs - 1; i >= 0; i--) {
 			Common::String name = (*funcSym.argNames)[i];
 			if (!localvars->contains(name)) {
-				g_lingo->varCreate(name, false, localvars);
-				Datum arg(name);
-				arg.type = VAR;
 				Datum value = g_lingo->pop();
-				g_lingo->varAssign(arg, value, false, localvars);
+				(*localvars)[name] = value;
 			} else {
 				warning("Argument %s already defined", name.c_str());
 				g_lingo->pop();
@@ -292,7 +289,7 @@ void Lingo::pushContext(const Symbol funcSym, bool allowRetVal, Datum defaultRet
 
 	g_lingo->_callstack.push_back(fp);
 
-	if (debugChannelSet(5, kDebugLingoExec)) {
+	if (debugChannelSet(2, kDebugLingoExec)) {
 		g_lingo->printCallStack(0);
 	}
 }
@@ -304,7 +301,7 @@ void Lingo::popContext() {
 
 	if (_stack.size() == fp->stackSizeBefore + 1) {
 		if (!fp->allowRetVal) {
-			warning("dropping return value");
+			debugC(5, kDebugLingoExec, "dropping return value");
 			g_lingo->pop();
 		}
 	} else if (_stack.size() == fp->stackSizeBefore) {
@@ -335,7 +332,7 @@ void Lingo::popContext() {
 		g_lingo->_localvars = fp->localvars;
 	}
 
-	if (debugChannelSet(5, kDebugLingoExec)) {
+	if (debugChannelSet(2, kDebugLingoExec)) {
 		g_lingo->printCallStack(g_lingo->_pc);
 	}
 
@@ -388,10 +385,9 @@ void LC::c_symbolpush() {
 }
 
 void LC::c_namepush() {
-	Datum d;
 	int i = g_lingo->readInt();
+	Datum d(Common::String(g_lingo->_currentArchive->getName(i)));
 	d.type = SYMBOL;
-	d.u.s = new Common::String(g_lingo->_currentArchive->getName(i));
 	g_lingo->push(d);
 }
 
@@ -434,8 +430,8 @@ void LC::c_proparraypush() {
 	d.u.parr = new PropertyArray;
 
 	for (int i = 0; i < arraySize; i++) {
-		Datum p = g_lingo->pop();
 		Datum v = g_lingo->pop();
+		Datum p = g_lingo->pop();
 
 		PCell cell = PCell(p, v);
 		d.u.parr->insert_at(0, cell);
@@ -444,33 +440,56 @@ void LC::c_proparraypush() {
 	g_lingo->push(d);
 }
 
-void LC::c_varpush() {
+void LC::c_varrefpush() {
 	Common::String name(g_lingo->readString());
-	Datum d;
-
-	// In immediate mode we will push variables as strings
-	// This is used for playAccel
-	if (g_lingo->_immediateMode) {
-		g_lingo->push(Datum(Common::String(name)));
-
-		return;
-	}
-
-	// Looking for the cast member constants
-	if (g_director->getVersion() < 400 || g_director->getCurrentMovie()->_allowOutdatedLingo) {
-		int val = castNumToNum(name.c_str());
-
-		if (val != -1) {
-			d.type = INT;
-			d.u.i = val;
-			g_lingo->push(d);
-			return;
-		}
-	}
-
-	d.type = VAR;
-	d.u.s = new Common::String(name);
+	Datum d(name);
+	d.type = VARREF;
 	g_lingo->push(d);
+}
+
+void LC::c_globalrefpush() {
+	Common::String name(g_lingo->readString());
+	Datum d(name);
+	d.type = GLOBALREF;
+	g_lingo->push(d);
+}
+
+void LC::c_localrefpush() {
+	Common::String name(g_lingo->readString());
+	Datum d(name);
+	d.type = LOCALREF;
+	g_lingo->push(d);
+}
+
+void LC::c_proprefpush() {
+	Common::String name(g_lingo->readString());
+	Datum d(name);
+	d.type = PROPREF;
+	g_lingo->push(d);
+}
+
+void LC::c_varpush() {
+	LC::c_varrefpush();
+	Datum d = g_lingo->pop();
+	g_lingo->push(g_lingo->varFetch(d));
+}
+
+void LC::c_globalpush() {
+	LC::c_globalrefpush();
+	Datum d = g_lingo->pop();
+	g_lingo->push(g_lingo->varFetch(d));
+}
+
+void LC::c_localpush() {
+	LC::c_localrefpush();
+	Datum d = g_lingo->pop();
+	g_lingo->push(g_lingo->varFetch(d));
+}
+
+void LC::c_proppush() {
+	LC::c_proprefpush();
+	Datum d = g_lingo->pop();
+	g_lingo->push(g_lingo->varFetch(d));
 }
 
 void LC::c_stackpeek() {
@@ -485,32 +504,12 @@ void LC::c_stackdrop() {
 	}
 }
 
-void LC::c_setImmediate() {
-	g_lingo->_immediateMode = g_lingo->readInt();
-}
-
 void LC::c_assign() {
 	Datum d1, d2;
-	d1 = g_lingo->pop(false);
+	d1 = g_lingo->pop();
 	d2 = g_lingo->pop();
 
 	g_lingo->varAssign(d1, d2);
-}
-
-void LC::c_eval() {
-	LC::c_varpush();
-
-	Datum d;
-	d = g_lingo->pop(false);
-
-	if (d.type != VAR) { // It could be cast ref
-		g_lingo->push(d);
-		return;
-	}
-
-	d = g_lingo->varFetch(d);
-
-	g_lingo->push(d);
 }
 
 void LC::c_theentitypush() {
@@ -564,18 +563,14 @@ void LC::c_themenuitementityassign() {
 }
 
 void LC::c_objectproppush() {
-	Datum objName(g_lingo->readString());
-	objName.type = VAR;
-	Datum obj = g_lingo->varFetch(objName);
+	Datum obj = g_lingo->pop();
 	Common::String propName = g_lingo->readString();
 
-	g_lingo->push(g_lingo->getObjectProp(obj, propName));
+	g_lingo->getObjectProp(obj, propName);
 }
 
 void LC::c_objectpropassign() {
-	Datum objName(g_lingo->readString());
-	objName.type = VAR;
-	Datum obj = g_lingo->varFetch(objName);
+	Datum obj = g_lingo->pop();
 	Common::String propName = g_lingo->readString();
 
 	Datum d = g_lingo->pop();
@@ -783,7 +778,7 @@ void LC::c_ampersand() {
 }
 
 void LC::c_putbefore() {
-	Datum var = g_lingo->pop(false);
+	Datum var = g_lingo->pop();
 	Datum a = g_lingo->pop();
 	Datum b = g_lingo->varFetch(var);
 
@@ -792,7 +787,7 @@ void LC::c_putbefore() {
 }
 
 void LC::c_putafter() {
-	Datum var = g_lingo->pop(false);
+	Datum var = g_lingo->pop();
 	Datum a = g_lingo->pop();
 	Datum b = g_lingo->varFetch(var);
 
@@ -812,8 +807,8 @@ void LC::c_contains() {
 	Datum d2 = g_lingo->pop();
 	Datum d1 = g_lingo->pop();
 
-	Common::String s1 = toLowercaseMac(d1.asString());
-	Common::String s2 = toLowercaseMac(d2.asString());
+	Common::String s1 = g_lingo->normalizeString(d1.asString());
+	Common::String s2 = g_lingo->normalizeString(d2.asString());
 
 	int res = s1.contains(s2) ? 1 : 0;
 
@@ -824,8 +819,8 @@ void LC::c_starts() {
 	Datum d2 = g_lingo->pop();
 	Datum d1 = g_lingo->pop();
 
-	Common::String s1 = toLowercaseMac(d1.asString());
-	Common::String s2 = toLowercaseMac(d2.asString());
+	Common::String s1 = g_lingo->normalizeString(d1.asString());
+	Common::String s2 = g_lingo->normalizeString(d2.asString());
 
 	int res = s1.hasPrefix(s2) ? 1 : 0;
 
@@ -848,7 +843,8 @@ void LC::c_intersects() {
 		return;
 	}
 
-	if (sprite1->_sprite->_ink == kInkTypeMatte && sprite2->_sprite->_ink == kInkTypeMatte) {
+	// don't regard quick draw shape as matte type
+	if ((!sprite1->_sprite->isQDShape() && sprite1->_sprite->_ink == kInkTypeMatte) && (!sprite2->_sprite->isQDShape() && sprite2->_sprite->_ink == kInkTypeMatte)) {
 		g_lingo->push(Datum(sprite2->isMatteIntersect(sprite1)));
 	} else {
 		g_lingo->push(Datum(sprite2->getBbox().intersects(sprite1->getBbox())));
@@ -868,96 +864,147 @@ void LC::c_within() {
 		return;
 	}
 
-	if (sprite1->_sprite->_ink == kInkTypeMatte && sprite2->_sprite->_ink == kInkTypeMatte) {
+	// don't regard quick draw shape as matte type
+	if ((!sprite1->_sprite->isQDShape() && sprite1->_sprite->_ink == kInkTypeMatte) && (!sprite2->_sprite->isQDShape() && sprite2->_sprite->_ink == kInkTypeMatte)) {
 		g_lingo->push(Datum(sprite2->isMatteWithin(sprite1)));
 	} else {
-		g_lingo->push(Datum(sprite1->getBbox().contains(sprite2->getBbox())));
+		g_lingo->push(Datum(sprite2->getBbox().contains(sprite1->getBbox())));
 	}
 }
 
 Datum LC::chunkRef(ChunkType type, int startChunk, int endChunk, const Datum &src) {
 	// A chunk expression is made up of 0 or more chunks within a source text.
-	// These chunks are called chars, words, items, or lines, but it's easier to think of them
-	// as a substring between 0 or more skip characters and a break character (or the end of the string).
 	// This function returns a reference to the source text, the start index of the first chunk,
 	// and the end index of the last chunk in the chunk expression.
 
-	if (startChunk < 1 || (0 > endChunk && endChunk < startChunk))
+	// startChunk == -30000 means return the last chunk
+	if (startChunk < 1 && startChunk != -30000)
 		return src;
 
-	if (endChunk < 1)
+	if (endChunk < 1 || startChunk == -30000)
 		endChunk = startChunk;
 
-	Common::String skipChars;
-	Common::String breakChars;
+	Common::U32String str = g_lingo->evalChunkRef(src);
+
+	// these hold the bounds of the last chunk in the expression
+	int chunkNum = 0;
+	int chunkStartIdx = -1;
+	int chunkEndIdx = -1;
+
+	// these hold the bounds of the entire chunk expression
+	int exprStartIdx = -1;
+	int exprEndIdx = -1;
 
 	switch (type) {
 	case kChunkChar:
-		skipChars = "";
-		breakChars = "";
+		if (startChunk < 1) {
+			// last char was requested. set its bounds.
+			chunkNum = str.size();
+			chunkStartIdx = str.size() - 1;
+			chunkEndIdx = str.size();
+		} else if (startChunk <= (int)str.size()) {
+			exprStartIdx = MIN(startChunk, (int)str.size()) - 1;
+			exprEndIdx = MIN(endChunk, (int)str.size());
+		}
 		break;
 	case kChunkWord:
-		skipChars = "\t\n\r ";
-		breakChars = "\t\n\r ";
-		break;
-	case kChunkItem:
-		skipChars = "";
-		breakChars = g_lingo->_itemDelimiter;
-		break;
-	case kChunkLine:
-		skipChars = "";
-		breakChars = "\n\r";
-		break;
-	}
-
-	Common::String str = src.asString();
-	int idx = 0;
-	int chunkNum = 0;
-
-	int startIdx = -1;
-	int endIdx = -1;
-
-	while (true) {
-		// each iteration processes one chunk
-
-		// find the start of the chunk
-		while (idx < (int)str.size() && skipChars.contains(str[idx])) {
-			idx++;
-		}
-		chunkNum++;
-		if (chunkNum == startChunk) {
-			startIdx = idx; // found start of chunk expression
-		}
-
-		// find the end of the chunk
-		if (!breakChars.empty()) {
-			while (idx < (int)str.size() && !breakChars.contains(str[idx])) {
+		{
+			int idx = 0;
+			while (idx < (int)str.size() && Common::isSpace(str[idx])) {
 				idx++;
 			}
-		} else if (idx < (int)str.size()) {
-			idx++;
-		}
-		if (chunkNum == endChunk || idx == (int)str.size()) {
-			endIdx = idx; // found end of chunk expression
-			break;
-		}
+			while (idx < (int)str.size()) {
+				// each loop processes one chunk
+				chunkNum++;
 
-		if (!breakChars.empty())
-			idx++; // skip break char
+				// start of chunk
+				chunkStartIdx = idx;
+				if (chunkNum == startChunk) {
+					exprStartIdx = chunkStartIdx;
+				}
+
+				while (idx < (int)str.size() && !Common::isSpace(str[idx])) {
+					idx++;
+				}
+
+				// end of chunk
+				chunkEndIdx = idx;
+
+				if (chunkNum == endChunk) {
+					exprEndIdx = chunkEndIdx;
+					break;
+				}
+
+				while (idx < (int)str.size() && Common::isSpace(str[idx])) {
+					idx++;
+				}
+			}
+		}
+		break;
+	case kChunkItem:
+	case kChunkLine:
+		{
+			Common::u32char_type_t delimiter = (type == kChunkItem) ? g_lingo->_itemDelimiter : '\r';
+
+			int idx = 0;
+			while (true) {
+				// each loop processes one chunk
+				chunkNum++;
+
+				// start of chunk
+				chunkStartIdx = idx;
+				if (chunkNum == startChunk) {
+					exprStartIdx = chunkStartIdx;
+				}
+
+				while (idx < (int)str.size() && str[idx] != delimiter) {
+					idx++;
+				}
+
+				// end of chunk
+				chunkEndIdx = idx;
+				if (chunkNum == endChunk) {
+					exprEndIdx = chunkEndIdx;
+					break;
+				}
+
+				if (idx == (int)str.size())
+					break;
+				
+				idx++; // skip delimiter
+			}
+		}
+		break;
 	}
 
-	if (startIdx < 0)
-		startIdx = endIdx;
+	if (startChunk == -30000) {
+		// return the last chunk we found
+		startChunk = chunkNum;
+		endChunk = chunkNum;
+		exprStartIdx = chunkStartIdx;
+		exprEndIdx = chunkEndIdx;
+	} else {
+		if (exprStartIdx < 0) {
+			// we never found the requested start chunk
+			exprStartIdx = -1;
+		}
+		if (exprEndIdx < 0) {
+			// we never found the requested end chunk
+			exprEndIdx = str.size();
+		}
+	}
 
 	Datum res;
-	res.u.cref = new ChunkReference(src, startIdx, endIdx);
+	res.u.cref = new ChunkReference(src, type, startChunk, endChunk, exprStartIdx, exprEndIdx);
 	res.type = CHUNKREF;
 	return res;
 }
 
-void LC::c_of() {
-	// put char 5 of word 1 of line 2 into field "thing"
-	Datum src = g_lingo->pop();
+Datum LC::lastChunk(ChunkType type, const Datum &src) {
+	return chunkRef(type, -30000, 0, src);
+}
+
+Datum LC::readChunkRef(const Datum &src) {
 	Datum lastLine = g_lingo->pop();
 	Datum firstLine = g_lingo->pop();
 	Datum lastItem = g_lingo->pop();
@@ -967,42 +1014,33 @@ void LC::c_of() {
 	Datum lastChar = g_lingo->pop();
 	Datum firstChar = g_lingo->pop();
 
-	Datum res = src;
+	Datum ref = src;
+	if (firstLine.asInt() != 0)
+		ref = LC::chunkRef(kChunkLine, firstLine.asInt(), lastLine.asInt(), ref);
+	if (firstItem.asInt() != 0)
+		ref = LC::chunkRef(kChunkItem, firstItem.asInt(), lastItem.asInt(), ref);
+	if (firstWord.asInt() != 0)
+		ref = LC::chunkRef(kChunkWord, firstWord.asInt(), lastWord.asInt(), ref);
+	if (firstChar.asInt() != 0)
+		ref = LC::chunkRef(kChunkChar, firstChar.asInt(), lastChar.asInt(), ref);
 
-	if (firstChar.asInt() > 0)
-		res = LC::chunkRef(kChunkChar, firstChar.asInt(), lastChar.asInt(), src);
-	else if (firstWord.asInt() > 0)
-		res = LC::chunkRef(kChunkWord, firstWord.asInt(), lastWord.asInt(), src);
-	else if (firstItem.asInt() > 0)
-		res = LC::chunkRef(kChunkItem, firstItem.asInt(), lastItem.asInt(), src);
-	else if (lastLine.asInt() > 0)
-		res = LC::chunkRef(kChunkLine, firstLine.asInt(), lastLine.asInt(), src);
-
-	g_lingo->push(res);
+	return ref;
 }
 
-void LC::c_charOf() {
-	Datum src = g_lingo->pop(false);
-	Datum index = g_lingo->pop();
-
-    if ((index.type != INT && index.type != FLOAT)
-			|| (src.type != STRING && src.type != VAR && src.type != FIELDREF && src.type != CHUNKREF && src.type != CASTREF)) {
-		g_lingo->lingoError("LC::c_charOf(): Called with wrong data types: %s and %s", index.type2str(), src.type2str());
-		g_lingo->push(Datum(""));
-		return;
-	}
-
-	g_lingo->push(LC::chunkRef(kChunkChar, index.asInt(), 0, src));
+void LC::c_of() {
+	Datum src = g_lingo->pop();
+	Datum ref = readChunkRef(src);
+	g_lingo->push(ref.eval());
 }
 
-void LC::c_charToOf() {
-	Datum src = g_lingo->pop(false);
+void LC::c_charToOfRef() {
+	Datum src = g_lingo->pop();
 	Datum indexTo = g_lingo->pop();
 	Datum indexFrom = g_lingo->pop();
 
 	if ((indexTo.type != INT && indexTo.type != FLOAT) || (indexFrom.type != INT && indexFrom.type != FLOAT)
-			|| (src.type != STRING && src.type != VAR && src.type != FIELDREF && src.type != CHUNKREF && src.type != CASTREF)) {
-		warning("LC::c_charToOf(): Called with wrong data types: %s, %s and %s", indexTo.type2str(), indexFrom.type2str(), src.type2str());
+			|| (src.type != STRING && !src.isRef())) {
+		warning("LC::c_charToOfRef(): Called with wrong data types: %s, %s and %s", indexTo.type2str(), indexFrom.type2str(), src.type2str());
 		g_lingo->push(Datum(""));
 		return;
 	}
@@ -1010,28 +1048,20 @@ void LC::c_charToOf() {
 	g_lingo->push(LC::chunkRef(kChunkChar, indexFrom.asInt(), indexTo.asInt(), src));
 }
 
-void LC::c_itemOf() {
-	Datum src = g_lingo->pop(false);
-	Datum index = g_lingo->pop();
-
-	if ((index.type != INT && index.type != FLOAT)
-			|| (src.type != STRING && src.type != VAR && src.type != FIELDREF && src.type != CHUNKREF && src.type != CASTREF)) {
-		warning("LC::c_itemOf(): Called with wrong data types: %s and %s", index.type2str(), src.type2str());
-		g_lingo->push(Datum(""));
-		return;
-	}
-
-	g_lingo->push(LC::chunkRef(kChunkItem, index.asInt(), 0, src));
+void LC::c_charToOf() {
+	LC::c_charToOfRef();
+	Datum ref = g_lingo->pop();
+	g_lingo->push(ref.eval());
 }
 
-void LC::c_itemToOf() {
-	Datum src = g_lingo->pop(false);
+void LC::c_itemToOfRef() {
+	Datum src = g_lingo->pop();
 	Datum indexTo = g_lingo->pop();
 	Datum indexFrom = g_lingo->pop();
 
 	if ((indexTo.type != INT && indexTo.type != FLOAT) || (indexFrom.type != INT && indexFrom.type != FLOAT)
-			|| (src.type != STRING && src.type != VAR && src.type != FIELDREF && src.type != CHUNKREF && src.type != CASTREF)) {
-		warning("LC::c_itemToOf(): Called with wrong data types: %s, %s and %s", indexTo.type2str(), indexFrom.type2str(), src.type2str());
+			|| (src.type != STRING && !src.isRef())) {
+		warning("LC::c_itemToOfRef(): Called with wrong data types: %s, %s and %s", indexTo.type2str(), indexFrom.type2str(), src.type2str());
 		g_lingo->push(Datum(""));
 		return;
 	}
@@ -1039,28 +1069,20 @@ void LC::c_itemToOf() {
 	g_lingo->push(LC::chunkRef(kChunkItem, indexFrom.asInt(), indexTo.asInt(), src));
 }
 
-void LC::c_lineOf() {
-	Datum src = g_lingo->pop(false);
-	Datum index = g_lingo->pop();
-
-	if ((index.type != INT && index.type != FLOAT)
-			|| (src.type != STRING && src.type != VAR && src.type != FIELDREF && src.type != CHUNKREF && src.type != CASTREF)) {
-		warning("LC::c_lineOf(): Called with wrong data types: %s and %s", index.type2str(), src.type2str());
-		g_lingo->push(Datum(""));
-		return;
-	}
-
-	g_lingo->push(LC::chunkRef(kChunkLine, index.asInt(), 0, src));
+void LC::c_itemToOf() {
+	LC::c_itemToOfRef();
+	Datum ref = g_lingo->pop();
+	g_lingo->push(ref.eval());
 }
 
-void LC::c_lineToOf() {
-	Datum src = g_lingo->pop(false);
+void LC::c_lineToOfRef() {
+	Datum src = g_lingo->pop();
 	Datum indexTo = g_lingo->pop();
 	Datum indexFrom = g_lingo->pop();
 
 	if ((indexTo.type != INT && indexTo.type != FLOAT) || (indexFrom.type != INT && indexFrom.type != FLOAT)
-			|| (src.type != STRING && src.type != VAR && src.type != FIELDREF && src.type != CHUNKREF && src.type != CASTREF)) {
-		warning("LC::c_lineToOf(): Called with wrong data types: %s, %s and %s", indexTo.type2str(), indexFrom.type2str(), src.type2str());
+			|| (src.type != STRING && !src.isRef())) {
+		warning("LC::c_lineToOfRef(): Called with wrong data types: %s, %s and %s", indexTo.type2str(), indexFrom.type2str(), src.type2str());
 		g_lingo->push(Datum(""));
 		return;
 	}
@@ -1068,33 +1090,31 @@ void LC::c_lineToOf() {
 	g_lingo->push(LC::chunkRef(kChunkLine, indexFrom.asInt(), indexTo.asInt(), src));
 }
 
-void LC::c_wordOf() {
-	Datum src = g_lingo->pop(false);
-	Datum index = g_lingo->pop();
-
-	if ((index.type != INT && index.type != FLOAT)
-			|| (src.type != STRING && src.type != VAR && src.type != FIELDREF && src.type != CHUNKREF && src.type != CASTREF)) {
-		warning("LC::c_wordOf(): Called with wrong data types: %s and %s", index.type2str(), src.type2str());
-		g_lingo->push(Datum(""));
-		return;
-	}
-
-	g_lingo->push(LC::chunkRef(kChunkWord, index.asInt(), 0, src));
+void LC::c_lineToOf() {
+	LC::c_lineToOfRef();
+	Datum ref = g_lingo->pop();
+	g_lingo->push(ref.eval());
 }
 
-void LC::c_wordToOf() {
-	Datum src = g_lingo->pop(false);
+void LC::c_wordToOfRef() {
+	Datum src = g_lingo->pop();
 	Datum indexTo = g_lingo->pop();
 	Datum indexFrom = g_lingo->pop();
 
 	if ((indexTo.type != INT && indexTo.type != FLOAT) || (indexFrom.type != INT && indexFrom.type != FLOAT)
-			|| (src.type != STRING && src.type != VAR && src.type != FIELDREF && src.type != CHUNKREF && src.type != CASTREF)) {
-		warning("LC::c_wordToOf(): Called with wrong data types: %s, %s and %s", indexTo.type2str(), indexFrom.type2str(), src.type2str());
+			|| (src.type != STRING && !src.isRef())) {
+		warning("LC::c_wordToOfRef(): Called with wrong data types: %s, %s and %s", indexTo.type2str(), indexFrom.type2str(), src.type2str());
 		g_lingo->push(Datum(""));
 		return;
 	}
 
 	g_lingo->push(LC::chunkRef(kChunkWord, indexFrom.asInt(), indexTo.asInt(), src));
+}
+
+void LC::c_wordToOf() {
+	LC::c_wordToOfRef();
+	Datum ref = g_lingo->pop();
+	g_lingo->push(ref.eval());
 }
 
 void LC::c_and() {
@@ -1347,43 +1367,6 @@ void LC::c_telldone() {
 //************************
 // Built-in functions
 //************************
-void LC::c_goto() {
-	Datum mode = g_lingo->pop();
-	Datum frame, movie;
-
-	if (mode.u.i == 2 || mode.u.i == 3)
-		movie = g_lingo->pop();
-
-	if (mode.u.i == 1 || mode.u.i == 3)
-		frame = g_lingo->pop();
-
-	g_lingo->func_goto(frame, movie);
-}
-
-void LC::c_gotoloop() {
-	g_lingo->func_gotoloop();
-}
-
-void LC::c_gotonext() {
-	g_lingo->func_gotonext();
-}
-
-void LC::c_gotoprevious() {
-	g_lingo->func_gotoprevious();
-}
-
-void LC::c_play() {
-	Datum mode = g_lingo->pop();
-	Datum frame, movie;
-
-	if (mode.u.i == 2 || mode.u.i == 3)
-		movie = g_lingo->pop();
-
-	if (mode.u.i == 1 || mode.u.i == 3)
-		frame = g_lingo->pop();
-
-	g_lingo->func_play(frame, movie);
-}
 
 void LC::c_callcmd() {
 	Common::String name(g_lingo->readString());
@@ -1402,7 +1385,7 @@ void LC::c_callfunc() {
 }
 
 void LC::call(const Common::String &name, int nargs, bool allowRetVal) {
-	if (debugChannelSet(5, kDebugLingoExec))
+	if (debugChannelSet(3, kDebugLingoExec))
 		g_lingo->printSTUBWithArglist(name.c_str(), nargs, "call:");
 
 	Symbol funcSym;
@@ -1411,10 +1394,10 @@ void LC::call(const Common::String &name, int nargs, bool allowRetVal) {
 		Datum firstArg = g_lingo->_stack[g_lingo->_stack.size() - nargs];
 
 		// Factory/XObject method call
-		if (firstArg.type == VAR) { // first arg could be method name
+		if (firstArg.isVarRef()) { // first arg could be method name
 			Datum objName(name);
-			objName.type = VAR;
-			Datum obj = g_lingo->varFetch(objName, false, nullptr, true);
+			objName.type = VARREF;
+			Datum obj = g_lingo->varFetch(objName, true);
 			if (obj.type == OBJECT && (obj.u.obj->getObjType() & (kFactoryObj | kXObj))) {
 				debugC(3, kDebugLingoExec, "Method called on object: <%s>", obj.asString(true).c_str());
 				AbstractObject *target = obj.u.obj;
@@ -1426,11 +1409,11 @@ void LC::call(const Common::String &name, int nargs, bool allowRetVal) {
 					g_lingo->_stack[g_lingo->_stack.size() - nargs] = funcSym.target; // Set first arg to target
 					call(funcSym, nargs, allowRetVal);
 				} else {
-					warning("Object <%s> has no method '%s'", obj.asString(true).c_str(), firstArg.u.s->c_str());
+					g_lingo->lingoError("Object <%s> has no method '%s'", obj.asString(true).c_str(), firstArg.u.s->c_str());
 				}
 				return;
 			}
-			firstArg = firstArg.eval();
+			firstArg = g_lingo->_stack[g_lingo->_stack.size() - nargs] = firstArg.eval();
 		}
 
 		// Script/Xtra method call
@@ -1463,6 +1446,14 @@ void LC::call(const Common::String &name, int nargs, bool allowRetVal) {
 		}
 	}
 
+	// use lingo-the as fallback. we can only use functions as fallback, not properties
+	if (funcSym.type == VOIDSYM && g_lingo->_theEntities.contains(name) && g_lingo->_theEntities[name]->isFunction) {
+		Datum id;
+		Datum res = g_lingo->getTheEntity(g_lingo->_theEntities[name]->entity, id, kTheNOField);
+		g_lingo->push(res);
+		return;
+	}
+
 	call(funcSym, nargs, allowRetVal);
 }
 
@@ -1470,7 +1461,7 @@ void LC::call(const Symbol &funcSym, int nargs, bool allowRetVal) {
 	Datum target = funcSym.target;
 
 	if (funcSym.type == VOIDSYM) {
-		warning("Call to undefined handler. Dropping %d stack items", nargs);
+		g_lingo->lingoError("Call to undefined handler. Dropping %d stack items", nargs);
 
 		for (int i = 0; i < nargs; i++)
 			g_lingo->pop();
@@ -1584,21 +1575,120 @@ void LC::c_procret() {
 	}
 }
 
-void LC::c_hilite() {
-	Datum first_char = g_lingo->pop();
-	Datum last_char = g_lingo->pop();
-	Datum first_word = g_lingo->pop();
-	Datum last_word = g_lingo->pop();
-	Datum first_item = g_lingo->pop();
-	Datum last_item = g_lingo->pop();
-	Datum first_line = g_lingo->pop();
-	Datum last_line = g_lingo->pop();
-	Datum cast_id = g_lingo->pop();
+void LC::c_delete() {
+	Datum d = g_lingo->pop();
 
-	warning("STUB: LC::c_hilite(): %d %d %d %d %d %d %d %d %d",
-		first_char.u.i, last_char.u.i, first_word.u.i, last_word.u.i,
-		first_item.u.i, last_item.u.i, first_line.u.i, last_line.u.i,
-		cast_id.u.i);
+	Datum field;
+	int start, end;
+	if (d.type == CHUNKREF) {
+		start = d.u.cref->start;
+		end = d.u.cref->end;
+		field = d.u.cref->source;
+		while (field.type == CHUNKREF) {
+			start += field.u.cref->start;
+			end += field.u.cref->start;
+			field = field.u.cref->source;
+		}
+		if (!field.isVarRef() && !field.isCastRef()) {
+			warning("BUILDBOT: c_delete: bad chunk ref field type: %s", field.type2str());
+			return;
+		}
+	} else if (d.isRef()) {
+		field = d;
+		start = 0;
+		end = -1;
+	} else {
+		warning("BUILDBOT: c_delete: bad field type: %s", d.type2str());
+		return;
+	}
+
+	if (start < 0)
+		return;
+
+	Common::U32String text = g_lingo->evalChunkRef(field);
+	if (d.type == CHUNKREF) {
+		switch (d.u.cref->type) {
+		case kChunkChar:
+			break;
+		case kChunkWord:
+			while (end < (int)text.size() && Common::isSpace(text[end]))
+				end++;
+			break;
+		case kChunkItem:
+		case kChunkLine:
+			// last char of the first portion is the delimiter. skip it.
+			if (start > 0)
+				start--;
+			break;
+		}
+	}
+
+	Common::U32String res = text.substr(0, start);
+	if (end >= 0) {
+		res += text.substr(end);
+	}
+	Datum s;
+	s.u.s = new Common::String(res, Common::kUtf8);
+	s.type = STRING;
+	g_lingo->varAssign(field, s);
+}
+
+void LC::c_hilite() {
+	Datum d = g_lingo->pop();
+
+	CastMemberID fieldId;
+	int start, end;
+	if (d.type == CHUNKREF) {
+		start = d.u.cref->start;
+		end = d.u.cref->end;
+		Datum src = d.u.cref->source;
+		while (src.type == CHUNKREF) {
+			start += src.u.cref->start;
+			end += src.u.cref->start;
+			src = src.u.cref->source;
+		}
+		if (src.isCastRef()) {
+			fieldId = *d.u.cast;
+		} else {
+			warning("BUILDBOT: c_hilite: bad chunk ref field type: %s", src.type2str());
+			return;
+		}
+	} else if (d.isCastRef()) {
+		fieldId = *d.u.cast;
+		start = 0;
+		end = -1;
+	} else {
+		warning("BUILDBOT: c_hilite: bad field type: %s", d.type2str());
+		return;
+	}
+
+	if (start < 0)
+		return;
+
+	Score *score = g_director->getCurrentMovie()->getScore();
+	uint16 spriteId = score->getSpriteIdByMemberId(fieldId);
+	if (spriteId == 0)
+		return;
+
+	Channel *channel = score->getChannelById(spriteId);
+	if (channel->_sprite->_cast && channel->_sprite->_cast->_type == kCastText && channel->_widget) {
+		((Graphics::MacText *)channel->_widget)->setSelection(start, true);
+		((Graphics::MacText *)channel->_widget)->setSelection(end, false);
+	}
+}
+
+void LC::c_fieldref() {
+	Datum d = g_lingo->pop();
+	Datum res = d.asMemberID();
+	res.type = FIELDREF;
+	g_lingo->push(res);
+}
+
+void LC::c_field() {
+	LC::c_fieldref();
+	Datum d = g_lingo->pop();
+	Datum ref = d.eval();
+	g_lingo->push(ref.eval());
 }
 
 void LC::c_asserterror() {

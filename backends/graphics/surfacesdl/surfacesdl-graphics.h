@@ -27,6 +27,7 @@
 #include "backends/graphics/sdl/sdl-graphics.h"
 #include "graphics/pixelformat.h"
 #include "graphics/scaler.h"
+#include "graphics/scalerplugin.h"
 #include "common/events.h"
 #include "common/mutex.h"
 
@@ -40,18 +41,7 @@
 #endif
 
 enum {
-	GFX_NORMAL = 0,
-	GFX_DOUBLESIZE = 1,
-	GFX_TRIPLESIZE = 2,
-	GFX_2XSAI = 3,
-	GFX_SUPER2XSAI = 4,
-	GFX_SUPEREAGLE = 5,
-	GFX_ADVMAME2X = 6,
-	GFX_ADVMAME3X = 7,
-	GFX_HQ2X = 8,
-	GFX_HQ3X = 9,
-	GFX_TV2X = 10,
-	GFX_DOTMATRIX = 11
+	GFX_SURFACESDL = 0
 };
 
 
@@ -81,9 +71,12 @@ public:
 
 	virtual const OSystem::GraphicsMode *getSupportedGraphicsModes() const override;
 	virtual int getDefaultGraphicsMode() const override;
-	virtual bool setGraphicsMode(int mode) override;
+	virtual bool setGraphicsMode(int mode, uint flags = OSystem::kGfxModeNoFlags) override;
 	virtual int getGraphicsMode() const override;
-	virtual void resetGraphicsScale() override;
+	virtual uint getDefaultScaler() const override;
+	virtual uint getDefaultScaleFactor() const override;
+	virtual bool setScaler(uint mode, int factor) override;
+	virtual uint getScaler() const override;
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const override { return _screenFormat; }
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const override;
@@ -125,7 +118,7 @@ public:
 
 	virtual Graphics::PixelFormat getOverlayFormat() const override { return _overlayFormat; }
 	virtual void clearOverlay() override;
-	virtual void grabOverlay(void *buf, int pitch) const override;
+	virtual void grabOverlay(Graphics::Surface &surface) const override;
 	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h) override;
 	virtual int16 getOverlayHeight() const override { return _videoMode.overlayHeight; }
 	virtual int16 getOverlayWidth() const override { return _videoMode.overlayWidth; }
@@ -134,7 +127,7 @@ public:
 	virtual void setCursorPalette(const byte *colors, uint start, uint num) override;
 
 #ifdef USE_OSD
-	virtual void displayMessageOnOSD(const char *msg) override;
+	virtual void displayMessageOnOSD(const Common::U32String &msg) override;
 	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) override;
 #endif
 
@@ -179,12 +172,13 @@ protected:
 		return _videoMode.scaleFactor;
 	}
 
-	virtual void handleResizeImpl(const int width, const int height, const int xdpi, const int ydpi) override;
+	virtual void handleResizeImpl(const int width, const int height) override;
 
 	virtual int getGraphicsModeScale(int mode) const override;
-	virtual ScalerProc *getGraphicsScalerProc(int mode) const;
 
 	virtual void setupHardwareSize();
+
+	void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &width, int &height) const;
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	/* SDL2 features a different API for 2D graphics. We create a wrapper
@@ -221,6 +215,7 @@ protected:
 	SDL_Surface *_tmpscreen2;
 
 	SDL_Surface *_overlayscreen;
+	bool _useOldSrc;
 	Graphics::PixelFormat _overlayFormat;
 
 	enum {
@@ -269,7 +264,7 @@ protected:
 		int stretchMode;
 #endif
 
-		int mode;
+		uint scalerIndex;
 		int scaleFactor;
 
 		int screenWidth, screenHeight;
@@ -290,7 +285,7 @@ protected:
 			stretchMode = 0;
 #endif
 
-			mode = 0;
+			scalerIndex = 0;
 			scaleFactor = 0;
 
 			screenWidth = 0;
@@ -323,12 +318,15 @@ protected:
 	uint8 _originalBitsPerPixel;
 #endif
 
-	ScalerProc *_scalerProc;
-	int _scalerType;
 	int _transactionMode;
 
 	// Indicates whether it is needed to free _hwSurface in destructor
 	bool _displayDisabled;
+
+	const PluginList &_scalerPlugins;
+	ScalerPluginObject *_scalerPlugin;
+	uint _maxExtraPixels;
+	uint _extraPixels;
 
 	bool _screenIsLocked;
 	Graphics::Surface _framebuffer;
@@ -425,7 +423,7 @@ protected:
 
 private:
 	void setFullscreenMode(bool enable);
-	void handleScalerHotkeys(int scalefactor, int scalerType);
+	void handleScalerHotkeys(uint mode, int factor);
 
 	/**
 	 * Converts the given point from the overlay's coordinate space to the
@@ -452,6 +450,14 @@ private:
 		return Common::Point(x * getOverlayWidth() / getWidth(),
 							 y * getOverlayHeight() / getHeight());
 	}
+
+	/**
+	 * Special case for scalers that use the useOldSrc feature (currently
+	 * only the Edge scalers). The variable is checked after closing the
+	 * overlay, so that the creation of a new output buffer for the scaler
+	 * can be triggered.
+	 */
+	bool _needRestoreAfterOverlay;
 };
 
 #endif

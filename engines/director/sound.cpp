@@ -49,17 +49,16 @@ DirectorSound::DirectorSound(DirectorEngine *vm) : _vm(vm) {
 		_channels.push_back(SoundChannel());
 	}
 
-	_scriptSound = new Audio::SoundHandle();
 	_mixer = g_system->getMixer();
 
 	_speaker = new Audio::PCSpeaker();
-	_pcSpeakerHandle = new Audio::SoundHandle();
 	_mixer->playStream(Audio::Mixer::kSFXSoundType,
-		_pcSpeakerHandle, _speaker, -1, 50, 0, DisposeAfterUse::NO, true);
+		&_pcSpeakerHandle, _speaker, -1, 50, 0, DisposeAfterUse::NO, true);
 }
 
 DirectorSound::~DirectorSound() {
-	delete _scriptSound;
+	this->stopSound();
+	delete _speaker;
 }
 
 SoundChannel *DirectorSound::getChannel(uint8 soundChannel) {
@@ -83,8 +82,8 @@ void DirectorSound::playMCI(Audio::AudioStream &stream, uint32 from, uint32 to) 
 	Audio::SeekableAudioStream *seekStream = dynamic_cast<Audio::SeekableAudioStream *>(&stream);
 	Audio::SubSeekableAudioStream *subSeekStream = new Audio::SubSeekableAudioStream(seekStream, Audio::Timestamp(from, seekStream->getRate()), Audio::Timestamp(to, seekStream->getRate()));
 
-	_mixer->stopHandle(*_scriptSound);
-	_mixer->playStream(Audio::Mixer::kSFXSoundType, _scriptSound, subSeekStream);
+	_mixer->stopHandle(_scriptSound);
+	_mixer->playStream(Audio::Mixer::kSFXSoundType, &_scriptSound, subSeekStream);
 }
 
 void DirectorSound::playStream(Audio::AudioStream &stream, uint8 soundChannel) {
@@ -96,21 +95,21 @@ void DirectorSound::playStream(Audio::AudioStream &stream, uint8 soundChannel) {
 	_mixer->playStream(Audio::Mixer::kSFXSoundType, &_channels[soundChannel - 1].handle, &stream, -1, _channels[soundChannel - 1].volume);
 }
 
-void DirectorSound::playCastMember(int castId, uint8 soundChannel, bool allowRepeat) {
-	if (castId == 0) {
+void DirectorSound::playCastMember(CastMemberID memberID, uint8 soundChannel, bool allowRepeat) {
+	if (memberID.member == 0) {
 		stopSound(soundChannel);
 	} else {
-		CastMember *soundCast = _vm->getCurrentMovie()->getCastMember(castId);
+		CastMember *soundCast = _vm->getCurrentMovie()->getCastMember(memberID);
 		if (soundCast) {
 			if (soundCast->_type != kCastSound) {
-				warning("DirectorSound::playCastMember: attempted to play a non-SoundCastMember cast member %d", castId);
+				warning("DirectorSound::playCastMember: attempted to play a non-SoundCastMember %s", memberID.asString().c_str());
 			} else {
-				if (!allowRepeat && lastPlayingCast(soundChannel) == castId)
+				if (!allowRepeat && lastPlayingCast(soundChannel) == memberID)
 					return;
 				bool looping = ((SoundCastMember *)soundCast)->_looping;
 				AudioDecoder *ad = ((SoundCastMember *)soundCast)->_audio;
 				if (!ad) {
-					warning("DirectorSound::playCastMember: no audio data attached to cast member %d", castId);
+					warning("DirectorSound::playCastMember: no audio data attached to %s", memberID.asString().c_str());
 					return;
 				}
 				Audio::AudioStream *as;
@@ -123,12 +122,46 @@ void DirectorSound::playCastMember(int castId, uint8 soundChannel, bool allowRep
 					return;
 				}
 				playStream(*as, soundChannel);
-				_channels[soundChannel - 1].lastPlayingCast = castId;
+				_channels[soundChannel - 1].lastPlayingCast = memberID;
 			}
 		} else {
-			warning("DirectorSound::playCastMember: couldn't find cast member %d", castId);
+			warning("DirectorSound::playCastMember: couldn't find %s", memberID.asString().c_str());
 		}
 	}
+}
+
+void SNDDecoder::loadExternalSoundStream(Common::SeekableReadStreamEndian &stream) {
+	_size = stream.readUint32BE();
+
+	uint16 sampleRateFlag = stream.readUint16();
+	/*uint16 unk2 = */ stream.readUint16();
+
+	_data = (byte *)malloc(_size);
+	stream.read(_data, _size);
+
+	switch (sampleRateFlag) {
+	case 1:
+		_rate = 22254;
+		break;
+	case 2:
+		_rate = 11127;
+		break;
+	case 3:
+		_rate = 7300;
+		break;
+	case 4:
+		_rate = 5500;
+		break;
+	default:
+		warning("DirectorSound::loadExternalSoundStream: Can't handle sampleRateFlag %d, using default one", sampleRateFlag);
+		_rate = 5500;
+		break;
+	}
+
+	// this may related to the unk2 flag
+	// TODO: figure out how to read audio flags
+	_flags = Audio::FLAG_UNSIGNED;
+	_channels = 1;
 }
 
 void DirectorSound::registerFade(uint8 soundChannel, bool fadeIn, int ticks) {
@@ -195,9 +228,22 @@ bool DirectorSound::isChannelValid(uint8 soundChannel) {
 	return true;
 }
 
-int DirectorSound::lastPlayingCast(uint8 soundChannel) {
+void DirectorSound::playExternalSound(AudioDecoder *ad, uint8 soundChannel, uint8 externalSoundID) {
 	if (!isChannelValid(soundChannel))
-		return false;
+		return;
+
+	// use castMemberID info to check, castLib -1 represent for externalSound
+	// this should be amended by some kind of union which contains CastMemberID and externalSound info
+	if (isChannelActive(soundChannel) && lastPlayingCast(soundChannel) == CastMemberID(externalSoundID, -1))
+		return;
+
+	playStream(*(ad->getAudioStream()), soundChannel);
+	_channels[soundChannel - 1].lastPlayingCast = CastMemberID(externalSoundID, -1);
+}
+
+CastMemberID DirectorSound::lastPlayingCast(uint8 soundChannel) {
+	if (!isChannelValid(soundChannel))
+		return CastMemberID(0, 0);
 
 	return _channels[soundChannel - 1].lastPlayingCast;
 }
@@ -208,20 +254,20 @@ void DirectorSound::stopSound(uint8 soundChannel) {
 
 	cancelFade(soundChannel);
 	_mixer->stopHandle(_channels[soundChannel - 1].handle);
-	_channels[soundChannel - 1].lastPlayingCast = 0;
+	_channels[soundChannel - 1].lastPlayingCast = CastMemberID(0, 0);
 	return;
 }
 
 void DirectorSound::stopSound() {
 	for (uint i = 0; i < _channels.size(); i++) {
-		cancelFade(i);
+		cancelFade(i + 1);
 
 		_mixer->stopHandle(_channels[i].handle);
-		_channels[i].lastPlayingCast = 0;
+		_channels[i].lastPlayingCast = CastMemberID(0, 0);
 	}
 
-	_mixer->stopHandle(*_scriptSound);
-	_mixer->stopHandle(*_pcSpeakerHandle);
+	_mixer->stopHandle(_scriptSound);
+	_mixer->stopHandle(_pcSpeakerHandle);
 }
 
 void DirectorSound::systemBeep() {
@@ -229,13 +275,14 @@ void DirectorSound::systemBeep() {
 }
 
 Audio::AudioStream *AudioDecoder::getLoopingAudioStream() {
-	Audio::RewindableAudioStream *target = getAudioStream(DisposeAfterUse::NO);
+	Audio::RewindableAudioStream *target = getAudioStream(DisposeAfterUse::YES);
 	if (!target)
 		return nullptr;
 	return new Audio::LoopingAudioStream(target, 0);
 }
 
-SNDDecoder::SNDDecoder() {
+SNDDecoder::SNDDecoder()
+		: AudioDecoder() {
 	_data = nullptr;
 	_channels = 0;
 	_size = 0;
@@ -314,7 +361,7 @@ bool SNDDecoder::processBufferCommand(Common::SeekableReadStreamEndian &stream) 
 	/*uint16 unk1 =*/stream.readUint16();
 	int32 offset = stream.readUint32();
 	if (offset != stream.pos()) {
-		warning("SNDDecoder: Bad sound header offset. Expected: %d, read: %d", stream.pos(), offset);
+		warning("SNDDecoder: Bad sound header offset. Expected: %d, read: %d", (int)stream.pos(), offset);
 		return false;
 	}
 	/*uint32 dataPtr =*/stream.readUint32();
@@ -333,8 +380,7 @@ bool SNDDecoder::processBufferCommand(Common::SeekableReadStreamEndian &stream) 
 	uint16 bits = 8;
 	if (encoding == 0x00) {
 		// Standard sound header
-		uint16 dataLength = param;
-		frameCount = dataLength / _channels;
+		frameCount = param / _channels;
 	} else if (encoding == 0xff) {
 		// Extended sound header
 		_channels = param;
@@ -381,6 +427,11 @@ Audio::RewindableAudioStream *SNDDecoder::getAudioStream(DisposeAfterUse::Flag d
 	byte *buffer = (byte *)malloc(_size);
 	memcpy(buffer, _data, _size);
 	return Audio::makeRawStream(buffer, _size, _rate, _flags, disposeAfterUse);
+}
+
+AudioFileDecoder::AudioFileDecoder(Common::String &path)
+		: AudioDecoder() {
+	_path = path;
 }
 
 Audio::RewindableAudioStream *AudioFileDecoder::getAudioStream(DisposeAfterUse::Flag disposeAfterUse) {

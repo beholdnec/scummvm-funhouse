@@ -20,21 +20,19 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/gumps/u8_save_gump.h"
-#include "ultima/ultima8/graphics/render_surface.h"
-#include "ultima/ultima8/gumps/desktop_gump.h"
 #include "ultima/ultima8/gumps/widgets/edit_widget.h"
 #include "ultima/ultima8/gumps/widgets/text_widget.h"
 #include "ultima/ultima8/ultima8.h"
+#include "ultima/ultima8/kernel/mouse.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/graphics/shape.h"
 #include "ultima/ultima8/graphics/shape_frame.h"
-#include "ultima/ultima8/filesys/file_system.h"
 #include "ultima/ultima8/filesys/savegame.h"
 #include "ultima/ultima8/gumps/paged_gump.h"
 #include "ultima/ultima8/world/get_object.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
+#include "common/config-manager.h"
 #include "common/savefile.h"
 #include "common/translation.h"
 
@@ -76,7 +74,7 @@ void U8SaveGump::InitGump(Gump *newparent, bool take_focus) {
 	loadDescriptions();
 
 	for (int i = 0; i < 6; ++i) {
-		int index_ = _page * 6 + i;
+		int index = _page * 6 + i;
 
 
 		int xbase = 3;
@@ -90,27 +88,27 @@ void U8SaveGump::InitGump(Gump *newparent, bool take_focus) {
 		gump->SetShape(entry_id, true);
 		gump->InitGump(this, false);
 
-		int x_ = xbase + 2 + entrywidth;
+		int x = xbase + 2 + entrywidth;
 
-		if (index_ >= 9) { // index_ 9 is labelled "10"
-			FrameID entrynum1_id(GameData::GUMPS, 36, (index_ + 1) / 10 - 1);
+		if (index >= 9) { // index 9 is labelled "10"
+			FrameID entrynum1_id(GameData::GUMPS, 36, (index + 1) / 10 - 1);
 			entrynum1_id = _TL_SHP_(entrynum1_id);
 			entryShape = GameData::get_instance()->getShape(entrynum1_id);
 			sf = entryShape->getFrame(entrynum1_id._frameNum);
-			x_ += 1 + sf->_width;
+			x += 1 + sf->_width;
 
 			gump = new Gump(xbase + 2 + entrywidth, 3 + 40 * yi, 1, 1);
 			gump->SetShape(entrynum1_id, true);
 			gump->InitGump(this, false);
 		}
 
-		FrameID entrynum_id(GameData::GUMPS, 36, index_ % 10);
+		FrameID entrynum_id(GameData::GUMPS, 36, index % 10);
 		entrynum_id = _TL_SHP_(entrynum_id);
 
-		gump = new Gump(x_, 3 + 40 * yi, 1, 1);
+		gump = new Gump(x, 3 + 40 * yi, 1, 1);
 		gump->SetShape(entrynum_id, true);
 
-		if (index_ % 10 == 9) {
+		if (index % 10 == 9) {
 			// HACK: There is no frame for '0', so we re-use part of the
 			// frame for '10', cutting off the first 6 pixels.
 			Rect rect;
@@ -120,7 +118,7 @@ void U8SaveGump::InitGump(Gump *newparent, bool take_focus) {
 		}
 		gump->InitGump(this, false);
 
-		if (index_ == 0) {
+		if (index == 0) {
 			// special case for 'The Beginning...' _save
 			Gump *widget = new TextWidget(xbase, entryheight + 4 + 40 * yi,
 			                              _TL_("The Beginning..."),
@@ -177,26 +175,26 @@ void U8SaveGump::onMouseClick(int button, int32 mx, int32 my) {
 
 	ParentToGump(mx, my);
 
-	int x_;
+	int x;
 	if (mx >= 3 && mx <= 100)
-		x_ = 0;
+		x = 0;
 	else if (mx >= _dims.width() / 2 + 10)
-		x_ = 1;
+		x = 1;
 	else
 		return;
 
-	int y_;
+	int y;
 	if (my >= 3 && my <= 40)
-		y_ = 0;
+		y = 0;
 	else if (my >= 43 && my <= 80)
-		y_ = 1;
+		y = 1;
 	else if (my >= 83 && my <= 120)
-		y_ = 2;
+		y = 2;
 	else
 		return;
 
-	int i = 3 * x_ + y_;
-	int index_ = 6 * _page + i + 1;
+	int i = 3 * x + y;
+	int index = 6 * _page + i + 1;
 
 	if (_save && !_focusChild && _editWidgets[i]) {
 		_editWidgets[i]->MakeFocus();
@@ -210,14 +208,14 @@ void U8SaveGump::onMouseClick(int button, int32 mx, int32 my) {
 		GumpNotifyProcess *p = _parent->GetNotifyProcess();
 		if (p) {
 			// Do nothing in this case
-			if (index_ != 1 && _descriptions[i].empty()) return;
+			if (index != 1 && _descriptions[i].empty()) return;
 
-			_parent->SetResult(index_);
+			_parent->SetResult(index);
 			_parent->Close(); // close PagedGump (and us)
 			return;
 		}
 
-		loadgame(index_); // 'this' will be deleted here!
+		loadgame(index); // 'this' will be deleted here!
 	}
 }
 
@@ -274,7 +272,7 @@ bool U8SaveGump::savegame(int saveIndex, const Std::string &name) {
 
 	if (name.empty()) return false;
 
-	Ultima8Engine::get_instance()->saveGame(saveIndex, name, true);
+	Ultima8Engine::get_instance()->saveGame(saveIndex, name);
 	return true;
 }
 
@@ -296,13 +294,13 @@ void U8SaveGump::loadDescriptions() {
 		// FIXME: move version checks elsewhere!!
 		switch (state) {
 		case SavegameReader::SAVE_CORRUPT:
-			_descriptions[i] = _("[corrupt]");
+			_descriptions[i] = Common::convertFromU32String(_("[corrupt]"));
 			break;
 		case SavegameReader::SAVE_OUT_OF_DATE:
-			_descriptions[i] = _("[outdated]");
+			_descriptions[i] = Common::convertFromU32String(_("[outdated]"));
 			break;
 		case SavegameReader::SAVE_TOO_RECENT:
-			_descriptions[i] = _("[too modern]");
+			_descriptions[i] = Common::convertFromU32String(_("[too modern]"));
 			break;
 		default:
 			break;
@@ -317,12 +315,16 @@ void U8SaveGump::loadDescriptions() {
 
 //static
 Gump *U8SaveGump::showLoadSaveGump(Gump *parent, bool save) {
-	if (save) {
-		// can't save if game over
-		// FIXME: this check should probably be in Game or GUIApp
-		const MainActor *av = getMainActor();
-		if (!av || av->hasActorFlags(Actor::ACT_DEAD))
-			return nullptr;
+	if (!ConfMan.getBool("originalsaveload")) {
+		if (save)
+			Ultima8Engine::get_instance()->saveGameDialog();
+		else
+			Ultima8Engine::get_instance()->loadGameDialog();
+		return nullptr;
+	}
+
+	if (save && !Ultima8Engine::get_instance()->canSaveGameStateCurrently(false)) {
+		return nullptr;
 	}
 
 	PagedGump *gump = new PagedGump(34, -38, 3, 35);

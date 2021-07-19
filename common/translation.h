@@ -34,186 +34,199 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_translation Message translation manager
+ * @ingroup common
+ *
+ * @brief API related to translation.
+ *
+ * @{
+ */
+
 class File;
 
+/**
+ * Translation IDs.
+ */
 enum TranslationIDs {
-	kTranslationAutodetectId = 0,
-	kTranslationBuiltinId = 1000
+	kTranslationAutodetectId = 0, /*!< ID for the default language (the current system language). */
+	kTranslationBuiltinId = 1000  /*!< ID for the English language. */
 };
 
+/**
+ * Structure describing a translation language.
+ */
 struct TLanguage {
-	const char *name;
-	int id;
+	U32String name; /*!< Language name string. */
+	int id;         /*!< Language ID. */
 
-	TLanguage() : name(nullptr), id(0) {}
-	TLanguage(const char *n, int i) : name(n), id(i) {}
+	TLanguage() : id(0) {}
+
+	/**
+	 * Construct a new language with name @p n and ID @p i.
+	 */
+	TLanguage(const U32String &n, int i) : name(n), id(i) {}
 };
 
 bool operator<(const TLanguage &l, const TLanguage &r);
 
 typedef Array<TLanguage> TLangArray;
 
+/**
+ * Structure describing a translated message.
+ */
 struct PoMessageEntry {
-	int msgid;
-	String msgctxt;
-	String msgstr;
+	int msgid;         /*!< ID of the message. */
+	String msgctxt;    /*!< Context of the message. It can be empty.
+							Can be used to solve ambiguities. */
+	U32String msgstr;  /*!< Message string. */
 };
 
 /**
  * Message translation manager.
  */
-class TranslationManager : public Singleton<TranslationManager> {
+class TranslationManager : public NonCopyable {
 public:
 	/**
-	 * The constructor detects the system language and sets default
-	 * language to English.
+	 * Constructor that sets the current language to the default language.
+	 *
+	 * The default language is the detected system language.
 	 */
-	TranslationManager();
+	TranslationManager(const Common::String &fileName);
 	~TranslationManager();
 
 	/**
-	 * Retrieves the language string to the given id.
+	 * Retrieve the language string from the given ID.
 	 *
-	 * @param id Id of the language
-	 * @return the matching string description of the language
+	 * @param id ID of the language.
+	 *
+	 * @return Matching string description of the language.
 	 */
 	String getLangById(int id) const;
 
 	/**
-	 * Sets the current translation language to the one specified in the
-	 * parameter. If the parameter is an empty string, it sets the default
-	 * system language.
+	 * Set the current translation language to the one specified in the
+	 * parameter.
 	 *
-	 * @param lang Language to setup.
+	 * If the parameter is an empty string, it sets the translation language
+	 * to the default system language.
+	 *
+	 * @param lang Language to set up.
 	 */
 	void setLanguage(const String &lang);
 
 	/**
-	 * Sets the current translation language to the one specified by the
-	 * id parameter.
+	 * Set the current translation language to the one specified by the
+	 * @p id parameter.
 	 *
-	 * @param id The id of the language.
+	 * @param id ID of the language.
 	 */
 	void setLanguage(int id) {
 		setLanguage(getLangById(id));
 	}
 
 	/**
-	 * Parses a language string and returns an id instead.
+	 * Get the ID for the given language string.
 	 *
-	 * @param lang Language string
-	 * @return id of the language or kTranslationBuiltinId in case the
+	 * @param lang Language string.
+	 *
+	 * @return ID of the language or kTranslationBuiltinId in case the
 	 *         language could not be found.
 	 */
 	int parseLanguage(const String &lang) const;
 
 	/**
-	 * Returns the translation into the current language of the parameter
-	 * message. In case the message isn't found in the translation catalog,
-	 * it returns the original untranslated message.
-	 */
-	const char *getTranslation(const char *message) const;
-
-	/**
-	 * Returns the translation into the current language of the parameter
-	 * message. In case the message isn't found in the translation catalog,
-	 * it returns the original untranslated message.
-	 */
-	String getTranslation(const String &message) const;
-
-	/**
-	 * Returns the translation into the current language of the parameter
-	 * message. In case the message isn't found in the translation catalog,
-	 * it returns the original untranslated message.
+	 * Return the translation of @p message into the current language.
 	 *
-	 * If a translation is found for the given context it will return that
-	 * translation, otherwise it will look for a translation for the same
-	 * massage without a context or with a different context.
+	 * In case the message is not found in the translation catalog,
+	 * return the original untranslated message, as a U32String.
 	 */
-	const char *getTranslation(const char *message, const char *context) const;
+	U32String getTranslation(const char *message) const;
 
 	/**
-	 * Returns the translation into the current language of the parameter
-	 * message. In case the message isn't found in the translation catalog,
-	 * it returns the original untranslated message.
+	 * Return the translation of @p message into the current language.
 	 *
-	 * If a translation is found for the given context it will return that
-	 * translation, otherwise it will look for a translation for the same
-	 * massage without a context or with a different context.
+	 * In case the message is not found in the translation catalog,
+	 * return the original untranslated message, as a U32String.
 	 */
-	String getTranslation(const String &message, const String &context) const;
+	U32String getTranslation(const String &message) const;
 
 	/**
-	 * Returns a list of supported languages.
+	 * Return the translation of @p message into the current language.
 	 *
-	 * @return The list of supported languages in a user readable form.
+	 * In case the message is not found in the translation catalog,
+	 * return the original untranslated message, as a U32String.
+	 *
+	 * If a translation is found for the given context, return that
+	 * translation. Otherwise, look for a translation for the same
+	 * message without a context or with a different context.
+	 */
+	U32String getTranslation(const char *message, const char *context) const;
+
+	/**
+	 * Return the translation of @p message into the current language.
+	 *
+	 * In case the message is not found in the translation catalog,
+	 * return the original untranslated message, as a U32String.
+	 *
+	 * If a translation is found for the given context, return that
+	 * translation. Otherwise, look for a translation for the same
+	 * message without a context or with a different context.
+	 */
+	U32String getTranslation(const String &message, const String &context) const;
+
+	/**
+	 * Return a list of supported languages.
+	 *
+	 * @return The list of supported languages in a user-readable format.
 	 */
 	const TLangArray getSupportedLanguageNames() const;
 
 	/**
-	 * Returns charset specified by selected translation language
+	 * Return the charset specified by the selected translation language.
 	 */
 	String getCurrentCharset() const;
 
 	/**
-	 * Returns a pointer to the current charset mapping. This mapping is a
-	 * codepage encoding -> unicode mapping and always 256 entries long.
-	 *
-	 * The MSB of the individual mapped (i.e. unicode) character states
-	 * whether the character is required for this charset. If it is set, the
-	 * character needs to be present in order to have the text displayed.
-	 * This is used in the font loading code to detect whether the font is
-	 * able of supporting this language.
-	 *
-	 * The return value might be 0 in case it's a default ASCII/ISO-8859-1
-	 * map.
-	 */
-	const uint32 *getCharsetMapping() const { return _charmap; }
-
-	/**
-	 * Returns currently selected translation language
+	 * Return the currently selected translation language.
 	 */
 	String getCurrentLanguage() const;
 
-	/*
-	 * Wrapper for GNU FriBidi implementation of the Unicode Bidirectional Algorithm
-	 * For LTR (Left To Right) languages, returns the original input
-	 * For RTL (Right To Left) languages, returns visual representation of a logical single-line input
-	 */
-	String convertBiDiString(const String &input);
-
 private:
 	/**
-	 * Tries to find the given language or a derivate of it.
+	 * Attempt to find the given language or a derivate of it.
 	 *
-	 * @param lang Language string
-	 * @return id of the language or -1 in case no matching language could
+	 * @param lang Language string.
+	 *
+	 * @return ID of the language or -1 in case no matching language could
 	 *         be found.
 	 */
 	int32 findMatchingLanguage(const String &lang);
 
 	/**
-	 * Find the translations.dat file. It looks first using the SearchMan and
-	 * then if needed using the Themepath. If found it opens the given File
-	 * to read the translations.dat file.
+	 * Find the translations.dat file.
+	 *
+	 * First, search using the SearchMan and then, if needed, using the Themepath.
+	 * If found, open the given @p File to read the translations.dat file.
 	 */
 	bool openTranslationsFile(File &);
 
 	/**
 	 * Find the translations.dat file in the given directory node.
-	 * If found it opens the given File to read the translations.dat file.
+	 *
+	 * If found, open the given @p File to read the translations.dat file.
 	 */
 	bool openTranslationsFile(const FSNode &node, File &, int depth = -1);
 
 	/**
-	 * Load the list of languages from the translations.dat file
+	 * Load the list of languages from the translations.dat file.
 	 */
-	void loadTranslationsInfoDat();
+	void loadTranslationsInfoDat(const Common::String &name);
 
 	/**
-	 * Load the translation for the given language from the translations.dat file
+	 * Load the translation for the given language from the translations.dat file.
 	 *
-	 * @param index of the language in the list of languages
+	 * @param index Index of the language in the list of languages.
 	 */
 	void loadLanguageDat(int index);
 
@@ -223,29 +236,34 @@ private:
 	bool checkHeader(File &in);
 
 	StringArray _langs;
-	StringArray _langNames;
-	StringArray _charmaps;
+	U32StringArray _langNames;
 
 	StringArray _messageIds;
 	Array<PoMessageEntry> _currentTranslationMessages;
 	String _currentCharset;
 	int _currentLang;
-
-	uint32 _charmapStart;
-	uint32 *_charmap;
+	Common::String _translationsFileName;
 };
+
+class MainTranslationManager : public TranslationManager, public Singleton<MainTranslationManager> {
+public:
+	MainTranslationManager() : TranslationManager("translations.dat") {}
+	~MainTranslationManager() {}
+};
+
+/** @} */
 
 } // End of namespace Common
 
-#define TransMan Common::TranslationManager::instance()
+#define TransMan Common::MainTranslationManager::instance()
 
 #define _(str) TransMan.getTranslation(str)
 #define _c(str, context) TransMan.getTranslation(str, context)
 
 #else // !USE_TRANSLATION
 
-#define _(str) str
-#define _c(str, context) str
+#define _(str) Common::U32String(str)
+#define _c(str, context) Common::U32String(str)
 
 #endif // USE_TRANSLATION
 

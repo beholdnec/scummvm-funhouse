@@ -20,6 +20,7 @@
  *
  */
 
+#include "common/achievements.h"
 #include "common/config-manager.h"
 #include "common/events.h"
 #include "common/stream.h"
@@ -111,12 +112,12 @@ void Testsuite::genReport() const {
 }
 
 bool Testsuite::handleInteractiveInput(const Common::String &textToDisplay, const char *opt1, const char *opt2, OptionSelected result) {
-	GUI::MessageDialog prompt(textToDisplay, opt1, opt2);
+	GUI::MessageDialog prompt(textToDisplay.c_str(), opt1, opt2);
 	return prompt.runModal() == result ? true : false;
 }
 
 void Testsuite::displayMessage(const Common::String &textToDisplay, const char *defaultButton) {
-	GUI::MessageDialog prompt(textToDisplay, defaultButton);
+	GUI::MessageDialog prompt(textToDisplay.c_str(), defaultButton);
 	prompt.runModal();
 }
 
@@ -318,6 +319,7 @@ void Testsuite::execute() {
 			_numTestsExecuted++;
 			logPrintf("Result: Failed\n");
 		}
+		AchMan.setStatInt("NUM_TESTS", AchMan.getStatInt("NUM_TESTS") + 1);
 
 		updateStats("Test", ((*i)->featureName).c_str(), count, numEnabledTests, pt);
 		// TODO: Display a screen here to user with details of upcoming test, he can skip it or Quit or return to launcher

@@ -2,18 +2,18 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="scenes">
-			<UniqueIdentifier>EEEE416B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C79-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\gnap\character.cpp" />
 		<ClCompile Include="..\..\engines\gnap\datarchive.cpp" />
 		<ClCompile Include="..\..\engines\gnap\debugger.cpp" />
-		<ClCompile Include="..\..\engines\gnap\detection.cpp" />
 		<ClCompile Include="..\..\engines\gnap\gamesys.cpp" />
 		<ClCompile Include="..\..\engines\gnap\gnap.cpp" />
 		<ClCompile Include="..\..\engines\gnap\grid.cpp" />
 		<ClCompile Include="..\..\engines\gnap\menu.cpp" />
+		<ClCompile Include="..\..\engines\gnap\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\gnap\music.cpp" />
 		<ClCompile Include="..\..\engines\gnap\resource.cpp" />
 		<ClCompile Include="..\..\engines\gnap\scenes\arcade.cpp">

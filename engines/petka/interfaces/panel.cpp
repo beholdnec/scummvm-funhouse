@@ -24,6 +24,7 @@
 #include "common/system.h"
 
 #include "petka/objects/object_cursor.h"
+#include "petka/objects/object_case.h"
 #include "petka/petka.h"
 #include "petka/q_system.h"
 #include "petka/flc.h"
@@ -87,20 +88,27 @@ InterfacePanel::InterfacePanel() {
 	_objectPoints[21] = Common::Point(0, 0);
 	_objectPoints[22] = Common::Point(0, 0);
 	_objectPoints[23] = Common::Point(0, 0);
-
+	readSettings();
 }
 
 void InterfacePanel::start(int id) {
+	QSystem *sys = g_vm->getQSystem();
 	readSettings();
 
-	QSystem *sys = g_vm->getQSystem();
+	sys->getCase()->show(false);
+
+	g_vm->videoSystem()->makeAllDirty();
+	g_vm->videoSystem()->update();
+
+	InterfaceSaveLoad::saveScreen();
+
 	QObjectBG *bg = (QObjectBG *)sys->findObject(kPanelObjName);
 	_objs.push_back(bg);
 
 	const BGInfo *info = sys->_mainInterface->findBGInfo(bg->_id);
 	for (uint i = 0; i < info->attachedObjIds.size(); ++i) {
 		QMessageObject *obj = sys->findObject(info->attachedObjIds[i]);
-		FlicDecoder *flc = g_vm->resMgr()->loadFlic(obj->_resourceId);
+		FlicDecoder *flc = g_vm->resMgr()->getFlic(obj->_resourceId);
 		flc->setFrame(1);
 		obj->_z = 1;
 		obj->_x = _objectPoints[i].x;
@@ -131,6 +139,7 @@ void InterfacePanel::onLeftButtonDown(Common::Point p) {
 		g_vm->loadPart(1);
 		break;
 	case kLoadButtonIndex:
+		stop();
 		g_vm->getQSystem()->_saveLoadInterface->start(kLoadMode);
 		break;
 	case kContinueButtonIndex:
@@ -140,6 +149,7 @@ void InterfacePanel::onLeftButtonDown(Common::Point p) {
 		g_system->quit();
 		break;
 	case kSaveButtonIndex:
+		stop();
 		g_vm->getQSystem()->_saveLoadInterface->start(kSaveMode);
 		break;
 	case kSubtitleButtonIndex:
@@ -224,7 +234,7 @@ void InterfacePanel::onMouseMove(Common::Point p) {
 			pointIndex = i - 1;
 			break;
 		}
-		FlicDecoder *flc = g_vm->resMgr()->loadFlic(obj->_resourceId);
+		FlicDecoder *flc = g_vm->resMgr()->getFlic(obj->_resourceId);
 		flc->setFrame(frame);
 		g_vm->videoSystem()->addDirtyRect(_objectPoints[pointIndex], *flc);
 	}
@@ -236,30 +246,30 @@ void InterfacePanel::onMouseMove(Common::Point p) {
 void InterfacePanel::updateSliders() {
 	applySettings();
 
-	FlicDecoder *flc = g_vm->resMgr()->loadFlic(_objs[kSpeechVolumeSliderIndex]->_resourceId);
+	FlicDecoder *flc = g_vm->resMgr()->getFlic(_objs[kSpeechVolumeSliderIndex]->_resourceId);
 	flc->setFrame(_speechFrame);
 	g_vm->videoSystem()->addDirtyRect(_objectPoints[kSpeechVolumeSliderIndex - 1], *flc);
 
-	flc = g_vm->resMgr()->loadFlic(_objs[kMusicVolumeSliderIndex]->_resourceId);
+	flc = g_vm->resMgr()->getFlic(_objs[kMusicVolumeSliderIndex]->_resourceId);
 	flc->setFrame(_musicFrame);
 	g_vm->videoSystem()->addDirtyRect(_objectPoints[kMusicVolumeSliderIndex - 1], *flc);
 
-	flc = g_vm->resMgr()->loadFlic(_objs[kSfxVolumeSliderIndex]->_resourceId);
+	flc = g_vm->resMgr()->getFlic(_objs[kSfxVolumeSliderIndex]->_resourceId);
 	flc->setFrame(_sfxFrame);
 	g_vm->videoSystem()->addDirtyRect(_objectPoints[kSfxVolumeSliderIndex - 1], *flc);
 
-	flc = g_vm->resMgr()->loadFlic(_objs[kSpeedSliderIndex]->_resourceId);
+	flc = g_vm->resMgr()->getFlic(_objs[kSpeedSliderIndex]->_resourceId);
 	flc->setFrame(_speedFrame);
 	g_vm->videoSystem()->addDirtyRect(_objectPoints[kSpeedSliderIndex - 1], *flc);
 }
 
 void InterfacePanel::updateSubtitles() {
 	applySettings();
-	FlicDecoder *flc = g_vm->resMgr()->loadFlic(_objs[kSubtitleButtonIndex]->_resourceId);
+	FlicDecoder *flc = g_vm->resMgr()->getFlic(_objs[kSubtitleButtonIndex]->_resourceId);
 	flc->setFrame(_subtitles == 0 ? 1 : 7);
 	g_vm->videoSystem()->addDirtyRect(_objectPoints[kSubtitleButtonIndex - 1], *flc);
 
-	flc = g_vm->resMgr()->loadFlic(_objs[kSubtitleLabelIndex]->_resourceId);
+	flc = g_vm->resMgr()->getFlic(_objs[kSubtitleLabelIndex]->_resourceId);
 	flc->setFrame(_subtitles == 0 ? 1 : 2);
 	g_vm->videoSystem()->addDirtyRect(_objectPoints[kSubtitleLabelIndex - 1], *flc);
 }
@@ -273,10 +283,10 @@ void InterfacePanel::readSettings() {
 }
 
 void InterfacePanel::applySettings() {
-	_speechFrame = MIN(MAX(1, _speechFrame), 31);
-	_musicFrame = MIN(MAX(1, _musicFrame), 41);
-	_sfxFrame = MIN(MAX(1, _sfxFrame), 31);
-	_speedFrame = MIN(MAX(1, _speedFrame), 26);
+	_speechFrame = CLIP<int>(_speechFrame, 1, 31);
+	_musicFrame = CLIP<int>(_musicFrame, 1, 41);
+	_sfxFrame = CLIP<int>(_sfxFrame, 1, 31);
+	_speedFrame = CLIP<int>(_speedFrame, 1, 26);
 
 	ConfMan.setInt("speech_volume", 255 * (_speechFrame - 1) / (31 - 1));
 	ConfMan.setInt("music_volume", 255 * (_musicFrame - 1) / (41 - 1));
@@ -289,6 +299,10 @@ void InterfacePanel::applySettings() {
 
 void InterfacePanel::onRightButtonDown(Common::Point p) {
 	stop();
+}
+
+int InterfacePanel::getHeroSpeed() {
+	return (_speedFrame * 100 - 100) / 25;
 }
 
 } // End of namespace Petka

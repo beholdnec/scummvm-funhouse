@@ -29,6 +29,7 @@
 #include "common/fs.h"
 #include "common/archive.h"
 #include "common/mutex.h"
+#include "common/ustr.h"
 #include "audio/mixer_intern.h"
 #include "backends/modular-backend.h"
 #include "backends/plugins/posix/posix-provider.h"
@@ -85,11 +86,11 @@ public:
 	OSystem_Android(int audio_sample_rate, int audio_buffer_size);
 	virtual ~OSystem_Android();
 
-	virtual void initBackend();
+	virtual void initBackend() override;
 
-	virtual bool hasFeature(OSystem::Feature f);
-	virtual void setFeatureState(OSystem::Feature f, bool enable);
-	virtual bool getFeatureState(OSystem::Feature f);
+	virtual bool hasFeature(OSystem::Feature f) override;
+	virtual void setFeatureState(OSystem::Feature f, bool enable) override;
+	virtual bool getFeatureState(OSystem::Feature f) override;
 
 public:
 	void pushEvent(int type, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6);
@@ -100,7 +101,7 @@ private:
 	uint32 _queuedEventTime;
 	Common::Mutex *_event_queue_lock;
 
-	Common::Point _touch_pt_down, _touch_pt_scroll, _touch_pt_dt;
+	Common::Point _touch_pt_down, _touch_pt_scroll, _touch_pt_dt, _touch_pt_multi;
 	int _eventScaleX;
 	int _eventScaleY;
 	bool _touchpad_mode;
@@ -108,36 +109,41 @@ private:
 	int _trackball_scale;
 	int _dpad_scale;
 	int _joystick_scale;
-	int _fingersDown;
+//	int _fingersDown;
+	int _firstPointerId;
+	int _secondPointerId;
+	int _thirdPointerId;
 
-	void clipMouse(Common::Point &p);
-	void scaleMouse(Common::Point &p, int x, int y, bool deductDrawRect = true, bool touchpadMode = false);
+
+	void pushEvent(const Common::Event &event);
 
 public:
-	virtual void pushEvent(const Common::Event &event);
-	virtual bool pollEvent(Common::Event &event);
-	virtual Common::KeymapperDefaultBindings *getKeymapperDefaultBindings();
+	virtual bool pollEvent(Common::Event &event) override;
+	virtual Common::HardwareInputSet *getHardwareInputSet() override;
+	virtual Common::KeymapArray getGlobalKeymaps() override;
+	virtual Common::KeymapperDefaultBindings *getKeymapperDefaultBindings() override;
 
-	virtual uint32 getMillis(bool skipRecord = false);
-	virtual void delayMillis(uint msecs);
+	virtual void registerDefaultSettings(const Common::String &target) const override;
+	virtual GUI::OptionsContainerWidget *buildBackendOptionsWidget(GUI::GuiObject *boss, const Common::String &name, const Common::String &target) const override;
+	virtual void applyBackendSettings() override;
 
-	virtual void quit();
+	virtual uint32 getMillis(bool skipRecord = false) override;
+	virtual void delayMillis(uint msecs) override;
 
-	virtual void setWindowCaption(const char *caption);
-	virtual void showVirtualKeyboard(bool enable);
+	virtual void quit() override;
 
-	virtual Audio::Mixer *getMixer();
-	virtual void getTimeAndDate(TimeDate &t) const;
-	virtual void logMessage(LogMessageType::Type type, const char *message);
-	virtual void addSysArchivesToSearchSet(Common::SearchSet &s,
-											int priority = 0);
-	virtual bool openUrl(const Common::String &url);
-	virtual bool hasTextInClipboard();
-	virtual Common::String getTextFromClipboard();
-	virtual bool setTextInClipboard(const Common::String &text);
-	virtual bool isConnectionLimited();
-	virtual Common::String getSystemLanguage() const;
-	virtual char *convertEncoding(const char *to, const char *from, const char *string, size_t length);
+	virtual void setWindowCaption(const Common::U32String &caption) override;
+
+	virtual Audio::Mixer *getMixer() override;
+	virtual void getTimeAndDate(TimeDate &td, bool skipRecord = false) const override;
+	virtual void logMessage(LogMessageType::Type type, const char *message) override;
+	virtual void addSysArchivesToSearchSet(Common::SearchSet &s, int priority = 0) override;
+	virtual bool openUrl(const Common::String &url) override;
+	virtual bool hasTextInClipboard() override;
+	virtual Common::U32String getTextFromClipboard() override;
+	virtual bool setTextInClipboard(const Common::U32String &text) override;
+	virtual bool isConnectionLimited() override;
+	virtual Common::String getSystemLanguage() const override;
 };
 
 #endif

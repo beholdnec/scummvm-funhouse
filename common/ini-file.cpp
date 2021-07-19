@@ -32,7 +32,7 @@ bool INIFile::isValidName(const String &name) const {
 	if (_allowNonEnglishCharacters)
 		return true;
 	const char *p = name.c_str();
-	while (*p && (isAlnum(*p) || *p == '-' || *p == '_' || *p == '.' || *p == ' '))
+	while (*p && (isAlnum(*p) || *p == '-' || *p == '_' || *p == '.' || *p == ' ' || *p == ':'))
 		p++;
 	return *p == 0;
 }
@@ -72,6 +72,7 @@ bool INIFile::loadFromStream(SeekableReadStream &stream) {
 	KeyValue kv;
 	String comment;
 	int lineno = 0;
+	section.name = _defaultSectionName;
 
 	// TODO: Detect if a section occurs multiple times (or likewise, if
 	// a key occurs multiple times inside one section).
@@ -108,7 +109,8 @@ bool INIFile::loadFromStream(SeekableReadStream &stream) {
 			// is, verify that it only consists of alphanumerics,
 			// periods, dashes and underscores). Mohawk Living Books games
 			// can have periods in their section names.
-			while (*p && ((_allowNonEnglishCharacters && *p != ']') || isAlnum(*p) || *p == '-' || *p == '_' || *p == '.' || *p == ' '))
+			// WinAGI games can have colons in their section names.
+			while (*p && ((_allowNonEnglishCharacters && *p != ']') || isAlnum(*p) || *p == '-' || *p == '_' || *p == '.' || *p == ' ' || *p == ':'))
 				p++;
 
 			if (*p == '\0')
@@ -297,6 +299,9 @@ void INIFile::renameSection(const String &oldName, const String &newName) {
 	// - merge the two sections "oldName" and "newName"
 }
 
+void INIFile::setDefaultSectionName(const String &name) {
+	_defaultSectionName = name;
+}
 
 bool INIFile::hasKey(const String &key, const String &section) const {
 	if (!isValidName(key)) {

@@ -28,6 +28,15 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_serializer Serializer
+ * @ingroup common
+ *
+ * @brief API for serializing data.
+ *
+ * @{
+ */
+
 #define VER(x) Common::Serializer::Version(x)
 
 #define SYNC_AS(SUFFIX,TYPE,SIZE) \
@@ -77,6 +86,10 @@ public:
 	SYNC_PRIMITIVE(Uint32BE)
 	SYNC_PRIMITIVE(Sint32LE)
 	SYNC_PRIMITIVE(Sint32BE)
+	SYNC_PRIMITIVE(FloatLE)
+	SYNC_PRIMITIVE(FloatBE)
+	SYNC_PRIMITIVE(DoubleLE)
+	SYNC_PRIMITIVE(DoubleBE)
 	SYNC_PRIMITIVE(Uint16LE)
 	SYNC_PRIMITIVE(Uint16BE)
 	SYNC_PRIMITIVE(Sint16LE)
@@ -102,8 +115,8 @@ public:
 	inline bool isSaving() { return (_saveStream != 0); }
 	inline bool isLoading() { return (_loadStream != 0); }
 
-	// WORKAROUND for bugs #2892515 "BeOS: tinsel does not compile" and
-	// #2892510 "BeOS: Cruise does not compile". gcc 2.95.3, which is used
+	// WORKAROUND for bugs #4698 "BeOS: tinsel does not compile" and
+	// #4697 "BeOS: Cruise does not compile". gcc 2.95.3, which is used
 	// for BeOS fails due to an internal compiler error, when we place the
 	// following function definitions in another place. Before this work-
 	// around the following SYNC_AS definitions were placed at the end
@@ -122,6 +135,10 @@ public:
 	SYNC_AS(Uint32BE, uint32, 4)
 	SYNC_AS(Sint32LE, int32, 4)
 	SYNC_AS(Sint32BE, int32, 4)
+	SYNC_AS(FloatLE, float, 4)
+	SYNC_AS(FloatBE, float, 4)
+	SYNC_AS(DoubleLE, double, 4)
+	SYNC_AS(DoubleBE, double, 4)
 
 	/**
 	 * Returns true if an I/O failure occurred.
@@ -255,6 +272,29 @@ public:
 		}
 	}
 
+	/**
+	 * Sync a U32-string
+	 */
+	void syncString32(U32String &str, Version minVersion = 0, Version maxVersion = kLastVersion) {
+		if (_version < minVersion || _version > maxVersion)
+			return; // Ignore anything which is not supposed to be present in this save game version
+
+		uint32 len = str.size();
+
+		syncAsUint32LE(len);
+
+		if (isLoading()) {
+			U32String::value_type *sl = new U32String::value_type[len];
+			for (uint i = 0; i < len; i++)
+				syncAsUint32LE(sl[i]);
+			str = U32String(sl, len);
+		} else {
+			for (uint i = 0; i < len; i++)
+				_saveStream->writeUint32LE(str[i]);
+			_bytesSynced += 4 * len;
+		}
+	}
+
 	template <typename T>
 	void syncArray(T *arr, size_t entries, void (*serializer)(Serializer &, T &), Version minVersion = 0, Version maxVersion = kLastVersion) {
 		if (_version < minVersion || _version > maxVersion)
@@ -280,6 +320,7 @@ public:
 	virtual void saveLoadWithSerializer(Serializer &ser) = 0;
 };
 
+/** @} */
 
 } // End of namespace Common
 

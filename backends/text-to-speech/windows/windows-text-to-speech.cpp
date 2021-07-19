@@ -31,6 +31,10 @@
 #include <servprov.h>
 
 #include <sapi.h>
+#if _SAPI_VER < 0x53
+#define SPF_PARSE_SAPI 0x80
+#endif
+
 #include "backends/platform/sdl/win32/win32_wrapper.h"
 
 #include "backends/text-to-speech/windows/windows-text-to-speech.h"
@@ -40,7 +44,6 @@
 #include "common/system.h"
 #include "common/ustr.h"
 #include "common/config-manager.h"
-#include "common/encoding.h"
 
 ISpVoice *_voice;
 
@@ -151,7 +154,7 @@ DWORD WINAPI startSpeech(LPVOID parameters) {
 			break;
 		}
 		WCHAR *currentSpeech = params->queue->front();
-		_voice->Speak(currentSpeech, SPF_PURGEBEFORESPEAK | SPF_ASYNC, 0);
+		_voice->Speak(currentSpeech, SPF_PURGEBEFORESPEAK | SPF_ASYNC | SPF_PARSE_SAPI, 0);
 		ReleaseMutex(*params->mutex);
 
 		while (*(params->state) != WindowsTextToSpeechManager::PAUSED)
@@ -174,7 +177,7 @@ DWORD WINAPI startSpeech(LPVOID parameters) {
 	return 0;
 }
 
-bool WindowsTextToSpeechManager::say(Common::String str, Action action, Common::String charset) {
+bool WindowsTextToSpeechManager::say(const Common::U32String &str, Action action) {
 	if (_speechState == BROKEN || _speechState == NO_VOICE) {
 		warning("The text to speech cannot speak in this state");
 		return true;
@@ -183,20 +186,11 @@ bool WindowsTextToSpeechManager::say(Common::String str, Action action, Common::
 	if (isSpeaking() && action == DROP)
 		return true;
 
-	if (charset.empty()) {
-#ifdef USE_TRANSLATION
-		charset = TransMan.getCurrentCharset();
-#else
-		charset = "ASCII";
-#endif
-	}
-
 	// We have to set the pitch by prepending xml code at the start of the said string;
-	Common::String pitch= Common::String::format("<pitch absmiddle=\"%d\">", _ttsState->_pitch / 10);
-	str.replace((uint32)0, 0, pitch);
-	WCHAR *strW = (WCHAR *) Common::Encoding::convert("UTF-16", charset, str.c_str(), str.size());
+	Common::U32String pitch = Common::U32String::format("<pitch absmiddle=\"%d\"/>%S", _ttsState->_pitch / 10, str.c_str());
+	WCHAR *strW = (WCHAR *) pitch.encodeUTF16Native();
 	if (strW == nullptr) {
-		warning("Cannot convert from %s encoding for text to speech", charset.c_str());
+		warning("Cannot convert from UTF-32 encoding for text to speech");
 		return true;
 	}
 
@@ -389,7 +383,7 @@ void WindowsTextToSpeechManager::createVoice(void *cpVoiceToken) {
 		warning("Could not get the language attribute for voice: %s", desc.c_str());
 		return;
 	}
-	Common::String language = lcidToLocale(data);
+	Common::String language = lcidToLocale(wcstol(data, NULL, 16));
 	CoTaskMemFree(data);
 
 	// only get the voices for the current language
@@ -421,24 +415,11 @@ void WindowsTextToSpeechManager::createVoice(void *cpVoiceToken) {
 	_ttsState->_availableVoices.push_back(Common::TTSVoice(gender, age, (void *) voiceToken, desc));
 }
 
-int strToInt(WCHAR *str) {
-	int result = 0;
-	for (unsigned i = 0; i < wcslen(str); i++) {
-		WCHAR c = towupper(str[i]);
-		if (c < L'0' || (c > L'9' && c < L'A') || c > L'F')
-			break;
-		int num = (c <= L'9') ? c - L'0' : c - 55;
-		result = result * 16 + num;
-	}
-	return result;
-}
-
-Common::String WindowsTextToSpeechManager::lcidToLocale(WCHAR *lcid) {
-	LCID locale = strToInt(lcid);
-	int nchars = GetLocaleInfoA(locale, LOCALE_SISO639LANGNAME, NULL, 0);
-	char *languageCode = new char[nchars];
-	GetLocaleInfoA(locale, LOCALE_SISO639LANGNAME, languageCode, nchars);
-	Common::String result = languageCode;
+Common::String WindowsTextToSpeechManager::lcidToLocale(LCID locale) {
+	int nchars = GetLocaleInfo(locale, LOCALE_SISO639LANGNAME, NULL, 0);
+	TCHAR *languageCode = new TCHAR[nchars];
+	GetLocaleInfo(locale, LOCALE_SISO639LANGNAME, languageCode, nchars);
+	Common::String result = Win32::tcharToString(languageCode);
 	delete[] languageCode;
 	return result;
 }

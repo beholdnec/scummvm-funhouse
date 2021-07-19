@@ -122,6 +122,9 @@ protected:
 	void Actor_Set_Invisible(int actorId, bool isInvisible);
 	void Actor_Set_Immunity_To_Obstacles(int actorId, bool isImmune);
 	void Item_Add_To_World(int itemId, int animationId, int setId, float x, float y, float z, signed int facing, int height, int width, bool isTargetable, bool isObstacle, bool isPoliceMazeEnemy, bool updateOnly);
+#if !BLADERUNNER_ORIGINAL_BUGS
+	void Item_Remove_From_Current_Scene(int itemId);
+#endif // !BLADERUNNER_ORIGINAL_BUGS
 	void Item_Remove_From_World(int itemId);
 	void Item_Spin_In_World(int itemId);
 	void Item_Flag_As_Target(int itemId);
@@ -174,26 +177,26 @@ protected:
 	void Footstep_Sounds_Set(int index, int value);
 	void Footstep_Sound_Override_On(int footstepSoundOverride);
 	void Footstep_Sound_Override_Off();
-	bool Music_Play(int musicId, int volume, int pan, int32 timeFadeIn, int32 timePlay, int loop, int32 timeFadeOut);
-	void Music_Adjust(int volume, int pan, uint32 delay);
-	void Music_Stop(uint32 delay);
+	bool Music_Play(int musicId, int volume, int pan, int32 timeFadeInSeconds, int32 timePlaySeconds, int loop, int32 timeFadeOutSeconds);
+	void Music_Adjust(int volume, int pan, uint32 delaySeconds);
+	void Music_Stop(uint32 delaySeconds);
 	bool Music_Is_Playing();
 	void Overlay_Play(const char *overlay, int loopId, bool loopForever, bool startNow, int a5);
 	void Overlay_Remove(const char *overlay);
 	void Scene_Loop_Set_Default(int loopId);
 	void Scene_Loop_Start_Special(int sceneLoopMode, int loopId, bool immediately);
 	void Outtake_Play(int id, int noLocalization = false, int container = -1);
-	void Ambient_Sounds_Add_Sound(int sfxId, uint32 timeMin, uint32 timeMax, int volumeMin, int volumeMax, int panStartMin, int panStartMax, int panEndMin, int panEndMax, int priority, int unk);
+	void Ambient_Sounds_Add_Sound(int sfxId, uint32 delayMinSeconds, uint32 delayMaxSeconds, int volumeMin, int volumeMax, int panStartMin, int panStartMax, int panEndMin, int panEndMax, int priority, int unk);
 	void Ambient_Sounds_Remove_Sound(int sfxId, bool stopPlaying);
-	void Ambient_Sounds_Add_Speech_Sound(int actorId, int sentenceId, uint32 timeMin, uint32 timeMax, int volumeMin, int volumeMax, int panStartMin, int panStartMax, int panEndMin, int panEndMax, int priority, int unk);
+	void Ambient_Sounds_Add_Speech_Sound(int actorId, int sentenceId, uint32 delayMinSeconds, uint32 delayMaxSeconds, int volumeMin, int volumeMax, int panStartMin, int panStartMax, int panEndMin, int panEndMax, int priority, int unk);
 	// Ambient_Sounds_Remove_Speech_Sound
 	void Ambient_Sounds_Play_Sound(int sfxId, int volume, int panStart, int panEnd, int priority);
 	void Ambient_Sounds_Play_Speech_Sound(int actorId, int sfxId, int volume, int panStart, int panEnd, int priority);
 	void Ambient_Sounds_Remove_All_Non_Looping_Sounds(bool stopPlaying);
-	void Ambient_Sounds_Add_Looping_Sound(int sfxId, int volume, int pan, uint32 delay);
-	void Ambient_Sounds_Adjust_Looping_Sound(int sfxId, int volume, int pan, uint32 delay);
-	void Ambient_Sounds_Remove_Looping_Sound(int sfxId, uint32 delay);
-	void Ambient_Sounds_Remove_All_Looping_Sounds(uint32 delay);
+	void Ambient_Sounds_Add_Looping_Sound(int sfxId, int volume, int pan, uint32 delaySeconds);
+	void Ambient_Sounds_Adjust_Looping_Sound(int sfxId, int volume, int pan, uint32 delaySeconds);
+	void Ambient_Sounds_Remove_Looping_Sound(int sfxId, uint32 delaySeconds);
+	void Ambient_Sounds_Remove_All_Looping_Sounds(uint32 delaySeconds);
 	void Setup_Scene_Information(float actorX, float actorY, float actorZ, int actorFacing);
 	bool Dialogue_Menu_Appear(int x, int y);
 	bool Dialogue_Menu_Disappear();
@@ -267,7 +270,7 @@ protected:
 	void Set_Fog_Density(const char *fogName, float density);
 	void ADQ_Flush();
 	void ADQ_Add(int actorId, int sentenceId, int animationMode);
-	void ADQ_Add_Pause(int32 delay);
+	void ADQ_Add_Pause(int32 delayMillis);
 	void ADQ_Wait_For_All_Queued_Dialogue();
 	bool Game_Over();
 	void Autosave_Game(int textId);
@@ -291,7 +294,7 @@ protected:
 	void KIA_Play_Slice_Model(int sliceModelId);
 	void KIA_Play_Photograph(int photographId);
 
-	void VK_Play_Speech_Line(int actorId, int sentenceId, float duration);
+	void VK_Play_Speech_Line(int actorId, int sentenceId, float pauseDuration);
 	void VK_Add_Question(int intensity, int sentenceId, int relatedSentenceId);
 	void VK_Subject_Reacts(int intensity, int humanResponse, int replicantResponse, int anxiety);
 	void VK_Eye_Animates(int loopId);

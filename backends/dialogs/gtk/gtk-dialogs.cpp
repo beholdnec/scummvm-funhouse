@@ -30,45 +30,32 @@
 #include "backends/dialogs/gtk/gtk-dialogs.h"
 
 #include "common/config-manager.h"
-#include "common/encoding.h"
 #include "common/translation.h"
 
 #include <gtk/gtk.h>
 
-Common::DialogManager::DialogResult GtkDialogManager::showFileBrowser(const char *title, Common::FSNode &choice, bool isDirBrowser) {
+Common::DialogManager::DialogResult GtkDialogManager::showFileBrowser(const Common::U32String &title, Common::FSNode &choice, bool isDirBrowser) {
 	if (!gtk_init_check(NULL, NULL))
 		return kDialogError;
 
 	DialogResult result = kDialogCancel;
 
-	// Get current encoding
-	Common::String guiEncoding = "ASCII";
-#ifdef USE_TRANSLATION
-	guiEncoding = TransMan.getCurrentCharset();
-#endif
-	Common::Encoding utf8("utf-8", guiEncoding);
-
 	// Convert labels to UTF-8
-	char *utf8Title = utf8.convert(title, strlen(title));
-	Common::String choose = _("Choose");
-	char *utf8Choose = utf8.convert(choose.c_str(), choose.size());
-	Common::String cancel = _("Cancel");
-	char* utf8Cancel = utf8.convert(cancel.c_str(), cancel.size());
+	Common::String utf8Title = title.encode();
+	Common::String utf8Choose = _("Choose").encode();
+	Common::String utf8Cancel = _("Cancel").encode();
 
 	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
 	if (isDirBrowser) {
 		action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
 	}
 #if GTK_CHECK_VERSION(3,20,0)
-	GtkFileChooserNative *native = gtk_file_chooser_native_new(utf8Title, NULL, action, utf8Choose, utf8Cancel);
+	GtkFileChooserNative *native = gtk_file_chooser_native_new(utf8Title.c_str(), NULL, action, utf8Choose.c_str(), utf8Cancel.c_str());
 	GtkFileChooser *chooser = GTK_FILE_CHOOSER(native);
 #else
-	GtkWidget *dialog = gtk_file_chooser_dialog_new(utf8Title, NULL, action, utf8Choose, GTK_RESPONSE_ACCEPT, utf8Cancel, GTK_RESPONSE_CANCEL, NULL);
+	GtkWidget *dialog = gtk_file_chooser_dialog_new(utf8Title.c_str(), NULL, action, utf8Choose.c_str(), GTK_RESPONSE_ACCEPT, utf8Cancel.c_str(), GTK_RESPONSE_CANCEL, NULL);
 	GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
 #endif
-	free(utf8Cancel);
-	free(utf8Choose);
-	free(utf8Title);
 
 	// Customize dialog
 	gtk_file_chooser_set_show_hidden(chooser, ConfMan.getBool("gui_browser_show_hidden", Common::ConfigManager::kApplicationDomain));
@@ -87,15 +74,11 @@ Common::DialogManager::DialogResult GtkDialogManager::showFileBrowser(const char
 		// Get the selection from the user
 		char *path = gtk_file_chooser_get_filename(chooser);
 		choice = Common::FSNode(path);
+		ConfMan.set("browser_lastpath", path);
 		result = kDialogOk;
 		g_free(path);
-
-		// Save last path
-		char *last = gtk_file_chooser_get_current_folder(chooser);
-		ConfMan.set("browser_lastpath", last);
-		g_free(last);
 	}
-	
+
 #if GTK_CHECK_VERSION(3,20,0)
 	g_object_unref(native);
 #else

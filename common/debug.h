@@ -25,6 +25,8 @@
 
 #include "common/scummsys.h"
 
+#include "engines/metaengine.h"
+
 #ifdef DISABLE_TEXT_CONSOLE
 
 inline void debug(const char *s, ...) {}
@@ -38,12 +40,19 @@ inline void debugCN(uint32 debugChannels, const char *s, ...) {}
 
 #else
 
+/**
+ * @defgroup common_debug Debug functions
+ * @ingroup common
+ *
+ * @brief  Functions for printing debug messages.
+ * @{
+ */
 
 /**
  * Print a debug message to the text console (stdout).
  * Automatically appends a newline.
  */
-void debug(const char *s, ...) GCC_PRINTF(1, 2);
+void debug(MSVC_PRINTF const char *s, ...) GCC_PRINTF(1, 2);
 
 /**
  * Print a debug message to the text console (stdout), but only if
@@ -51,13 +60,13 @@ void debug(const char *s, ...) GCC_PRINTF(1, 2);
  * As a rule of thumb, the more important the message, the lower the level.
  * Automatically appends a newline.
  */
-void debug(int level, const char *s, ...) GCC_PRINTF(2, 3);
+void debug(int level, MSVC_PRINTF const char *s, ...) GCC_PRINTF(2, 3);
 
 /**
  * Print a debug message to the text console (stdout).
  * Does not append a newline.
  */
-void debugN(const char *s, ...) GCC_PRINTF(1, 2);
+void debugN(MSVC_PRINTF const char *s, ...) GCC_PRINTF(1, 2);
 
 /**
  * Print a debug message to the text console (stdout), but only if
@@ -65,7 +74,7 @@ void debugN(const char *s, ...) GCC_PRINTF(1, 2);
  * As a rule of thumb, the more important the message, the lower the level.
  * Does not append a newline.
  */
-void debugN(int level, const char *s, ...) GCC_PRINTF(2, 3);
+void debugN(int level, MSVC_PRINTF const char *s, ...) GCC_PRINTF(2, 3);
 
 /**
  * Print a debug message to the text console (stdout), but only if
@@ -73,10 +82,13 @@ void debugN(int level, const char *s, ...) GCC_PRINTF(2, 3);
  * if the specified special debug level is active.
  * As a rule of thumb, the more important the message, the lower the level.
  * Automatically appends a newline.
- *
  * @see enableDebugChannel
+ *
+ * @param level         Debug level that must be active for the message to be printed.
+ * @param debugChannels Bitfield of channels to check against.
+ * @param s             Message to print.
  */
-void debugC(int level, uint32 debugChannels, const char *s, ...) GCC_PRINTF(3, 4);
+void debugC(int level, uint32 debugChannels, MSVC_PRINTF const char *s, ...) GCC_PRINTF(3, 4);
 
 /**
  * Print a debug message to the text console (stdout), but only if
@@ -84,54 +96,63 @@ void debugC(int level, uint32 debugChannels, const char *s, ...) GCC_PRINTF(3, 4
  * if the specified special debug level is active.
  * As a rule of thumb, the more important the message, the lower the level.
  * Does not append a newline automatically.
- *
  * @see enableDebugChannel
+ *
+ * @param level         Debug level that must be active for the message to be printed.
+ * @param debugChannels Bitfield of channels to check against.
+ * @param s             Message to print.
+ *
  */
-void debugCN(int level, uint32 debugChannels, const char *s, ...) GCC_PRINTF(3, 4);
+void debugCN(int level, uint32 debugChannels, MSVC_PRINTF const char *s, ...) GCC_PRINTF(3, 4);
 
 /**
  * Print a debug message to the text console (stdout), but only if
  * the specified special debug level is active.
  * Automatically appends a newline.
- *
  * @see enableDebugChannel
+ *
+ * @param debugChannels Bitfield of channels to check against.
+ * @param s             Message to print.
  */
-void debugC(uint32 debugChannels, const char *s, ...) GCC_PRINTF(2, 3);
+void debugC(uint32 debugChannels, MSVC_PRINTF const char *s, ...) GCC_PRINTF(2, 3);
 
 /**
  * Print a debug message to the text console (stdout), but only if
  * the specified special debug level is active.
  * Does not append a newline automatically.
- *
  * @see enableDebugChannel
+ *
+ * @param debugChannels Bitfield of channels to check against.
+ * @param s             Message to print.
  */
-void debugCN(uint32 debugChannels, const char *s, ...) GCC_PRINTF(2, 3);
+void debugCN(uint32 debugChannels, MSVC_PRINTF const char *s, ...) GCC_PRINTF(2, 3);
 
 #endif
 
 /**
- * Returns true if the debug level is set to the specified level
+ * Check whether the debug level is set to the specified level.
  */
 bool debugLevelSet(int level);
 
 /**
- * Returns true if the debug level and channel are active
+ * Check whether the debug level and channel are active.
  *
- * @param level debug level to check against. If set to -1, only channel check is active
+ * @param level         Debug level to check against. If set to -1, only channel check is active.
+ * @param debugChannels Bitfield of channels to check against.
  * @see enableDebugChannel
  */
 bool debugChannelSet(int level, uint32 debugChannels);
 
 /**
  * The debug level. Initially set to -1, indicating that no debug output
- * should be shown. Positive values usually imply an increasing number of
- * debug output shall be generated, the higher the value, the more verbose the
+ * should be shown. Positive values usually imply that an increasing number of
+ * debug output shall be generated. The higher the value, the more verbose the
  * information (although the exact semantics are up to the engines).
  */
 extern int gDebugLevel;
 
 /**
- * Specify if we want to show only the debug channels and suppress
+ * Specify whether to show only the debug channels and suppress
  * the non-channeled output.
  *
  * This option is useful when you want to have higher levels of channels
@@ -139,9 +160,18 @@ extern int gDebugLevel;
  */
 extern bool gDebugChannelsOnly;
 
-//Global constant for EventRecorder debug channel
+/** Global constant for EventRecorder debug channel. */
 enum GlobalDebugLevels {
+	kDebugGlobalDetection = 1 << 29,
 	kDebugLevelEventRec = 1 << 30
 };
+
+static const DebugChannelDef gDebugChannels[] = {
+	{kDebugLevelEventRec, "EventRec", "Event recorder debug level"},
+	{kDebugGlobalDetection, "Detection", "debug messages for advancedDetector"},
+	DEBUG_CHANNEL_END
+};
+
+/** @} */
 
 #endif

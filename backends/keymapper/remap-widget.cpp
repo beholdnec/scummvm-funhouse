@@ -130,8 +130,8 @@ void RemapWidget::reflowActionWidgets() {
 				int descriptionWidth = getWidth() - x - spacing - resetButtonWidth - spacing;
 				descriptionWidth = MAX(0, descriptionWidth);
 
-				keymapTitle.descriptionText->resize(x, y + textYOff, descriptionWidth, kLineHeight);
-				keymapTitle.resetButton->resize(x + descriptionWidth, y, resetButtonWidth, buttonHeight);
+				keymapTitle.descriptionText->resize(x, y + textYOff, descriptionWidth, kLineHeight, false);
+				keymapTitle.resetButton->resize(x + descriptionWidth, y, resetButtonWidth, buttonHeight, false);
 			}
 
 			y += buttonHeight + spacing;
@@ -139,10 +139,10 @@ void RemapWidget::reflowActionWidgets() {
 
 		x = spacing;
 
-		row.keyButton->resize(x, y, keyButtonWidth, buttonHeight);
+		row.keyButton->resize(x, y, keyButtonWidth, buttonHeight, false);
 
 		x += keyButtonWidth + spacing;
-		row.actionText->resize(x, y + textYOff, labelWidth, kLineHeight);
+		row.actionText->resize(x, y + textYOff, labelWidth, kLineHeight, false);
 
 		y += buttonHeight + spacing;
 	}
@@ -216,7 +216,12 @@ void RemapWidget::startRemapping(uint actionIndex) {
 
 	_remapKeymap = _actions[actionIndex].keymap;
 	_remapAction = _actions[actionIndex].action;
-	_remapTimeout = g_system->getMillis() + kRemapTimeoutDelay;
+
+	uint32 remapTimeoutDelay = kRemapMinTimeoutDelay;
+	if (ConfMan.hasKey("remap_timeout_delay_ms") && ((uint32)ConfMan.getInt("remap_timeout_delay_ms") > kRemapMinTimeoutDelay)) {
+		remapTimeoutDelay = (uint32)ConfMan.getInt("remap_timeout_delay_ms");
+	}
+	_remapTimeout = g_system->getMillis() + remapTimeoutDelay;
 	_remapInputWatcher->startWatching();
 
 	_actions[actionIndex].keyButton->setLabel("...");
@@ -278,20 +283,20 @@ void RemapWidget::refreshKeymap() {
 		ActionRow &row = _actions[i];
 
 		if (!row.actionText) {
-			row.actionText = new GUI::StaticTextWidget(widgetsBoss(), 0, 0, 0, 0, "", Graphics::kTextAlignStart, nullptr, GUI::ThemeEngine::kFontStyleNormal);
+			row.actionText = new GUI::StaticTextWidget(widgetsBoss(), 0, 0, 0, 0, U32String(), Graphics::kTextAlignStart, U32String(), GUI::ThemeEngine::kFontStyleNormal);
 			row.actionText->setLabel(row.action->description);
 
-			row.keyButton = new GUI::DropdownButtonWidget(widgetsBoss(), 0, 0, 0, 0, "", nullptr, kRemapCmd + i);
+			row.keyButton = new GUI::DropdownButtonWidget(widgetsBoss(), 0, 0, 0, 0, U32String(), U32String(), kRemapCmd + i);
 			row.keyButton->appendEntry(_("Reset to defaults"), kResetActionCmd + i);
 			row.keyButton->appendEntry(_("Clear mapping"), kClearCmd + i);
 		}
 
 		Array<HardwareInput> mappedInputs = row.keymap->getActionMapping(row.action);
 
-		String keysLabel;
+		U32String keysLabel;
 		for (uint j = 0; j < mappedInputs.size(); j++) {
 			if (!keysLabel.empty()) {
-				keysLabel += ", ";
+				keysLabel += Common::U32String(", ");
 			}
 
 			keysLabel += mappedInputs[j].description;
@@ -308,7 +313,7 @@ void RemapWidget::refreshKeymap() {
 		KeymapTitleRow &keymapTitle = _keymapSeparators[row.keymap];
 		if (!keymapTitle.descriptionText) {
 			keymapTitle.descriptionText = new GUI::StaticTextWidget(widgetsBoss(), 0, 0, 0, 0, row.keymap->getDescription(), Graphics::kTextAlignStart);
-			keymapTitle.resetButton = new GUI::ButtonWidget(widgetsBoss(), 0, 0, 0, 0, "", nullptr, kResetKeymapCmd + i);
+			keymapTitle.resetButton = new GUI::ButtonWidget(widgetsBoss(), 0, 0, 0, 0, U32String(), U32String(), kResetKeymapCmd + i);
 
 			// I18N: Button to reset keymap mappings to defaults
 			keymapTitle.resetButton->setLabel(_("Reset"));

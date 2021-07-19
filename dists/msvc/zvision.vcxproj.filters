@@ -2,37 +2,37 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="core">
-			<UniqueIdentifier>EEEE423C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D76-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="file">
-			<UniqueIdentifier>EEEE423D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D77-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics">
-			<UniqueIdentifier>EEEE423E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D78-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics\cursors">
-			<UniqueIdentifier>EEEE423F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D79-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics\effects">
-			<UniqueIdentifier>EEEE4240-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D7A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="scripting">
-			<UniqueIdentifier>EEEE4241-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D7B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="scripting\controls">
-			<UniqueIdentifier>EEEE4242-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D7C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="scripting\effects">
-			<UniqueIdentifier>EEEE4243-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D7D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sound">
-			<UniqueIdentifier>EEEE4244-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D7E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="text">
-			<UniqueIdentifier>EEEE4245-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D7F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="video">
-			<UniqueIdentifier>EEEE4246-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D80-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -45,7 +45,6 @@
 		<ClCompile Include="..\..\engines\zvision\core\events.cpp">
 			<Filter>core</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\zvision\detection.cpp" />
 		<ClCompile Include="..\..\engines\zvision\file\lzss_read_stream.cpp">
 			<Filter>file</Filter>
 		</ClCompile>
@@ -79,6 +78,7 @@
 		<ClCompile Include="..\..\engines\zvision\graphics\render_table.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\zvision\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\zvision\scripting\actions.cpp">
 			<Filter>scripting</Filter>
 		</ClCompile>
@@ -184,6 +184,7 @@
 		<ClInclude Include="..\..\engines\zvision\core\console.h">
 			<Filter>core</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\zvision\detection.h" />
 		<ClInclude Include="..\..\engines\zvision\detection_tables.h" />
 		<ClInclude Include="..\..\engines\zvision\file\lzss_read_stream.h">
 			<Filter>file</Filter>

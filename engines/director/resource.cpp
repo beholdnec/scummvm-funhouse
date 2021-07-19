@@ -71,8 +71,16 @@ Common::Error Window::loadInitialMovie() {
 
 	_currentMovie = new Movie(this);
 	_currentPath = getPath(movie, _currentPath);
-	_currentMovie->loadSharedCastsFrom(_currentPath + g_director->_sharedCastFile);
+	Common::String sharedCastPath = getSharedCastPath();
+	if (!sharedCastPath.empty() && !sharedCastPath.equalsIgnoreCase(movie))
+		_currentMovie->loadSharedCastsFrom(sharedCastPath);
 	_currentMovie->setArchive(_mainArchive);
+
+	// XLibs are usually loaded in the initial movie.
+	// These may not be present if a --start-movie is specified, so
+	// we sometimes need to load them manually.
+	if (!g_director->getStartMovie().startMovie.empty())
+		loadStartMovieXLibs();
 
 	return Common::kNoError;
 }
@@ -167,7 +175,7 @@ void Window::loadEXE(const Common::String movie) {
 		iniStream->read(script, iniStream->size());
 
 		_currentMovie = new Movie(this);
-		_currentMovie->getMainLingoArch()->addCode(script, kMovieScript, 0);
+		_currentMovie->getMainLingoArch()->addCode(Common::U32String(script, Common::kWindows1252), kMovieScript, 0);
 		_currentMovie->processEvent(kEventStartUp);
 		delete _currentMovie;
 		_currentMovie = nullptr;
@@ -197,15 +205,12 @@ void Window::loadEXE(const Common::String movie) {
 
 		const Common::Array<Common::WinResourceID> versions = exe->getIDList(Common::kWinVersion);
 		for (uint i = 0; i < versions.size(); i++) {
-			Common::SeekableReadStream *res = exe->getResource(Common::kWinVersion, versions[i]);
+			Common::WinResources::VersionInfo *info = exe->getVersionResource(versions[i]);
 
-			Common::WinResources::VersionHash *versionMap = Common::WinResources::parseVersionInfo(res);
-
-			for (Common::WinResources::VersionHash::const_iterator it = versionMap->begin(); it != versionMap->end(); ++it)
+			for (Common::WinResources::VersionHash::const_iterator it = info->hash.begin(); it != info->hash.end(); ++it)
 				warning("info <%s>: <%s>", it->_key.c_str(), it->_value.encode().c_str());
 
-			delete versionMap;
-			delete res;
+			delete info;
 
 		}
 		delete exe;
@@ -284,8 +289,10 @@ void Window::loadEXEv3(Common::SeekableReadStream *stream) {
 }
 
 void Window::loadEXEv4(Common::SeekableReadStream *stream) {
-	if (stream->readUint32BE() != MKTAG('P', 'J', '9', '3'))
-		error("Invalid projector tag found in v4 EXE");
+	uint32 ver = stream->readUint32BE();
+
+	if (ver != MKTAG('P', 'J', '9', '3'))
+		error("Invalid projector tag found in v4 EXE [%s]", tag2str(ver));
 
 	uint32 rifxOffset = stream->readUint32LE();
 	/* uint32 fontMapOffset = */ stream->readUint32LE();
@@ -324,8 +331,10 @@ void Window::loadEXEv5(Common::SeekableReadStream *stream) {
 }
 
 void Window::loadEXEv7(Common::SeekableReadStream *stream) {
-	if (stream->readUint32LE() != MKTAG('P', 'J', '0', '0'))
-		error("Invalid projector tag found in v7 EXE");
+	uint32 ver = stream->readUint32LE();
+
+	if (ver != MKTAG('P', 'J', '0', '0') && ver != MKTAG('P', 'J', '0', '1'))
+		error("Invalid projector tag found in v7 EXE [%s]", tag2str(ver));
 
 	uint32 rifxOffset = stream->readUint32LE();
 	stream->readUint32LE(); // unknown
@@ -377,6 +386,12 @@ void Window::loadMac(const Common::String movie) {
 			delete _currentMovie;
 			_currentMovie = nullptr;
 		}
+	}
+}
+
+void Window::loadStartMovieXLibs() {
+	if (strcmp(g_director->getGameId(), "warlock") == 0 && g_director->getPlatform() == Common::kPlatformMacintosh) {
+		g_lingo->openXLib("FPlayXObj", kXObj);
 	}
 }
 

@@ -2,9 +2,11 @@ MODULE := audio
 
 MODULE_OBJS := \
 	adlib.o \
+	adlib_ms.o \
 	audiostream.o \
 	fmopl.o \
 	mididrv.o \
+	mididrv_ms.o \
 	midiparser_qt.o \
 	midiparser_smf.o \
 	midiparser_xmidi.o \
@@ -14,14 +16,18 @@ MODULE_OBJS := \
 	miles_midi.o \
 	mixer.o \
 	mpu401.o \
+	mt32gm.o \
 	musicplugin.o \
 	null.o \
+	rate.o \
 	timestamp.o \
 	decoders/3do.o \
 	decoders/aac.o \
 	decoders/adpcm.o \
 	decoders/aiff.o \
+	decoders/asf.o \
 	decoders/flac.o \
+	decoders/g711.o \
 	decoders/iff_sound.o \
 	decoders/mac_snd.o \
 	decoders/mp3.o \
@@ -31,7 +37,9 @@ MODULE_OBJS := \
 	decoders/voc.o \
 	decoders/vorbis.o \
 	decoders/wave.o \
+	decoders/wma.o \
 	decoders/xa.o \
+	decoders/xan_dpcm.o \
 	mods/infogrames.o \
 	mods/maxtrax.o \
 	mods/mod_xm_s3m.o \
@@ -90,15 +98,6 @@ endif
 ifdef ENABLE_OPL2LPT
 MODULE_OBJS += \
 	opl2lpt.o
-endif
-
-ifndef USE_ARM_SOUND_ASM
-MODULE_OBJS += \
-	rate.o
-else
-MODULE_OBJS += \
-	rate_arm.o \
-	rate_arm_asm.o
 endif
 
 # Include common rules

@@ -24,6 +24,7 @@
 #include "common/endian.h"
 #include "common/error.h"
 #include "common/events.h"
+#include "common/memstream.h"
 #include "common/keyboard.h"
 #include "common/fs.h"
 #include "common/config-manager.h"
@@ -73,12 +74,33 @@ extern void InventoryProcess(CORO_PARAM, const void *);
 // In SCENE.CPP
 extern SCNHANDLE GetSceneHandle();
 
+extern void ResetVarsDrives();
+extern void ResetVarsEvents();
+extern void RebootScalingReels();
+extern void ResetVarsMove();
+extern void ResetVarsPalette();
+extern void ResetVarsPCode();
+extern void ResetVarsPDisplay();
+extern void ResetVarsPlay();
+extern void ResetVarsPolygons();
+extern void RebootMovers();
+extern void ResetVarsSaveLoad();
+extern void ResetVarsSaveScn();
+extern void ResetVarsScene();
+extern void ResetVarsSched();
+extern void ResetVarsStrRes();
+extern void FreeTextBuffer();
+extern void ResetVarsSysVar();
+extern void FreeAllTokens();
+extern void RebootTimers();
+extern void ResetVarsTinlib();
+
 //----------------- FORWARD DECLARATIONS  ---------------------
 void SetNewScene(SCNHANDLE scene, int entrance, int transition);
 
 //----------------- GLOBAL GLOBAL DATA --------------------
 
-// FIXME: Avoid non-const global vars
+// These vars are reset upon engine destruction
 
 bool g_bRestart = false;
 bool g_bHasRestarted = false;
@@ -87,6 +109,9 @@ bool g_loadingFromGMM = false;
 static bool g_bCuttingScene = false;
 
 static bool g_bChangingForRestore = false;
+
+// FIXME: CountOut is used by ChangeScene
+static int CountOut = 1; // == 1 for immediate start of first scene
 
 #ifdef DEBUG
 bool g_bFast;		// set to make it go ludicrously fast
@@ -104,8 +129,8 @@ static Scene g_NextScene = { 0, 0, 0 };
 static Scene g_HookScene = { 0, 0, 0 };
 static Scene g_DelayedScene = { 0, 0, 0 };
 
-static Common::PROCESS *g_pMouseProcess = 0;
-static Common::PROCESS *g_pKeyboardProcess = 0;
+static Common::PROCESS *g_pMouseProcess = nullptr;
+static Common::PROCESS *g_pKeyboardProcess = nullptr;
 
 static SCNHANDLE g_hCdChangeScene;
 
@@ -308,7 +333,7 @@ static void MouseProcess(CORO_PARAM, const void *) {
 		_vm->_mouseButtons.pop_front();
 
 		int xp, yp;
-		GetCursorXYNoWait(&xp, &yp, true);
+		_vm->_cursor->GetCursorXYNoWait(&xp, &yp, true);
 		const Common::Point mousePos(xp, yp);
 
 		switch (type) {
@@ -473,14 +498,14 @@ void SetNewScene(SCNHANDLE scene, int entrance, int transition) {
 	}
 
 	// If CD change will be required, stick in the scene change scene
-	if (CdNumber(scene) != GetCurrentCD()) {
+	if (_vm->_handle->CdNumber(scene) != GetCurrentCD()) {
 		// This scene gets delayed
 		g_DelayedScene.scene = scene;
 		g_DelayedScene.entry = entrance;
 		g_DelayedScene.trans = transition;
 
 		g_NextScene.scene = g_hCdChangeScene;
-		g_NextScene.entry = CdNumber(scene) - '0';
+		g_NextScene.entry = _vm->_handle->CdNumber(scene) - '0';
 		g_NextScene.trans = TRANS_FADE;
 
 		return;
@@ -513,8 +538,8 @@ void SetNewScene(SCNHANDLE scene, int entrance, int transition) {
 	// right items: player must have Mambo the swamp dragon, and mustn't have fireworks (used on
 	// the swamp dragon previously to "load it up").
 	if (TinselV1PSX && g_NextScene.scene == 0x1800000 && g_NextScene.entry == 2) {
-		if ((IsInInventory(261, INV_1) || IsInInventory(261, INV_2)) &&
-			(!IsInInventory(232, INV_1) && !IsInInventory(232, INV_2)))
+		if ((_vm->_dialogs->IsInInventory(261, INV_1) || _vm->_dialogs->IsInInventory(261, INV_2)) &&
+		    (!_vm->_dialogs->IsInInventory(232, INV_1) && !_vm->_dialogs->IsInInventory(232, INV_2)))
 			g_NextScene.entry = 1;
 	}
 }
@@ -624,10 +649,6 @@ void RestoreMasterProcess(INT_CONTEXT *pic) {
 	CoroScheduler.createProcess(PID_MASTER_SCR, RestoredProcess, &pic, sizeof(pic));
 }
 
-// FIXME: CountOut is used by ChangeScene
-// FIXME: Avoid non-const global vars
-static int CountOut = 1;	// == 1 for immediate start of first scene
-
 /**
  * If a scene restore is going on, just return (we don't update the
  * screen during this time).
@@ -698,63 +719,134 @@ void CuttingScene(bool bCutting) {
 		WrapScene();
 }
 
+struct GameChunk {
+	int numActors;
+	int numGlobals;
+	int numObjects;
+	int numProcesses;
+	int numPolygons;
+	int cdPlayHandle;
+};
+
+GameChunk loadGameChunkV3() {
+	byte *cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_GAME);
+	Common::MemoryReadStream stream(cptr, 36);
+	stream.readUint32LE(); // Size of Game Chunk
+	stream.readUint32LE();
+	stream.readUint32LE();
+
+	GameChunk chunk;
+	chunk.numActors = stream.readUint32LE();
+	chunk.numGlobals =  stream.readUint32LE();
+	chunk.numPolygons = stream.readUint32LE();
+	chunk.numProcesses = stream.readUint32LE();
+	chunk.cdPlayHandle = stream.readUint32LE();
+	chunk.numObjects = stream.readUint32LE();
+	return chunk;
+}
+
+GameChunk createGameChunkV2() {
+	byte *cptr = nullptr;
+	GameChunk chunk;
+
+	// CHUNK_TOTAL_ACTORS seems to be missing in the released version, hard coding a value
+	// TODO: Would be nice to just change 511 to MAX_SAVED_ALIVES
+	cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_TOTAL_ACTORS);
+	chunk.numActors = (cptr != NULL) ? READ_32(cptr) : 511;
+
+	// CHUNK_TOTAL_GLOBALS seems to be missing in some versions.
+	// So if it is missing, set a reasonably high value for the number of globals.
+	cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_TOTAL_GLOBALS);
+	chunk.numGlobals = (cptr != NULL) ? READ_32(cptr) : 512;
+
+	cptr = FindChunk(INV_OBJ_SCNHANDLE, CHUNK_TOTAL_OBJECTS);
+	chunk.numObjects = (cptr != NULL) ? READ_32(cptr) : 0;
+
+	cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_TOTAL_POLY);
+	chunk.numPolygons = (cptr != NULL) ? READ_32(cptr) : 0;
+
+	if (TinselV2) {
+		cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_NUM_PROCESSES);
+		assert(cptr && (*cptr < 100));
+		chunk.numProcesses = *cptr;
+
+		// CdPlay() stuff
+		cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_CDPLAY_HANDLE);
+		assert(cptr);
+		chunk.cdPlayHandle = READ_32(cptr);
+		assert(chunk.cdPlayHandle < 512);
+	}
+	return chunk;
+}
+
+GameChunk loadGameChunk() {
+	if (TinselV3) {
+		return loadGameChunkV3();
+	} else {
+		return createGameChunkV2();
+	}
+}
+
 /**
  * LoadBasicChunks
  */
 void LoadBasicChunks() {
 	byte *cptr;
-	int numObjects;
+	GameChunk game = loadGameChunk();
 
 	// Allocate RAM for savescene data
 	InitializeSaveScenes();
 
-	// CHUNK_TOTAL_ACTORS seems to be missing in the released version, hard coding a value
-	// TODO: Would be nice to just change 511 to MAX_SAVED_ALIVES
-	cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_TOTAL_ACTORS);
-	RegisterActors((cptr != NULL) ? READ_32(cptr) : 511);
+	_vm->_actor->RegisterActors(game.numActors);
 
-	// CHUNK_TOTAL_GLOBALS seems to be missing in some versions.
-	// So if it is missing, set a reasonably high value for the number of globals.
-	cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_TOTAL_GLOBALS);
-	RegisterGlobals((cptr != NULL) ? READ_32(cptr) : 512);
-
-	cptr = FindChunk(INV_OBJ_SCNHANDLE, CHUNK_TOTAL_OBJECTS);
-	numObjects = (cptr != NULL) ? READ_32(cptr) : 0;
+	RegisterGlobals(game.numGlobals);
 
 	cptr = FindChunk(INV_OBJ_SCNHANDLE, CHUNK_OBJECTS);
 
 	// Convert to native endianness
 	INV_OBJECT *io = (INV_OBJECT *)cptr;
-	for (int i = 0; i < numObjects; i++, io++) {
+	for (int i = 0; i < game.numObjects; i++, io++) {
 		io->id        = FROM_32(io->id);
 		io->hIconFilm = FROM_32(io->hIconFilm);
 		io->hScript   = FROM_32(io->hScript);
 		io->attribute = FROM_32(io->attribute);
 	}
 
-	RegisterIcons(cptr, numObjects);
+	_vm->_dialogs->RegisterIcons(cptr, game.numObjects);
 
-	cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_TOTAL_POLY);
-	// Max polygons are 0 in DW1 Mac (both in the demo and the full version)
-	if (cptr != NULL && *cptr != 0)
-		MaxPolygons(*cptr);
+	// Max polygons are 0 in the original DW1 V0 demo and in DW1 Mac (both in the demo and the full version)
+	if (game.numPolygons != 0)
+		MaxPolygons(game.numPolygons);
 
 	if (TinselV2) {
 		// Global processes
-		cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_NUM_PROCESSES);
-		assert(cptr && (*cptr < 100));
-		int num = *cptr;
 		cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_PROCESSES);
-		assert(!num || cptr);
-		GlobalProcesses(num, cptr);
+		assert(!game.numProcesses || cptr);
+		GlobalProcesses(game.numProcesses, cptr);
 
-		// CdPlay() stuff
-		cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_CDPLAY_HANDLE);
-		assert(cptr);
-		uint32 playHandle = READ_32(cptr);
-		assert(playHandle < 512);
-		SetCdPlayHandle(playHandle);
+		_vm->_handle->SetCdPlayHandle(game.cdPlayHandle);
 	}
+}
+
+void ResetVarsTinsel() {
+	g_bRestart = false;
+	g_bHasRestarted = false;
+	g_loadingFromGMM = false;
+
+	g_bCuttingScene = false;
+
+	g_bChangingForRestore = false;
+
+	CountOut = 1;
+
+	g_NextScene = {0, 0, 0};
+	g_HookScene = {0, 0, 0};
+	g_DelayedScene = {0, 0, 0};
+
+	g_pMouseProcess = nullptr;
+	g_pKeyboardProcess = nullptr;
+
+	g_hCdChangeScene = 0;
 }
 
 //----------------- TinselEngine --------------------
@@ -816,12 +908,6 @@ const char *const TinselEngine::_textFiles[][3] = {
 TinselEngine::TinselEngine(OSystem *syst, const TinselGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _random("tinsel"),
 		_sound(0), _midiMusic(0), _pcmMusic(0), _bmv(0) {
-	// Register debug flags
-	DebugMan.addDebugChannel(kTinselDebugAnimations, "animations", "Animations debugging");
-	DebugMan.addDebugChannel(kTinselDebugActions, "actions", "Actions debugging");
-	DebugMan.addDebugChannel(kTinselDebugSound, "sound", "Sound debugging");
-	DebugMan.addDebugChannel(kTinselDebugMusic, "music", "Music debugging");
-
 	_vm = this;
 
 	_gameId = 0;
@@ -849,6 +935,7 @@ TinselEngine::TinselEngine(OSystem *syst, const TinselGameDescription *gameDesc)
 
 TinselEngine::~TinselEngine() {
 	_system->getAudioCDManager()->stop();
+	delete _cursor;
 	delete _bg;
 	delete _font;
 	delete _bmv;
@@ -859,15 +946,40 @@ TinselEngine::~TinselEngine() {
 	_screenSurface.free();
 	FreeSaveScenes();
 	FreeTextBuffer();
-	FreeHandleTable();
-	FreeActors();
 	FreeObjectList();
 	FreeGlobalProcesses();
 	FreeGlobals();
 
+	delete _dialogs;
+	delete _scroll;
+	delete _handle;
+	delete _actor;
 	delete _config;
 
 	MemoryDeinit();
+
+	// Reset global vars
+	ResetVarsDrives();	// drives.cpp
+	ResetVarsEvents();	// events.cpp
+	RebootScalingReels(); // mareels.cpp
+	ResetVarsMove();	// move.cpp
+	ResetVarsPalette();	// palette.cpp
+	ResetVarsPCode();	// pcode.cpp
+	ResetVarsPDisplay();	// pdisplay.cpp
+	ResetVarsPlay();	// play.cpp
+	ResetVarsPolygons();	// polygons.cpp
+	RebootMovers();       // rince.cpp
+	ResetVarsSaveLoad();	// saveload.cpp
+	ResetVarsSaveScn();	// savescn.cpp
+	ResetVarsScene();	// scene.cpp
+	ResetVarsSched();	// sched.cpp
+	ResetVarsStrRes();	// strres.cpp
+	FreeTextBuffer();     // strres.cpp
+	ResetVarsSysVar();	// sysvar.cpp
+	FreeAllTokens();	// token.cpp
+	RebootTimers();       // timers.cpp
+	ResetVarsTinlib();	// tinlib.cpp
+	ResetVarsTinsel();	// tinsel.cpp
 }
 
 Common::String TinselEngine::getSavegameFilename(int16 saveNum) const {
@@ -876,7 +988,7 @@ Common::String TinselEngine::getSavegameFilename(int16 saveNum) const {
 
 void TinselEngine::initializePath(const Common::FSNode &gamePath) {
 	if (TinselV1PSX) {
-		// Add subfolders needed for psx versions of Discworld 1
+		// Add subfolders needed for PSX versions of Discworld 1
 		SearchMan.addDirectory(gamePath.getPath(), gamePath, 0, 3, true);
 	} else {
 		// Add DW2 subfolder to search path in case user is running directly from the CDs
@@ -896,9 +1008,23 @@ Common::Error TinselEngine::run() {
 	_bmv = new BMVPlayer();
 	_font = new Font();
 	_bg = new Background(_font);
+	_cursor = new Cursor();
+	_actor = new Actor();
+	_handle = new Handle();
+	_scroll = new Scroll();
+	_dialogs = new Dialogs();
 
 	// Initialize backend
-	if (getGameID() == GID_DW2) {
+	if (getGameID() == GID_NOIR) {
+		int width = 640;
+		int height = 480;
+
+		Graphics::PixelFormat noirFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
+
+		initGraphics(width, height, &noirFormat);
+
+		_screenSurface.create(width, 432, noirFormat);
+	} else if (getGameID() == GID_DW2) {
 #ifndef DW2_EXACT_SIZE
 		initGraphics(640, 480);
 #else
@@ -927,7 +1053,7 @@ Common::Error TinselEngine::run() {
 	// It may have to be adjusted a bit
 	CountOut = 1;
 
-	RebootCursor();
+	_vm->_cursor->RebootCursor();
 	RebootDeadTags();
 	RebootMovers();
 	resetUserEventTime();
@@ -944,7 +1070,7 @@ Common::Error TinselEngine::run() {
 	RestartDrivers();
 
 	// load in graphics info
-	SetupHandleTable();
+	_vm->_handle->SetupHandleTable();
 
 	// Actors, globals and inventory icons
 	LoadBasicChunks();
@@ -1098,7 +1224,7 @@ void TinselEngine::CreateConstProcesses() {
  * Restart the game
  */
 void TinselEngine::RestartGame() {
-	HoldItem(INV_NOICON);	// Holding nothing
+	_vm->_dialogs->HoldItem(INV_NOICON); // Holding nothing
 
 	_bg->DropBackground();	// No background
 
@@ -1109,7 +1235,7 @@ void TinselEngine::RestartGame() {
 	// -> reset the count used by ChangeScene
 	CountOut = 1;
 
-	RebootCursor();
+	_vm->_cursor->RebootCursor();
 	RebootDeadTags();
 	RebootMovers();
 	RebootTimers();
@@ -1229,8 +1355,8 @@ const char *TinselEngine::getSampleIndex(LANGUAGE lang) {
 
 	} else {
 		cd = 0;
-		if (lang != TXT_JAPANESE)
-			lang = TXT_ENGLISH;
+		if (!Common::File::exists(_sampleFiles[lang][cd]))
+			lang = TXT_ENGLISH; // fallback to ENGLISH.IDX/.SMP if <LANG>.IDX is not found
 	}
 
 	return _sampleIndices[lang][cd];
@@ -1250,8 +1376,8 @@ const char *TinselEngine::getSampleFile(LANGUAGE lang) {
 
 	} else {
 		cd = 0;
-		if (lang != TXT_JAPANESE)
-			lang = TXT_ENGLISH;
+		if (!Common::File::exists(_sampleFiles[lang][cd]))
+			lang = TXT_ENGLISH; // fallback to ENGLISH.IDX/.SMP if <LANG>.IDX is not found
 	}
 
 	return _sampleFiles[lang][cd];

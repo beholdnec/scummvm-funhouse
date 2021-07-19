@@ -2,13 +2,12 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="mpal">
-			<UniqueIdentifier>EEEE41DC-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D0B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\tony\custom.cpp" />
 		<ClCompile Include="..\..\engines\tony\debugger.cpp" />
-		<ClCompile Include="..\..\engines\tony\detection.cpp" />
 		<ClCompile Include="..\..\engines\tony\font.cpp" />
 		<ClCompile Include="..\..\engines\tony\game.cpp" />
 		<ClCompile Include="..\..\engines\tony\gfxcore.cpp" />
@@ -17,6 +16,7 @@
 		<ClCompile Include="..\..\engines\tony\input.cpp" />
 		<ClCompile Include="..\..\engines\tony\inventory.cpp" />
 		<ClCompile Include="..\..\engines\tony\loc.cpp" />
+		<ClCompile Include="..\..\engines\tony\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\tony\mpal\expr.cpp">
 			<Filter>mpal</Filter>
 		</ClCompile>
@@ -44,6 +44,7 @@
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\tony\custom.h" />
 		<ClInclude Include="..\..\engines\tony\debugger.h" />
+		<ClInclude Include="..\..\engines\tony\detection.h" />
 		<ClInclude Include="..\..\engines\tony\detection_tables.h" />
 		<ClInclude Include="..\..\engines\tony\font.h" />
 		<ClInclude Include="..\..\engines\tony\game.h" />

@@ -26,11 +26,12 @@
 #include "ultima/ultima8/kernel/process.h"
 #include "ultima/ultima8/graphics/palette_manager.h"
 #include "ultima/ultima8/usecode/intrinsics.h"
-#include "ultima/ultima8/misc/p_dynamic_cast.h"
+#include "ultima/ultima8/misc/classtype.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
+/** A process to fade the palette from one transform matrix to another */
 class PaletteFaderProcess : public Process {
 	int                         _priority;
 	int32                       _counter;
@@ -57,8 +58,12 @@ public:
 	INTRINSIC(I_fadeFromBlack);
 	INTRINSIC(I_lightningBolt);
 	INTRINSIC(I_fadeToGreyScale);
+	INTRINSIC(I_fadeToGivenColor);
+	INTRINSIC(I_fadeToGamePal);
 	INTRINSIC(I_jumpToGreyScale);
 	INTRINSIC(I_jumpToAllBlack);
+	INTRINSIC(I_jumpToAllWhite);
+	INTRINSIC(I_jumpToAllGivenColor);
 	INTRINSIC(I_jumpToNormalPalette);
 
 	bool loadData(Common::ReadStream *rs, uint32 version);

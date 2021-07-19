@@ -44,6 +44,8 @@ GfxText16::GfxText16(GfxCache *cache, GfxPorts *ports, GfxPaint16 *paint16, GfxS
 }
 
 GfxText16::~GfxText16() {
+	delete[] _codeFonts;
+	delete[] _codeColors;
 }
 
 void GfxText16::init() {
@@ -288,6 +290,7 @@ int16 GfxText16::GetLongest(const char *&textPtr, int16 maxWidth, GuiResourceId 
 
 	} else {
 		// Break without spaces found, we split the very first word - may also be Kanji/Japanese
+
 		if (curChar > 0xFF) {
 			// current character is Japanese
 
@@ -435,6 +438,8 @@ int16 GfxText16::Size(Common::Rect &rect, const char *text, uint16 languageSplit
 	rect.top = rect.left = 0;
 
 	if (maxWidth < 0) { // force output as single line
+		if (g_sci->getLanguage() == Common::KO_KOR)
+			SwitchToFont1001OnKorean(text, languageSplitter);
 		if (g_sci->getLanguage() == Common::JA_JPN)
 			SwitchToFont900OnSjis(text, languageSplitter);
 
@@ -447,6 +452,11 @@ int16 GfxText16::Size(Common::Rect &rect, const char *text, uint16 languageSplit
 		rect.right = (maxWidth ? maxWidth : 192);
 		const char *curTextPos = text; // in work position for GetLongest()
 		const char *curTextLine = text; // starting point of current line
+
+		// Check for Korean text
+		if (g_sci->getLanguage() == Common::KO_KOR)
+			SwitchToFont1001OnKorean(curTextPos, languageSplitter);
+
 		while (*curTextPos) {
 			// We need to check for Shift-JIS every line
 			if (g_sci->getLanguage() == Common::JA_JPN)
@@ -541,6 +551,14 @@ void GfxText16::Box(const char *text, uint16 languageSplitter, bool show, const 
 		SetFont(fontId);
 	else
 		fontId = previousFontId;
+
+	// Check for Korean text
+	if (g_sci->getLanguage() == Common::KO_KOR) {
+		if (SwitchToFont1001OnKorean(curTextPos, languageSplitter)) {
+			doubleByteMode = true;
+			fontId = 1001;
+		}
+	}
 
 	// Reset reference code rects
 	_codeRefRects.clear();
@@ -682,6 +700,28 @@ void GfxText16::DrawStatus(const Common::String &strOrig) {
 	}
 }
 
+// Check for Korean strings, and use font 1001 to render them
+bool GfxText16::SwitchToFont1001OnKorean(const char *text, uint16 languageSplitter) {
+	const byte* ptr = (const byte *)text;
+	if (languageSplitter != 0x6b23) { // #k prefix as language splitter
+		// Check if the text contains at least one Korean character
+		while (*ptr) {
+			byte ch = *ptr++;
+			if (ch >= 0xB0 && ch <= 0xC8) {
+				ch = *ptr++;
+				if (!ch)
+					return false;
+
+				if (ch >= 0xA1 && ch <= 0xFE) {
+					SetFont(1001);
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 // Sierra did this in their PC98 interpreter only, they identify a text as being
 // sjis and then switch to font 900
 bool GfxText16::SwitchToFont900OnSjis(const char *text, uint16 languageSplitter) {
@@ -730,7 +770,7 @@ void GfxText16::kernelTextSize(const char *text, uint16 languageSplitter, int16 
 void GfxText16::kernelTextFonts(int argc, reg_t *argv) {
 	int i;
 
-	delete _codeFonts;
+	delete[] _codeFonts;
 	_codeFontsCount = argc;
 	_codeFonts = new GuiResourceId[argc];
 	for (i = 0; i < argc; i++) {
@@ -742,7 +782,7 @@ void GfxText16::kernelTextFonts(int argc, reg_t *argv) {
 void GfxText16::kernelTextColors(int argc, reg_t *argv) {
 	int i;
 
-	delete _codeColors;
+	delete[] _codeColors;
 	_codeColorsCount = argc;
 	_codeColors = new uint16[argc];
 	for (i = 0; i < argc; i++) {

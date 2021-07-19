@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -169,9 +184,7 @@
 		<ClCompile Include="..\..\engines\mohawk\myst_stacks\makingof.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_stacks\mechanical.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_stacks\menu.cpp" />
-		<ClCompile Include="..\..\engines\mohawk\myst_stacks\myst.cpp">
-			<ObjectFileName>$(IntDir)myst_stacks_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\mohawk\myst_stacks\myst.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_stacks\preview.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_stacks\selenitic.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_stacks\slides.cpp" />
@@ -194,7 +207,6 @@
 		<ClCompile Include="..\..\engines\mohawk\cstime_ui.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\cstime_view.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\cursors.cpp" />
-		<ClCompile Include="..\..\engines\mohawk\detection.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\dialogs.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\graphics.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\installer_archive.cpp" />
@@ -202,13 +214,13 @@
 		<ClCompile Include="..\..\engines\mohawk\livingbooks_code.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\livingbooks_graphics.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\livingbooks_lbx.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\mohawk.cpp" />
-		<ClCompile Include="..\..\engines\mohawk\myst.cpp">
-			<ObjectFileName>$(IntDir)%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\mohawk\myst.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_areas.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_card.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_graphics.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\myst_metaengine.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_scripts.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_sound.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_state.cpp" />
@@ -218,6 +230,7 @@
 		<ClCompile Include="..\..\engines\mohawk\riven_card.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_graphics.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_inventory.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\riven_metaengine.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_saveload.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_scripts.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_sound.cpp" />
@@ -260,6 +273,7 @@
 		<ClInclude Include="..\..\engines\mohawk\cstime_ui.h" />
 		<ClInclude Include="..\..\engines\mohawk\cstime_view.h" />
 		<ClInclude Include="..\..\engines\mohawk\cursors.h" />
+		<ClInclude Include="..\..\engines\mohawk\detection.h" />
 		<ClInclude Include="..\..\engines\mohawk\detection_tables.h" />
 		<ClInclude Include="..\..\engines\mohawk\dialogs.h" />
 		<ClInclude Include="..\..\engines\mohawk\graphics.h" />
@@ -274,6 +288,7 @@
 		<ClInclude Include="..\..\engines\mohawk\myst_areas.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_card.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_graphics.h" />
+		<ClInclude Include="..\..\engines\mohawk\myst_metaengine.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_scripts.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_sound.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_state.h" />
@@ -283,7 +298,9 @@
 		<ClInclude Include="..\..\engines\mohawk\riven_actions.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_card.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_graphics.h" />
+		<ClInclude Include="..\..\engines\mohawk\riven_graphics_detection_enums.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_inventory.h" />
+		<ClInclude Include="..\..\engines\mohawk\riven_metaengine.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_saveload.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_scripts.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_sound.h" />

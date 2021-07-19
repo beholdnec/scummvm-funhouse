@@ -2,58 +2,58 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="adrift">
-			<UniqueIdentifier>EEEE4159-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C67-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="advsys">
-			<UniqueIdentifier>EEEE415A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C68-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="agt">
-			<UniqueIdentifier>EEEE415B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C69-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="alan2">
-			<UniqueIdentifier>EEEE415C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C6A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="alan3">
-			<UniqueIdentifier>EEEE415D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C6B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="archetype">
-			<UniqueIdentifier>EEEE415E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C6C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="comprehend">
-			<UniqueIdentifier>EEEE415F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C6D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="glulx">
-			<UniqueIdentifier>EEEE4160-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C6E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="hugo">
-			<UniqueIdentifier>EEEE4161-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C6F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="jacl">
-			<UniqueIdentifier>EEEE4162-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C70-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="level9">
-			<UniqueIdentifier>EEEE4163-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C71-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="magnetic">
-			<UniqueIdentifier>EEEE4164-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C72-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="quest">
-			<UniqueIdentifier>EEEE4165-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C73-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="scott">
-			<UniqueIdentifier>EEEE4166-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C74-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="tads">
-			<UniqueIdentifier>EEEE4167-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C75-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="tads\tads2">
-			<UniqueIdentifier>EEEE4168-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C76-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="tads\tads3">
-			<UniqueIdentifier>EEEE4169-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C77-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="zcode">
-			<UniqueIdentifier>EEEE416A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C78-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -511,13 +511,16 @@
 		<ClCompile Include="..\..\engines\glk\comprehend\game_oo.cpp">
 			<Filter>comprehend</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\glk\comprehend\game_opcodes.cpp">
+			<Filter>comprehend</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\glk\comprehend\game_tm.cpp">
 			<Filter>comprehend</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\glk\comprehend\game_tr.cpp">
+		<ClCompile Include="..\..\engines\glk\comprehend\game_tr1.cpp">
 			<Filter>comprehend</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\glk\comprehend\opcode_map.cpp">
+		<ClCompile Include="..\..\engines\glk\comprehend\game_tr2.cpp">
 			<Filter>comprehend</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\glk\comprehend\pics.cpp">
@@ -690,6 +693,7 @@
 		<ClCompile Include="..\..\engines\glk\magnetic\magnetic.cpp">
 			<Filter>magnetic</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\glk\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\glk\pc_speaker.cpp" />
 		<ClCompile Include="..\..\engines\glk\picture.cpp" />
 		<ClCompile Include="..\..\engines\glk\quest\detection.cpp">
@@ -1329,13 +1333,16 @@
 		<ClInclude Include="..\..\engines\glk\comprehend\game_oo.h">
 			<Filter>comprehend</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\glk\comprehend\game_opcodes.h">
+			<Filter>comprehend</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\glk\comprehend\game_tm.h">
 			<Filter>comprehend</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\glk\comprehend\game_tr.h">
+		<ClInclude Include="..\..\engines\glk\comprehend\game_tr1.h">
 			<Filter>comprehend</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\glk\comprehend\opcode_map.h">
+		<ClInclude Include="..\..\engines\glk\comprehend\game_tr2.h">
 			<Filter>comprehend</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\glk\comprehend\pics.h">
@@ -1346,6 +1353,7 @@
 		<ClInclude Include="..\..\engines\glk\detection.h" />
 		<ClInclude Include="..\..\engines\glk\events.h" />
 		<ClInclude Include="..\..\engines\glk\fonts.h" />
+		<ClInclude Include="..\..\engines\glk\game_description.h" />
 		<ClInclude Include="..\..\engines\glk\glk.h" />
 		<ClInclude Include="..\..\engines\glk\glk_api.h" />
 		<ClInclude Include="..\..\engines\glk\glk_types.h" />

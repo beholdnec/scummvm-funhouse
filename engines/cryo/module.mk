@@ -4,12 +4,11 @@ MODULE_OBJS = \
 	cryo.o \
 	cryolib.o \
 	debugger.o \
-	detection.o \
 	eden.o \
 	eden_graphics.o \
+	metaengine.o \
 	resource.o \
-	sound.o \
-	video.o
+	sound.o
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_CRYO), DYNAMIC_PLUGIN)
@@ -18,3 +17,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

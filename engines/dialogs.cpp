@@ -44,10 +44,6 @@
 #include "engines/engine.h"
 #include "engines/metaengine.h"
 
-#ifdef GUI_ENABLE_KEYSDIALOG
-#include "gui/KeysDialog.h"
-#endif
-
 MainMenuDialog::MainMenuDialog(Engine *engine)
 	: GUI::Dialog("GlobalMenu"), _engine(engine) {
 	_backgroundType = GUI::ThemeEngine::kDialogBackgroundSpecial;
@@ -59,44 +55,44 @@ MainMenuDialog::MainMenuDialog(Engine *engine)
 		_logo->useThemeTransparency(true);
 		_logo->setGfx(g_gui.theme()->getImageSurface(GUI::ThemeEngine::kImageLogoSmall));
 	} else {
-		GUI::StaticTextWidget *title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", "ScummVM");
+		GUI::StaticTextWidget *title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", Common::U32String("ScummVM"));
 		title->setAlign(Graphics::kTextAlignCenter);
 	}
 #else
-	GUI::StaticTextWidget *title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", "ScummVM");
+	GUI::StaticTextWidget *title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", Common::U32String("ScummVM"));
 	title->setAlign(Graphics::kTextAlignCenter);
 #endif
 
-	GUI::StaticTextWidget *version = new GUI::StaticTextWidget(this, "GlobalMenu.Version", gScummVMVersionDate);
+	GUI::StaticTextWidget *version = new GUI::StaticTextWidget(this, "GlobalMenu.Version", Common::U32String(gScummVMVersionDate));
 	version->setAlign(Graphics::kTextAlignCenter);
 
-	new GUI::ButtonWidget(this, "GlobalMenu.Resume", _("~R~esume"), 0, kPlayCmd, 'P');
+	new GUI::ButtonWidget(this, "GlobalMenu.Resume", _("~R~esume"), Common::U32String(), kPlayCmd, 'P');
 
-	_loadButton = new GUI::ButtonWidget(this, "GlobalMenu.Load", _("~L~oad"), 0, kLoadCmd);
+	_loadButton = new GUI::ButtonWidget(this, "GlobalMenu.Load", _("~L~oad"), Common::U32String(), kLoadCmd);
 	_loadButton->setVisible(_engine->hasFeature(Engine::kSupportsLoadingDuringRuntime));
 	_loadButton->setEnabled(_engine->hasFeature(Engine::kSupportsLoadingDuringRuntime));
 
-	_saveButton = new GUI::ButtonWidget(this, "GlobalMenu.Save", _("~S~ave"), 0, kSaveCmd);
+	_saveButton = new GUI::ButtonWidget(this, "GlobalMenu.Save", _("~S~ave"), Common::U32String(), kSaveCmd);
 	_saveButton->setVisible(_engine->hasFeature(Engine::kSupportsSavingDuringRuntime));
 	_saveButton->setEnabled(_engine->hasFeature(Engine::kSupportsSavingDuringRuntime));
 
-	new GUI::ButtonWidget(this, "GlobalMenu.Options", _("~O~ptions"), 0, kOptionsCmd);
+	new GUI::ButtonWidget(this, "GlobalMenu.Options", _("~O~ptions"), Common::U32String(), kOptionsCmd);
 
 	// The help button is disabled by default.
 	// To enable "Help", an engine needs to use a subclass of MainMenuDialog
 	// (at least for now, we might change how this works in the future).
-	_helpButton = new GUI::ButtonWidget(this, "GlobalMenu.Help", _("~H~elp"), 0, kHelpCmd);
+	_helpButton = new GUI::ButtonWidget(this, "GlobalMenu.Help", _("~H~elp"), Common::U32String(), kHelpCmd);
 
-	new GUI::ButtonWidget(this, "GlobalMenu.About", _("~A~bout"), 0, kAboutCmd);
+	new GUI::ButtonWidget(this, "GlobalMenu.About", _("~A~bout"), Common::U32String(), kAboutCmd);
 
-	if (g_system->getOverlayWidth() > 320)
-		_returnToLauncherButton = new GUI::ButtonWidget(this, "GlobalMenu.ReturnToLauncher", _("~R~eturn to Launcher"), 0, kLauncherCmd);
+	if (g_gui.getGUIWidth() > 320)
+		_returnToLauncherButton = new GUI::ButtonWidget(this, "GlobalMenu.ReturnToLauncher", _("~R~eturn to Launcher"), Common::U32String(), kLauncherCmd);
 	else
-		_returnToLauncherButton = new GUI::ButtonWidget(this, "GlobalMenu.ReturnToLauncher", _c("~R~eturn to Launcher", "lowres"), 0, kLauncherCmd);
+		_returnToLauncherButton = new GUI::ButtonWidget(this, "GlobalMenu.ReturnToLauncher", _c("~R~eturn to Launcher", "lowres"), Common::U32String(), kLauncherCmd);
 	_returnToLauncherButton->setEnabled(_engine->hasFeature(Engine::kSupportsReturnToLauncher));
 
-	if (!g_system->hasFeature(OSystem::kFeatureNoQuit))
-		new GUI::ButtonWidget(this, "GlobalMenu.Quit", _("~Q~uit"), 0, kQuitCmd);
+	if (!g_system->hasFeature(OSystem::kFeatureNoQuit) && (!(ConfMan.getBool("gui_return_to_launcher_at_exit")) || !_engine->hasFeature(Engine::kSupportsReturnToLauncher)))
+		new GUI::ButtonWidget(this, "GlobalMenu.Quit", _("~Q~uit"), Common::U32String(), kQuitCmd);
 
 	_aboutDialog = new GUI::AboutDialog();
 	_loadDialog = new GUI::SaveLoadChooser(_("Load game:"), _("Load"), false);
@@ -165,7 +161,7 @@ void MainMenuDialog::reflowLayout() {
 	// Update labels when it might be needed
 	// FIXME: it might be better to declare GUI::StaticTextWidget::setLabel() virtual
 	// and to reimplement it in GUI::ButtonWidget to handle the hotkey.
-	if (g_system->getOverlayWidth() > 320)
+	if (g_gui.getGUIWidth() > 320)
 		_returnToLauncherButton->setLabel(_returnToLauncherButton->cleanupHotkey(_("~R~eturn to Launcher")));
 	else
 		_returnToLauncherButton->setLabel(_returnToLauncherButton->cleanupHotkey(_c("~R~eturn to Launcher", "lowres")));
@@ -186,7 +182,7 @@ void MainMenuDialog::reflowLayout() {
 	} else {
 		GUI::StaticTextWidget *title = (GUI::StaticTextWidget *)findWidget("GlobalMenu.Title");
 		if (!title) {
-			title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", "ScummVM");
+			title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", Common::U32String("ScummVM"));
 			title->setAlign(Graphics::kTextAlignCenter);
 		}
 
@@ -214,7 +210,7 @@ void MainMenuDialog::save() {
 
 		Common::Error status = _engine->saveGameState(slot, result);
 		if (status.getCode() != Common::kNoError) {
-			Common::String failMessage = Common::String::format(_("Failed to save game (%s)! "
+			Common::U32String failMessage = Common::U32String::format(_("Failed to save game (%s)! "
 				  "Please consult the README for basic information, and for "
 				  "instructions on how to obtain further assistance."), status.getDesc().c_str());
 			GUI::MessageDialog dialog(failMessage);
@@ -233,12 +229,6 @@ void MainMenuDialog::load() {
 	if (slot >= 0)
 		close();
 }
-
-#ifdef GUI_ENABLE_KEYSDIALOG
-enum {
-	kKeysCmd = 'KEYS'
-};
-#endif
 
 namespace GUI {
 
@@ -273,7 +263,7 @@ ConfigDialog::ConfigDialog() :
 	assert(g_engine);
 
 	const Common::String &gameDomain = ConfMan.getActiveDomainName();
-	const MetaEngine &metaEngine = g_engine->getMetaEngine();
+	const MetaEngine *metaEngine = g_engine->getMetaEngine();
 
 	// GUI:  Add tab widget
 	GUI::TabWidget *tab = new GUI::TabWidget(this, "GlobalConfig.TabWidget");
@@ -285,7 +275,7 @@ ConfigDialog::ConfigDialog() :
 	int tabId = tab->addTab(_("Game"), "GlobalConfig_Engine");
 
 	if (g_engine->hasFeature(Engine::kSupportsChangingOptionsDuringRuntime)) {
-		_engineOptions = metaEngine.buildEngineOptionsWidget(tab, "GlobalConfig_Engine.Container", gameDomain);
+		_engineOptions = metaEngine->buildEngineOptionsWidgetDynamic(tab, "GlobalConfig_Engine.Container", gameDomain);
 	}
 
 	if (_engineOptions) {
@@ -321,19 +311,36 @@ ConfigDialog::ConfigDialog() :
 	// The Keymap tab
 	//
 
-	Common::KeymapArray keymaps = metaEngine.initKeymaps(gameDomain.c_str());
+	Common::KeymapArray keymaps = metaEngine->initKeymaps(gameDomain.c_str());
 	if (!keymaps.empty()) {
 		tab->addTab(_("Keymaps"), "GlobalConfig_KeyMapper");
 		addKeyMapperControls(tab, "GlobalConfig_KeyMapper.", keymaps, gameDomain);
 	}
 
 	//
-	// The Achievements tab
+	// The backend tab (shown only if the backend implements one)
 	//
-	Common::AchievementsInfo achievementsInfo = metaEngine.getAchievementsInfo(gameDomain);
-	if (achievementsInfo.descriptions.size() > 0) {
+	int backendTabId = tab->addTab(_("Backend"), "GlobalConfig_Backend");
+
+	_backendOptions = g_system->buildBackendOptionsWidget(tab, "GlobalConfig_Backend.Container", _domain);
+
+	if (_backendOptions) {
+		_backendOptions->setParentDialog(this);
+	} else {
+		tab->removeTab(backendTabId);
+	}
+
+	//
+	// The Achievements & The Statistics tabs
+	//
+	AchMan.setActiveDomain(metaEngine->getAchievementsInfo(gameDomain));
+	if (AchMan.getAchievementCount()) {
 		tab->addTab(_("Achievements"), "GlobalConfig_Achievements");
-		addAchievementsControls(tab, "GlobalConfig_Achievements.", achievementsInfo);
+		addAchievementsControls(tab, "GlobalConfig_Achievements.");
+	}
+	if (AchMan.getStatCount()) {
+		tab->addTab(_("Statistics"), "GlobalConfig_Achievements");
+		addStatisticsControls(tab, "GlobalConfig_Achievements.");
 	}
 
 	// Activate the first tab
@@ -343,19 +350,11 @@ ConfigDialog::ConfigDialog() :
 	// Add the buttons
 	//
 
-	new GUI::ButtonWidget(this, "GlobalConfig.Ok", _("~O~K"), 0, GUI::kOKCmd);
-	new GUI::ButtonWidget(this, "GlobalConfig.Cancel", _("~C~ancel"), 0, GUI::kCloseCmd);
-
-#ifdef GUI_ENABLE_KEYSDIALOG
-	new GUI::ButtonWidget(this, "GlobalConfig.Keys", _("~K~eys"), 0, kKeysCmd);
-	_keysDialog = NULL;
-#endif
+	new GUI::ButtonWidget(this, "GlobalConfig.Ok", _("~O~K"), Common::U32String(), GUI::kOKCmd);
+	new GUI::ButtonWidget(this, "GlobalConfig.Cancel", _("~C~ancel"), Common::U32String(), GUI::kCloseCmd);
 }
 
 ConfigDialog::~ConfigDialog() {
-#ifdef GUI_ENABLE_KEYSDIALOG
-	delete _keysDialog;
-#endif
 }
 
 void ConfigDialog::build() {
@@ -375,40 +374,14 @@ void ConfigDialog::apply() {
 	OptionsDialog::apply();
 }
 
-#ifdef GUI_ENABLE_KEYSDIALOG
-void ConfigDialog::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) {
-	switch (cmd) {
-	case kKeysCmd:
-		//
-		// Create the sub dialog(s)
-		//
-		_keysDialog = new GUI::KeysDialog();
-		_keysDialog->runModal();
-		delete _keysDialog;
-		_keysDialog = NULL;
-		break;
-	default:
-		GUI::OptionsDialog::handleCommand (sender, cmd, data);
-	}
-}
-#endif
-
 ExtraGuiOptionsWidget::ExtraGuiOptionsWidget(GuiObject *containerBoss, const Common::String &name, const Common::String &domain, const ExtraGuiOptions &options) :
-		OptionsContainerWidget(containerBoss, name, dialogLayout(domain), false, domain),
+		OptionsContainerWidget(containerBoss, name, dialogLayout(domain), true, domain),
 		_options(options) {
 
-	// Note: up to 7 engine options can currently fit on screen (the most that
-	// can fit in a 320x200 screen with the classic theme).
-	// TODO: Increase this number by including the checkboxes inside a scroll
-	// widget. The appropriate number of checkboxes will need to be added to
-	// the theme files.
-
-	uint i = 1;
-	ExtraGuiOptions::const_iterator iter;
-	for (iter = _options.begin(); iter != _options.end(); ++iter, ++i) {
-		Common::String id = Common::String::format("%d", i);
+	for (uint i = 0; i < _options.size(); i++) {
+		Common::String id = Common::String::format("%d", i + 1);
 		_checkboxes.push_back(new CheckboxWidget(widgetsBoss(),
-			_dialogLayout + ".customOption" + id + "Checkbox", _(iter->label), _(iter->tooltip)));
+			_dialogLayout + ".customOption" + id + "Checkbox", _(_options[i].label), _(_options[i].tooltip)));
 	}
 }
 
@@ -425,7 +398,7 @@ Common::String ExtraGuiOptionsWidget::dialogLayout(const Common::String &domain)
 
 void ExtraGuiOptionsWidget::load() {
 	// Set the state of engine-specific checkboxes
-	for (uint j = 0; j < _options.size(); ++j) {
+	for (uint j = 0; j < _options.size() && j < _checkboxes.size(); ++j) {
 		// The default values for engine-specific checkboxes are not set when
 		// ScummVM starts, as this would require us to load and poll all of the
 		// engine plugins on startup. Thus, we set the state of each custom
@@ -441,11 +414,23 @@ void ExtraGuiOptionsWidget::load() {
 
 bool ExtraGuiOptionsWidget::save() {
 	// Set the state of engine-specific checkboxes
-	for (uint i = 0; i < _options.size(); i++) {
+	for (uint i = 0; i < _options.size() && i < _checkboxes.size(); i++) {
 		ConfMan.setBool(_options[i].configOption, _checkboxes[i]->getState(), _domain);
 	}
 
 	return true;
+}
+
+void ExtraGuiOptionsWidget::defineLayout(ThemeEval& layouts, const Common::String& layoutName, const Common::String& overlayedLayout) const {
+	layouts.addDialog(layoutName, overlayedLayout);
+	layouts.addLayout(GUI::ThemeLayout::kLayoutVertical).addPadding(8, 8, 8, 8);
+
+	for (uint i = 0; i < _options.size(); i++) {
+		Common::String id = Common::String::format("%d", i + 1);
+		layouts.addWidget("customOption" + id + "Checkbox", "Checkbox");
+	}
+
+	layouts.closeLayout().closeDialog();
 }
 
 } // End of namespace GUI

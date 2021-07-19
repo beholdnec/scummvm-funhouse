@@ -83,12 +83,12 @@ public:
 	bool loadLists(Common::ReadStream *rs, uint32 version);
 
 	INTRINSIC(I_true);
+	INTRINSIC(I_false);
 	INTRINSIC(I_dummyProcess);
 	INTRINSIC(I_getName);
 	INTRINSIC(I_urandom);
 	INTRINSIC(I_rndRange);
 	INTRINSIC(I_numToStr);
-	INTRINSIC(I_getCurrentTimerTick);
 
 protected:
 	void loadIntrinsics(Intrinsic *i, unsigned int icount);
@@ -103,6 +103,7 @@ private:
 	Std::map<uint16, UCList *> _listHeap;
 	Std::map<uint16, Std::string> _stringHeap;
 
+	// Add a string to the list (copies the string)
 	uint16 assignString(const char *str);
 	uint16 assignList(UCList *l);
 

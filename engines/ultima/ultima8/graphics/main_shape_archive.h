@@ -24,7 +24,6 @@
 #define ULTIMA8_GRAPHICS_MAINSHAPEARCHIVE_H
 
 #include "ultima/ultima8/graphics/shape_archive.h"
-#include "ultima/ultima8/misc/p_dynamic_cast.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -37,15 +36,15 @@ class AnimAction;
 
 class MainShapeArchive : public ShapeArchive {
 public:
-	MainShapeArchive(uint16 id_, Palette *pal_ = 0,
-	                 const ConvertShapeFormat *format_ = 0)
-		: ShapeArchive(id_, pal_, format_), _typeFlags(0), _animDat(0) { }
-	MainShapeArchive(ArchiveFile *af, uint16 id_, Palette *pal_ = 0,
-	                 const ConvertShapeFormat *format_ = 0)
-		: ShapeArchive(af, id_, pal_, format_), _typeFlags(0), _animDat(0) { }
-	MainShapeArchive(Common::SeekableReadStream *rs, uint16 id_, Palette *pal_ = 0,
-	                 const ConvertShapeFormat *format_ = 0)
-		: ShapeArchive(rs, id_, pal_, format_), _typeFlags(0), _animDat(0) { }
+	MainShapeArchive(uint16 id, Palette *pal = 0,
+	                 const ConvertShapeFormat *format = 0)
+		: ShapeArchive(id, pal, format), _typeFlags(0), _animDat(0) { }
+	MainShapeArchive(ArchiveFile *af, uint16 id, Palette *pal = 0,
+	                 const ConvertShapeFormat *format = 0)
+		: ShapeArchive(af, id, pal, format), _typeFlags(0), _animDat(0) { }
+	MainShapeArchive(Common::SeekableReadStream *rs, uint16 id, Palette *pal = 0,
+	                 const ConvertShapeFormat *format = 0)
+		: ShapeArchive(rs, id, pal, format), _typeFlags(0), _animDat(0) { }
 
 	~MainShapeArchive() override;
 

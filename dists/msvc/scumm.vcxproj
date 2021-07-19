@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -183,6 +198,7 @@
 		<ClCompile Include="..\..\engines\scumm\he\animation_he.cpp" />
 		<ClCompile Include="..\..\engines\scumm\he\cup_player_he.cpp" />
 		<ClCompile Include="..\..\engines\scumm\he\floodfill_he.cpp" />
+		<ClCompile Include="..\..\engines\scumm\he\localizer.cpp" />
 		<ClCompile Include="..\..\engines\scumm\he\logic_he.cpp" />
 		<ClCompile Include="..\..\engines\scumm\he\palette_he.cpp" />
 		<ClCompile Include="..\..\engines\scumm\he\resource_he.cpp" />
@@ -259,14 +275,16 @@
 		<ClCompile Include="..\..\engines\scumm\costume.cpp" />
 		<ClCompile Include="..\..\engines\scumm\cursor.cpp" />
 		<ClCompile Include="..\..\engines\scumm\debugger.cpp" />
-		<ClCompile Include="..\..\engines\scumm\detection.cpp" />
 		<ClCompile Include="..\..\engines\scumm\dialogs.cpp" />
 		<ClCompile Include="..\..\engines\scumm\file.cpp" />
 		<ClCompile Include="..\..\engines\scumm\file_nes.cpp" />
 		<ClCompile Include="..\..\engines\scumm\gfx.cpp" />
+		<ClCompile Include="..\..\engines\scumm\gfx_mac.cpp" />
 		<ClCompile Include="..\..\engines\scumm\gfx_towns.cpp" />
 		<ClCompile Include="..\..\engines\scumm\help.cpp" />
 		<ClCompile Include="..\..\engines\scumm\input.cpp" />
+		<ClCompile Include="..\..\engines\scumm\ks_check.cpp" />
+		<ClCompile Include="..\..\engines\scumm\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\scumm\midiparser_ro.cpp" />
 		<ClCompile Include="..\..\engines\scumm\nut_renderer.cpp" />
 		<ClCompile Include="..\..\engines\scumm\object.cpp" />
@@ -310,6 +328,7 @@
 		<ClInclude Include="..\..\engines\scumm\he\cup_player_he.h" />
 		<ClInclude Include="..\..\engines\scumm\he\floodfill_he.h" />
 		<ClInclude Include="..\..\engines\scumm\he\intern_he.h" />
+		<ClInclude Include="..\..\engines\scumm\he\localizer.h" />
 		<ClInclude Include="..\..\engines\scumm\he\logic_he.h" />
 		<ClInclude Include="..\..\engines\scumm\he\resource_he.h" />
 		<ClInclude Include="..\..\engines\scumm\he\sound_he.h" />
@@ -365,15 +384,20 @@
 		<ClInclude Include="..\..\engines\scumm\costume.h" />
 		<ClInclude Include="..\..\engines\scumm\debugger.h" />
 		<ClInclude Include="..\..\engines\scumm\detection.h" />
+		<ClInclude Include="..\..\engines\scumm\detection_internal.h" />
+		<ClInclude Include="..\..\engines\scumm\detection_steam.h" />
 		<ClInclude Include="..\..\engines\scumm\detection_tables.h" />
 		<ClInclude Include="..\..\engines\scumm\dialogs.h" />
 		<ClInclude Include="..\..\engines\scumm\file.h" />
 		<ClInclude Include="..\..\engines\scumm\file_nes.h" />
 		<ClInclude Include="..\..\engines\scumm\gfx.h" />
 		<ClInclude Include="..\..\engines\scumm\help.h" />
+		<ClInclude Include="..\..\engines\scumm\ks_check.h" />
+		<ClInclude Include="..\..\engines\scumm\metaengine.h" />
 		<ClInclude Include="..\..\engines\scumm\music.h" />
 		<ClInclude Include="..\..\engines\scumm\nut_renderer.h" />
 		<ClInclude Include="..\..\engines\scumm\object.h" />
+		<ClInclude Include="..\..\engines\scumm\obsolete.h" />
 		<ClInclude Include="..\..\engines\scumm\resource.h" />
 		<ClInclude Include="..\..\engines\scumm\script.h" />
 		<ClInclude Include="..\..\engines\scumm\scumm-md5.h" />

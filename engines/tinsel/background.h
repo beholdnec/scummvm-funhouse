@@ -24,6 +24,7 @@
 #ifndef TINSEL_BACKGND_H     // prevent multiple includes
 #define TINSEL_BACKGND_H
 
+#include "common/array.h"
 #include "common/coroutines.h"
 #include "common/frac.h"
 #include "common/rect.h"
@@ -65,8 +66,7 @@ struct BACKGND {
 	int refreshRate;		///< background update process refresh rate
 	frac_t *pXscrollTable;	///< pointer to x direction scroll table for this background
 	frac_t *pYscrollTable;	///< pointer to y direction scroll table for this background
-	int numPlayfields;		///< number of playfields for this background
-	PLAYFIELD *fieldArray;	///< pointer to array of all playfields for this background
+	Common::Array<PLAYFIELD> fieldArray;	///< list of all playfields for this background
 	bool bAutoErase;		///< when set - screen is cleared before anything is plotted (unused)
 };
 
@@ -93,6 +93,7 @@ public:
 	void DropBackground();
 
 	void ResetBackground() {
+		_pCurBgnd->fieldArray.clear();
 		delete _pCurBgnd;
 		_pCurBgnd = nullptr;
 	}
@@ -100,20 +101,20 @@ public:
 	void StartupBackground(CORO_PARAM, SCNHANDLE hFilm);
 
 	void PlayfieldSetPos(		// Sets the xy position of the specified playfield in the current background
-		int which,		// which playfield
+		unsigned int which,		// which playfield
 		int newXpos,		// new x position
 		int newYpos);		// new y position
 
 	void PlayfieldGetPos(		// Returns the xy position of the specified playfield in the current background
-		int which,		// which playfield
+		unsigned int which,		// which playfield
 		int* pXpos,		// returns current x position
 		int* pYpos);		// returns current y position
 
 	int PlayfieldGetCenterX(	// Returns the xy position of the specified playfield in the current background
-		int which);		// which playfield
+		unsigned int which);		// which playfield
 
 	OBJECT** GetPlayfieldList(	// Returns the display list for the specified playfield
-		int which);		// which playfield
+		unsigned int which);		// which playfield
 
 	OBJECT* GetBgObject() { return _pBG[0]; }
 
@@ -143,6 +144,8 @@ public:
 	void SetBackPal(SCNHANDLE hPal);
 
 	int getBgSpeed() { return _BGspeed; }
+
+	void WaitForBG(CORO_PARAM);
 
 private:
 	Font *_font;

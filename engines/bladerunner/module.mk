@@ -17,12 +17,12 @@ MODULE_OBJS = \
 	bladerunner.o \
 	boundingbox.o \
 	chapters.o \
+	color.o \
 	combat.o \
 	crimes_database.o \
 	debugger.o \
 	decompress_lcw.o \
 	decompress_lzo.o \
-	detection.o \
 	dialogue_menu.o \
 	framelimiter.o \
 	fog.o \
@@ -36,6 +36,7 @@ MODULE_OBJS = \
 	light.o \
 	lights.o \
 	matrix.o \
+	metaengine.o \
 	mouse.o \
 	movement_track.o \
 	music.o \
@@ -288,3 +289,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

@@ -20,16 +20,27 @@
  *
  */
 
+#if (__GNUC__ && __cplusplus)
+#pragma GCC diagnostic ignored "-Wreturn-local-addr"
+#pragma GCC diagnostic ignored "-Wnarrowing"
+#pragma GCC diagnostic ignored "-Wc++14-compat"
+#endif
+
 #include <sdlapp.h> // for CSDLApp::GetExecutablePathCStr() @ Symbian::GetExecutablePath()
 #include <bautils.h>
 #include <eikenv.h> // for CEikonEnv::Static()
+
+#if (__GNUC__ && __cplusplus)
+//If a pop has no matching push, the command-line options are restored.
+#pragma GCC diagnostic pop
+#endif
+
 #define FORBIDDEN_SYMBOL_EXCEPTION_fclose
 #define FORBIDDEN_SYMBOL_EXCEPTION_fopen
 
 #include "backends/platform/symbian/src/SymbianOS.h"
 #include "common/config-manager.h"
 #include "common/scummsys.h"
-#include "common/translation.h"
 
 #include "gui/message.h"
 
@@ -37,10 +48,8 @@
 #include "backends/saves/default/default-saves.h"
 #include "backends/mixer/symbiansdl/symbiansdl-mixer.h"
 
-#ifdef GUI_ENABLE_KEYSDIALOG
-#include "backends/platform/symbian/src/SymbianActions.h"
-#include "backends/events/symbiansdl/symbiansdl-events.h"
-#endif
+#include "backends/keymapper/keymapper.h"
+#include "backends/keymapper/keymapper-defaults.h"
 
 #define DEFAULT_CONFIG_FILE "scummvm.ini"
 #define DEFAULT_SAVE_PATH "Savegames"
@@ -57,15 +66,11 @@ char *GetExecutablePath() {
 
 ////////// OSystem_SDL_Symbian //////////////////////////////////////////
 
-OSystem_SDL_Symbian::OSystem_SDL_Symbian()
-	:
-	_RFs(0) {
-
-}
+OSystem_SDL_Symbian::OSystem_SDL_Symbian() {}
 
 void OSystem_SDL_Symbian::init() {
-	_RFs = &CEikonEnv::Static()->FsSession();
 	// Use iconless window: it uses the EScummVM.aif file for the icon.
+	initSDL();
 	_window = new SdlIconlessWindow();
 	_fsFactory = new SymbianFilesystemFactory();
 	OSystem_SDL::init();
@@ -82,13 +87,29 @@ void OSystem_SDL_Symbian::initBackend() {
 	if (!ConfMan.hasKey("savepath")) {
 		ConfMan.set("savepath", savePath);
 	}
+	
+#if !RELEASE_BUILD
+	_LIT(KDefaultBetaExtraPath,"!:\\DATA\\ScummVM\\BETA\\");
+	RFs _RFs = FsSession();
+	_RFs.SessionPath(_localpath);
+	_RFs.SetSessionPath(KDefaultBetaExtraPath);
+	
+	Common::String extrapath;
+	ConfMan.registerDefault("extrapath", extrapath);
+#endif
 
+#if _DEBUG
+#warning "set debuglevel = 20"
+	ConfMan.set("debuglevel", "20");
+	if (!ConfMan.hasKey("debuglevel"))
+		printf("debuglevel not set!\n");
+#endif
 	// Ensure that the current set path (might have been altered by the user) exists
 	Common::String currentPath = ConfMan.get("savepath");
 	TFileName fname;
 	TPtrC8 ptr((const unsigned char*)currentPath.c_str(), currentPath.size());
 	fname.Copy(ptr);
-	BaflUtils::EnsurePathExistsL(dynamic_cast<OSystem_SDL_Symbian *>(g_system)->FsSession(), fname);
+	BaflUtils::EnsurePathExistsL(FsSession(), fname);
 
 	ConfMan.setBool("FM_high_quality", false);
 #if !defined(S60) || defined(S60V3) // S60 has low quality as default
@@ -102,15 +123,7 @@ void OSystem_SDL_Symbian::initBackend() {
 	ConfMan.setBool("fullscreen", true);
 	ConfMan.flushToDisk();
 
-#ifdef GUI_ENABLE_KEYSDIALOG
-	GUI::Actions::init();
-
-	// Creates the backend managers
-	if (_eventSource == 0)
-		_eventSource = new SymbianSdlEventSource();
-#endif
-
-	if (_mixerManager == 0) {
+	if (_mixerManager == nullptr) {
 		_mixerManager = new SymbianSdlMixerManager();
 
 		// Setup and start mixer
@@ -119,14 +132,6 @@ void OSystem_SDL_Symbian::initBackend() {
 
 	// Call parent implementation of this method
 	OSystem_SDL::initBackend();
-
-#ifdef GUI_ENABLE_KEYSDIALOG
-	// Initialize global key mapping for Smartphones
-	GUI::Actions* actions = GUI::Actions::Instance();
-
-	actions->initInstanceMain(this);
-	actions->loadMapping();
-#endif
 }
 
 void OSystem_SDL_Symbian::addSysArchivesToSearchSet(Common::SearchSet &s, int priority) {
@@ -143,32 +148,6 @@ void OSystem_SDL_Symbian::quitWithErrorMsg(const char * /*aMsg*/) {
 		g_system->quit();
 }
 
-#ifdef GUI_ENABLE_KEYSDIALOG
-void OSystem_SDL_Symbian::quit() {
-	delete GUI_Actions::Instance();
-
-	// Call parent implementation of this method
-	OSystem_SDL::quit();
-}
-
-void OSystem_SDL_Symbian::engineInit() {
-	// Check mappings for the engine just started
-	checkMappings();
-}
-
-void OSystem_SDL_Symbian::engineDone() {
-	// Need to reset engine to basic state after an engine has been running
-	GUI::Actions::Instance()->initInstanceMain(this);
-}
-
-void OSystem_SDL_Symbian::checkMappings() {
-	if (ConfMan.get("gameid").empty() || GUI::Actions::Instance()->initialized())
-		return;
-
-	GUI::Actions::Instance()->initInstanceGame();
-}
-#endif
-
 Common::String OSystem_SDL_Symbian::getDefaultConfigFileName() {
 	char configFile[MAXPATHLEN];
 	strcpy(configFile, Symbian::GetExecutablePath());
@@ -177,20 +156,18 @@ Common::String OSystem_SDL_Symbian::getDefaultConfigFileName() {
 }
 
 bool OSystem_SDL_Symbian::hasFeature(Feature f) {
-#ifdef GUI_ENABLE_KEYSDIALOG
-	if (f == kFeatureJoystickDeadzone)
-		return false;
-#endif
 	if (f == kFeatureFullscreenMode)
 		return false;
 
 	return OSystem_SDL::hasFeature(f);
 }
 
-
-RFs& OSystem_SDL_Symbian::FsSession() {
-	return *_RFs;
+Common::KeymapperDefaultBindings *OSystem_SDL_Symbian::getKeymapperDefaultBindings(){
+	Common::KeymapperDefaultBindings *keymapperDefaultBindings = new Common::KeymapperDefaultBindings();
+	keymapperDefaultBindings->setDefaultBinding(Common::kGlobalKeymapName, "MENU", "ASTERISK");
+	return keymapperDefaultBindings;
 }
+
 
 // Symbian bsearch implementation is flawed
 void* scumm_bsearch(const void *key, const void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {
@@ -212,3 +189,9 @@ void* scumm_bsearch(const void *key, const void *base, size_t nmemb, size_t size
 	return NULL;
 }
 
+/** Provide access to file server session. Lifetime managed bu UI framework. */
+RFs &FsSession() {
+	return CEikonEnv::Static()->FsSession();
+}
+
+extern "C" void __sync_synchronize(){}

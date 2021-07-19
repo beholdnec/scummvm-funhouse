@@ -531,6 +531,11 @@ void Window::playTransition(uint16 transDuration, uint8 transArea, uint8 transCh
 
 		g_lingo->executePerFrameHook(t.frame, i);
 	}
+
+	// re-render the surface to clean the tracks when of transitions
+	render(true, _composeSurface);
+	_contentIsDirty = true;
+	g_director->draw();
 }
 
 static int getLog2(int n) {
@@ -1051,6 +1056,11 @@ void Window::initTransParams(TransParams &t, Common::Rect &clipRect) {
 		w = (w + 1) >> 1;	// round up
 		h = (h + 1) >> 1;
 	}
+
+	// If we requested fast transitions, speed everything up
+	// Ensure the chunksize isn't larger than the amount of pixels.
+	if (debugChannelSet(-1, kDebugFast))
+		t.chunkSize = MIN((uint) m, t.chunkSize*16);
 
 	switch (transProps[t.type].dir) {
 	case kTransDirHorizontal:

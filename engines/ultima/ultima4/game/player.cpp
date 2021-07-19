@@ -27,6 +27,7 @@
 #include "ultima/ultima4/game/names.h"
 #include "ultima/ultima4/game/weapon.h"
 #include "ultima/ultima4/controllers/combat_controller.h"
+#include "ultima/ultima4/core/debugger.h"
 #include "ultima/ultima4/core/types.h"
 #include "ultima/ultima4/core/utils.h"
 #include "ultima/ultima4/map/annotation.h"
@@ -647,6 +648,10 @@ Common::String Party::translate(Std::vector<Common::String> &parts) {
 }
 
 void Party::adjustFood(int food) {
+	// Check for cheat that disables party hunger
+	if (food < 0 && g_debugger->_disableHunger)
+		return;
+
 	int oldFood = _saveGame->_food;
 	AdjustValue(_saveGame->_food, food, 999900, 0);
 	if ((_saveGame->_food / 100) != (oldFood / 100)) {
@@ -660,7 +665,7 @@ void Party::adjustGold(int gold) {
 }
 
 void Party::adjustKarma(KarmaAction action) {
-	int timeLimited = 0;
+	bool timeLimited = false;
 	int v, newKarma[VIRT_MAX], maxVal[VIRT_MAX];
 
 	/*
@@ -688,19 +693,19 @@ void Party::adjustKarma(KarmaAction action) {
 	case KA_GAVE_TO_BEGGAR:
 		//  In U4DOS, we only get +2 COMPASSION, no HONOR or SACRIFICE even if
 		//  donating all.
-		timeLimited = 1;
+		timeLimited = true;
 		AdjustValueMax(newKarma[VIRT_COMPASSION], 2, maxVal[VIRT_COMPASSION]);
 		break;
 	case KA_BRAGGED:
 		AdjustValueMin(newKarma[VIRT_HUMILITY], -5, 1);
 		break;
 	case KA_HUMBLE:
-		timeLimited = 1;
+		timeLimited = true;
 		AdjustValueMax(newKarma[VIRT_HUMILITY], 10, maxVal[VIRT_HUMILITY]);
 		break;
 	case KA_HAWKWIND:
 	case KA_MEDITATION:
-		timeLimited = 1;
+		timeLimited = true;
 		AdjustValueMax(newKarma[VIRT_SPIRITUALITY], 3, maxVal[VIRT_SPIRITUALITY]);
 		break;
 	case KA_BAD_MANTRA:
@@ -741,7 +746,7 @@ void Party::adjustKarma(KarmaAction action) {
 		AdjustValueMin(newKarma[VIRT_HONOR], -10, 1);
 		break;
 	case KA_DIDNT_CHEAT_REAGENTS:
-		timeLimited = 1;
+		timeLimited = true;
 		AdjustValueMax(newKarma[VIRT_HONESTY], 2, maxVal[VIRT_HONESTY]);
 		AdjustValueMax(newKarma[VIRT_JUSTICE], 2, maxVal[VIRT_JUSTICE]);
 		AdjustValueMax(newKarma[VIRT_HONOR], 2, maxVal[VIRT_HONOR]);

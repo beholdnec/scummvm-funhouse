@@ -39,9 +39,7 @@ enum {
 
 // TODO: The default button should be visibly distinct from the alternate button
 
-MessageDialog::MessageDialog(const Common::String &message, const char *defaultButton, const char *altButton, Graphics::TextAlign alignment, const char *url)
-	: Dialog(30, 20, 260, 124) {
-
+void MessageDialog::init(const Common::U32String &message, const Common::U32String &defaultButton, const Common::U32String &altButton, Graphics::TextAlign alignment, const char *url) {
 	_url = url;
 
 	const int screenW = g_system->getOverlayWidth();
@@ -54,12 +52,12 @@ MessageDialog::MessageDialog(const Common::String &message, const char *defaultB
 	// down the string into lines, and taking the maximum of their widths.
 	// Using this, and accounting for the space the button(s) need, we can set
 	// the real size of the dialog
-	Common::Array<Common::String> lines;
+	Common::Array<Common::U32String> lines;
 	int lineCount, okButtonPos, cancelButtonPos;
 	int maxlineWidth = g_gui.getFont().wordWrapText(message, screenW - 2 * 20, lines);
 
 	// Calculate the desired dialog size (maxing out at 300*180 for now)
-	if (altButton)
+	if (!altButton.empty())
 		_w = MAX(maxlineWidth, (2 * buttonWidth) + 10) + 20;
 	else
 		_w = MAX(maxlineWidth, buttonWidth) + 20;
@@ -67,7 +65,7 @@ MessageDialog::MessageDialog(const Common::String &message, const char *defaultB
 	lineCount = lines.size();
 
 	_h = 16;
-	if (defaultButton || altButton)
+	if (!defaultButton.empty() || !altButton.empty())
 		_h += buttonHeight + 8;
 
 	// Limit the number of lines so that the dialog still fits on the screen.
@@ -82,22 +80,37 @@ MessageDialog::MessageDialog(const Common::String &message, const char *defaultB
 
 	// Each line is represented by one static text item.
 	for (int i = 0; i < lineCount; i++) {
-		new StaticTextWidget(this, 10, 10 + i * kLineHeight, maxlineWidth, kLineHeight,
-								lines[i], alignment);
+		new StaticTextWidget(this, 10, 10 + i * kLineHeight, maxlineWidth, kLineHeight, lines[i], alignment);
 	}
 
-	if (defaultButton && altButton) {
+	if (!defaultButton.empty() && !altButton.empty()) {
 		okButtonPos = (_w - (buttonWidth * 2)) / 2;
 		cancelButtonPos = ((_w - (buttonWidth * 2)) / 2) + buttonWidth + 10;
 	} else {
 		okButtonPos = cancelButtonPos = (_w - buttonWidth) / 2;
 	}
 
-	if (defaultButton)
-		new ButtonWidget(this, okButtonPos, _h - buttonHeight - 8, buttonWidth, buttonHeight, defaultButton, nullptr, kOkCmd, Common::ASCII_RETURN);	// Confirm dialog
+	if (!defaultButton.empty()) {
+		// Confirm dialog
+		new ButtonWidget(this, okButtonPos, _h - buttonHeight - 8, buttonWidth, buttonHeight, defaultButton, Common::U32String(), kOkCmd, Common::ASCII_RETURN);
+	}
 
-	if (altButton)
-		new ButtonWidget(this, cancelButtonPos, _h - buttonHeight - 8, buttonWidth, buttonHeight, altButton, nullptr, kCancelCmd, Common::ASCII_ESCAPE);	// Cancel dialog
+	if (!altButton.empty()) {
+		// Cancel dialog
+		new ButtonWidget(this, cancelButtonPos, _h - buttonHeight - 8, buttonWidth, buttonHeight, altButton, Common::U32String(), kCancelCmd, Common::ASCII_ESCAPE);
+	}
+}
+
+MessageDialog::MessageDialog(const Common::U32String &message, const Common::U32String &defaultButton, const Common::U32String &altButton, Graphics::TextAlign alignment, const char *url)
+	: Dialog(30, 20, 260, 124) {
+
+	init(message, defaultButton, altButton, alignment, url);
+}
+
+MessageDialog::MessageDialog(const Common::String &message, const Common::String &defaultButton, const Common::String &altButton, Graphics::TextAlign alignment, const char *url)
+	: Dialog(30, 20, 260, 124) {
+
+	init(Common::U32String(message), Common::U32String(defaultButton), Common::U32String(altButton), alignment, url);
 }
 
 void MessageDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data) {
@@ -120,8 +133,8 @@ void MessageDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data
 	}
 }
 
-TimedMessageDialog::TimedMessageDialog(const Common::String &message, uint32 duration)
-	: MessageDialog(message, nullptr, nullptr) {
+TimedMessageDialog::TimedMessageDialog(const Common::U32String &message, uint32 duration)
+	: MessageDialog(message, Common::U32String(), Common::U32String()) {
 	_timer = g_system->getMillis() + duration;
 }
 
@@ -131,8 +144,12 @@ void TimedMessageDialog::handleTickle() {
 		close();
 }
 
+MessageDialogWithURL::MessageDialogWithURL(const Common::U32String &message, const char *url, const Common::U32String &defaultButton, Graphics::TextAlign alignment)
+	: MessageDialog(message, defaultButton, _("Open URL"), alignment, url) {
+}
+
 MessageDialogWithURL::MessageDialogWithURL(const Common::String &message, const char *url, const char *defaultButton, Graphics::TextAlign alignment)
-		: MessageDialog(message, defaultButton, _s("Open URL"), alignment, url) {
+		: MessageDialog(Common::U32String(message), Common::U32String(defaultButton), _("Open URL"), alignment, url) {
 }
 
 

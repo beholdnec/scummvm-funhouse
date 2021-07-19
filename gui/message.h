@@ -41,12 +41,13 @@ enum {
  */
 class MessageDialog : public Dialog {
 public:
-	MessageDialog(const Common::String &message, const char *defaultButton = "OK", const char *altButton = nullptr, Graphics::TextAlign alignment = Graphics::kTextAlignCenter, const char *url = nullptr);
+	MessageDialog(const Common::U32String &message, const Common::U32String &defaultButton = Common::U32String("OK"), const Common::U32String &altButton = Common::U32String(), Graphics::TextAlign alignment = Graphics::kTextAlignCenter, const char *url = nullptr);
+	MessageDialog(const Common::String &message, const Common::String &defaultButton = "OK", const Common::String &altButton = "", Graphics::TextAlign alignment = Graphics::kTextAlignCenter, const char *url = nullptr);
 
 	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
-
 private:
 	const char *_url;
+	void init(const Common::U32String &message, const Common::U32String &defaultButton, const Common::U32String &altButton, Graphics::TextAlign alignment, const char *url);
 };
 
 /**
@@ -54,7 +55,7 @@ private:
  */
 class TimedMessageDialog : public MessageDialog {
 public:
-	TimedMessageDialog(const Common::String &message, uint32 duration);
+	TimedMessageDialog(const Common::U32String &message, uint32 duration);
 
 	void handleTickle() override;
 
@@ -67,6 +68,7 @@ protected:
  */
 class MessageDialogWithURL : public MessageDialog {
 public:
+	MessageDialogWithURL(const Common::U32String &message, const char *url, const Common::U32String &defaultButton = Common::U32String("OK"), Graphics::TextAlign alignment = Graphics::kTextAlignCenter);
 	MessageDialogWithURL(const Common::String &message, const char *url, const char *defaultButton = "OK", Graphics::TextAlign alignment = Graphics::kTextAlignCenter);
 };
 

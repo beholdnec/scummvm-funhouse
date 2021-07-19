@@ -45,10 +45,6 @@ TonyEngine::TonyEngine(OSystem *syst, const TonyGameDescription *gameDesc) : Eng
 
 	// Set the up the debugger
 	setDebugger(new Debugger());
-	DebugMan.addDebugChannel(kTonyDebugAnimations, "animations", "Animations debugging");
-	DebugMan.addDebugChannel(kTonyDebugActions, "actions", "Actions debugging");
-	DebugMan.addDebugChannel(kTonyDebugSound, "sound", "Sound debugging");
-	DebugMan.addDebugChannel(kTonyDebugMusic, "music", "Music debugging");
 
 	// Add folders to the search directory list
 	const Common::FSNode gameDataDir(ConfMan.get("path"));
@@ -120,13 +116,9 @@ Common::ErrorCode TonyEngine::init() {
 		return Common::kUnknownError;
 
 	if (isCompressed()) {
-		Common::SeekableReadStream *stream = SearchMan.createReadStreamForMember("data1.cab");
-		if (!stream)
-			error("Failed to open data1.cab");
-
-		Common::Archive *cabinet = Common::makeInstallShieldArchive(stream);
+		Common::Archive *cabinet = Common::makeInstallShieldArchive("data");
 		if (!cabinet)
-			error("Failed to parse data1.cab");
+			error("Failed to open the InstallShield cabinet");
 
 		SearchMan.add("data1.cab", cabinet);
 	}
@@ -186,16 +178,17 @@ Common::ErrorCode TonyEngine::init() {
 }
 
 bool TonyEngine::loadTonyDat() {
-	Common::String msg;
+	Common::U32String errorMessage;
 	Common::File in;
 	Common::String filename = "tony.dat";
 
 	in.open(filename.c_str());
 
 	if (!in.isOpen()) {
-		msg = Common::String::format(_("Unable to locate the '%s' engine data file."), filename.c_str());
-		GUIErrorMessage(msg);
-		warning("%s", msg.c_str());
+		const char *msg = _s("Unable to locate the '%s' engine data file.");
+		errorMessage = Common::U32String::format(_(msg), filename.c_str());
+		GUIErrorMessage(errorMessage);
+		warning(msg, filename.c_str());
 		return false;
 	}
 
@@ -205,9 +198,10 @@ bool TonyEngine::loadTonyDat() {
 	buf[4] = '\0';
 
 	if (strcmp(buf, "TONY")) {
-		msg = Common::String::format(_("The '%s' engine data file is corrupt."), filename.c_str());
-		GUIErrorMessage(msg);
-		warning("%s", msg.c_str());
+		const char *msg = _s("The '%s' engine data file is corrupt.");
+		errorMessage = Common::U32String::format(_(msg), filename.c_str());
+		GUIErrorMessage(errorMessage);
+		warning(msg, filename.c_str());
 		return false;
 	}
 
@@ -215,11 +209,10 @@ bool TonyEngine::loadTonyDat() {
 	int minVer = in.readByte();
 
 	if ((majVer != TONY_DAT_VER_MAJ) || (minVer != TONY_DAT_VER_MIN)) {
-		msg = Common::String::format(
-			_("Incorrect version of the '%s' engine data file found. Expected %d.%d but got %d.%d."),
-			filename.c_str(), TONY_DAT_VER_MAJ, TONY_DAT_VER_MIN, majVer, minVer);
-		GUIErrorMessage(msg);
-		warning("%s", msg.c_str());
+		const char *msg = _s("Incorrect version of the '%s' engine data file found. Expected %d.%d but got %d.%d.");
+		errorMessage = Common::U32String::format(_(msg), filename.c_str(), TONY_DAT_VER_MAJ, TONY_DAT_VER_MIN, majVer, minVer);
+		GUIErrorMessage(errorMessage);
+		warning(msg, filename.c_str(), TONY_DAT_VER_MAJ, TONY_DAT_VER_MIN, majVer, minVer);
 
 		return false;
 	}
@@ -253,9 +246,10 @@ bool TonyEngine::loadTonyDat() {
 
 	int numVariant = in.readUint16BE();
 	if (expectedLangVariant > numVariant - 1) {
-		msg = Common::String::format(_("Font variant not present in '%s' engine data file."), filename.c_str());
-		GUIErrorMessage(msg);
-		warning("%s", msg.c_str());
+		const char *msg = _s("Font variant not present in '%s' engine data file.");
+		errorMessage = Common::U32String::format(_(msg), filename.c_str());
+		GUIErrorMessage(errorMessage);
+		warning(msg, filename.c_str());
 
 		return false;
 	}

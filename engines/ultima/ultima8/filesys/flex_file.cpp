@@ -22,12 +22,11 @@
 
 #include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/filesys/flex_file.h"
-#include "ultima/ultima8/filesys/idata_source.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
-FlexFile::FlexFile(Common::SeekableReadStream *rs_) : _rs(rs_), _count(0) {
+FlexFile::FlexFile(Common::SeekableReadStream *rs) : _rs(rs), _count(0) {
 	_valid = isFlexFile(_rs);
 
 	if (_valid) {

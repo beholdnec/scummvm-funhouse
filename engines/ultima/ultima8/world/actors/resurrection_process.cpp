@@ -20,7 +20,6 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/world/actors/resurrection_process.h"
 #include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/get_object.h"
@@ -28,7 +27,6 @@
 namespace Ultima {
 namespace Ultima8 {
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(ResurrectionProcess)
 
 ResurrectionProcess::ResurrectionProcess() : Process() {
@@ -72,7 +70,8 @@ void ResurrectionProcess::run() {
 	}
 
 	// go into combat mode
-	a->setInCombat();
+	// Note: only happens in U8, so activity num is not important.
+	a->setInCombat(0);
 
 	// we should already be killed by going into combat mode.
 	if (!(_flags & PROC_TERMINATED))

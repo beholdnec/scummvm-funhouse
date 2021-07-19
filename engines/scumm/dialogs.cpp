@@ -26,12 +26,9 @@
 #include "common/events.h"
 #include "common/localization.h"
 #include "common/translation.h"
+#include "common/ustr.h"
 
 #include "graphics/scaler.h"
-
-#ifdef __DS__
-#include "scummhelp.h"
-#endif
 
 #include "gui/gui-manager.h"
 #include "gui/widget.h"
@@ -269,7 +266,7 @@ enum {
 
 HelpDialog::HelpDialog(const GameSettings &game)
 	: ScummDialog("ScummHelp"), _game(game) {
-	_title = new GUI::StaticTextWidget(this, "ScummHelp.Title", "");
+	_title = new GUI::StaticTextWidget(this, "ScummHelp.Title", Common::U32String());
 
 	_page = 1;
 	_backgroundType = GUI::ThemeEngine::kDialogBackgroundDefault;
@@ -277,10 +274,10 @@ HelpDialog::HelpDialog(const GameSettings &game)
 	_numPages = ScummHelp::numPages(_game.id);
 
 	// I18N: Previous page button
-	_prevButton = new GUI::ButtonWidget(this, "ScummHelp.Prev", _("~P~revious"), 0, kPrevCmd);
+	_prevButton = new GUI::ButtonWidget(this, "ScummHelp.Prev", _("~P~revious"), Common::U32String(), kPrevCmd);
 	// I18N: Next page button
-	_nextButton = new GUI::ButtonWidget(this, "ScummHelp.Next", _("~N~ext"), 0, kNextCmd);
-	new GUI::ButtonWidget(this, "ScummHelp.Close", _("~C~lose"), 0, GUI::kCloseCmd);
+	_nextButton = new GUI::ButtonWidget(this, "ScummHelp.Next", _("~N~ext"), Common::U32String(), kNextCmd);
+	new GUI::ButtonWidget(this, "ScummHelp.Close", _("~C~lose"), Common::U32String(), GUI::kCloseCmd);
 	_prevButton->clearFlags(WIDGET_ENABLED);
 
 	GUI::ContainerWidget *placeHolder = new GUI::ContainerWidget(this, "ScummHelp.HelpText");
@@ -290,8 +287,8 @@ HelpDialog::HelpDialog(const GameSettings &game)
 
 	// Dummy entries
 	for (int i = 0; i < HELP_NUM_LINES; i++) {
-		_key[i] = new GUI::StaticTextWidget(this, 0, 0, 10, 10, "", Graphics::kTextAlignRight);
-		_dsc[i] = new GUI::StaticTextWidget(this, 0, 0, 10, 10, "", Graphics::kTextAlignLeft);
+		_key[i] = new GUI::StaticTextWidget(this, 0, 0, 10, 10, Common::U32String(), Graphics::kTextAlignRight);
+		_dsc[i] = new GUI::StaticTextWidget(this, 0, 0, 10, 10, Common::U32String(), Graphics::kTextAlignLeft);
 	}
 
 }
@@ -318,22 +315,17 @@ void HelpDialog::reflowLayout() {
 	int xoff = (_w >> 1) - (w >> 1);
 
 	for (int i = 0; i < _numLines; i++) {
-		_key[i]->resize(xoff + x, y + lineHeight * i, keyW, lineHeight);
-		_dsc[i]->resize(xoff + dscX, y + lineHeight * i, dscW, lineHeight);
+		_key[i]->resize(xoff + x, y + lineHeight * i, keyW, lineHeight, false);
+		_dsc[i]->resize(xoff + dscX, y + lineHeight * i, dscW, lineHeight, false);
 	}
 
 	displayKeyBindings();
 }
 
 void HelpDialog::displayKeyBindings() {
-	String titleStr, *keyStr, *dscStr;
+	U32String titleStr, *keyStr, *dscStr;
 
-#ifndef __DS__
 	ScummHelp::updateStrings(_game.id, _game.version, _game.platform, _page, titleStr, keyStr, dscStr);
-#else
-	// DS version has a different help screen
-	DS::updateStrings(_game.id, _game.version, _game.platform, _page, titleStr, keyStr, dscStr);
-#endif
 
 	_title->setLabel(titleStr);
 	for (int i = 0; i < _numLines; i++) {
@@ -379,17 +371,35 @@ void HelpDialog::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 da
 
 #pragma mark -
 
+static bool isCJKLanguage(Common::Language lang) {
+	switch (lang) {
+	case Common::KO_KOR:
+	case Common::JA_JPN:
+	case Common::ZH_TWN:
+	case Common::ZH_CNA:
+		return true;
+	default:
+		return false;
+	}
+}
+
 InfoDialog::InfoDialog(ScummEngine *scumm, int res)
-: ScummDialog(0, 0, 0, 0), _vm(scumm) { // dummy x and w
+: ScummDialog(0, 0, 0, 0), _vm(scumm), _style(GUI::ThemeEngine::kFontStyleBold) { // dummy x and w
 
 	_message = queryResString(res);
 
+	Common::Language lang = isCJKLanguage(_vm->_language) ? _vm->_language : Common::UNK_LANG;
+
 	// Width and height are dummy
-	_text = new GUI::StaticTextWidget(this, 0, 0, 10, 10, _message, kTextAlignCenter);
+	_text = new GUI::StaticTextWidget(this, 0, 0, 10, 10, _message, kTextAlignCenter, Common::U32String(), GUI::ThemeEngine::kFontStyleBold, lang);
+
+	// Store this for the calls to getStringWidth() and getStringHeight() in reflowLayout().
+	if (lang != Common::UNK_LANG)
+		_style = GUI::ThemeEngine::kFontStyleLangExtra;
 }
 
-InfoDialog::InfoDialog(ScummEngine *scumm, const String& message)
-: ScummDialog(0, 0, 0, 0), _vm(scumm) { // dummy x and w
+InfoDialog::InfoDialog(ScummEngine *scumm, const U32String &message)
+: ScummDialog(0, 0, 0, 0), _vm(scumm), _style(GUI::ThemeEngine::kFontStyleBold) { // dummy x and w
 
 	_message = message;
 
@@ -397,7 +407,7 @@ InfoDialog::InfoDialog(ScummEngine *scumm, const String& message)
 	_text = new GUI::StaticTextWidget(this, 0, 0, 10, 10, _message, kTextAlignCenter);
 }
 
-void InfoDialog::setInfoText(const String& message) {
+void InfoDialog::setInfoText(const U32String &message) {
 	_message = message;
 	_text->setLabel(_message);
 	//reflowLayout(); // FIXME: Should we call this here? Depends on the usage patterns, I guess...
@@ -407,8 +417,8 @@ void InfoDialog::reflowLayout() {
 	const int screenW = g_system->getOverlayWidth();
 	const int screenH = g_system->getOverlayHeight();
 
-	int width = g_gui.getStringWidth(_message) + 16;
-	int height = g_gui.getFontHeight() + 8;
+	int width = g_gui.getStringWidth(_message, _style) + 16;
+	int height = g_gui.getFontHeight(_style) + 8;
 
 	_w = width;
 	_h = height;
@@ -418,7 +428,7 @@ void InfoDialog::reflowLayout() {
 	_text->setSize(_w, _h);
 }
 
-const Common::String InfoDialog::queryResString(int stringno) {
+const Common::U32String InfoDialog::queryResString(int stringno) {
 	byte buf[256];
 	const byte *result;
 
@@ -457,7 +467,18 @@ const Common::String InfoDialog::queryResString(int stringno) {
 			tmp += chr;
 		}
 	}
-	return _(tmp);
+
+	Common::CodePage convertFromCodePage = Common::kCodePageInvalid;
+	if (_vm->_language == Common::KO_KOR)
+		convertFromCodePage = Common::kWindows949;
+	else if (_vm->_language == Common::JA_JPN)
+		convertFromCodePage = Common::kWindows932;
+	else if (_vm->_language == Common::ZH_TWN || _vm->_language == Common::ZH_CNA)
+		convertFromCodePage = Common::kWindows950;
+	else if (_vm->_language == Common::RU_RUS)
+		convertFromCodePage = Common::kDos866;
+
+	return convertFromCodePage == Common::kCodePageInvalid ? _(tmp) : U32String(tmp, convertFromCodePage);
 }
 
 #pragma mark -
@@ -476,8 +497,11 @@ void PauseDialog::handleKeyDown(Common::KeyState state) {
 ConfirmDialog::ConfirmDialog(ScummEngine *scumm, int res)
 	: InfoDialog(scumm, res), _yesKey('y'), _noKey('n') {
 
-	if (_message.lastChar() != ')') {
-		_yesKey = _message.lastChar();
+	if (_message.empty())
+		return;
+
+	if (_message[_message.size() - 1] != ')') {
+		_yesKey = _message[_message.size() - 1];
 		_message.deleteLastChar();
 
 		if (_yesKey >= 'A' && _yesKey <= 'Z')
@@ -505,7 +529,7 @@ void ConfirmDialog::handleKeyDown(Common::KeyState state) {
 
 #pragma mark -
 
-ValueDisplayDialog::ValueDisplayDialog(const Common::String& label, int minVal, int maxVal,
+ValueDisplayDialog::ValueDisplayDialog(const Common::U32String &label, int minVal, int maxVal,
 		int val, uint16 incKey, uint16 decKey)
 	: GUI::Dialog(0, 0, 0, 0),
 	_label(label), _min(minVal), _max(maxVal),
@@ -566,7 +590,7 @@ void ValueDisplayDialog::open() {
 }
 
 SubtitleSettingsDialog::SubtitleSettingsDialog(ScummEngine *scumm, int value)
-	: InfoDialog(scumm, ""), _value(value), _timer(0) {
+	: InfoDialog(scumm, U32String()), _value(value), _timer(0) {
 
 }
 
@@ -605,7 +629,7 @@ void SubtitleSettingsDialog::cycleValue() {
 		_value = 0;
 
 	if (_value == 1 && g_system->getOverlayWidth() <= 320)
-		setInfoText(_sc("Speech & Subs", "lowres"));
+		setInfoText(_c("Speech & Subs", "lowres"));
 	else
 		setInfoText(_(subtitleDesc[_value]));
 
@@ -613,7 +637,7 @@ void SubtitleSettingsDialog::cycleValue() {
 }
 
 Indy3IQPointsDialog::Indy3IQPointsDialog(ScummEngine *scumm, char* text)
-	: InfoDialog(scumm, text) {
+	: InfoDialog(scumm, Common::U32String(text)) {
 }
 
 void Indy3IQPointsDialog::handleKeyDown(Common::KeyState state) {
@@ -624,7 +648,7 @@ void Indy3IQPointsDialog::handleKeyDown(Common::KeyState state) {
 }
 
 DebugInputDialog::DebugInputDialog(ScummEngine *scumm, char* text)
-	: InfoDialog(scumm, text) {
+	: InfoDialog(scumm, U32String(text)) {
 	mainText = text;
 	done = 0;
 }
@@ -650,15 +674,15 @@ void DebugInputDialog::handleKeyDown(Common::KeyState state) {
 }
 
 LoomTownsDifficultyDialog::LoomTownsDifficultyDialog()
-    : Dialog("LoomTownsDifficultyDialog"), _difficulty(-1) {
+	: Dialog("LoomTownsDifficultyDialog"), _difficulty(-1) {
 	GUI::StaticTextWidget *text1 = new GUI::StaticTextWidget(this, "LoomTownsDifficultyDialog.Description1", _("Select a Proficiency Level."));
 	text1->setAlign(Graphics::kTextAlignCenter);
 	GUI::StaticTextWidget *text2 = new GUI::StaticTextWidget(this, "LoomTownsDifficultyDialog.Description2", _("Refer to your Loom(TM) manual for help."));
 	text2->setAlign(Graphics::kTextAlignCenter);
 
-	new GUI::ButtonWidget(this, "LoomTownsDifficultyDialog.Standard", _("Standard"), 0, kStandardCmd);
-	new GUI::ButtonWidget(this, "LoomTownsDifficultyDialog.Practice", _("Practice"), 0, kPracticeCmd);
-	new GUI::ButtonWidget(this, "LoomTownsDifficultyDialog.Expert", _("Expert"), 0, kExpertCmd);
+	new GUI::ButtonWidget(this, "LoomTownsDifficultyDialog.Standard", _("Standard"), Common::U32String(), kStandardCmd);
+	new GUI::ButtonWidget(this, "LoomTownsDifficultyDialog.Practice", _("Practice"), Common::U32String(), kPracticeCmd);
+	new GUI::ButtonWidget(this, "LoomTownsDifficultyDialog.Expert", _("Expert"), Common::U32String(), kExpertCmd);
 }
 
 void LoomTownsDifficultyDialog::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) {

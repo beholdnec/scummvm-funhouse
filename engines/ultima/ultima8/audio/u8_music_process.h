@@ -24,9 +24,7 @@
 #define ULTIMA8_AUDIO_U8MUSICPROCESS_H
 
 #include "ultima/ultima8/audio/music_process.h"
-#include "ultima/ultima8/kernel/process.h"
-#include "ultima/ultima8/usecode/intrinsics.h"
-#include "ultima/ultima8/misc/p_dynamic_cast.h"
+#include "ultima/ultima8/misc/classtype.h"
 #include "audio/mididrv.h"
 
 namespace Ultima {
@@ -84,7 +82,6 @@ public:
 	U8MusicProcess(MidiPlayer *player); // Note that this does NOT delete the driver
 	~U8MusicProcess() override;
 
-	// p_dynamic_cast stuff
 	ENABLE_RUNTIME_CLASSTYPE()
 
 	//! Get the current instance of the Music Processes
@@ -112,6 +109,14 @@ public:
 	void getTrackState(TrackState &trackState) const;
 
 	void setTrackState(const TrackState &state);
+
+	//! Is a track currently playing?
+	bool isPlaying() override;
+
+	//! Pause the currently playing track
+	void pauseMusic() override;
+	//! Resume the current track after pausing
+	void unpauseMusic() override;
 
 	void run() override;
 

@@ -2,7 +2,7 @@ MODULE := engines/sword25
 
 MODULE_OBJS := \
 	console.o \
-	detection.o \
+	metaengine.o \
 	sword25.o \
 	fmv/movieplayer.o \
 	fmv/movieplayer_script.o \
@@ -53,7 +53,7 @@ MODULE_OBJS := \
 	script/luascript.o \
 	script/lua_extensions.o \
 	sfx/soundengine.o \
-	sfx/soundengine_script.o 
+	sfx/soundengine_script.o
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_SWORD25), DYNAMIC_PLUGIN)
@@ -62,3 +62,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

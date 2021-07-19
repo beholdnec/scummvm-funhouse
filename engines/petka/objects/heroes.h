@@ -23,7 +23,9 @@
 #ifndef PETKA_HEROES_H
 #define PETKA_HEROES_H
 
+#include "common/ptr.h"
 #include "petka/objects/object.h"
+#include "petka/walk.h"
 
 namespace Petka {
 
@@ -47,6 +49,11 @@ public:
 
 	void updateZ() override;
 
+	void sub_408940();
+
+private:
+	virtual void recalcOffset();
+
 public:
 	int _field7C;
 	int _surfW;
@@ -56,11 +63,10 @@ public:
 	// int _surfId;
 	int _imageId;
 	double _k;
-	// walkObj
+	Common::ScopedPtr<Walk> _walk;
 	int _destX;
 	int _destY;
 	bool _isWalking;
-	bool _isPetka;
 	QReaction *_heroReaction;
 	QMessageObject *_sender;
 	int _fieldB4;
@@ -69,6 +75,8 @@ public:
 class QObjectChapayev : public QObjectPetka {
 public:
 	QObjectChapayev();
+
+	void recalcOffset() override {}
 
 };
 

@@ -25,8 +25,6 @@
 #include "common/util.h"
 #include "common/system.h"
 
-#include "graphics/palette.h"
-
 #include "sci/sci.h"
 #include "sci/engine/state.h"
 #include "sci/graphics/cache.h"
@@ -231,7 +229,7 @@ bool GfxPalette::setAmiga() {
 		}
 
 		// Directly set the palette, because setOnScreen() wont do a thing for amiga
-		copySysPaletteToScreen();
+		copySysPaletteToScreen(true);
 		return true;
 	}
 
@@ -257,7 +255,7 @@ void GfxPalette::modifyAmigaPalette(const SciSpan<const byte> &data) {
 		}
 	}
 
-	copySysPaletteToScreen();
+	copySysPaletteToScreen(true);
 }
 
 static byte blendColors(byte c1, byte c2) {
@@ -493,20 +491,20 @@ void GfxPalette::getSys(Palette *pal) {
 		memcpy(pal, &_sysPalette,sizeof(Palette));
 }
 
-void GfxPalette::setOnScreen() {
-	copySysPaletteToScreen();
+void GfxPalette::setOnScreen(bool update) {
+	copySysPaletteToScreen(update);
 }
 
 static byte convertMacGammaToSCIGamma(int comp) {
 	return (byte)sqrt(comp * 255.0f);
 }
 
-void GfxPalette::copySysPaletteToScreen() {
+void GfxPalette::copySysPaletteToScreen(bool update) {
 	// just copy palette to system
 	byte bpal[3 * 256];
 
 	// Get current palette, update it and put back
-	g_system->getPaletteManager()->grabPalette(bpal, 0, 256);
+	_screen->grabPalette(bpal, 0, 256);
 
 	for (int16 i = 0; i < 256; i++) {
 		if (colorIsFromMacClut(i)) {
@@ -525,7 +523,7 @@ void GfxPalette::copySysPaletteToScreen() {
 	if (g_sci->_gfxRemap16)
 		g_sci->_gfxRemap16->updateRemapping();
 
-	g_system->getPaletteManager()->setPalette(bpal, 0, 256);
+	_screen->setPalette(bpal, 0, 256, update);
 }
 
 bool GfxPalette::kernelSetFromResource(GuiResourceId resourceId, bool force) {
@@ -559,11 +557,6 @@ void GfxPalette::kernelSetIntensity(uint16 fromColor, uint16 toColor, uint16 int
 	memset(&_sysPalette.intensity[0] + fromColor, intensity, toColor - fromColor);
 	if (setPalette) {
 		setOnScreen();
-		EngineState *state = g_sci->getEngineState();
-		// Call speed throttler from here as well just in case we need it
-		//  At least in kq6 intro the scripts call us in a tight loop for fadein/fadeout
-		state->speedThrottler(30);
-		state->_throttleTrigger = true;
 	}
 }
 
@@ -682,10 +675,9 @@ void GfxPalette::kernelAssertPalette(GuiResourceId resourceId) {
 void GfxPalette::kernelSyncScreenPalette() {
 	// just copy palette to system
 	byte bpal[3 * 256];
+	_screen->grabPalette(bpal, 0, 256);
 
-	// Get current palette, update it and put back
-	g_system->getPaletteManager()->grabPalette(bpal, 0, 256);
-	for (int16 i = 0; i < 255; i++) {
+	for (int16 i = 1; i < 255; i++) {
 		_sysPalette.colors[i].r = bpal[i * 3];
 		_sysPalette.colors[i].g = bpal[i * 3 + 1];
 		_sysPalette.colors[i].b = bpal[i * 3 + 2];
@@ -743,7 +735,7 @@ bool GfxPalette::palVaryLoadTargetPalette(GuiResourceId resourceId) {
 void GfxPalette::palVaryInstallTimer() {
 	// Remove any possible leftover palVary timer callbacks.
 	// This happens for example in QFG1VGA, when sleeping at Erana's place
-	// (bug #3439240) - the nighttime to daytime effect clashes with the
+	// (bug #5900) - the nighttime to daytime effect clashes with the
 	// scene transition effect, as we load scene images too quickly for
 	// the SCI scripts in that case (also refer to kernelPalVaryInit).
 	palVaryRemoveTimer();

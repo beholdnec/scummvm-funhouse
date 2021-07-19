@@ -53,7 +53,7 @@ void InterfaceSequence::start(int id) {
 	if (info) {
 		for (uint i = 0; i < info->attachedObjIds.size(); ++i) {
 			QMessageObject *obj = g_vm->getQSystem()->findObject(info->attachedObjIds[i]);
-			g_vm->resMgr()->loadFlic(obj->_resourceId);
+			g_vm->resMgr()->getFlic(obj->_resourceId);
 			obj->loadSound();
 			_objs.push_back(obj);
 		}
@@ -66,8 +66,12 @@ void InterfaceSequence::start(int id) {
 void InterfaceSequence::stop() {
 	removeObjects();
 
-	g_vm->soundMgr()->removeSound(g_vm->resMgr()->findSoundName(_fxId));
-	g_vm->soundMgr()->removeSound(g_vm->resMgr()->findSoundName(_musicId));
+	// original bug fix
+	QObjectBG *room = g_vm->getQSystem()->_room;
+	if (!room || room->_fxId != _fxId)
+		g_vm->soundMgr()->removeSound(g_vm->resMgr()->findSoundName(_fxId));
+	if (!room || room->_musicId != _musicId)
+		g_vm->soundMgr()->removeSound(g_vm->resMgr()->findSoundName(_musicId));
 
 	_fxId = 0;
 	_musicId = 0;

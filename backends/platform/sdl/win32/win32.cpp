@@ -33,7 +33,7 @@
 #define _WIN32_IE 0x500
 #endif
 #include <shlobj.h>
-#include <wchar.h>
+#include <tchar.h>
 
 #include "common/scummsys.h"
 #include "common/config-manager.h"
@@ -44,7 +44,6 @@
 #include "backends/platform/sdl/win32/win32.h"
 #include "backends/platform/sdl/win32/win32-window.h"
 #include "backends/platform/sdl/win32/win32_wrapper.h"
-#include "backends/platform/sdl/win32/codepage.h"
 #include "backends/saves/windows/windows-saves.h"
 #include "backends/fs/windows/windows-fs-factory.h"
 #include "backends/taskbar/win32/win32-taskbar.h"
@@ -53,7 +52,6 @@
 
 #include "common/memstream.h"
 #include "common/ustr.h"
-#include "common/encoding.h"
 
 #if defined(USE_TTS)
 #include "backends/text-to-speech/windows/windows-text-to-speech.h"
@@ -66,6 +64,7 @@ void OSystem_Win32::init() {
 	_fsFactory = new WindowsFilesystemFactory();
 
 	// Create Win32 specific window
+	initSDL();
 	_window = new SdlWindow_Win32();
 
 #if defined(USE_TASKBAR)
@@ -107,7 +106,7 @@ void OSystem_Win32::initBackend() {
 			freopen("CONOUT$","w",stdout);
 			freopen("CONOUT$","w",stderr);
 		}
-		SetConsoleTitle("ScummVM Status Window");
+		SetConsoleTitle(TEXT("ScummVM Status Window"));
 	} else {
 		FreeConsole();
 	}
@@ -124,6 +123,10 @@ void OSystem_Win32::initBackend() {
 	// Initialize text to speech
 #ifdef USE_TTS
 	_textToSpeechManager = new WindowsTextToSpeechManager();
+#endif
+
+#ifdef USE_OPENGL
+	ConfMan.registerDefault("gfx_mode", "opengl");
 #endif
 
 	// Invoke parent implementation of this method
@@ -149,9 +152,12 @@ bool OSystem_Win32::displayLogFile() {
 
 	// Try opening the log file with the default text editor
 	// log files should be registered as "txtfile" by default and thus open in the default text editor
-	HINSTANCE shellExec = ShellExecute(getHwnd(), NULL, _logFilePath.c_str(), NULL, NULL, SW_SHOWNORMAL);
-	if ((intptr_t)shellExec > 32)
+	TCHAR *tLogFilePath = Win32::stringToTchar(_logFilePath);
+	HINSTANCE shellExec = ShellExecute(getHwnd(), NULL, tLogFilePath, NULL, NULL, SW_SHOWNORMAL);
+	if ((intptr_t)shellExec > 32) {
+		free(tLogFilePath);
 		return true;
+	}
 
 	// ShellExecute with the default verb failed, try the "Open with..." dialog
 	PROCESS_INFORMATION processInformation;
@@ -160,8 +166,8 @@ bool OSystem_Win32::displayLogFile() {
 	memset(&startupInfo, 0, sizeof(startupInfo));
 	startupInfo.cb = sizeof(startupInfo);
 
-	char cmdLine[MAX_PATH * 2];  // CreateProcess may change the contents of cmdLine
-	sprintf(cmdLine, "rundll32 shell32.dll,OpenAs_RunDLL %s", _logFilePath.c_str());
+	TCHAR cmdLine[MAX_PATH * 2];  // CreateProcess may change the contents of cmdLine
+	_stprintf(cmdLine, TEXT("rundll32 shell32.dll,OpenAs_RunDLL %s"), tLogFilePath);
 	BOOL result = CreateProcess(NULL,
 	                            cmdLine,
 	                            NULL,
@@ -172,6 +178,7 @@ bool OSystem_Win32::displayLogFile() {
 	                            NULL,
 	                            &startupInfo,
 	                            &processInformation);
+	free(tLogFilePath);
 	if (result) {
 		CloseHandle(processInformation.hProcess);
 		CloseHandle(processInformation.hThread);
@@ -182,7 +189,9 @@ bool OSystem_Win32::displayLogFile() {
 }
 
 bool OSystem_Win32::openUrl(const Common::String &url) {
-	HINSTANCE result = ShellExecute(getHwnd(), NULL, /*(wchar_t*)nativeFilePath.utf16()*/url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+	TCHAR *tUrl = Win32::stringToTchar(url);
+	HINSTANCE result = ShellExecute(getHwnd(), NULL, tUrl, NULL, NULL, SW_SHOWNORMAL);
+	free(tUrl);
 	// ShellExecute returns a value greater than 32 if successful
 	if ((intptr_t)result <= 32) {
 		warning("ShellExecute failed: error = %p", (void*)result);
@@ -204,14 +213,14 @@ Common::String OSystem_Win32::getSystemLanguage() const {
 	// We can not use "setlocale" (at least not for MSVC builds), since it
 	// will return locales like: "English_USA.1252", thus we need a special
 	// way to determine the locale string for Win32.
-	char langName[9];
-	char ctryName[9];
+	TCHAR langName[9];
+	TCHAR ctryName[9];
 
-	if (GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SISO639LANGNAME, langName, sizeof(langName)) != 0 &&
-		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, ctryName, sizeof(ctryName)) != 0) {
-		Common::String localeName = langName;
+	if (GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SISO639LANGNAME, langName, ARRAYSIZE(langName)) != 0 &&
+		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, ctryName, ARRAYSIZE(ctryName)) != 0) {
+		Common::String localeName = Win32::tcharToString(langName);
 		localeName += "_";
-		localeName += ctryName;
+		localeName += Win32::tcharToString(ctryName);
 
 		return localeName;
 	}
@@ -229,49 +238,49 @@ Common::String OSystem_Win32::getScreenshotsPath() {
 	}
 
 	// Use the My Pictures folder.
-	char picturesPath[MAXPATHLEN];
+	TCHAR picturesPath[MAX_PATH];
 
 	if (SHGetFolderPathFunc(NULL, CSIDL_MYPICTURES, NULL, SHGFP_TYPE_CURRENT, picturesPath) != S_OK) {
 		warning("Unable to access My Pictures directory");
 		return Common::String();
 	}
 
-	screenshotsPath = Common::String(picturesPath) + "\\ScummVM Screenshots\\";
+	_tcscat(picturesPath, TEXT("\\ScummVM Screenshots\\"));
 
 	// If the directory already exists (as it should in most cases),
 	// we don't want to fail, but we need to stop on other errors (such as ERROR_PATH_NOT_FOUND)
-	if (!CreateDirectory(screenshotsPath.c_str(), NULL)) {
+	if (!CreateDirectory(picturesPath, NULL)) {
 		if (GetLastError() != ERROR_ALREADY_EXISTS)
 			error("Cannot create ScummVM Screenshots folder");
 	}
 
-	return screenshotsPath;
+	return Win32::tcharToString(picturesPath);
 }
 
 Common::String OSystem_Win32::getDefaultConfigFileName() {
-	char configFile[MAXPATHLEN];
+	TCHAR configFile[MAX_PATH];
 
 	// Use the Application Data directory of the user profile.
 	if (SHGetFolderPathFunc(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, configFile) == S_OK) {
-		strcat(configFile, "\\ScummVM");
+		_tcscat(configFile, TEXT("\\ScummVM"));
 		if (!CreateDirectory(configFile, NULL)) {
 			if (GetLastError() != ERROR_ALREADY_EXISTS)
 				error("Cannot create ScummVM application data folder");
 		}
 
-		strcat(configFile, "\\" DEFAULT_CONFIG_FILE);
+		_tcscat(configFile, TEXT("\\" DEFAULT_CONFIG_FILE));
 
 		FILE *tmp = NULL;
-		if ((tmp = fopen(configFile, "r")) == NULL) {
+		if ((tmp = _tfopen(configFile, TEXT("r"))) == NULL) {
 			// Check windows directory
-			char oldConfigFile[MAXPATHLEN];
-			uint ret = GetWindowsDirectory(oldConfigFile, MAXPATHLEN);
-			if (ret == 0 || ret > MAXPATHLEN)
+			TCHAR oldConfigFile[MAX_PATH];
+			uint ret = GetWindowsDirectory(oldConfigFile, MAX_PATH);
+			if (ret == 0 || ret > MAX_PATH)
 				error("Cannot retrieve the path of the Windows directory");
 
-			strcat(oldConfigFile, "\\" DEFAULT_CONFIG_FILE);
-			if ((tmp = fopen(oldConfigFile, "r"))) {
-				strcpy(configFile, oldConfigFile);
+			_tcscat(oldConfigFile, TEXT("\\" DEFAULT_CONFIG_FILE));
+			if ((tmp = _tfopen(oldConfigFile, TEXT("r")))) {
+				_tcscpy(configFile, oldConfigFile);
 
 				fclose(tmp);
 			}
@@ -281,18 +290,18 @@ Common::String OSystem_Win32::getDefaultConfigFileName() {
 	} else {
 		warning("Unable to access application data directory");
 		// Check windows directory
-		uint ret = GetWindowsDirectory(configFile, MAXPATHLEN);
-		if (ret == 0 || ret > MAXPATHLEN)
+		uint ret = GetWindowsDirectory(configFile, MAX_PATH);
+		if (ret == 0 || ret > MAX_PATH)
 			error("Cannot retrieve the path of the Windows directory");
 
-		strcat(configFile, "\\" DEFAULT_CONFIG_FILE);
+		_tcscat(configFile, TEXT("\\" DEFAULT_CONFIG_FILE));
 	}
 
-	return configFile;
+	return Win32::tcharToString(configFile);
 }
 
 Common::String OSystem_Win32::getDefaultLogFileName() {
-	char logFile[MAXPATHLEN];
+	TCHAR logFile[MAX_PATH];
 
 	// Use the Application Data directory of the user profile.
 	if (SHGetFolderPathFunc(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, logFile) != S_OK) {
@@ -300,26 +309,26 @@ Common::String OSystem_Win32::getDefaultLogFileName() {
 		return Common::String();
 	}
 
-	strcat(logFile, "\\ScummVM");
+	_tcscat(logFile, TEXT("\\ScummVM"));
 	CreateDirectory(logFile, NULL);
-	strcat(logFile, "\\Logs");
+	_tcscat(logFile, TEXT("\\Logs"));
 	CreateDirectory(logFile, NULL);
-	strcat(logFile, "\\scummvm.log");
+	_tcscat(logFile, TEXT("\\scummvm.log"));
 
-	return logFile;
+	return Win32::tcharToString(logFile);
 }
 
 namespace {
 
-class Win32ResourceArchive : public Common::Archive {
+class Win32ResourceArchive final : public Common::Archive {
 	friend BOOL CALLBACK EnumResNameProc(HMODULE hModule, LPCTSTR lpszType, LPTSTR lpszName, LONG_PTR lParam);
 public:
 	Win32ResourceArchive();
 
-	virtual bool hasFile(const Common::String &name) const;
-	virtual int listMembers(Common::ArchiveMemberList &list) const;
-	virtual const Common::ArchiveMemberPtr getMember(const Common::String &name) const;
-	virtual Common::SeekableReadStream *createReadStreamForMember(const Common::String &name) const;
+	virtual bool hasFile(const Common::String &name) const override;
+	virtual int listMembers(Common::ArchiveMemberList &list) const override;
+	virtual const Common::ArchiveMemberPtr getMember(const Common::String &name) const override;
+	virtual Common::SeekableReadStream *createReadStreamForMember(const Common::String &name) const override;
 private:
 	typedef Common::List<Common::String> FilenameList;
 
@@ -331,7 +340,8 @@ BOOL CALLBACK EnumResNameProc(HMODULE hModule, LPCTSTR lpszType, LPTSTR lpszName
 		return TRUE;
 
 	Win32ResourceArchive *arch = (Win32ResourceArchive *)lParam;
-	arch->_files.push_back(lpszName);
+	Common::String filename = Win32::tcharToString(lpszName);
+	arch->_files.push_back(filename);
 	return TRUE;
 }
 
@@ -362,7 +372,9 @@ const Common::ArchiveMemberPtr Win32ResourceArchive::getMember(const Common::Str
 }
 
 Common::SeekableReadStream *Win32ResourceArchive::createReadStreamForMember(const Common::String &name) const {
-	HRSRC resource = FindResource(NULL, name.c_str(), MAKEINTRESOURCE(256));
+	TCHAR *tName = Win32::stringToTchar(name);
+	HRSRC resource = FindResource(NULL, tName, MAKEINTRESOURCE(256));
+	free(tName);
 
 	if (resource == NULL)
 		return 0;
@@ -395,108 +407,6 @@ void OSystem_Win32::addSysArchivesToSearchSet(Common::SearchSet &s, int priority
 
 AudioCDManager *OSystem_Win32::createAudioCDManager() {
 	return createWin32AudioCDManager();
-}
-
-char *OSystem_Win32::convertEncoding(const char* to, const char *from, const char *string, size_t length) {
-	char *newString = nullptr;
-	char *result = OSystem_SDL::convertEncoding(to, from, string, length);
-	if (result != nullptr)
-		return result;
-
-	bool swapFromEndian = false;
-#ifdef SCUMM_BIG_ENDIAN
-	if (Common::String(from).hasSuffixIgnoreCase("le"))
-		swapFromEndian = true;
-#else
-	if (Common::String(from).hasSuffixIgnoreCase("be"))
-		swapFromEndian = true;
-#endif
-	if (swapFromEndian) {
-		if (Common::String(from).hasPrefixIgnoreCase("utf-16")) {
-			newString = Common::Encoding::switchEndian(string, length, 16);
-			from = "utf-16";
-		}
-		else if (Common::String(from).hasPrefixIgnoreCase("utf-32")) {
-			newString = Common::Encoding::switchEndian(string, length, 32);
-			from = "utf-32";
-		}
-		else
-			return nullptr;
-		if (newString != nullptr)
-			string = newString;
-		else
-			return nullptr;
-	}
-	bool swapToEndian = false;
-#ifdef SCUMM_BIG_ENDIAN
-		if (Common::String(to).hasSuffixIgnoreCase("le"))
-			swapToEndian = true;
-#else
-		if (Common::String(to).hasSuffixIgnoreCase("be"))
-			swapToEndian = true;
-#endif
-	// UTF-32 is really important for us, because it is used for the
-	// transliteration in Common::Encoding and Win32 cannot convert it
-	Common::String tempString;
-	if (Common::String(from).hasPrefixIgnoreCase("utf-32")) {
-		Common::U32String UTF32Str((const uint32 *)string, length / 4);
-		tempString = Common::convertUtf32ToUtf8(UTF32Str);
-		string = tempString.c_str();
-		from = "utf-8";
-	}
-	if (Common::String(to).hasPrefixIgnoreCase("utf-32")) {
-		char *UTF8Str = Common::Encoding::convert("utf-8", from, string, length);
-		Common::U32String UTF32Str = Common::convertUtf8ToUtf32(UTF8Str);
-		free(UTF8Str);
-		if (swapToEndian) {
-			result = Common::Encoding::switchEndian((const char *) UTF32Str.c_str(),
-						(UTF32Str.size() + 1) * 4,
-						32);
-		} else {
-			result = (char *) malloc((UTF32Str.size() + 1) * 4);
-			memcpy(result, UTF32Str.c_str(), (UTF32Str.size() + 1) * 4);
-		}
-		if (newString != nullptr)
-			free(newString);
-		return result;
-	}
-
-	// Add ending zeros
-	WCHAR *tmpStr;
-	if (Common::String(from).hasPrefixIgnoreCase("utf-16")) {
-		// Allocate space for string and 2 ending zeros
-		tmpStr = (WCHAR *) calloc(sizeof(char), length + 2);
-		if (!tmpStr) {
-			if (newString != nullptr)
-				free(newString);
-			warning("Could not allocate memory for string conversion");
-			return nullptr;
-		}
-		memcpy(tmpStr, string, length);
-	} else {
-		tmpStr = Win32::ansiToUnicode(string, Win32::getCodePageId(from));
-		if (!tmpStr) {
-			if (newString != nullptr)
-				free(newString);
-			return nullptr;
-		}
-	}
-
-	if (newString != nullptr)
-		free(newString);
-
-	if (Common::String(to).hasPrefixIgnoreCase("utf-16")) {
-		if (swapToEndian) {
-			result = Common::Encoding::switchEndian((char *)tmpStr, wcslen(tmpStr) * 2 + 2, 16);
-			free(tmpStr);
-			return result;
-		}
-		return (char *) tmpStr;
-	} else {
-		result = Win32::unicodeToAnsi(tmpStr, Win32::getCodePageId(to));
-		free(tmpStr);
-		return result;
-	}
 }
 
 #endif

@@ -25,9 +25,9 @@
 
 #include "gui/dialog.h"
 #include "common/fs.h"
-#include <backends/cloud/storagefile.h>
-#include <backends/networking/curl/request.h>
-#include <backends/cloud/storage.h>
+#include "backends/cloud/storagefile.h"
+#include "backends/networking/curl/request.h"
+#include "backends/cloud/storage.h"
 
 namespace GUI {
 
@@ -38,7 +38,7 @@ class CommandSender;
 
 class RemoteBrowserDialog : public Dialog {
 public:
-	RemoteBrowserDialog(const char *title);
+	RemoteBrowserDialog(const Common::U32String &title);
 	~RemoteBrowserDialog() override;
 
 	void open() override;

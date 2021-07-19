@@ -46,12 +46,14 @@ bool ResourceContext::loadResV1(uint32 contextOffset, uint32 contextSize) {
 	ResourceData *resourceData;
 
 	if (contextSize < RSC_MIN_FILESIZE) {
+		warning("ResourceContext::loadResV1(): Incorrect contextSize: %d < %d", contextSize, RSC_MIN_FILESIZE);
 		return false;
 	}
 
 	_file.seek(contextOffset + contextSize - RSC_TABLEINFO_SIZE);
 
 	if (_file.read(tableInfo, RSC_TABLEINFO_SIZE) != RSC_TABLEINFO_SIZE) {
+		warning("ResourceContext::loadResV1(): Incorrect table size: %d for %s", RSC_TABLEINFO_SIZE, _fileName);
 		return false;
 	}
 
@@ -62,6 +64,9 @@ bool ResourceContext::loadResV1(uint32 contextOffset, uint32 contextSize) {
 
 	// Check for sane table offset
 	if (resourceTableOffset != contextSize - RSC_TABLEINFO_SIZE - RSC_TABLEENTRY_SIZE * count) {
+		warning("ResourceContext::loadResV1(): Incorrect tables offset: %d != %d for %s, endian is %d",
+			resourceTableOffset, contextSize - RSC_TABLEINFO_SIZE - RSC_TABLEENTRY_SIZE * count,
+			_fileName, _isBigEndian);
 		return false;
 	}
 
@@ -180,10 +185,6 @@ bool Resource::createContexts() {
 		{	GID_IHNM,	"sfx.res",			false,	0	},
 		{	GID_IHNM,	"sfx.cmp",			true,	0	},
 #endif
-#ifdef ENABLE_SAGA2
-		{	GID_FTA2,	"ftasound.hrs",		false,	0	},
-		{	GID_DINO,	"dinosnd.hrs",		false,	0	},
-#endif
 		{	-1,			"",				false,	0	}
 	};
 
@@ -193,7 +194,11 @@ bool Resource::createContexts() {
 			if (curSoundFile->gameId != _vm->getGameId()) continue;
 			if (!Common::File::exists(curSoundFile->fileName)) continue;
 			strcpy(_soundFileName, curSoundFile->fileName);
-			addContext(_soundFileName, GAME_SOUNDFILE, curSoundFile->isCompressed);
+			uint32 flags = GAME_SOUNDFILE;
+
+			if (_vm->getFeatures() & GF_SOME_MAC_RESOURCES)
+				flags |= GAME_SWAPENDIAN;
+			addContext(_soundFileName, flags, curSoundFile->isCompressed);
 			break;
 		}
 	}
@@ -215,9 +220,6 @@ bool Resource::createContexts() {
 		{	GID_IHNM,	"voicess.cmp",					true	,	0},
 		{	GID_IHNM,	"voicesd.res",					false	,	0},
 		{	GID_IHNM,	"voicesd.cmp",					true	,	0},
-#endif
-#ifdef ENABLE_SAGA2
-		{	GID_FTA2,	"ftavoice.hrs",					false	,	0},
 #endif
 		{	-1,			"",							false	,	0}
 	};
@@ -282,12 +284,17 @@ bool Resource::createContexts() {
 		if (curSoundFile->gameId != _vm->getGameId()) continue;
 		if (!Common::File::exists(curSoundFile->fileName)) continue;
 		strcpy(_musicFileName, curSoundFile->fileName);
-		addContext(_musicFileName, GAME_DIGITALMUSICFILE, curSoundFile->isCompressed);
+		uint32 flags = GAME_DIGITALMUSICFILE;
+
+		if (_vm->getFeatures() & GF_SOME_MAC_RESOURCES)
+			flags |= GAME_SWAPENDIAN;
+		addContext(_musicFileName, flags, curSoundFile->isCompressed);
 		break;
 	}
 
 	for (ResourceContextList::iterator i = _contexts.begin(); i != _contexts.end(); ++i) {
 		if (!(*i)->load(_vm, this)) {
+			warning("Cannot load context %s", (*i)->_fileName);
 			return false;
 		}
 	}

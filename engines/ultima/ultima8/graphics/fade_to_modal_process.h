@@ -25,13 +25,14 @@
 
 #include "ultima/ultima8/kernel/process.h"
 #include "ultima/ultima8/gumps/modal_gump.h"
-#include "ultima/ultima8/misc/p_dynamic_cast.h"
+#include "ultima/ultima8/misc/classtype.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
 class PaletteFaderProcess;
 
+/** A process to fade out the screen and open a modal */
 class FadeToModalProcess : public Process {
 
 	enum FadeToModalState {

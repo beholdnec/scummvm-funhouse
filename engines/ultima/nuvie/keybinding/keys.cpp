@@ -331,7 +331,7 @@ KeyBinder::~KeyBinder() {
 }
 
 void KeyBinder::AddKeyBinding(Common::KeyCode key, byte mod, const Action *action,
-                              int nparams, int *params) {
+							  int nparams, int *params) {
 	Common::KeyState k;
 	ActionType a;
 	a.action = action;
@@ -700,21 +700,29 @@ void KeyBinder::set_axis(uint8 index, uint8 value) {
 	switch (index) {
 	case 0:
 		x_axis = value;
+		break;
 	case 1:
 		y_axis = value;
+		break;
 	case 2:
 		x_axis2 = value;
+		break;
 	case 3:
 		y_axis2 = value;
+		break;
 	case 4:
 		x_axis3 = value;
+		break;
 	case 5:
 		y_axis3 = value;
+		break;
 	case 6:
 		x_axis4 = value;
+		break;
 	case 7:
 	default:
 		y_axis4 = value;
+		break;
 	}
 }
 

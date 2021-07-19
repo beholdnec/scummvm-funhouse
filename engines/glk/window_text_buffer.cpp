@@ -1304,7 +1304,7 @@ void TextBufferWindow::acceptReadLine(uint32 arg) {
 		if (_historyPos < 0)
 			_historyPos += HISTORYLEN;
 		s = _history[_historyPos];
-		putTextUni(s.c_str(), s.size(), _inFence, _numChars - _inFence);
+		putTextUni(s.u32_str(), s.size(), _inFence, _numChars - _inFence);
 		break;
 
 	case keycode_Down:
@@ -1314,7 +1314,7 @@ void TextBufferWindow::acceptReadLine(uint32 arg) {
 		if (_historyPos >= HISTORYLEN)
 			_historyPos -= HISTORYLEN;
 		s = _history[_historyPos];
-		putTextUni(s.c_str(), s.size(), _inFence, _numChars - _inFence);
+		putTextUni(s.u32_str(), s.size(), _inFence, _numChars - _inFence);
 		break;
 
 	// Cursor movement keys, during line input.
@@ -1574,7 +1574,7 @@ void TextBufferWindow::scrollOneLine(bool forced) {
 	_lines[0]._rPic = nullptr;
 	_lines[0]._lHyper = 0;
 	_lines[0]._rHyper = 0;
-	
+
 	Common::fill(_chars, _chars + TBLINELEN, ' ');
 	Attributes *a = _attrs;
 	for (int i = 0; i < TBLINELEN; ++i, ++a)
@@ -1606,8 +1606,8 @@ void TextBufferWindow::scrollResize() {
 		_lines[i]._rHyper = 0;
 		_lines[i]._len = 0;
 		_lines[i]._newLine = 0;
-		memset(_lines[i]._chars, ' ', sizeof _lines[i]._chars);
-		memset(_lines[i]._attrs, 0, sizeof _lines[i]._attrs);
+		*(_lines[i]._chars) = 0;
+		_lines[i]._attrs->clear();
 	}
 
 	_scrollBack += SCROLLBACK;

@@ -20,50 +20,42 @@
  *
  */
 
-#include "common/debug.h"
-#include "common/rect.h"
 #include "image/png.h"
-#include "graphics/surface.h"
-#include "graphics/transparent_surface.h"
-#include "graphics/palette.h"
 
-#include "sludge/allfiles.h"
-#include "sludge/backdrop.h"
 #include "sludge/event.h"
 #include "sludge/fileset.h"
 #include "sludge/graphics.h"
 #include "sludge/imgloader.h"
-#include "sludge/moreio.h"
 #include "sludge/newfatal.h"
 #include "sludge/speech.h"
 #include "sludge/statusba.h"
-#include "sludge/zbuffer.h"
 #include "sludge/sludge.h"
 #include "sludge/sludger.h"
 #include "sludge/variable.h"
 #include "sludge/version.h"
+#include "sludge/zbuffer.h"
 
 namespace Sludge {
 
-Parallax::Parallax() {
-	_parallaxLayers.clear();
-}
+void GraphicsManager::killParallax() {
+	if (!_parallaxLayers)
+		return;
 
-Parallax::~Parallax() {
-	kill();
-}
-
-void Parallax::kill() {
-	ParallaxLayers::iterator it;
-	for (it = _parallaxLayers.begin(); it != _parallaxLayers.end(); ++it) {
+	for (ParallaxLayers::iterator it = _parallaxLayers->begin(); it != _parallaxLayers->end(); ++it) {
 		(*it)->surface.free();
 		delete (*it);
 		(*it) = nullptr;
 	}
-	_parallaxLayers.clear();
+	_parallaxLayers->clear();
+
+	delete _parallaxLayers;
+	_parallaxLayers = nullptr;
 }
 
-bool Parallax::add(uint16 v, uint16 fracX, uint16 fracY) {
+bool GraphicsManager::loadParallax(uint16 v, uint16 fracX, uint16 fracY) {
+	if (!_parallaxLayers)
+		_parallaxLayers = new ParallaxLayers;
+
 	setResourceForFatal(v);
 	if (!g_sludge->_resMan->openFileFromNum(v))
 		return fatal("Can't open parallax image");
@@ -72,9 +64,9 @@ bool Parallax::add(uint16 v, uint16 fracX, uint16 fracY) {
 	if (!checkNew(nP))
 		return false;
 
-	_parallaxLayers.push_back(nP);
+	_parallaxLayers->push_back(nP);
 
-	if (!ImgLoader::loadImage(g_sludge->_resMan->getData(), &nP->surface, 0))
+	if (!ImgLoader::loadImage(v, "parallax", g_sludge->_resMan->getData(), &nP->surface, 0))
 		return false;
 
 	nP->fileNum = v;
@@ -84,79 +76,60 @@ bool Parallax::add(uint16 v, uint16 fracX, uint16 fracY) {
 	// 65535 is the value of AUTOFIT constant in Sludge
 	if (fracX == 65535) {
 		nP->wrapS = false;
-//		if (nP->surface.w < _winWidth) {
-//			fatal("For AUTOFIT parallax backgrounds, the image must be at least as wide as the game window/screen.");
-//			return false;
-//		}
+		if (nP->surface.w < (int16)_winWidth) {
+			fatal("For AUTOFIT parallax backgrounds, the image must be at least as wide as the game window/screen.");
+			return false;
+		}
 	} else {
 		nP->wrapS = true;
 	}
 
 	if (fracY == 65535) {
 		nP->wrapT = false;
-//		if (nP->surface.h < _winHeight) {
-//			fatal("For AUTOFIT parallax backgrounds, the image must be at least as tall as the game window/screen.");
-//			return false;
-//		}
+		if (nP->surface.h < (int16)_winHeight) {
+			fatal("For AUTOFIT parallax backgrounds, the image must be at least as tall as the game window/screen.");
+			return false;
+		}
 	} else {
 		nP->wrapT = true;
 	}
-
-	// TODO: reinterpret this part
-#if 0
-	if (nP->wrapS)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	else
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	if (nP->wrapT)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	else
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-#endif
 
 	g_sludge->_resMan->finishAccess();
 	setResourceForFatal(-1);
 	return true;
 }
 
-void Parallax::draw() {
-	// draw parallaxStuff
-	if (!_parallaxLayers.empty()) {
-		// TODO: simulate image repeating effect
-		warning("Drawing parallaxStuff");
-#if 0
-		// display parallax from bottom to top
-		ParallaxLayers::iterator it;
-		for (it = _parallax.begin(); it != _parallax.end(); ++it) {
-			(*it)->cameraX = sortOutPCamera(cameraX, (*it)->fractionX, (int)(sceneWidth - (float)winWidth / cameraZoom), (int)((*it)->surface.w - (float)winWidth / cameraZoom));
-			(*it)->cameraY = sortOutPCamera(cameraY, (*it)->fractionY, (int)(sceneHeight - (float)winHeight / cameraZoom), (int)((*it)->surface.h - (float)winHeight / cameraZoom));
+void GraphicsManager::drawParallax() {
+	if (!_parallaxLayers || _parallaxLayers->empty())
+		return;
 
-			uint w = ((*it)->wrapS) ? sceneWidth : (*it)->surface.w;
-			uint h = ((*it)->wrapT) ? sceneHeight : (*it)->surface.h;
+	// display parallax from bottom to top
+	for (ParallaxLayers::iterator it = _parallaxLayers->begin(); it != _parallaxLayers->end(); ++it) {
+		ParallaxLayer *p = *it;
+		p->cameraX = sortOutPCamera(_cameraX, p->fractionX, (int)(_sceneWidth - (float)_winWidth / _cameraZoom), (int)(p->surface.w - (float)_winWidth / _cameraZoom));
+		p->cameraY = sortOutPCamera(_cameraY, p->fractionY, (int)(_sceneHeight - (float)_winHeight / _cameraZoom), (int)(p->surface.h - (float)_winHeight / _cameraZoom));
 
-			const GLfloat vertices[] = {
-				(GLfloat) - (*it)->cameraX, (GLfloat) - (*it)->cameraY, 0.1f,
-				w - (*it)->cameraX, (GLfloat) - (*it)->cameraY, 0.1f,
-				(GLfloat) - (*it)->cameraX, h - (*it)->cameraY, 0.1f,
-				w - (*it)->cameraX, h - (*it)->cameraY, 0.1f
-			};
+		uint w = p->wrapS ? _sceneWidth : p->surface.w;
+		uint h = p->wrapT ? _sceneHeight : p->surface.h;
 
-			const GLfloat texCoords[] = {
-				0.0f, 0.0f,
-				texw, 0.0f,
-				0.0f, texh,
-				texw, texh
-			};
-			drawQuad(shader.smartScaler, vertices, 1, texCoords);
+		debugC(1, kSludgeDebugGraphics, "drawParallax(): camX: %d camY: %d dims: %d x %d sceneDims: %d x %d winDims: %d x %d surf: %d x %d", p->cameraX, p->cameraY, w, h, _sceneWidth, _sceneHeight, _winWidth, _winHeight, p->surface.w, p->surface.h);
 
+		Graphics::TransparentSurface tmp(p->surface, false);
+		for (uint y = 0; y < _sceneHeight; y += p->surface.h) {
+			for (uint x = 0; x < _sceneWidth; x += p->surface.w) {
+				tmp.blit(_renderSurface, x - p->cameraX, y - p->cameraY);
+				debugC(3, kSludgeDebugGraphics, "drawParallax(): blit to: %d, %d", x - p->cameraX, y - p->cameraY);
+			}
 		}
-#endif
 	}
 }
 
-void Parallax::save(Common::WriteStream *stream) {
+void GraphicsManager::saveParallax(Common::WriteStream *stream) {
+	if (!_parallaxLayers)
+		return;
+
 	ParallaxLayers::iterator it;
-	for (it = _parallaxLayers.begin(); it != _parallaxLayers.end(); ++it) {
+	for (it = _parallaxLayers->begin(); it != _parallaxLayers->end(); ++it) {
 		stream->writeByte(1);
 		stream->writeUint16BE((*it)->fileNum);
 		stream->writeUint16BE((*it)->fractionX);
@@ -186,7 +159,7 @@ bool GraphicsManager::snapshot() {
 	// draw snapshot to rendersurface
 	displayBase();
 	_vm->_speechMan->display();
-	drawStatusBar();
+	g_sludge->_statusBar->draw();
 
 	// copy backdrop to snapshot
 	_snapshotSurface.copyFrom(_renderSurface);
@@ -196,7 +169,7 @@ bool GraphicsManager::snapshot() {
 }
 
 bool GraphicsManager::restoreSnapshot(Common::SeekableReadStream *stream) {
-	if (!(ImgLoader::loadImage(stream, &_snapshotSurface))) {
+	if (!(ImgLoader::loadImage(-1, NULL, stream, &_snapshotSurface))) {
 		return false;
 	}
 	return true;
@@ -256,7 +229,7 @@ void GraphicsManager::loadBackDrop(int fileNum, int x, int y) {
 		return;
 	}
 
-	if (!loadHSI(g_sludge->_resMan->getData(), x, y, false)) {
+	if (!loadHSI(fileNum, g_sludge->_resMan->getData(), x, y, false)) {
 		Common::String mess = Common::String::format("Can't paste overlay image outside scene dimensions\n\nX = %i\nY = %i\nWidth = %i\nHeight = %i", x, y, _sceneWidth, _sceneHeight);
 		fatal(mess);
 	}
@@ -278,7 +251,7 @@ void GraphicsManager::mixBackDrop(int fileNum, int x, int y) {
 		return;
 	}
 
-	if (!mixHSI(g_sludge->_resMan->getData(), x, y)) {
+	if (!mixHSI(fileNum, g_sludge->_resMan->getData(), x, y)) {
 		fatal("Can't paste overlay image outside screen dimensions");
 	}
 
@@ -351,7 +324,7 @@ void GraphicsManager::drawHorizontalLine(uint x1, uint y, uint x2) {
 
 void GraphicsManager::darkScreen() {
 	Graphics::TransparentSurface tmp(_backdropSurface, false);
-	tmp.blit(_backdropSurface, 0, 0, Graphics::FLIP_NONE, nullptr, TS_ARGB(0, 255 >> 1, 0, 0));
+	tmp.blit(_backdropSurface, 0, 0, Graphics::FLIP_NONE, nullptr, TS_ARGB(255 >> 1, 0, 0, 0));
 
 	// reset zBuffer
 	if (_zBuffer->originalNum >= 0) {
@@ -381,10 +354,10 @@ bool GraphicsManager::loadLightMap(int v) {
 
 	Graphics::TransparentSurface tmp;
 
-	if (!ImgLoader::loadImage(g_sludge->_resMan->getData(), &tmp))
+	if (!ImgLoader::loadImage(v, "lightmap", g_sludge->_resMan->getData(), &tmp))
 		return false;
 
-	if (tmp.w != _sceneWidth || tmp.h != _sceneHeight) {
+	if (tmp.w != (int16)_sceneWidth || tmp.h != (int16)_sceneHeight) {
 		if (_lightMapMode == LIGHTMAPMODE_HOTSPOT) {
 			return fatal("Light map width and height don't match scene width and height. That is required for lightmaps in HOTSPOT mode.");
 		} else if (_lightMapMode == LIGHTMAPMODE_PIXEL) {
@@ -399,17 +372,6 @@ bool GraphicsManager::loadLightMap(int v) {
 	tmp.free();
 	g_sludge->_resMan->finishAccess();
 	setResourceForFatal(-1);
-
-	// Debug code to output light map image
-#if 0
-	Common::DumpFile *outFile = new Common::DumpFile();
-	Common::String outName = Common::String::format("lightmap_%i.png", v);
-	outFile->open(outName);
-	Image::writePNG(*outFile, _lightMap);
-	outFile->finalize();
-	outFile->close();
-	delete outFile;
-#endif
 
 	return true;
 }
@@ -440,7 +402,7 @@ bool GraphicsManager::loadLightMap(int ssgVersion, Common::SeekableReadStream *s
 	return true;
 }
 
-bool GraphicsManager::loadHSI(Common::SeekableReadStream *stream, int x, int y, bool reserve) {
+bool GraphicsManager::loadHSI(int num, Common::SeekableReadStream *stream, int x, int y, bool reserve) {
 	debugC(1, kSludgeDebugGraphics, "Load HSI");
 	if (reserve) {
 		killAllBackDrop(); // kill all
@@ -448,7 +410,7 @@ bool GraphicsManager::loadHSI(Common::SeekableReadStream *stream, int x, int y, 
 
 	Graphics::Surface tmp;
 
-	if (!ImgLoader::loadImage(stream, &tmp, (int)reserve))
+	if (!ImgLoader::loadImage(num, "hsi", stream, &tmp, (int)reserve))
 		return false;
 
 	uint realPicWidth = tmp.w;
@@ -480,10 +442,10 @@ bool GraphicsManager::loadHSI(Common::SeekableReadStream *stream, int x, int y, 
 	return true;
 }
 
-bool GraphicsManager::mixHSI(Common::SeekableReadStream *stream, int x, int y) {
+bool GraphicsManager::mixHSI(int num, Common::SeekableReadStream *stream, int x, int y) {
 	debugC(1, kSludgeDebugGraphics, "Load mixHSI");
 	Graphics::Surface mixSurface;
-	if (!ImgLoader::loadImage(stream, &mixSurface, 0))
+	if (!ImgLoader::loadImage(num, "mixhsi", stream, &mixSurface, 0))
 		return false;
 
 	uint realPicWidth = mixSurface.w;
@@ -497,7 +459,7 @@ bool GraphicsManager::mixHSI(Common::SeekableReadStream *stream, int x, int y) {
 		return false;
 
 	Graphics::TransparentSurface tmp(mixSurface, false);
-	tmp.blit(_backdropSurface, x, y, Graphics::FLIP_NONE, nullptr, TS_ARGB(255, 255 >> 1, 255, 255));
+	tmp.blit(_backdropSurface, x, y, Graphics::FLIP_NONE, nullptr, TS_ARGB(255 >> 1, 255, 255, 255));
 	mixSurface.free();
 
 	return true;
@@ -526,7 +488,7 @@ void GraphicsManager::loadBackdrop(int ssgVersion, Common::SeekableReadStream *s
 
 	_brightnessLevel = stream->readByte();
 
-	loadHSI(stream, 0, 0, true);
+	loadHSI(-1, stream, 0, 0, true);
 }
 
 bool GraphicsManager::getRGBIntoStack(uint x, uint y, StackHandler *sH) {

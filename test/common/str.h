@@ -1,6 +1,7 @@
 #include <cxxtest/TestSuite.h>
 
 #include "common/str.h"
+#include "common/ustr.h"
 
 class StringTestSuite : public CxxTest::TestSuite
 {
@@ -363,6 +364,14 @@ class StringTestSuite : public CxxTest::TestSuite
 		TS_ASSERT_EQUALS(s.size(), 7U);
 	}
 
+	void test_ustring_printf() {
+		//Ideally should be the same as above (make String template?)
+		TS_ASSERT_EQUALS( Common::U32String::format(" ").encode(), " " );
+		TS_ASSERT_EQUALS( Common::U32String::format("%s", "test").encode(), "test" );
+		TS_ASSERT_EQUALS( Common::U32String::format("%s%c%s", "Press ", 'X', " to win").encode(), "Press X to win" );
+		TS_ASSERT_EQUALS( Common::U32String::format("Some %s to make this string longer than the default built-in %s %d", "text", "capacity", 123456).encode(), "Some text to make this string longer than the default built-in capacity 123456" );
+	}
+
 	void test_strlcpy() {
 		static const char * const testString = "1234567890";
 
@@ -531,21 +540,21 @@ class StringTestSuite : public CxxTest::TestSuite
 		testString.replace(5, 9, Common::String("Displaced ristretto string"), 10, 10);
 		TS_ASSERT_EQUALS(testString, Common::String("Good ristretto coffee friends"));
 
-        // -----------------------
-        // Deep copy compliance
-        // -----------------------
+		// -----------------------
+		// Deep copy compliance
+		// -----------------------
 
-        // Makes a deep copy without changing the length of the original
-        Common::String s1 = "TestTestTestTestTestTestTestTestTestTestTest";
-        Common::String s2(s1);
-        TS_ASSERT_EQUALS(s1, "TestTestTestTestTestTestTestTestTestTestTest");
-        TS_ASSERT_EQUALS(s2, "TestTestTestTestTestTestTestTestTestTestTest");
-        s1.replace(0, 4, "TEST");
-        TS_ASSERT_EQUALS(s1, "TESTTestTestTestTestTestTestTestTestTestTest");
-        TS_ASSERT_EQUALS(s2, "TestTestTestTestTestTestTestTestTestTestTest");
+		// Makes a deep copy without changing the length of the original
+		Common::String s1 = "TestTestTestTestTestTestTestTestTestTestTest";
+		Common::String s2(s1);
+		TS_ASSERT_EQUALS(s1, "TestTestTestTestTestTestTestTestTestTestTest");
+		TS_ASSERT_EQUALS(s2, "TestTestTestTestTestTestTestTestTestTestTest");
+		s1.replace(0, 4, "TEST");
+		TS_ASSERT_EQUALS(s1, "TESTTestTestTestTestTestTestTestTestTestTest");
+		TS_ASSERT_EQUALS(s2, "TestTestTestTestTestTestTestTestTestTestTest");
 
-        // Makes a deep copy when we shorten the string
-    	Common::String s3 = "TestTestTestTestTestTestTestTestTestTestTest";
+		// Makes a deep copy when we shorten the string
+		Common::String s3 = "TestTestTestTestTestTestTestTestTestTestTest";
 		Common::String s4(s3);
 		s3.replace(0, 32, "");
 		TS_ASSERT_EQUALS(s3, "TestTestTest");
@@ -566,5 +575,49 @@ class StringTestSuite : public CxxTest::TestSuite
 		TS_ASSERT(testString == "2123456");
 		testString.insertChar('0', 5);
 		TS_ASSERT(testString == "21234056");
+	}
+
+	void test_comparison() {
+		Common::String a("0123"), ax("01234"), b("0124"), e;
+		TS_ASSERT_EQUALS(a, a);
+		TS_ASSERT_EQUALS(ax, ax);
+		TS_ASSERT_EQUALS(b, b);
+		TS_ASSERT_EQUALS(e, e);
+
+		TS_ASSERT_DIFFERS(a, ax);
+		TS_ASSERT_DIFFERS(a, b);
+		TS_ASSERT_DIFFERS(a, e);
+		TS_ASSERT_DIFFERS(ax, b);
+		TS_ASSERT_DIFFERS(ax, e);
+		TS_ASSERT_DIFFERS(b, ax);
+		TS_ASSERT_DIFFERS(b, e);
+
+		TS_ASSERT_LESS_THAN(e, a);
+		TS_ASSERT_LESS_THAN(e, ax);
+		TS_ASSERT_LESS_THAN(e, b);
+		TS_ASSERT_LESS_THAN(a, ax);
+		TS_ASSERT_LESS_THAN(a, b);
+		TS_ASSERT_LESS_THAN(ax, b);
+	}
+
+	void test_ustr_comparison() {
+		Common::U32String a("abc"), b("abd");
+
+		TS_ASSERT_EQUALS(a, a);
+		TS_ASSERT_EQUALS(b, b);
+
+		TS_ASSERT_DIFFERS(a, b);
+
+		TS_ASSERT_LESS_THAN(a, b);
+
+		TS_ASSERT_LESS_THAN_EQUALS(a, b);
+		TS_ASSERT_LESS_THAN_EQUALS(a, a);
+		TS_ASSERT_LESS_THAN_EQUALS(b, b);
+
+		//U32String does not define compare, so test both sides
+		TS_ASSERT(a >= a);
+		TS_ASSERT(b > a);
+		TS_ASSERT(b >= b);
+		TS_ASSERT(b >= a);
 	}
 };

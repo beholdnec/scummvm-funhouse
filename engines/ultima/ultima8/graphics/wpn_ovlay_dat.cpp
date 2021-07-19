@@ -24,7 +24,6 @@
 
 #include "ultima/ultima8/graphics/wpn_ovlay_dat.h"
 
-#include "ultima/ultima8/filesys/idata_source.h"
 #include "ultima/ultima8/world/actors/weapon_overlay.h"
 #include "ultima/ultima8/filesys/raw_archive.h"
 #include "ultima/ultima8/games/game_data.h"
@@ -42,15 +41,9 @@ WpnOvlayDat::~WpnOvlayDat() {
 		delete _overlay[i];
 }
 
-const AnimWeaponOverlay *WpnOvlayDat::getAnimOverlay(uint32 action) const {
-	if (action >= _overlay.size())
-		return nullptr;
-	return _overlay[action];
-}
-
 const WeaponOverlayFrame *WpnOvlayDat::getOverlayFrame(uint32 action, int type,
-        Direction direction,
-        int frame) const {
+		Direction direction,
+		int frame) const {
 	if (action >= _overlay.size())
 		return nullptr;
 	if (!_overlay[action])
@@ -60,8 +53,6 @@ const WeaponOverlayFrame *WpnOvlayDat::getOverlayFrame(uint32 action, int type,
 
 
 void WpnOvlayDat::load(RawArchive *overlaydat) {
-	WeaponOverlayFrame f;
-
 	MainShapeArchive *msf = GameData::get_instance()->getMainShapes();
 	assert(msf);
 
@@ -75,7 +66,7 @@ void WpnOvlayDat::load(RawArchive *overlaydat) {
 			// get Avatar's animation
 			const AnimAction *anim = msf->getAnim(1, action);
 			if (!anim) {
-				perr << "Skipping wpnovlay action " << action << " because animation doesn't exist." << Std::endl;
+				perr << "Skipping wpnovlay action " << action << " because avatar animation doesn't exist." << Std::endl;
 				continue;
 			}
 
@@ -95,9 +86,7 @@ void WpnOvlayDat::load(RawArchive *overlaydat) {
 				for (unsigned int dir = 0; dir < dircount; dir++) {
 					awo->_overlay[type]._frames[dir].resize(animlength);
 					for (unsigned int frame = 0; frame < animlength; frame++) {
-						unsigned int offset = type * 8 * animlength
-						                      + dir * animlength + frame;
-						rs->seek(4 * offset);
+						WeaponOverlayFrame f;
 						f._xOff = rs->readSByte();
 						f._yOff = rs->readSByte();
 						f._frame = rs->readUint16LE();

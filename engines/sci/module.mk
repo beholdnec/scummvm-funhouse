@@ -2,12 +2,8 @@ MODULE := engines/sci
 
 MODULE_OBJS := \
 	console.o \
-	decompressor.o \
-	detection.o \
 	event.o \
-	resource.o \
-	resource_audio.o \
-	resource_patcher.o \
+	metaengine.o \
 	sci.o \
 	util.o \
 	engine/features.o \
@@ -51,6 +47,7 @@ MODULE_OBJS := \
 	graphics/coordadjuster.o \
 	graphics/cursor.o \
 	graphics/fontsjis.o \
+	graphics/fontkorean.o \
 	graphics/maciconbar.o \
 	graphics/menu.o \
 	graphics/paint16.o \
@@ -60,6 +57,7 @@ MODULE_OBJS := \
 	graphics/ports.o \
 	graphics/remap.o \
 	graphics/scifont.o \
+	graphics/scifx.o \
 	graphics/screen.o \
 	graphics/text16.o \
 	graphics/transitions.o \
@@ -67,6 +65,10 @@ MODULE_OBJS := \
 	parser/grammar.o \
 	parser/said.o \
 	parser/vocabulary.o \
+	resource/decompressor.o \
+	resource/resource.o \
+	resource/resource_audio.o \
+	resource/resource_patcher.o \
 	sound/audio.o \
 	sound/midiparser_sci.o \
 	sound/music.o \
@@ -113,3 +115,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

@@ -27,6 +27,7 @@
 #include "common/error.h"
 #include "common/file.h"
 #include "common/fs.h"
+#include "common/text-to-speech.h"
 #include "engines/advancedDetector.h"
 #include "engines/util.h"
 #include "gui/message.h"
@@ -44,11 +45,6 @@ const int CGEEngine::_maxSceneArr[5] = {1, 8, 16, 23, 24};
 
 CGEEngine::CGEEngine(OSystem *syst, const ADGameDescription *gameDescription)
 	: Engine(syst), _gameDescription(gameDescription), _randomSource("cge") {
-
-	// Debug/console setup
-	DebugMan.addDebugChannel(kCGEDebugBitmap, "bitmap", "CGE Bitmap debug channel");
-	DebugMan.addDebugChannel(kCGEDebugFile, "file", "CGE IO debug channel");
-	DebugMan.addDebugChannel(kCGEDebugEngine, "engine", "CGE Engine debug channel");
 
 	_bitmapPalette = nullptr;
 	_pocLight = nullptr;
@@ -169,9 +165,6 @@ void CGEEngine::init() {
 }
 
 void CGEEngine::deinit() {
-	// Remove all of our debug levels here
-	DebugMan.clearAllDebugChannels();
-
 	// Delete engine objects
 	delete _vga;
 	delete _sys;
@@ -226,10 +219,14 @@ Common::Error CGEEngine::run() {
 	// If game is finished, display ending message
 	if (_flag[3]) {
 		Common::String msg = Common::String(_text->getText(kSayTheEnd));
-		if (msg.size() != 0) {
+		if (!msg.empty()) {
 			g_system->delayMillis(10);
-			GUI::MessageDialog dialog(msg, "OK");
+			GUI::MessageDialog dialog(msg);
 			dialog.runModal();
+			Common::TextToSpeechManager *ttsMan = g_system->getTextToSpeechManager();
+			if (ttsMan != nullptr && ConfMan.getBool("tts_enabled")) {
+				ttsMan->say(msg);
+			}
 		}
 	}
 

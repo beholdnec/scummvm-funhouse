@@ -30,6 +30,7 @@
 
 #include "common/timer.h"
 #include "graphics/pixelformat.h"
+#include "graphics/pixelbuffer.h"
 
 ModularGraphicsBackend::ModularGraphicsBackend()
 	:
@@ -67,8 +68,8 @@ int ModularGraphicsBackend::getDefaultGraphicsMode() const {
 	return _graphicsManager->getDefaultGraphicsMode();
 }
 
-bool ModularGraphicsBackend::setGraphicsMode(int mode) {
-	return _graphicsManager->setGraphicsMode(mode);
+bool ModularGraphicsBackend::setGraphicsMode(int mode, uint flags) {
+	return _graphicsManager->setGraphicsMode(mode, flags);
 }
 
 int ModularGraphicsBackend::getGraphicsMode() const {
@@ -107,8 +108,20 @@ int ModularGraphicsBackend::getStretchMode() const {
 	return _graphicsManager->getStretchMode();
 }
 
-void ModularGraphicsBackend::resetGraphicsScale() {
-	_graphicsManager->resetGraphicsScale();
+uint ModularGraphicsBackend::getDefaultScaler() const {
+	return _graphicsManager->getDefaultScaler();
+}
+
+uint ModularGraphicsBackend::getDefaultScaleFactor() const {
+	return _graphicsManager->getDefaultScaleFactor();
+}
+
+bool ModularGraphicsBackend::setScaler(uint mode, int factor) {
+	return _graphicsManager->setScaler(mode, factor);
+}
+
+uint ModularGraphicsBackend::getScaler() const {
+	return _graphicsManager->getScaler();
 }
 
 #ifdef USE_RGB_COLOR
@@ -123,7 +136,7 @@ Common::List<Graphics::PixelFormat> ModularGraphicsBackend::getSupportedFormats(
 
 #endif
 
-void ModularGraphicsBackend::initSize(uint w, uint h, const Graphics::PixelFormat *format ) {
+void ModularGraphicsBackend::initSize(uint w, uint h, const Graphics::PixelFormat *format) {
 	_graphicsManager->initSize(w, h, format);
 }
 
@@ -202,6 +215,10 @@ void ModularGraphicsBackend::hideOverlay() {
 	_graphicsManager->hideOverlay();
 }
 
+bool ModularGraphicsBackend::isOverlayVisible() const {
+	return _graphicsManager->isOverlayVisible();
+}
+
 Graphics::PixelFormat ModularGraphicsBackend::getOverlayFormat() const {
 	return _graphicsManager->getOverlayFormat();
 }
@@ -210,8 +227,8 @@ void ModularGraphicsBackend::clearOverlay() {
 	_graphicsManager->clearOverlay();
 }
 
-void ModularGraphicsBackend::grabOverlay(void *buf, int pitch) {
-	_graphicsManager->grabOverlay(buf, pitch);
+void ModularGraphicsBackend::grabOverlay(Graphics::Surface &surface) {
+	_graphicsManager->grabOverlay(surface);
 }
 
 void ModularGraphicsBackend::copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h) {
@@ -230,6 +247,10 @@ bool ModularGraphicsBackend::showMouse(bool visible) {
 	return _graphicsManager->showMouse(visible);
 }
 
+bool ModularGraphicsBackend::lockMouse(bool visible) {
+	return _graphicsManager->lockMouse(visible);
+}
+
 void ModularGraphicsBackend::warpMouse(int x, int y) {
 	_eventManager->purgeMouseEvents();
 	_graphicsManager->warpMouse(x, y);
@@ -243,12 +264,16 @@ void ModularGraphicsBackend::setCursorPalette(const byte *colors, uint start, ui
 	_graphicsManager->setCursorPalette(colors, start, num);
 }
 
-void ModularGraphicsBackend::displayMessageOnOSD(const char *msg) {
+void ModularGraphicsBackend::displayMessageOnOSD(const Common::U32String &msg) {
 	_graphicsManager->displayMessageOnOSD(msg);
 }
 
 void ModularGraphicsBackend::displayActivityIconOnOSD(const Graphics::Surface *icon) {
 	_graphicsManager->displayActivityIconOnOSD(icon);
+}
+
+void ModularGraphicsBackend::saveScreenshot() {
+	_graphicsManager->saveScreenshot();
 }
 
 

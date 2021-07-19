@@ -25,8 +25,10 @@
 #include "common/file.h"
 #include "common/system.h"
 #include "common/textconsole.h"
+#include "common/util.h"
 
 #include "audio/fmopl.h"
+#include "audio/adlib_ms.h"
 
 namespace Audio {
 
@@ -115,7 +117,7 @@ uint16 milesAdLibVolumeSensitivityTable[] = {
 };
 
 
-class MidiDriver_Miles_AdLib : public MidiDriver {
+class MidiDriver_Miles_AdLib : public MidiDriver_Multisource {
 public:
 	MidiDriver_Miles_AdLib(InstrumentEntry *instrumentTablePtr, uint16 instrumentTableCount);
 	virtual ~MidiDriver_Miles_AdLib();
@@ -124,14 +126,17 @@ public:
 	int open() override;
 	void close() override;
 	void send(uint32 b) override;
+	void send(int8 source, uint32 b) override;
 	MidiChannel *allocateChannel() override { return NULL; }
 	MidiChannel *getPercussionChannel() override { return NULL; }
 
 	bool isOpen() const override { return _isOpen; }
 	uint32 getBaseTempo() override { return 1000000 / OPL::OPL::kDefaultCallbackFrequency; }
 
+	void stopAllNotes(uint8 source, uint8 channel) override;
+	void applySourceVolume(uint8 source) override;
+
 	void setVolume(byte volume);
-	virtual uint32 property(int prop, uint32 param) override;
 
 	void setTimerCallback(void *timerParam, Common::TimerManager::TimerProc timerProc) override;
 
@@ -161,7 +166,7 @@ private:
 
 		MidiChannelEntry() : currentPatchBank(0),
 							currentInstrumentPtr(NULL),
-							currentPitchBender(MILES_PITCHBENDER_DEFAULT),
+							currentPitchBender(MIDI_PITCH_BEND_DEFAULT),
 							currentPitchRange(0),
 							currentVoiceProtection(0),
 							currentVolume(0), currentVolumeExpression(0),
@@ -223,7 +228,7 @@ private:
 	bool _isOpen;
 
 	// stores information about all MIDI channels (not the actual OPL FM voice channels!)
-	MidiChannelEntry _midiChannels[MILES_MIDI_CHANNEL_COUNT];
+	MidiChannelEntry _midiChannels[MIDI_CHANNEL_COUNT];
 
 	// stores information about all virtual OPL FM voices
 	VirtualFmVoiceEntry _virtualFmVoices[MILES_ADLIB_VIRTUAL_FMVOICES_COUNT_MAX];
@@ -343,11 +348,11 @@ void MidiDriver_Miles_AdLib::onTimer() {
 }
 
 void MidiDriver_Miles_AdLib::resetData() {
-	memset(_midiChannels, 0, sizeof(_midiChannels));
-	memset(_virtualFmVoices, 0, sizeof(_virtualFmVoices));
-	memset(_physicalFmVoices, 0, sizeof(_physicalFmVoices));
+	ARRAYCLEAR(_midiChannels);
+	ARRAYCLEAR(_virtualFmVoices);
+	ARRAYCLEAR(_physicalFmVoices);
 
-	for (byte midiChannel = 0; midiChannel < MILES_MIDI_CHANNEL_COUNT; midiChannel++) {
+	for (byte midiChannel = 0; midiChannel < MIDI_CHANNEL_COUNT; midiChannel++) {
 		// defaults, were sent to driver during driver initialization
 		_midiChannels[midiChannel].currentVolume = 0x7F;
 		_midiChannels[midiChannel].currentPanning = 0x40; // center
@@ -355,7 +360,7 @@ void MidiDriver_Miles_AdLib::resetData() {
 
 		// Miles Audio 2: hardcoded pitch range as a global (not channel specific), set to 12
 		// Miles Audio 3: pitch range per MIDI channel
-		_midiChannels[midiChannel].currentPitchBender = MILES_PITCHBENDER_DEFAULT;
+		_midiChannels[midiChannel].currentPitchBender = MIDI_PITCH_BEND_DEFAULT;
 		_midiChannels[midiChannel].currentPitchRange = 12;
 	}
 
@@ -433,6 +438,34 @@ void MidiDriver_Miles_AdLib::send(uint32 b) {
 		break;
 	default:
 		warning("MILES-ADLIB: Unknown event %02x", command);
+	}
+}
+
+void MidiDriver_Miles_AdLib::send(int8 source, uint32 b) {
+	// TODO Implement proper multisource support.
+	if (source == -1 || source == 0)
+		send(b);
+}
+
+void MidiDriver_Miles_AdLib::stopAllNotes(uint8 source, uint8 channel) {
+	if (!(source == 0 || source == 0xFF))
+		return;
+
+	for (int i = 0; i < _modeVirtualFmVoicesCount; i++) {
+		if (_virtualFmVoices[i].inUse && (channel == 0xFF || _virtualFmVoices[i].actualMidiChannel == channel)) {
+			releaseFmVoice(i);
+		}
+	}
+}
+
+void MidiDriver_Miles_AdLib::applySourceVolume(uint8 source) {
+	if (!(source == 0 || source == 0xFF))
+		return;
+
+	for (int i = 0; i < _modeVirtualFmVoicesCount; i++) {
+		if (_virtualFmVoices[i].inUse) {
+			updatePhysicalFmVoice(i, true, kMilesAdLibUpdateFlags_Reg_40);
+		}
 	}
 }
 
@@ -575,7 +608,7 @@ void MidiDriver_Miles_AdLib::prioritySort() {
 	uint16 virtualFmVoicesCount = 0;
 	byte   midiChannel = 0;
 
-	memset(&virtualPriorities, 0, sizeof(virtualPriorities));
+	ARRAYCLEAR(virtualPriorities);
 
 	//warning("prioritysort");
 
@@ -735,6 +768,20 @@ void MidiDriver_Miles_AdLib::updatePhysicalFmVoice(byte virtualFmVoice, bool key
 		compositeVolume = compositeVolume >> 8; // get upmost 8 bits
 		if (compositeVolume)
 			compositeVolume++; // round up in case result wasn't 0
+
+		// Scale by source volume.
+		compositeVolume = compositeVolume * _sources[0].volume / _sources[0].neutralVolume;
+		if (_userVolumeScaling) {
+			if (_userMute) {
+				compositeVolume = 0;
+			} else {
+				// Scale by user volume.
+				uint16 userVolume = (_sources[0].type == SOURCE_TYPE_SFX ? _userSfxVolume : _userMusicVolume); // Treat SOURCE_TYPE_UNDEFINED as music
+				compositeVolume = (compositeVolume * userVolume) >> 8;
+			}
+		}
+		// Source volume scaling might clip volume, so reduce to maximum.
+		compositeVolume = MIN(compositeVolume, (uint16)0x7F);
 	}
 
 	if (registerUpdateFlags & kMilesAdLibUpdateFlags_Reg_20) {
@@ -923,22 +970,22 @@ void MidiDriver_Miles_AdLib::controlChange(byte midiChannel, byte controllerNumb
 		// It seems that this can get ignored, because we don't cache timbres at all
 		break;
 
-	case MILES_CONTROLLER_MODULATION:
+	case MIDI_CONTROLLER_MODULATION:
 		_midiChannels[midiChannel].currentModulation = controllerValue;
 		registerUpdateFlags = kMilesAdLibUpdateFlags_Reg_20;
 		break;
 
-	case MILES_CONTROLLER_VOLUME:
+	case MIDI_CONTROLLER_VOLUME:
 		_midiChannels[midiChannel].currentVolume = controllerValue;
 		registerUpdateFlags = kMilesAdLibUpdateFlags_Reg_40;
 		break;
 
-	case MILES_CONTROLLER_EXPRESSION:
+	case MIDI_CONTROLLER_EXPRESSION:
 		_midiChannels[midiChannel].currentVolumeExpression = controllerValue;
 		registerUpdateFlags = kMilesAdLibUpdateFlags_Reg_40;
 		break;
 
-	case MILES_CONTROLLER_PANNING:
+	case MIDI_CONTROLLER_PANNING:
 		_midiChannels[midiChannel].currentPanning = controllerValue;
 		if (_modeStereo) {
 			// Update register only in case we are in stereo mode
@@ -946,7 +993,7 @@ void MidiDriver_Miles_AdLib::controlChange(byte midiChannel, byte controllerNumb
 		}
 		break;
 
-	case MILES_CONTROLLER_SUSTAIN:
+	case MIDI_CONTROLLER_SUSTAIN:
 		_midiChannels[midiChannel].currentSustain = controllerValue;
 		if (controllerValue < 64) {
 			releaseSustain(midiChannel);
@@ -958,16 +1005,16 @@ void MidiDriver_Miles_AdLib::controlChange(byte midiChannel, byte controllerNumb
 		_midiChannels[midiChannel].currentPitchRange = controllerValue;
 		break;
 
-	case MILES_CONTROLLER_RESET_ALL:
+	case MIDI_CONTROLLER_RESET_ALL_CONTROLLERS:
 		_midiChannels[midiChannel].currentSustain = 0;
 		releaseSustain(midiChannel);
 		_midiChannels[midiChannel].currentModulation = 0;
 		_midiChannels[midiChannel].currentVolumeExpression = 127;
-		_midiChannels[midiChannel].currentPitchBender = MILES_PITCHBENDER_DEFAULT;
+		_midiChannels[midiChannel].currentPitchBender = MIDI_PITCH_BEND_DEFAULT;
 		registerUpdateFlags = kMilesAdLibUpdateFlags_Reg_20 | kMilesAdLibUpdateFlags_Reg_40 | kMilesAdLibUpdateFlags_Reg_A0;
 		break;
 
-	case MILES_CONTROLLER_ALL_NOTES_OFF:
+	case MIDI_CONTROLLER_ALL_NOTES_OFF:
 		for (byte virtualFmVoice = 0; virtualFmVoice < _modeVirtualFmVoicesCount; virtualFmVoice++) {
 			if (_virtualFmVoices[virtualFmVoice].inUse) {
 				// used
@@ -1058,11 +1105,7 @@ void MidiDriver_Miles_AdLib::setRegister(int reg, int value) {
 	}
 }
 
-uint32 MidiDriver_Miles_AdLib::property(int prop, uint32 param) {
-	return 0;
-}
-
-MidiDriver *MidiDriver_Miles_AdLib_create(const Common::String &filenameAdLib, const Common::String &filenameOPL3, Common::SeekableReadStream *streamAdLib, Common::SeekableReadStream *streamOPL3) {
+MidiDriver_Multisource *MidiDriver_Miles_AdLib_create(const Common::String &filenameAdLib, const Common::String &filenameOPL3, Common::SeekableReadStream *streamAdLib, Common::SeekableReadStream *streamOPL3) {
 	// Load adlib instrument data from file SAMPLE.AD (OPL3: SAMPLE.OPL)
 	Common::String              timbreFilename;
 	Common::SeekableReadStream *timbreStream = nullptr;

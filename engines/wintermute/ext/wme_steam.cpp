@@ -43,6 +43,13 @@ BaseScriptable *makeSXSteamAPI(BaseGame *inGame, ScStack *stack) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+Common::AchievementsInfo getAchievementsInfo() {
+	const MetaEngine *meta = g_engine->getMetaEngine();
+	const Common::String target = BaseEngine::instance().getGameTargetName();
+	return meta->getAchievementsInfo(target);
+}
+
+//////////////////////////////////////////////////////////////////////////
 SXSteamAPI::SXSteamAPI(BaseGame *inGame, ScStack *stack) : BaseScriptable(inGame) {
 	stack->correctParams(0);
 	init();
@@ -50,16 +57,8 @@ SXSteamAPI::SXSteamAPI(BaseGame *inGame, ScStack *stack) : BaseScriptable(inGame
 
 //////////////////////////////////////////////////////////////////////////
 void SXSteamAPI::init() {
-	MetaEngine &meta = ((WintermuteEngine *)g_engine)->getMetaEngine();
-	const Common::String target = BaseEngine::instance().getGameTargetName();
-	_achievementsInfo = meta.getAchievementsInfo(target);
-
-	if (!_achievementsInfo.appId.empty()) {
-		AchMan.setActiveDomain(Common::STEAM_ACHIEVEMENTS, _achievementsInfo.appId);
-	} else {
-		warning("Unknown game accessing SteamAPI. All achievements will be ignored.");
-		AchMan.unsetActiveDomain();
-	}
+	_achievementsInfo = getAchievementsInfo();
+	AchMan.setActiveDomain(_achievementsInfo);
 }
 
 
@@ -92,15 +91,7 @@ bool SXSteamAPI::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisSta
 	else if (strcmp(name, "SetAchievement") == 0) {
 		stack->correctParams(1);
 		const char *id = stack->pop()->getString();
-
-		Common::String msg = id;
-		for (uint32 i = 0; i < _achievementsInfo.descriptions.size(); i++) {
-			if (strcmp(_achievementsInfo.descriptions[i].id, id) == 0) {
-				msg = _achievementsInfo.descriptions[i].title;
-			}
-		}
-
-		stack->pushBool(AchMan.setAchievement(id, msg));
+		stack->pushBool(AchMan.setAchievement(id));
 		return STATUS_OK;
 	}
 	//////////////////////////////////////////////////////////////////////////
@@ -128,8 +119,9 @@ bool SXSteamAPI::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisSta
 		stack->correctParams(1);
 		uint32 index = (uint32) stack->pop()->getInt();
 
-		if (index < _achievementsInfo.descriptions.size()) {
-			stack->pushString(_achievementsInfo.descriptions[index].id);
+		const Common::AchievementDescription *descr = AchMan.getAchievementDescription(index);
+		if (descr) {
+			stack->pushString(descr->id.c_str());
 		} else {
 			stack->pushNULL();
 		}
@@ -221,7 +213,7 @@ ScValue *SXSteamAPI::scGetProperty(const Common::String &name) {
 	// NumAchievements (RO)
 	//////////////////////////////////////////////////////////////////////////
 	else if (name == "NumAchievements") {
-		_scValue->setInt(_achievementsInfo.descriptions.size());
+		_scValue->setInt(AchMan.getAchievementCount());
 		return _scValue;
 	}
 	//////////////////////////////////////////////////////////////////////////

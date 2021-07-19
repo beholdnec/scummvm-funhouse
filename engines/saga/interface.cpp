@@ -124,32 +124,10 @@ Interface::Interface(SagaEngine *vm) : _vm(vm) {
 	ByteArray resourceData;
 	int i;
 
-#if 0
-	// FTA2 related test code
-
-	// TODO: this will probably have to be moved to a new class
-	// It's left here for now till the code differences are figured out
-	if (_vm->getGameId() == GID_FTA2) {
-		_interfaceContext = _vm->_resource->getContext(GAME_IMAGEFILE);
-		_vm->_resource->loadResource(_interfaceContext, 22, resource, resourceLength);	// Julian's portrait
-
-		_vm->decodeBGImage(resource, resourceLength, &_mainPanel.image,
-			&_mainPanel.imageLength, &_mainPanel.imageWidth, &_mainPanel.imageHeight);
-
-		free(resource);
-		return;
-	}
-#endif
-
 	// Load interface module resource file context
 	_interfaceContext = _vm->_resource->getContext(GAME_RESOURCEFILE);
 	if (_interfaceContext == NULL) {
 		error("Interface::Interface() resource context not found");
-	}
-
-	// Do nothing for SAGA2 games for now
-	if (_vm->isSaga2()) {
-		return;
 	}
 
 	// Main panel
@@ -720,11 +698,6 @@ bool Interface::processAscii(Common::KeyState keystate) {
 }
 
 void Interface::setStatusText(const char *text, int statusColor) {
-	if (_vm->getGameId() == GID_FTA2 || _vm->getGameId() == GID_DINO) {
-		warning("setStatusText not implemented for SAGA2");
-		return;
-	}
-
 	if (_vm->getGameId() == GID_IHNM) {
 		// Don't show the status text for the IHNM chapter selection screens (chapter 8), or
 		// scene 0 (IHNM demo introduction)
@@ -921,19 +894,21 @@ void Interface::drawPanelText(InterfacePanel *panel, PanelButton *panelButton) {
 	} else {
 		// The standard case is used for the things that look a bit like buttons
 		// but are not clickable, e.g. texts like "Music", "Sound", etc.
-		if (_vm->getGameId() == GID_ITE) {
+		if (_vm->getGameId() == GID_ITE && _vm->getPlatform() != Common::kPlatformPC98) {
 			rect.left = rect.right - textWidth - 3;
 		} else {
 			rect.left = (rect.right + rect.left - textWidth) / 2;
+			if (_vm->getGameId() == GID_ITE)
+				rect.left += 4;
 		}
 		rect.top = (rect.top + rect.bottom - textHeight) / 2;
 	}
 
 	textPoint.x = rect.left;
-	textPoint.y = rect.top + 1;
+	textPoint.y = rect.top + (_vm->getPlatform() == Common::kPlatformPC98 ? 0 : 1);
 
 	_vm->_font->textDraw(textFont, text, textPoint,
-						_vm->KnownColor2ColorId(kKnownColorVerbText), _vm->KnownColor2ColorId(textShadowKnownColor), kFontShadow);
+						_vm->KnownColor2ColorId(kKnownColorVerbText), _vm->KnownColor2ColorId(textShadowKnownColor), _vm->getPlatform() == Common::kPlatformPC98 ?  kFontOutline : kFontShadow);
 }
 
 void Interface::drawOption() {
@@ -1246,6 +1221,10 @@ bool Interface::processTextInput(Common::KeyState keystate) {
 	default:
 		if (((keystate.ascii <= 255) && (Common::isAlnum(keystate.ascii))) || (keystate.ascii == ' ') ||
 		    (keystate.ascii == '-') || (keystate.ascii == '_')) {
+			// This conversion actually works if the isAlnum() check is removed (which locks out all characters > 127).
+			// However, some glyphs seem to missing from the font, so it might be best to keep the limitation...
+			keystate.ascii = Common::U32String(Common::String::format("%c", keystate.ascii), Common::kISO8859_1).encode(_vm->getLanguage() == Common::JA_JPN ? Common::kWindows932 : Common::kDos850).firstChar();
+
 			if (_textInputStringLength < save_title_size - 1) {
 				ch[0] = keystate.ascii;
 				tempWidth = _vm->_font->getStringWidth(kKnownFontSmall, ch, 0, kFontNormal);
@@ -1392,25 +1371,30 @@ void Interface::setSave(PanelButton *panelButton) {
 	_savePanel.currentButton = NULL;
 	uint titleNumber;
 	char *fileName;
+
+	char desc[28];
+	Common::strlcpy(desc, Common::U32String(_textInputString, Common::kDos850).encode(Common::kUtf8).c_str(), sizeof(desc));
+
 	switch (panelButton->id) {
 		case kTextSave:
 			if (_textInputStringLength == 0) {
 				break;
 			}
+
 			if (!_vm->isSaveListFull() && (_optionSaveFileTitleNumber == 0)) {
-				if (_vm->locateSaveFile(_textInputString, titleNumber)) {
+				if (_vm->locateSaveFile(desc, titleNumber)) {
 					fileName = _vm->calcSaveFileName(_vm->getSaveFile(titleNumber)->slotNumber);
-					_vm->save(fileName, _textInputString);
+					_vm->save(fileName, desc);
 					_optionSaveFileTitleNumber = titleNumber;
 				} else {
 					fileName = _vm->calcSaveFileName(_vm->getNewSaveSlotNumber());
-					_vm->save(fileName, _textInputString);
+					_vm->save(fileName, desc);
 					_vm->fillSaveList();
 					calcOptionSaveSlider();
 				}
 			} else {
 				fileName = _vm->calcSaveFileName(_vm->getSaveFile(_optionSaveFileTitleNumber)->slotNumber);
-				_vm->save(fileName, _textInputString);
+				_vm->save(fileName, desc);
 			}
 			resetSaveReminder();
 
@@ -1653,10 +1637,13 @@ void Interface::setOption(PanelButton *panelButton) {
 		}
 		break;
 	case kTextMusic:
-		_vm->_musicVolume = _vm->_musicVolume + 25;
-		if (_vm->_musicVolume > 255) _vm->_musicVolume = 0;
-		_vm->_music->setVolume(_vm->_musicVolume, 1);
-		ConfMan.setInt("music_volume", _vm->_musicVolume);
+		int userVolume;
+		userVolume = ConfMan.getInt("music_volume");
+		userVolume = userVolume + 25;
+		if (userVolume > 255)
+			userVolume = 0;
+		ConfMan.setInt("music_volume", userVolume);
+		_vm->_music->syncSoundSettings();
 		break;
 	case kTextSound:
 		_vm->_soundVolume = _vm->_soundVolume + 25;
@@ -1899,7 +1886,7 @@ void Interface::drawStatusBar() {
 	int stringWidth;
 	int color;
 	// The default colors in the Spanish version of IHNM are shifted by one
-	// Fixes bug #1848016 - "IHNM: Wrong Subtitles Color (Spanish)". This
+	// Fixes bug #3498 - "IHNM: Wrong Subtitles Color (Spanish)". This
 	// also applies to the German and French versions (bug #7064 - "IHNM:
 	// text mistake in german version").
 	int offset = (_vm->getFeatures() & GF_IHNM_COLOR_FIX) ? 1 : 0;
@@ -2293,8 +2280,10 @@ void Interface::drawPanelButtonText(InterfacePanel *panel, PanelButton *panelBut
 		}
 		break;
 	case kTextMusic:
-		if (_vm->_musicVolume) {
-			textId = kText10Percent + _vm->_musicVolume / 25 - 1;
+		int userVolume;
+		userVolume = ConfMan.getInt("music_volume");
+		if (userVolume) {
+			textId = kText10Percent + userVolume / 25 - 1;
 			if (textId > kTextMax) {
 				textId = kTextMax;
 			}
@@ -2390,7 +2379,7 @@ void Interface::drawPanelButtonText(InterfacePanel *panel, PanelButton *panelBut
 	}
 
 	_vm->_font->textDraw(textFont, text, point,
-		_vm->KnownColor2ColorId(textColor), _vm->KnownColor2ColorId(textShadowKnownColor), kFontShadow);
+		_vm->KnownColor2ColorId(textColor), _vm->KnownColor2ColorId(textShadowKnownColor), _vm->getPlatform() == Common::kPlatformPC98 ?  kFontOutline : kFontShadow);
 }
 
 void Interface::drawPanelButtonArrow(InterfacePanel *panel, PanelButton *panelButton) {
@@ -2443,7 +2432,7 @@ void Interface::drawVerbPanelText(PanelButton *panelButton, KnownColor textKnown
 
 	_vm->_font->textDraw(kKnownFontVerb, text, point,
 						_vm->KnownColor2ColorId(textKnownColor), _vm->KnownColor2ColorId(textShadowKnownColor),
-						(textShadowKnownColor != kKnownColorTransparent) ? kFontShadow : kFontNormal);
+						(textShadowKnownColor != kKnownColorTransparent) ? (_vm->getPlatform() == Common::kPlatformPC98 ?  kFontOutline : kFontShadow) : kFontNormal);
 }
 
 
@@ -2553,9 +2542,10 @@ void Interface::converseDisplayTextLines() {
 	byte bulletForegnd;
 	byte bulletBackgnd;
 	const char *str;
-	char bullet[2] = {
-		(char)0xb7, 0
+	static const char bulletStr[3][3] = {
+		"\xb7", "\x81\x45", ">"
 	};
+	const char *bullet = (_vm->getGameId() == GID_ITE) ? (_vm->getPlatform() == Common::kPlatformPC98 ? bulletStr[1] : bulletStr[0]) : bulletStr[2];
 
 	assert(_conversePanel.buttonsCount >= 6);
 	Rect rect(8, _vm->getDisplayInfo().converseTextLines * _vm->getDisplayInfo().converseTextHeight);
@@ -2569,7 +2559,6 @@ void Interface::converseDisplayTextLines() {
 	} else {
 		bulletForegnd = _vm->KnownColor2ColorId(kKnownColorBrightWhite);
 		bulletBackgnd = _vm->KnownColor2ColorId(kKnownColorBlack);
-		bullet[0] = '>';				// different bullet in IHNM
 	}
 
 	if (_vm->getGameId() == GID_ITE)
@@ -2614,14 +2603,14 @@ void Interface::converseDisplayTextLines() {
 			textPoint.y = rect.top;
 
 			if (_vm->getGameId() == GID_ITE)
-				_vm->_font->textDraw(kKnownFontSmall, bullet, textPoint, bulletForegnd, bulletBackgnd, (FontEffectFlags)(kFontShadow | kFontDontmap));
+				_vm->_font->textDraw(kKnownFontSmall, bullet, textPoint, bulletForegnd, bulletBackgnd, _vm->getPlatform() == Common::kPlatformPC98 ?  kFontNormal : (FontEffectFlags)(kFontShadow | kFontDontmap));
 			else
 				_vm->_font->textDraw(kKnownFontVerb, bullet, textPoint, bulletForegnd, bulletBackgnd, (FontEffectFlags)(kFontShadow | kFontDontmap));
 		}
 		textPoint.x = rect.left + 1;
 		textPoint.y = rect.top;
 		if (_vm->getGameId() == GID_ITE)
-			_vm->_font->textDraw(kKnownFontSmall, str, textPoint, foregnd, kITEColorBlack, kFontShadow);
+			_vm->_font->textDraw(kKnownFontSmall, str, textPoint, foregnd, kITEColorBlack, _vm->getPlatform() == Common::kPlatformPC98 ?  kFontNormal : kFontShadow);
 		else
 			_vm->_font->textDraw(kKnownFontVerb, str, textPoint, foregnd, _vm->KnownColor2ColorId(kKnownColorBlack), kFontShadow);
 	}

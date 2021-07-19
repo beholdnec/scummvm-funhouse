@@ -26,11 +26,12 @@
 #include "gui/saveload.h"
 #include "gui/saveload-dialog.h"
 
+#include "engines/engine.h"
 #include "engines/metaengine.h"
 
 namespace GUI {
 
-SaveLoadChooser::SaveLoadChooser(const String &title, const String &buttonLabel, bool saveMode)
+SaveLoadChooser::SaveLoadChooser(const U32String &title, const U32String &buttonLabel, bool saveMode)
 	: _impl(nullptr), _title(title), _buttonLabel(buttonLabel), _saveMode(saveMode) {
 }
 
@@ -39,7 +40,7 @@ SaveLoadChooser::~SaveLoadChooser() {
 	_impl = nullptr;
 }
 
-void SaveLoadChooser::selectChooser(const MetaEngine &engine) {
+void SaveLoadChooser::selectChooser(const MetaEngine *engine) {
 #ifndef DISABLE_SAVELOADCHOOSER_GRID
 	const SaveLoadChooserType requestedType = getRequestedSaveLoadDialog(engine);
 	if (!_impl || _impl->getType() != requestedType) {
@@ -76,15 +77,14 @@ Common::String SaveLoadChooser::createDefaultSaveDescription(const int slot) con
 }
 
 int SaveLoadChooser::runModalWithCurrentTarget() {
-	const Plugin *plugin = EngineMan.findPlugin(ConfMan.get("engineid"));
-	if (!plugin) {
-		error("SaveLoadChooser::runModalWithCurrentTarget(): Cannot find plugin");
-	}
-	return runModalWithPluginAndTarget(plugin, ConfMan.getActiveDomainName());
+	if (!g_engine)
+		error("No engine is currently active");
+
+	return runModalWithMetaEngineAndTarget(g_engine->getMetaEngine(), ConfMan.getActiveDomainName());
 }
 
-int SaveLoadChooser::runModalWithPluginAndTarget(const Plugin *plugin, const String &target) {
-	selectChooser(plugin->get<MetaEngine>());
+int SaveLoadChooser::runModalWithMetaEngineAndTarget(const MetaEngine *engine, const String &target) {
+	selectChooser(engine);
 	if (!_impl)
 		return -1;
 
@@ -99,10 +99,10 @@ int SaveLoadChooser::runModalWithPluginAndTarget(const Plugin *plugin, const Str
 
 	int ret;
 	do {
-		ret = _impl->run(target, &plugin->get<MetaEngine>());
+		ret = _impl->run(target, engine);
 #ifndef DISABLE_SAVELOADCHOOSER_GRID
 		if (ret == kSwitchSaveLoadDialog) {
-			selectChooser(plugin->get<MetaEngine>());
+			selectChooser(engine);
 		}
 #endif // !DISABLE_SAVELOADCHOOSER_GRID
 	} while (ret < -1);
@@ -113,7 +113,7 @@ int SaveLoadChooser::runModalWithPluginAndTarget(const Plugin *plugin, const Str
 	return ret;
 }
 
-const Common::String &SaveLoadChooser::getResultString() const {
+const Common::U32String &SaveLoadChooser::getResultString() const {
 	assert(_impl);
 	return _impl->getResultString();
 }

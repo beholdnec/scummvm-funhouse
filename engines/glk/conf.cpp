@@ -197,7 +197,7 @@ void Conf::synchronize() {
 		_monoInfo._caretShape = _propInfo._caretShape;
 		_monoInfo._linkStyle = _propInfo._linkStyle;
 	}
-	 
+
 	syncAsInt("scrollwidth", _scrollWidth);
 	syncAsColor("scrollbg", _scrollBg);
 	syncAsColor("scrollfg", _scrollFg);
@@ -308,6 +308,14 @@ Common::String Conf::encodeColor(uint color) {
 
 uint Conf::parseColor(const byte *rgb) {
 	return _screenFormat.RGBToColor(rgb[0], rgb[1], rgb[2]);
+}
+
+uint Conf::parseColor(const uint32 rgb) {
+	byte r = (rgb >> 16) & 0xff,
+		g = (rgb >> 8) & 0xff,
+		b = rgb & 0xff;
+
+	return _screenFormat.RGBToColor(r, g, b);
 }
 
 void Conf::syncAsString(const Common::String &name, Common::String &val) {

@@ -22,10 +22,10 @@
 
 #include "cryo/defs.h"
 #include "cryo/cryo.h"
-#include "cryo/platdefs.h"
 #include "cryo/cryolib.h"
 #include "cryo/eden.h"
-#include "cryo/sound.h"
+
+#include "common/substream.h"
 
 namespace Cryo {
 
@@ -86,8 +86,6 @@ void EdenGame::openbigfile() {
 		_bigfileHeader->_files[j]._flag = _bigfile.readByte();
 	}
 
-	_vm->_video->resetInternals();
-	_vm->_video->setFile(&_bigfile);
 }
 
 void EdenGame::closebigfile() {
@@ -191,15 +189,13 @@ void EdenGame::loadRoomFile(uint16 num, Room *buffer) {
 	}
 }
 
-// Original name: shnmfl
-void EdenGame::loadHnm(uint16 num) {
-	unsigned int resNum = num - 1 + 485;
+Common::SeekableReadStream *EdenGame::loadSubStream(uint16 resNum) {
 	assert(resNum < _bigfileHeader->_count);
 	PakHeaderItem *file = &_bigfileHeader->_files[resNum];
 	int size = file->_size;
 	int offs = file->_offs;
-	debug("* Loading movie %d (%s) at 0x%X, %d bytes", num, file->_name.c_str(), (uint)offs, size);
-	_vm->_video->_file->seek(offs, SEEK_SET);
+	debug("* Loading file %s at 0x%X, %d bytes", file->_name.c_str(), (uint)offs, size);
+	return new Common::SafeSeekableSubReadStream(&_bigfile, offs, offs + size, DisposeAfterUse::NO);
 }
 
 // Original name: ssndfl

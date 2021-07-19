@@ -25,12 +25,15 @@
 
 #include "common/random.h"
 #include "common/stream.h"
+#include "common/memstream.h"
 #include "common/savefile.h"
 
 #include "engines/engine.h"
 #include "engines/savestate.h"
 
 #include "gui/debugger.h"
+
+#include "graphics/surface.h"
 
 /*
  *  This is the namespace of the Petka engine.
@@ -39,17 +42,18 @@
  *
  *  Games using this engine:
  *  - Red Comrades Demo
- *  - Red Comrades Save the Galaxy
- *  	- Part 1: can be completed
- *  	- Part 2: unplayable (requires support of scrolling backgrounds)
- *  	- Part 3: not tested
- *  - Red Comrades 2: For the Great Justice
+ *  - Red Comrades Save the Galaxy - Fully playable
+ *  - Red Comrades 2: For the Great Justice - Fully playable
  */
 
 struct ADGameDescription;
 
 namespace Common {
 class SeekableReadStream;
+}
+
+namespace Video {
+class VideoDecoder;
 }
 
 namespace Petka {
@@ -75,6 +79,7 @@ public:
 	~PetkaEngine() override;
 
 	bool isDemo() const;
+	bool isPetka2() const;
 
 	void loadPart(byte part);
 	void loadPartAtNextFrame(byte part);
@@ -107,6 +112,9 @@ public:
 	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave) override;
 	bool canSaveGameStateCurrently() override;
 
+	const ADGameDescription *const _desc;
+	Common::ScopedPtr<Common::MemoryReadStream> _thumbnail;
+
 protected:
 	void pauseEngineIntern(bool pause) override;
 
@@ -121,7 +129,7 @@ private:
 	Common::ScopedPtr<QSystem> _qsystem;
 	Common::ScopedPtr<VideoSystem> _vsys;
 	Common::ScopedPtr<BigDialogue> _dialogMan;
-	const ADGameDescription *_desc;
+	Common::ScopedPtr<Video::VideoDecoder> _videoDec;
 
 	Common::RandomSource _rnd;
 

@@ -66,12 +66,12 @@ struct SaveStruct {
 enum L9MsgTypes { MSGT_V1, MSGT_V2 };
 
 /*
-    Graphics type    Resolution     Scale stack reset
-    -------------------------------------------------
-    GFX_V2           160 x 128            yes
-    GFX_V3A          160 x 96             yes
-    GFX_V3B          160 x 96             no
-    GFX_V3C          320 x 96             no
+	Graphics type    Resolution     Scale stack reset
+	-------------------------------------------------
+	GFX_V2           160 x 128            yes
+	GFX_V3A          160 x 96             yes
+	GFX_V3B          160 x 96             no
+	GFX_V3C          320 x 96             no
 */
 enum L9GfxTypes { GFX_V2, GFX_V3A, GFX_V3B, GFX_V3C };
 
@@ -1251,58 +1251,35 @@ void L9Random() {
 #endif
 }
 
-void save() {
-	L9UINT16 checksum;
-	int i;
-#ifdef L9DEBUG
-	printf("function - save");
-#endif
-	/* does a full save, workpace, stack, codeptr, stackptr, game name, checksum */
-
-	workspace.Id = L9_ID;
-	workspace.codeptr = codeptr - acodeptr;
-	workspace.listsize = LISTAREASIZE;
-	workspace.stacksize = STACKSIZE;
-	workspace.filenamesize = MAX_PATH;
-	workspace.checksum = 0;
-	strcpy(workspace.filename, LastGame);
-
-	checksum = 0;
-	for (i = 0; i < (int)sizeof(GameState); i++) checksum += ((L9BYTE *) &workspace)[i];
-	workspace.checksum = checksum;
-
-	if (os_save_file((L9BYTE *) &workspace, sizeof(workspace))) printstring("\rGame saved.\r");
-	else printstring("\rUnable to save game.\r");
-}
-
 L9BOOL CheckFile(GameState *gs) {
 	L9UINT16 checksum;
-	int i;
-	char c = 'Y';
 
-	if (gs->Id != L9_ID) return FALSE;
+	if (gs->Id != L9_ID)
+		return FALSE;
 	checksum = gs->checksum;
-	gs->checksum = 0;
-	for (i = 0; i < (int)sizeof(GameState); i++)
-		checksum -= *((L9BYTE *) gs + i);
-	if (checksum) return FALSE;
-	if (scumm_stricmp(gs->filename, LastGame)) {
-		printstring("\rWarning: game path name does not match, you may be about to load this position file into the wrong story file.\r");
-		printstring("Are you sure you want to restore? (Y/N)");
-		os_flush();
+	gs->calculateChecksum();
 
-		c = '\0';
-		while ((c != 'y') && (c != 'Y') && (c != 'n') && (c != 'N'))
-			c = os_readchar(20);
-	}
-	if ((c == 'y') || (c == 'Y'))
-		return TRUE;
-	return FALSE;
+	if (checksum != gs->checksum)
+		return FALSE;
+
+	return TRUE;
+}
+
+void save() {
+	if (g_vm->saveGame().getCode() == Common::kNoError)
+		printstring("\rGame saved.\r");
+	else
+		printstring("\rUnable to save game.\r");
+}
+
+void restore() {
+	if (g_vm->loadGame().getCode() == Common::kNoError)
+		printstring("\rGame restored.\r");
+	else
+		printstring("\rUnable to restore game.\r");
 }
 
 void NormalRestore() {
-	GameState temp;
-	int Bytes;
 #ifdef L9DEBUG
 	printf("function - restore");
 #endif
@@ -1312,39 +1289,7 @@ void NormalRestore() {
 		error("\rWord is: %s\r", ibuff);
 	}
 
-	if (os_load_file((L9BYTE *) &temp, &Bytes, sizeof(GameState))) {
-		if (Bytes == V1FILESIZE) {
-			printstring("\rGame restored.\r");
-			memset(workspace.listarea, 0, LISTAREASIZE);
-			memmove(workspace.vartable, &temp, V1FILESIZE);
-		} else if (CheckFile(&temp)) {
-			printstring("\rGame restored.\r");
-			/* only copy in workspace */
-			memmove(workspace.vartable, temp.vartable, sizeof(SaveStruct));
-		} else {
-			printstring("\rSorry, unrecognised format. Unable to restore\r");
-		}
-	} else printstring("\rUnable to restore game.\r");
-}
-
-void restore() {
-	int Bytes;
-	GameState temp;
-	if (os_load_file((L9BYTE *) &temp, &Bytes, sizeof(GameState))) {
-		if (Bytes == V1FILESIZE) {
-			printstring("\rGame restored.\r");
-			/* only copy in workspace */
-			memset(workspace.listarea, 0, LISTAREASIZE);
-			memmove(workspace.vartable, &temp, V1FILESIZE);
-		} else if (CheckFile(&temp)) {
-			printstring("\rGame restored.\r");
-			/* full restore */
-			memmove(&workspace, &temp, sizeof(GameState));
-			codeptr = acodeptr + workspace.codeptr;
-		} else {
-			printstring("\rSorry, unrecognised format. Unable to restore\r");
-		}
-	} else printstring("\rUnable to restore game.\r");
+	restore();
 }
 
 void playback() {
@@ -2275,11 +2220,11 @@ void newxy(int x, int y) {
 }
 
 /* sdraw instruction plus arguments are stored in an 8 bit word.
-       76543210
-       iixxxyyy
+	   76543210
+	   iixxxyyy
    where i is instruction code
-         x is x argument, high bit is sign
-         y is y argument, high bit is sign
+		 x is x argument, high bit is sign
+		 y is y argument, high bit is sign
 */
 void sdraw(int d7) {
 	int x, y, x1, y1;
@@ -2312,11 +2257,11 @@ void sdraw(int d7) {
 }
 
 /* smove instruction plus arguments are stored in an 8 bit word.
-       76543210
-       iixxxyyy
+	   76543210
+	   iixxxyyy
    where i is instruction code
-         x is x argument, high bit is sign
-         y is y argument, high bit is sign
+		 x is x argument, high bit is sign
+		 y is y argument, high bit is sign
 */
 void smove(int d7) {
 	int x, y;
@@ -2345,11 +2290,11 @@ void sgosub(int d7, L9BYTE **a5) {
 }
 
 /* draw instruction plus arguments are stored in a 16 bit word.
-       FEDCBA9876543210
-       iiiiixxxxxxyyyyy
+	   FEDCBA9876543210
+	   iiiiixxxxxxyyyyy
    where i is instruction code
-         x is x argument, high bit is sign
-         y is y argument, high bit is sign
+		 x is x argument, high bit is sign
+		 y is y argument, high bit is sign
 */
 void draw(int d7, L9BYTE **a5) {
 	int xy, x, y, x1, y1;
@@ -2383,11 +2328,11 @@ void draw(int d7, L9BYTE **a5) {
 }
 
 /* move instruction plus arguments are stored in a 16 bit word.
-       FEDCBA9876543210
-       iiiiixxxxxxyyyyy
+	   FEDCBA9876543210
+	   iiiiixxxxxxyyyyy
    where i is instruction code
-         x is x argument, high bit is sign
-         y is y argument, high bit is sign
+		 x is x argument, high bit is sign
+		 y is y argument, high bit is sign
 */
 void _move(int d7, L9BYTE **a5) {
 	int xy, x, y;
@@ -3097,6 +3042,51 @@ void RestoreGame(char *filename) {
 			printstring("\rSorry, unrecognised format. Unable to restore\r");
 	} else
 		printstring("\rUnable to restore game.\r");
+}
+
+/*----------------------------------------------------------------------*/
+
+void GameState::synchronize(Common::Serializer &s) {
+	if (s.isSaving()) {
+		Id = L9_ID;
+		this->codeptr = ::Glk::Level9::codeptr - ::Glk::Level9::acodeptr;
+		listsize = LISTAREASIZE;
+		stacksize = STACKSIZE;
+		calculateChecksum();
+	}
+
+	s.syncAsUint32LE(Id);
+	s.syncAsUint16LE(codeptr);
+	s.syncAsUint16LE(stackptr);
+	s.syncAsUint16LE(listsize);
+	s.syncAsUint16LE(stacksize);
+	s.syncAsUint16LE(checksum);
+
+	for (int i = 0; i < 256; ++i)
+		s.syncAsUint16LE(vartable[i]);
+
+	s.syncBytes(listarea, LISTAREASIZE);
+
+	for (int i = 0; i < STACKSIZE; ++i)
+		s.syncAsUint16LE(stack[i]);
+}
+
+#define CHECKSUMW(V) checksum += (V & 0xff) + ((V >> 8) & 0xff)
+#define CHECKSUML(V) checksum += (V & 0xff) + ((V >> 8) & 0xff) + ((V >> 16) & 0xff) + ((V >> 24) & 0xff)
+
+void GameState::calculateChecksum() {
+	checksum = 0;
+	CHECKSUML(Id);
+	CHECKSUMW(codeptr);
+	CHECKSUMW(stackptr);
+	CHECKSUMW(listsize);
+	CHECKSUMW(stacksize);
+	for (int i = 0; i < 256; ++i)
+		CHECKSUMW(vartable[i]);
+	for (int i = 0; i < LISTAREASIZE; ++i)
+		checksum += listarea[i];
+	for (int i = 0; i < STACKSIZE; ++i)
+		CHECKSUMW(stack[i]);
 }
 
 } // End of namespace Level9

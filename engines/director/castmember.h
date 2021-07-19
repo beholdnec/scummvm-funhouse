@@ -55,6 +55,7 @@ class VideoDecoder;
 namespace Director {
 
 class AudioDecoder;
+struct CastMemberInfo;
 class Channel;
 struct Resource;
 class Stxt;
@@ -66,11 +67,14 @@ public:
 
 	Cast *getCast() { return _cast; }
 	uint16 getID() { return _castId; }
+	CastMemberInfo *getInfo();
 
 	virtual bool isEditable() { return false; }
 	virtual void setEditable(bool editable) {}
 	virtual bool isModified() { return _modified; }
+	virtual void setModified(bool modified) { _modified = modified; }
 	virtual Graphics::MacWidget *createWidget(Common::Rect &bbox, Channel *channel) { return nullptr; }
+	virtual void updateWidget(Graphics::MacWidget *widget, Channel *channel) {}
 	virtual void updateFromWidget(Graphics::MacWidget *widget) {}
 	virtual Common::Rect getInitialRect() { return _initialRect; }
 
@@ -85,14 +89,15 @@ public:
 	Datum getField(int field) override;
 	bool setField(int field, const Datum &value) override;
 
+	// release the control to widget, this happens when we are changing sprites. Because we are having the new cast member and the old one shall leave
+	void releaseWidget() { _widget = nullptr; }
+
 	CastType _type;
 	Common::Rect _initialRect;
 	Common::Rect _boundingRect;
 	Common::Array<Resource> _children;
 
-	bool _modified;
 	bool _hilite;
-	bool _autoHilite;
 	int _purgePriority;
 	uint32 _size;
 	uint8 _flags1;
@@ -100,6 +105,9 @@ public:
 protected:
 	Cast *_cast;
 	uint16 _castId;
+	// a link to the widget we created, we may use it later
+	Graphics::MacWidget *_widget;
+	bool _modified;
 };
 
 class BitmapCastMember : public CastMember {
@@ -108,8 +116,9 @@ public:
 	~BitmapCastMember();
 	virtual Graphics::MacWidget *createWidget(Common::Rect &bbox, Channel *channel) override;
 
-	void createMatte();
-	Graphics::Surface *getMatte();
+	void createMatte(Common::Rect &bbox);
+	Graphics::Surface *getMatte(Common::Rect &bbox);
+	void copyStretchImg(Graphics::Surface *surface, const Common::Rect &bbox);
 
 	bool hasField(int field) override;
 	Datum getField(int field) override;
@@ -141,6 +150,7 @@ public:
 
 	bool loadVideo(Common::String path);
 	void startVideo(Channel *channel);
+	void stopVideo(Channel *channel);
 
 	uint getMovieCurrentTime();
 	uint getMovieTotalTime();
@@ -173,7 +183,7 @@ public:
 	int _duration;
 
 	Video::VideoDecoder *_video;
-	const Graphics::Surface *_lastFrame;
+	Graphics::Surface *_lastFrame;
 
 	Channel *_channel;
 };
@@ -181,6 +191,7 @@ public:
 class SoundCastMember : public CastMember {
 public:
 	SoundCastMember(Cast *cast, uint16 castId, Common::SeekableReadStreamEndian &stream, uint16 version);
+	~SoundCastMember();
 
 	bool _looping;
 	AudioDecoder *_audio;
@@ -209,7 +220,7 @@ public:
 	TextCastMember(Cast *cast, uint16 castId, Common::SeekableReadStreamEndian &stream, uint16 version, uint8 flags1 = 0, bool asButton = false);
 	virtual void setColors(uint32 *fgcolor, uint32 *bgcolor) override;
 
-	void setText(const char *text);
+	void setText(const Common::U32String &text);
 	virtual Graphics::MacWidget *createWidget(Common::Rect &bbox, Channel *channel) override;
 
 	virtual bool isEditable() override;
@@ -223,6 +234,15 @@ public:
 	bool hasField(int field) override;
 	Datum getField(int field) override;
 	bool setField(int field, const Datum &value) override;
+
+	bool hasChunkField(int field);
+	Datum getChunkField(int field, int start, int end);
+	bool setChunkField(int field, int start, int end, const Datum &value);
+
+	int getTextHeight();
+
+	int getTextSize();
+	void setTextSize(int textSize);
 
 	SizeType _borderSize;
 	SizeType _gutterSize;
@@ -242,13 +262,14 @@ public:
 	uint16 _fgpalinfo1, _fgpalinfo2, _fgpalinfo3;
 	ButtonType _buttonType;
 	bool _editable;
+	int _lineSpacing;
 
-	Common::String _ftext;
-	Common::String _ptext;
+	Common::U32String _ftext;
+	Common::U32String _ptext;
 	void importStxt(const Stxt *stxt);
-	void importRTE(byte* text);
+	void importRTE(byte *text);
 
-	Common::String getText();
+	Common::U32String getText();
 
 private:
 	uint32 _bgcolor;
@@ -278,6 +299,7 @@ struct EditInfo {
 };
 
 struct CastMemberInfo {
+	bool autoHilite;
 	uint32 scriptId;
 	Common::String script;
 	Common::String name;
@@ -289,6 +311,8 @@ struct CastMemberInfo {
 	EditInfo textEditInfo;
 	Common::String modifiedBy;
 	Common::String comments;
+
+	CastMemberInfo() : autoHilite(false), scriptId(0) {}
 };
 
 struct Label {

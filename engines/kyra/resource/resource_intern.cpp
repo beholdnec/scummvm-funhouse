@@ -241,7 +241,7 @@ Common::String readString(Common::SeekableReadStream &stream) {
 
 bool ResLoaderPak::isLoadable(const Common::String &filename, Common::SeekableReadStream &stream) const {
 	int32 filesize = stream.size();
-	if (filesize < 0)
+	if (filesize < 4)
 		return false;
 
 	int32 offset = 0;
@@ -287,7 +287,7 @@ bool ResLoaderPak::isLoadable(const Common::String &filename, Common::SeekableRe
 
 Common::Archive *ResLoaderPak::load(Common::ArchiveMemberPtr memberFile, Common::SeekableReadStream &stream) const {
 	int32 filesize = stream.size();
-	if (filesize < 0)
+	if (filesize < 4)
 		return 0;
 
 	Common::ScopedPtr<PlainArchive> result(new PlainArchive(memberFile));
@@ -394,11 +394,11 @@ bool ResLoaderInsMalcolm::isLoadable(const Common::String &filename, Common::See
 	if (size + 7 > stream.size())
 		return false;
 
-	stream.seek(size + 5, SEEK_SET);
-	uint8 buffer[2];
-	stream.read(&buffer, 2);
+	stream.seek(size + 4, SEEK_SET);
+	uint8 buffer[3];
+	stream.read(&buffer, 3);
 
-	return (buffer[0] == 0x0D && buffer[1] == 0x0A);
+	return (buffer[0] == 0x0D && buffer[1] == 0x0A) || (buffer[1] == 0x0D && buffer[2] == 0x0A);
 }
 
 Common::Archive *ResLoaderInsMalcolm::load(Common::ArchiveMemberPtr memberFile, Common::SeekableReadStream &stream) const {
@@ -426,6 +426,7 @@ Common::Archive *ResLoaderInsMalcolm::load(Common::ArchiveMemberPtr memberFile, 
 			++i;
 
 			filenames.push_back(temp);
+			temp.clear();
 		} else {
 			temp += (char)c;
 		}
@@ -450,6 +451,8 @@ bool ResLoaderTlk::checkFilename(Common::String filename) const {
 }
 
 bool ResLoaderTlk::isLoadable(const Common::String &filename, Common::SeekableReadStream &stream) const {
+	if (stream.size() < 2)
+		return false;
 	uint16 entries = stream.readUint16LE();
 	int32 entryTableSize = (entries * 8);
 

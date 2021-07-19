@@ -206,7 +206,7 @@ int DarkMoonEngine::mainMenuLoop() {
 	int sel = -1;
 	do {
 		_screen->setScreenDim(6);
-		_gui->simpleMenu_setup(6, 0, _mainMenuStrings, -1, 0, 0);
+		_gui->simpleMenu_setup(6, 0, _mainMenuStrings, -1, 0, 0, _configRenderMode == Common::kRenderCGA ? 1 : guiSettings()->colors.guiColorWhite, guiSettings()->colors.guiColorLightRed, guiSettings()->colors.guiColorBlack);
 		_screen->updateScreen();
 
 		while (sel == -1 && !shouldQuit()) {
@@ -227,7 +227,7 @@ void DarkMoonEngine::townsUtilitiesMenu() {
 	_screen->copyRegion(78, 99, 78, 99, 172, 43, 2, 0, Screen::CR_NO_P_CHECK);
 	int sel = -1;
 	do {
-		_gui->simpleMenu_setup(8, 0, _utilMenuStrings, -1, 0, 0);
+		_gui->simpleMenu_setup(8, 0, _utilMenuStrings, -1, 0, 0, _configRenderMode == Common::kRenderCGA ? 1 : guiSettings()->colors.guiColorWhite, guiSettings()->colors.guiColorLightRed, guiSettings()->colors.guiColorBlack);
 		_screen->updateScreen();
 		while (sel == -1 && !shouldQuit()) {
 			sel = _gui->simpleMenu_process(8, _utilMenuStrings, 0, -1, 0);
@@ -833,6 +833,8 @@ void DarkMoonEngine::seq_playFinale() {
 	sq.printText(15, textColor1);           // The temple ceases to exist
 	if (_flags.platform != Common::kPlatformAmiga) {
 		sq.initDelayedPaletteFade(6, 1);
+	} else if (skipFlag()) {
+		_screen->fadeToBlack();
 	} else {
 		_screen->fadePalette(_screen->getPalette(5), 127);
 		sq.copyPalette(5, 0);
@@ -1035,7 +1037,7 @@ void DarkMoonEngine::seq_playCredits(DarkmoonSequenceHelper *sq, const uint8 *da
 			delay(MIN<uint32>(_tickLength, end - cur));
 		}
 
-		end = _system->getMillis() + speed * _tickLength;
+		end = _system->getMillis() + ((speed * _tickLength) >> 1);
 
 		for (; i < 35 && *pos; i++) {
 			int16 nextY = i ? items[i].y + items[i].size + (items[i].size >> 2) : dm->h;
@@ -1104,7 +1106,7 @@ void DarkMoonEngine::seq_playCredits(DarkmoonSequenceHelper *sq, const uint8 *da
 				}
 			}
 
-			items[h + 1].y -= 2;
+			items[h + 1].y -= MAX<int>(1, speed >> 1);
 		}
 
 		_screen->copyRegion(dm->sx << 3, dm->sy, dm->sx << 3, dm->sy, dm->w << 3, dm->h, tempPage, 0, Screen::CR_NO_P_CHECK);
@@ -1145,7 +1147,7 @@ DarkmoonSequenceHelper::~DarkmoonSequenceHelper() {
 	for (int i = 0; i < 7; i++)
 		delete[] _fadingTables[i];
 
-	for (int i = 0; i < 30; i++)
+	for (int i = 0; i < 54; i++)
 		delete[] _shapes[i];
 	delete[] _shapes;
 
@@ -1626,7 +1628,7 @@ void DarkmoonSequenceHelper::init(DarkmoonSequenceHelper::Mode mode) {
 	delete[] fadeData;
 
 	_shapes = new const uint8*[54];
-	memset(_shapes, 0, 54 * sizeof(uint8 *));
+	memset(_shapes, 0, 54 * sizeof(uint8*));
 
 	_fadePalTimer = 0;
 	_fadePalRate = 0;

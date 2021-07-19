@@ -84,8 +84,9 @@ protected:
 	struct SubtitleText : TextObject {
 		bool actorSpeechMsg;
 	};
-	friend void syncWithSerializer(Common::Serializer &, SubtitleText &);
 #endif
+
+	friend void syncWithSerializer(Common::Serializer &, SubtitleText &);
 
 	int _subtitleQueuePos;
 	SubtitleText _subtitleQueue[20];
@@ -104,7 +105,7 @@ protected:
 	void processInput() override;
 	void processKeyboard(Common::KeyState lastKeyHit) override;
 
-	void setupScumm() override;
+	void setupScumm(const Common::String &macResourceFile) override;
 
 	void setupScummVars() override;
 	void resetScummVars() override;

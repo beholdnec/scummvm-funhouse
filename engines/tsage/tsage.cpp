@@ -37,7 +37,6 @@ TSageEngine *g_vm = NULL;
 TSageEngine::TSageEngine(OSystem *system, const tSageGameDescription *gameDesc) : Engine(system),
 		_gameDescription(gameDesc) {
 	g_vm = this;
-	DebugMan.addDebugChannel(kRingDebugScripts, "scripts", "Scripts debugging");
 
 	if (g_vm->getGameID() == GType_Ringworld) {
 		if (g_vm->getFeatures() & GF_DEMO)
@@ -59,8 +58,6 @@ Common::Error TSageEngine::init() {
 }
 
 TSageEngine::~TSageEngine() {
-	// Remove all of our debug levels here
-	DebugMan.clearAllDebugChannels();
 }
 
 bool TSageEngine::hasFeature(EngineFeature f) const {

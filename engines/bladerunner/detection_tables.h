@@ -23,6 +23,7 @@
 #ifndef BLADERUNNER_DETECTION_TABLES_H
 #define BLADERUNNER_DETECTION_TABLES_H
 
+#include "common/translation.h"
 #include "engines/advancedDetector.h"
 
 #define GAMEOPTION_SITCOM                     GUIO_GAMEOPTIONS1
@@ -92,22 +93,22 @@ static const ADGameDescription gameDescriptions[] = {
 	// BladeRunner (Russian - Fargus Multimedia + Home Systems, Inc. + Siberian Studio, R3) - RUS
 	{
 		"bladerunner",
-		0,
+		_s("The fan translator does not wish his translation to be incorporated into ScummVM."),
 		AD_ENTRY1s("STARTUP.MIX", "c198b54a5366b88b1734bbca21d3b192", 2678672),
 		Common::RU_RUS,
 		Common::kPlatformWindows,
-		ADGF_NO_FLAGS,
+		ADGF_UNSUPPORTED,
 		GUIO6(GAMEOPTION_SITCOM, GAMEOPTION_SHORTY, GAMEOPTION_FRAMELIMITER_NODELAYMILLIS, GAMEOPTION_FRAMELIMITER_FPS, GAMEOPTION_DISABLE_STAMINA_DRAIN, GUIO_NOMIDI)
 	},
 
 	// BladeRunner (Russian - Fargus Multimedia + Home Systems, Inc. + Siberian Studio, R4) - RUS
 	{
 		"bladerunner",
-		0,
+		_s("The fan translator does not wish his translation to be incorporated into ScummVM."),
 		AD_ENTRY1s("STARTUP.MIX", "d62498a7415682bb3ff86a894303c836", 2810053),
 		Common::RU_RUS,
 		Common::kPlatformWindows,
-		ADGF_NO_FLAGS,
+		ADGF_UNSUPPORTED,
 		GUIO6(GAMEOPTION_SITCOM, GAMEOPTION_SHORTY, GAMEOPTION_FRAMELIMITER_NODELAYMILLIS, GAMEOPTION_FRAMELIMITER_FPS, GAMEOPTION_DISABLE_STAMINA_DRAIN, GUIO_NOMIDI)
 	},
 
@@ -119,6 +120,18 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::ES_ESP,
 		Common::kPlatformWindows,
 		ADGF_NO_FLAGS,
+		GUIO6(GAMEOPTION_SITCOM, GAMEOPTION_SHORTY, GAMEOPTION_FRAMELIMITER_NODELAYMILLIS, GAMEOPTION_FRAMELIMITER_FPS, GAMEOPTION_DISABLE_STAMINA_DRAIN, GUIO_NOMIDI)
+	},
+
+	// BladeRunner (Chinese)
+	{
+		"bladerunner",
+		_s("Missing game code"), // Reason for being unsupported
+		AD_ENTRY2s("STARTUP.MIX", "c198b54a5366b88b1734bbca21d3b192", 2678672,
+				   "95blade.dll", "187f257c3183d6b0a0aee69e5cde4c76", 307200),
+		Common::ZH_CNA,
+		Common::kPlatformWindows,
+		ADGF_UNSUPPORTED,
 		GUIO6(GAMEOPTION_SITCOM, GAMEOPTION_SHORTY, GAMEOPTION_FRAMELIMITER_NODELAYMILLIS, GAMEOPTION_FRAMELIMITER_FPS, GAMEOPTION_DISABLE_STAMINA_DRAIN, GUIO_NOMIDI)
 	},
 

@@ -24,9 +24,9 @@
 #include "groovie/cursor.h"
 #include "groovie/detection.h"
 #include "groovie/graphics.h"
+#include "groovie/script.h"
 #include "groovie/music.h"
 #include "groovie/resource.h"
-#include "groovie/stuffit.h"
 #include "groovie/vdx.h"
 
 #ifdef ENABLE_GROOVIE2
@@ -38,6 +38,7 @@
 #include "common/events.h"
 #include "common/file.h"
 #include "common/macresman.h"
+#include "common/stuffit.h"
 #include "common/textconsole.h"
 
 #include "backends/audiocd/audiocd.h"
@@ -52,18 +53,6 @@ GroovieEngine::GroovieEngine(OSystem *syst, const GroovieGameDescription *gd) :
 	_resMan(NULL), _grvCursorMan(NULL), _videoPlayer(NULL), _musicPlayer(NULL),
 	_graphicsMan(NULL), _macResFork(NULL), _waitingForInput(false), _font(NULL),
 	_spookyMode(false) {
-
-	// Initialize the custom debug levels
-	DebugMan.addDebugChannel(kDebugVideo, "Video", "Debug video and audio playback");
-	DebugMan.addDebugChannel(kDebugResource, "Resource", "Debug resource management");
-	DebugMan.addDebugChannel(kDebugScript, "Script", "Debug the scripts");
-	DebugMan.addDebugChannel(kDebugUnknown, "Unknown", "Report values of unknown data in files");
-	DebugMan.addDebugChannel(kDebugHotspots, "Hotspots", "Show the hotspots");
-	DebugMan.addDebugChannel(kDebugCursor, "Cursor", "Debug cursor decompression / switching");
-	DebugMan.addDebugChannel(kDebugMIDI, "MIDI", "Debug MIDI / XMIDI files");
-	DebugMan.addDebugChannel(kDebugScriptvars, "Scriptvars", "Print out any change to script variables");
-	DebugMan.addDebugChannel(kDebugCell, "Cell", "Debug the cell game (in the microscope)");
-	DebugMan.addDebugChannel(kDebugFast, "Fast", "Play videos quickly, with no sound (unstable)");
 
 	// Adding the default directories
 	const Common::FSNode gameDataDir(ConfMan.get("path"));
@@ -92,7 +81,7 @@ Common::Error GroovieEngine::run() {
 	if (_gameDescription->version == kGroovieV2 && getPlatform() == Common::kPlatformMacintosh) {
 		// Load the Mac installer with the lowest priority (in case the user has installed
 		// the game and has the MIDI folder present; faster to just load them)
-		Common::Archive *archive = createStuffItArchive("The 11th Hour Installer");
+		Common::Archive *archive = Common::createStuffItArchive("The 11th Hour Installer");
 
 		if (archive)
 			SearchMan.add("The 11th Hour Installer", archive);
@@ -370,7 +359,7 @@ void GroovieEngine::syncSoundSettings() {
 	// we have to use just one volume setting for videos.
 	// We use "speech" because most users will want to change the videos
 	// volume when they can't hear the speech because of the music.
-	_mixer->setVolumeForSoundType(Audio::Mixer::kPlainSoundType,
+	_mixer->setVolumeForSoundType(Audio::Mixer::kSpeechSoundType,
 		mute ? 0 : ConfMan.getInt("speech_volume"));
 }
 

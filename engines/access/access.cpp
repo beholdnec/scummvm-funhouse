@@ -36,10 +36,6 @@ AccessEngine::AccessEngine(OSystem *syst, const AccessGameDescription *gameDesc)
 	: _gameDescription(gameDesc), Engine(syst), _randomSource("Access"),
 	  _useItem(_flags[99]), _startup(_flags[170]), _manScaleOff(_flags[172]) {
 	// Set up debug channels
-	DebugMan.addDebugChannel(kDebugPath, "path", "Pathfinding debug level");
-	DebugMan.addDebugChannel(kDebugScripts, "scripts", "Game scripts");
-	DebugMan.addDebugChannel(kDebugGraphics, "graphics", "Graphics handling");
-	DebugMan.addDebugChannel(kDebugSound, "sound", "Sound and Music handling");
 
 	_aboutBox = nullptr;
 	_animation = nullptr;
@@ -210,7 +206,7 @@ void AccessEngine::initialize() {
 
 Common::Error AccessEngine::run() {
 	_res = Resources::init(this);
-	Common::String errorMessage;
+	Common::U32String errorMessage;
 	if (!_res->load(errorMessage)) {
 		GUIErrorMessage(errorMessage);
 		return Common::kNoError;

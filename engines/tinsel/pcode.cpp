@@ -48,6 +48,7 @@ extern int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONT
 
 /** list of all opcodes */
 enum OPCODE {
+	OP_NOOP = 0x3F, ///< Do nothing (Actually 0 in Noir, but due to -1 we get this)
 	OP_HALT = 0,	///< end of program
 	OP_IMM = 1,		///< loads signed immediate onto stack
 	OP_ZERO = 2,	///< loads zero onto stack
@@ -100,11 +101,11 @@ enum OPCODE {
 
 #define	OPMASK		0x3F	///< mask to isolate the opcode
 
-bool g_bNoPause = false;
-
 //----------------- LOCAL GLOBAL DATA --------------------
 
-// FIXME: Avoid non-const global vars
+// These vars are reset upon engine destruction
+
+bool g_bNoPause = false;
 
 static int32 *g_pGlobals = 0;		// global vars
 
@@ -172,7 +173,7 @@ const WorkaroundEntry workaroundList[] = {
 	// restoring the game, it will error if you try to move. This
 	// fragment turns off NPC blocking for the Outside Inn rooms so that
 	// the luggage won't block Past Outside Inn.
-	// See bug report #2525010.
+	// See bug report #4101.
 	{TINSEL_V1, false, false, Common::kPlatformUnknown, 444622076, 0,  sizeof(fragment2), fragment2},
 	// Present Outside Inn
 	{TINSEL_V1, false, false, Common::kPlatformUnknown, 352600876, 0,  sizeof(fragment2), fragment2},
@@ -181,7 +182,7 @@ const WorkaroundEntry workaroundList[] = {
 	// STRING||| - this happens if you initiate dialog with one of the
 	// guards, but not the other. So these fragments provide the correct
 	// talk parameters where needed.
-	// See bug report #2831159.
+	// See bug report #4512.
 	{TINSEL_V1, false, false, Common::kPlatformUnknown, 310506872, 463, sizeof(fragment4), fragment4},
 	{TINSEL_V1, false, false, Common::kPlatformUnknown, 310506872, 485, sizeof(fragment5), fragment5},
 	{TINSEL_V1, false, false, Common::kPlatformUnknown, 310506872, 513, sizeof(fragment6), fragment6},
@@ -201,8 +202,8 @@ const WorkaroundEntry workaroundList[] = {
 	// which try to disable the bees animation, since they wait
 	// indefinitely for the global to be cleared, incorrectly believing
 	// the animation is currently playing. This includes:
-	//  * Giving the brochure to the beekeeper (bug #2680397)
-	//  * Stealing the mallets from the wizards (bug #2820788).
+	//  * Giving the brochure to the beekeeper (bug #4222)
+	//  * Stealing the mallets from the wizards (bug #4404).
 	// This fix ensures that the global is reset when the Garden scene
 	// is loaded (both entering and restoring a game).
 	{TINSEL_V2, true, false, Common::kPlatformUnknown, 2888147476U, 0, sizeof(fragment3), fragment3},
@@ -213,7 +214,7 @@ const WorkaroundEntry workaroundList[] = {
 
 	// DW1-GRA/SCN: Corrects the dead-end of being able to give the
 	// whistle back to the pirate before giving him the parrot.
-	// See bug report #2934211.
+	// See bug report #4755.
 	{TINSEL_V1, true, false, Common::kPlatformUnknown, 352601285, 1569, sizeof(fragment11), fragment11},
 	{TINSEL_V1, false, false, Common::kPlatformUnknown, 352602304, 1488, sizeof(fragment12), fragment12},
 
@@ -233,7 +234,19 @@ const WorkaroundEntry workaroundList[] = {
 	{TINSEL_V0, false, false, Common::kPlatformUnknown, 0, 0, 0, NULL}
 };
 
-//----------------- LOCAL GLOBAL DATA --------------------
+void ResetVarsPCode() {
+	g_bNoPause = false;
+
+	free(g_pGlobals);
+	g_pGlobals = nullptr;
+
+	g_numGlobals = 0;
+
+	free(g_icList);
+	g_icList = nullptr;
+
+	g_hMasterScript = 0;
+}
 
 /**
  * Keeps the code array pointer up to date.
@@ -242,11 +255,11 @@ void LockCode(INT_CONTEXT *ic) {
 	if (ic->GSort == GS_MASTER) {
 		if (TinselV2)
 			// Get the srcipt handle from a specific global chunk
-			ic->code = (byte *)LockMem(g_hMasterScript);
+			ic->code = (byte *)_vm->_handle->LockMem(g_hMasterScript);
 		else
 			ic->code = (byte *)FindChunk(MASTER_SCNHANDLE, CHUNK_PCODE);
 	} else
-		ic->code = (byte *)LockMem(ic->hCode);
+		ic->code = (byte *)_vm->_handle->LockMem(ic->hCode);
 }
 
 /**
@@ -420,7 +433,7 @@ INT_CONTEXT *RestoreInterpretContext(INT_CONTEXT *ric) {
  * Allocates enough RAM to hold the global Glitter variables.
  */
 void RegisterGlobals(int num) {
-	if (g_pGlobals == NULL) {
+	if (g_pGlobals == nullptr) {
 		g_numGlobals = num;
 
 		g_hMasterScript = !TinselV2 ? 0 :
@@ -428,13 +441,13 @@ void RegisterGlobals(int num) {
 
 		// Allocate RAM for pGlobals and make sure it's allocated
 		g_pGlobals = (int32 *)calloc(g_numGlobals, sizeof(int32));
-		if (g_pGlobals == NULL) {
+		if (g_pGlobals == nullptr) {
 			error("Cannot allocate memory for global data");
 		}
 
 		// Allocate RAM for interpret contexts and make sure it's allocated
 		g_icList = (INT_CONTEXT *)calloc(NUM_INTERPRET, sizeof(INT_CONTEXT));
-		if (g_icList == NULL) {
+		if (g_icList == nullptr) {
 			error("Cannot allocate memory for interpret contexts");
 		}
 		CoroScheduler.setResourceCallback(FreeInterpretContextPr);
@@ -612,6 +625,12 @@ void Interpret(CORO_PARAM, INT_CONTEXT *ic) {
 		byte opcode = (byte)GetBytes(ic->code, wkEntry, ip, 0);
 		if (TinselV0 && ((opcode & OPMASK) > OP_IMM))
 			opcode += 3;
+
+		if (TinselV3) {
+			// Discworld Noir adds a NOOP-operation as opcode 0, leaving everything
+			// else 1 higher, so we subtract 1, and add NOOP as the highest opcode instead.
+			opcode -= 1;
+		}
 
 		debug(7, "ip=%d  Opcode %d (-> %d)", ic->ip, opcode, opcode & OPMASK);
 		switch (opcode & OPMASK) {
@@ -837,6 +856,12 @@ void Interpret(CORO_PARAM, INT_CONTEXT *ic) {
 		case OP_ESCOFF:
 			ic->escOn = false;
 			ic->myEscape = 0;
+			break;
+
+		case OP_NOOP:
+			if (!TinselV3) {
+				error("OP_NOOP seen outside Discworld Noir");
+			}
 			break;
 
 		default:

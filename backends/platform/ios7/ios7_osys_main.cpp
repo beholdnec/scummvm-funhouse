@@ -24,7 +24,6 @@
 #define FORBIDDEN_SYMBOL_ALLOW_ALL
 
 #include <unistd.h>
-#include <pthread.h>
 #include <string.h>
 
 #include <sys/time.h>
@@ -47,39 +46,14 @@
 
 #include "backends/saves/default/default-saves.h"
 #include "backends/timer/default/default-timer.h"
+#include "backends/mutex/pthread/pthread-mutex.h"
 #include "backends/fs/chroot/chroot-fs-factory.h"
 #include "backends/fs/posix/posix-fs.h"
 #include "audio/mixer.h"
 #include "audio/mixer_intern.h"
 
-#include "graphics/scaler.h"
-#include "graphics/scaler/aspect.h"
-
 #include "backends/platform/ios7/ios7_osys_main.h"
 
-
-const OSystem::GraphicsMode OSystem_iOS7::s_supportedGraphicsModes[] = {
-	{ "none", "Normal", kGraphicsModeNone },
-
-#ifdef ENABLE_IOS7_SCALERS
-#ifdef USE_SCALERS
-//	{"2x", "2x", GFX_DOUBLESIZE},
-//	{"3x", "3x", GFX_TRIPLESIZE},
-	{ "2xsai", "2xSAI", kGraphicsMode2xSaI},
-	{"super2xsai", "Super2xSAI", kGraphicsModeSuper2xSaI},
-	{"supereagle", "SuperEagle", kGraphicsModeSuperEagle},
-	{"advmame2x", "AdvMAME2x", kGraphicsModeAdvMame2x},
-	{"advmame3x", "AdvMAME3x", kGraphicsModeAdvMame3x},
-#ifdef USE_HQ_SCALERS
-	{"hq2x", "HQ2x", kGraphicsModeHQ2x},
-	{"hq3x", "HQ3x", kGraphicsModeHQ3x},
-#endif
-	{"tv2x", "TV2x", kGraphicsModeTV2x},
-	{"dotmatrix", "DotMatrix", kGraphicsModeDotMatrix},
-#endif
-#endif
-	{ 0, 0, 0 }
-};
 
 AQCallbackStruct OSystem_iOS7::s_AudioQueue;
 SoundProc OSystem_iOS7::s_soundCallback = NULL;
@@ -157,6 +131,8 @@ int OSystem_iOS7::timerHandler(int t) {
 }
 
 void OSystem_iOS7::initBackend() {
+	_mutexManager = new PthreadMutexManager();
+
 #ifdef IPHONE_SANDBOXED
 	_savefileManager = new SandboxedSaveFileManager(_chrootBasePath, "/Savegames");
 #else
@@ -223,6 +199,8 @@ bool OSystem_iOS7::getFeatureState(Feature f) {
 		return _videoContext->asprectRatioCorrection;
 	case kFeatureVirtualKeyboard:
 		return isKeyboardShown();
+	case kFeatureHiDPI:
+		return true;
 
 	default:
 		return false;
@@ -267,7 +245,7 @@ void OSystem_iOS7::saveState() {
 		Common::String targetName(ConfMan.getActiveDomainName());
 		int saveSlot = g_engine->getAutosaveSlot();
 		// Make sure we do not overwrite a user save
-		SaveStateDescriptor desc = g_engine->getMetaEngine().querySaveMetaInfos(targetName.c_str(), saveSlot);
+		SaveStateDescriptor desc = g_engine->getMetaEngine()->querySaveMetaInfos(targetName.c_str(), saveSlot);
 		if (desc.getSaveSlot() != -1 && !desc.isAutosave())
 			return;
 
@@ -321,41 +299,6 @@ void OSystem_iOS7::delayMillis(uint msecs) {
 	usleep(msecs * 1000);
 }
 
-OSystem::MutexRef OSystem_iOS7::createMutex(void) {
-	pthread_mutexattr_t attr;
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-
-	pthread_mutex_t *mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	if (pthread_mutex_init(mutex, &attr) != 0) {
-		printf("pthread_mutex_init() failed!\n");
-		free(mutex);
-		return NULL;
-	}
-
-	return (MutexRef)mutex;
-}
-
-void OSystem_iOS7::lockMutex(MutexRef mutex) {
-	if (pthread_mutex_lock((pthread_mutex_t *) mutex) != 0) {
-		printf("pthread_mutex_lock() failed!\n");
-	}
-}
-
-void OSystem_iOS7::unlockMutex(MutexRef mutex) {
-	if (pthread_mutex_unlock((pthread_mutex_t *) mutex) != 0) {
-		printf("pthread_mutex_unlock() failed!\n");
-	}
-}
-
-void OSystem_iOS7::deleteMutex(MutexRef mutex) {
-	if (pthread_mutex_destroy((pthread_mutex_t *) mutex) != 0) {
-		printf("pthread_mutex_destroy() failed!\n");
-	} else {
-		free(mutex);
-	}
-}
-
 
 void OSystem_iOS7::setTimerCallback(TimerProc callback, int interval) {
 	//printf("setTimerCallback()\n");
@@ -371,7 +314,7 @@ void OSystem_iOS7::setTimerCallback(TimerProc callback, int interval) {
 void OSystem_iOS7::quit() {
 }
 
-void OSystem_iOS7::getTimeAndDate(TimeDate &td) const {
+void OSystem_iOS7::getTimeAndDate(TimeDate &td, bool skipRecord) const {
 	time_t curTime = time(0);
 	struct tm t = *localtime(&curTime);
 	td.tm_sec = t.tm_sec;

@@ -2,64 +2,64 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="carry">
-			<UniqueIdentifier>EEEE41C8-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CF7-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="core">
-			<UniqueIdentifier>EEEE41C9-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CF8-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game">
-			<UniqueIdentifier>EEEE41CA-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CF9-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game\gondolier">
-			<UniqueIdentifier>EEEE41CB-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CFA-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game\maitred">
-			<UniqueIdentifier>EEEE41CC-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CFB-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game\parrot">
-			<UniqueIdentifier>EEEE41CD-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CFC-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game\pet">
-			<UniqueIdentifier>EEEE41CE-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CFD-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game\pickup">
-			<UniqueIdentifier>EEEE41CF-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CFE-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game\placeholder">
-			<UniqueIdentifier>EEEE41D0-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CFF-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game\sgt">
-			<UniqueIdentifier>EEEE41D1-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D00-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="game\transport">
-			<UniqueIdentifier>EEEE41D2-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D01-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="gfx">
-			<UniqueIdentifier>EEEE41D3-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D02-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="messages">
-			<UniqueIdentifier>EEEE41D4-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D03-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="moves">
-			<UniqueIdentifier>EEEE41D5-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D04-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="npcs">
-			<UniqueIdentifier>EEEE41D6-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D05-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="pet_control">
-			<UniqueIdentifier>EEEE41D7-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D06-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sound">
-			<UniqueIdentifier>EEEE41D8-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D07-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="star_control">
-			<UniqueIdentifier>EEEE41D9-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D08-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="support">
-			<UniqueIdentifier>EEEE41DA-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D09-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="true_talk">
-			<UniqueIdentifier>EEEE41DB-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D0A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -251,7 +251,6 @@
 			<Filter>core</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\titanic\debugger.cpp" />
-		<ClCompile Include="..\..\engines\titanic\detection.cpp" />
 		<ClCompile Include="..\..\engines\titanic\events.cpp" />
 		<ClCompile Include="..\..\engines\titanic\game\announce.cpp">
 			<Filter>game</Filter>
@@ -1007,6 +1006,7 @@
 		<ClCompile Include="..\..\engines\titanic\messages\service_elevator_door.cpp">
 			<Filter>messages</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\titanic\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\titanic\moves\call_pellerator.cpp">
 			<Filter>moves</Filter>
 		</ClCompile>
@@ -1793,6 +1793,7 @@
 			<Filter>core</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\titanic\debugger.h" />
+		<ClInclude Include="..\..\engines\titanic\detection.h" />
 		<ClInclude Include="..\..\engines\titanic\detection_tables.h" />
 		<ClInclude Include="..\..\engines\titanic\events.h" />
 		<ClInclude Include="..\..\engines\titanic\game\announce.h">

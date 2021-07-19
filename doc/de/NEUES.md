@@ -2,7 +2,171 @@ Umfangreichere Informationen über die Änderungen des aktuellen experimentellen
 Programmcodes finden Sie auf Englisch unter:
         https://github.com/scummvm/scummvm/commits/
 
-#### 2.2.0 (27.09.2020)
+#### 2.3.0 (DD.MM.YYYY)
+
+ Neue Spiele:
+   - Unterstützung für Grim Fandango hinzugefügt.
+   - Unterstützung für The Longest Journey hinzugefügt.
+   - Unterstützung für Myst 3: Exile hinzugefügt.
+   - Unterstützung für Hades' Challenge hinzugefügt.
+   - Unterstützung für Little Big Adventure hinzugefügt.
+   - Unterstützung für Red Comrades 1: Save the Galaxy hinzugefügt.
+   - Unterstützung für Red Comrades 2: For the Great Justice hinzugefügt.
+   - Unterstützung für Transylvania hinzugefügt.
+   - Unterstützung für Crimson Crown hinzugefügt.
+   - Unterstützung für OO-Topos hinzugefügt.
+   - Unterstützung für die Glulx interactive fiction-Spiele hinzugefügt.
+   - Unterstützung für die US-Version von Private Eye hinzugefügt.
+   - Unterstützung für AGS-Spiele (AGS-Version 2.5+) hinzugefügt.
+   - Unterstützung für das Konami-Release von Lure of the Temptress hinzugefügt.
+   - Unterstützung für die spanische Version von Blue Force hinzugefügt.
+   - Unterstützung für die spanische Version von Ringworld hinzugefügt.
+   - Unterstützung für die spanische Version von Amazon: Guardians of Eden hinzugefügt.
+   - Unterstützung für Nightlong: Union City Conspiracy hinzugefügt.
+   - Unterstützung für The Journeyman Project 2: Buried in Time hinzugefügt.
+   - Unterstützung für Crusader: No Remorse hinzugefügt.
+
+ Neue Portierungen:
+   - Die Version für den Nintendo DS wurde zu großen Teilen neu geschrieben.
+
+ Allgemein:
+   - Die ScummVM-Benutzeroberfläche unterstützt nun UTF-32.
+   - Code der Roland MT-32-Emulation auf mt32emu 2.5.1 des Munt-Projekts aktualisiert.
+   - Unterstützung für die neue OAuth-Implementierung von Dropbox hinzugefügt.
+   - Umfangreiche Verbesserungen an den unterstützten Grafik-Scalern vorgenommen.
+   - Der Pfad zur ScummVM-Konfigurationsdatei wird nun in der GUI unter Optionen -> Pfade angezeigt.
+   - Neue optionale Abhängigkeit zur giflib-Bibliothek (>=5.0.0) hinzugefügt. Wird für einige Versionen von LBA benötigt.
+   - Unterstützung für hochauflösende Bildschirme (HiDPI) hinzugefügt.
+   - Kommandozeilen-Parameter --window-size hinzugefügt, mit dem die Größe des ScummVM-Fensters festgelegt werden kann.
+     Diese Option kann nur bei der Nutzung des OpenGL-Renderers verwendet werden.
+
+ AGOS:
+   - Unterstützung für die japanische PC-98-Version von Elvira 1 hinzugefügt.
+
+ Dreamweb:
+   - Darstellungsfehler in der russischen Fan-Übersetzung behoben.
+
+ Glk:
+   - Probleme mit Spielständen in mehreren Sub-Engines behoben.
+   - Speicherüberlauf im Erkennungsmechanismus für Level9-Spiele behoben.
+   - Unterstützung für die Spiele der IF Comp 2020 hinzugefügt.
+   - Die Sub-Engine Glulx ist jetzt aktiviert.
+
+ Gob:
+   - Unterstützung für die russische Fan-Übersetzung von Bargon Attack hinzugefügt.
+   - Unterstützung für die russische Übersetzung von Woodruff hinzugefügt.
+
+ Griffon:
+   - Fehler korrigiert, der die Rückkehr zur Spiele-Liste/zum Launcher in The Griffon Legend verhindert hat.
+
+ Grim:
+   - Unterstützung für die Version in brasilianischem Portugiesisch von Grim Fandango hinzugefügt.
+
+ Kyra:
+   - Unterstützung für die japanische Sega-CD-Version von Eye of the Beholder hinzugefügt.
+   - Unterstützung für die hebräische Fan-Übersetzung von Legend of Kyrandia hinzugefügt.
+   - Unterstützung für die Version in vereinfachtem Chinesisch für Legend of Kyrandia 3 hinzugefügt.
+   - Unterstützung für die spielbare Demo-Version von Lands of Lore hinzugefügt.
+
+ Lure:
+   - Die Feuer-Animation im ersten Raum wird nun auch nach dem Laden eines Spielstands korrekt abgespielt.
+   - Unterstützung für AdLib korrigiert.
+   - Unterstützung für MT-32 korrigiert.
+
+ Pegasus:
+   - Unterstützung für die DVD-/GOG.com-Version hinzugefügt.
+
+ Queen:
+   - Unterstützung für die deutsche Amiga-Version hinzugefügt.
+
+ SAGA:
+   - Unterstützung für ITE GOG Mac CD v1.1 hinzugefügt.
+   - Unterstützung für die japanische Version von ITE PC-98 hinzugefügt.
+
+ SCI:
+   - Unterstützung für RGB-Rendering (16/32bpp) für SCI0 - SCI1.1-Spiele hinzugefügt. Dadurch werden Probleme
+     mit der Farbpalette während Bildschirmübergängen und Probleme bei der Darstellung von Mac-QuickTime-Videos korrigiert.
+   - Unterstützung für benutzerdefinierte Farbpaletten in SQ3 und LSL2 des FreeSCI-Projekts hinzugefügt.
+     Wenn diese Mods aktiviert werden, wird die grafische Darstellung in diesen beiden Spielen verbessert.
+   - Unterstützung für die koreanischen Fan-Übersetzungen von Castle of Dr. Brain, Eco Quest, Gabriel Knight,
+     King's Quest 1, 5 und 6, Laura Bow 2: Dagger of Amon Ra und Space Quest 4 hinzugefügt.
+   - Unterstützung für zahlreiche koreanische Übersetzungen des scummkor-Projektes hinzugefügt.
+   - Unterstützung für die russische Version von LSL6 hinzugefügt.
+   - Unterstützung für eine alternative russische Version von LSL7 hinzugefügt.
+
+ SCUMM:
+   - Textdarstellung in der chinesischen, japanischen und koreanischen Version von The Dig und
+     the Curse of Monkey Island korrigiert. Diese Fehlerkorrekturen beinhalten auch einige allgemeine
+     Verbesserungen an der Textdarstellung (hauptsächlich bezüglich der Formatierung von Text-Umbrüchen).
+   - Darstellung des Pause- und Neustart-Dialogs in der chinesischen, japanischen und koreanischen Version
+     der Benutzeroberfläche korrigiert.
+   - Unterstützung für zahlreiche koreanische Übersetzungen des scummkor-Projektes hinzugefügt.
+   - Unterstützung für die Russobit-M-Versionen von Pajama2 und SpyOzone hinzugefügt.
+   - Sprachausgabe in der Akella-Version von COMI korrigiert.
+   - Unterstützung für die Discord- und Humble Bundle-Versionen von Indiana Jones and the Fate of Atlantis hinzugefügt
+   - Unterstützung für weiches Scrolling in verschiedenen FM-Towns-Spielen hinzugefügt.
+   - Die Darstellung von FM-TOWNS-Spielen kann nun auf eine Höhe von 200 Pixeln beschränkt werden, um eine
+     Seitenverhältniskorrektur zu ermöglichen.
+   - Audioprobleme in der PC-Engine-Version von Loom korrigiert.
+   - Unterstützung für hochauflösende Schriftarten und Cursor-Darstellungen
+     in der 16-Farben-Macintosh-Version von Loom hinzugefügt.
+   - Unterstützung für die japanische Macintosh-Version von The Dig hinzugefügt.
+   - Teilweise Unterstützung für die hochauflösenden Schriftarten und den Mauszeiger
+     in der 16-Farben-Macintosh-Version von Indiana Jones and the Last Crusade hinzugefügt.
+   - Fehlende Instrumente in der m64k-Mac-Version von Monkey Island 2
+     und Indiana Jones and the Fate of Atlantis korrigiert.
+   - Neuen Render-Modus "Macintosh (schwarz-weiß)" für die 16-Farben-Macintosh-Version
+     von Loom und Indiana Jones and the Last Crusade hinzugefügt.
+   - Die Auswahl der Spiel-Schwierigkeit in der Version von Monkey Island 2-Version, die in der
+     LucasArts Mac CD Game Pack II-Compilation enthalten war, wurde aktiviert. (Die Auswahl der
+     Spiel-Schwierigkeit wurde zusammen mit dem Kopierschutz entfernt.)
+   - Fehlerhaften Crack im Keypad-Skript von Maniac Mansion korrigiert.
+     Das bedeutet, dass die GOG- (und Steam?)-Versionen keine falschen Ziffern,
+     z.B. für Ednas Telefon-Nummer, mehr akzeptieren. (Warum werden hier überhaupt
+     gecrackte Versionen verkauft?!)
+
+ Tinsel:
+   - Unterstützung für die Rückkehr zur ScummVM-Benutzeroberfläche hinzugefügt.
+
+ TsAGE:
+   - Unterstützung für eine weitere Disketten-Version hinzugefügt.
+   - Unterstützung für die spanischen Versionen von Ringworld und Blue Force hinzugefügt.
+
+ Stark:
+   - Unterstützung für die ungarische Übersetzung hinzugefügt.
+
+ Supernova:
+   - Teil 1 von Supernova ist nun in einer italienischen Übersetzung verfügbar.
+
+ Sword25:
+   - Unterstützung für die entpackte Version hinzugefügt.
+   - Absturz behoben, der auftritt, wenn kroatisch als Spielsprache gewählt wird.
+
+ Ultima:
+   - Ultima 4: Erweiterung des Debuggers um mehrere Befehle.
+   - Ultima 4: Die Return-Taste kann nun dazu genutzt werden, die ZStats-Anzeige zu verlassen.
+   - Ultima 8: Mehrere Animations-Fehler für Events und Objekte korrigiert.
+   - Ultima 8: Ursprünglichen Text für das Buch "Spell of Resurrection" wiederhergestellt.
+
+ Xeen:
+   - Gelegentliche Grafikfehler in Kampf-Szenen korrigiert.
+   - Verbesserte Unterstützung für Zwischensequenzen, die nun dem Original genauer entsprechen.
+
+ AmigaOS-Portierung:
+   - Unterstützung für native Dateisystem-Dialoge hinzugefügt.
+   - Der nuked OPL Adlib-Treiber ist wieder aktiviert.
+
+ MorphOS-Portierung:
+   - Unterstützung für native Dateisystem-Dialoge hinzugefügt.
+   - Unterstützung für die Cloud-Anbindung hinzugefügt.
+   - Der nuked OPL Adlib-Treiber ist wieder aktiviert.
+   - Unterstützung für den CAMD MIDI-Treiber hinzugefügt.
+
+ Windows-Portierung:
+   - Standardmäßig wird nun der OpenGL-Renderer verwendet, der eine deutlich verbesserte Unterstützung für HiDPI-Displays bietet.
+
+
+#### 2.2.0 "Interactive Fantasy" (27.09.2020)
 
  Neue Spiele:
    - Unterstützung für Blazing Dragons hinzugefügt.
@@ -32,6 +196,7 @@ Programmcodes finden Sie auf Englisch unter:
    - Die Standard-Stimme der Sprachausgabe kann auf unterstützten Plattformen nun angepasst werden.
    - Unterstützung für Discord-Integration auf unterstützten Plattformen (Windows Vista+, macOS 10.9+ 64 Bit) hinzugefügt.
    - Die Unterstützung für Tastenkürzel über den Keymapper wurde erheblich verbessert.
+   - Spiele werden nun im Format engineid:gameid erkannt.
 
  BBVS:
    - Unterstützung für die Demo-Version hinzugefügt. Die Demo-Version ist auf unserer Website verfügbar.
@@ -49,7 +214,7 @@ Programmcodes finden Sie auf Englisch unter:
    - Unterstützung für die SegaCD-Version von Eye of the Beholder I (mit CD-Audio, animierten
      Zwischensequenzen und der Karten-Funktion) hinzugefügt.
    - Unterstützung für die PC-98-Version von Eye of the Beholder I hinzugefügt.
-   - Unterstützung für die spanische Version von Eye of the Beholder I und II, Legend of Kyrandia 
+   - Unterstützung für die spanische Version von Eye of the Beholder I und II, Legend of Kyrandia
      (Fan-Übersetzung auf CD-ROM) und Legend of Kyrandia 2 (Disketten-Version und Fan-Übersetzung
      auf CD-ROM hinzugefügt. Unterstützung für die spanische Version von Lands of Lore (Disketten-Version
      und Fan-Übersetzung auf CD-ROM) korrigiert.
@@ -1140,7 +1305,7 @@ Programmcodes finden Sie auf Englisch unter:
 
  Drascula:
    - Spanische Untertitel zur Zwischensequenz mit Von Braun
-     hinzugefügt (3069981: Keine Untertitel in Szene mit „Von Braun“).
+     hinzugefügt (5372: Keine Untertitel in Szene mit „Von Braun“).
 
  Gob:
    - Absturz in Lost in Time beseitigt.
@@ -1343,7 +1508,7 @@ Programmcodes finden Sie auf Englisch unter:
 
  Drascula:
    - Deutsche und französische Untertitel zur Zwischensequenz mit Von Braun
-     hinzugefügt (3069981: Keine Untertitel in Szene mit „Von Braun“).
+     hinzugefügt (5372: Keine Untertitel in Szene mit „Von Braun“).
    - Französische Übersetzung des Spiels verbessert.
    - Unterstützung für Rückkehr zur Spieleliste hinzugefügt.
 
@@ -1626,7 +1791,7 @@ Programmcodes finden Sie auf Englisch unter:
  Drascula:
    - Rückschrittsfehler beseitigt, der dazu führte, dass einige Texte immer in
      Englisch waren, selbst wenn eine andere Sprache eingestellt war.
-     (2970211 - DRASCULA: Fehlende deutsche Übersetzung)
+     (4819 - DRASCULA: Fehlende deutsche Übersetzung)
 
  KYRA:
    - Fehler beseitigt, der DOS-Versionen vor dem Anzeigen der Mitwirkendenliste

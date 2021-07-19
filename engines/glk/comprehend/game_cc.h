@@ -23,12 +23,12 @@
 #ifndef GLK_COMPREHEND_GAME_CC_H
 #define GLK_COMPREHEND_GAME_CC_H
 
-#include "glk/comprehend/game.h"
+#include "glk/comprehend/game_opcodes.h"
 
 namespace Glk {
 namespace Comprehend {
 
-class CrimsonCrownGame : public ComprehendGame {
+class CrimsonCrownGame : public ComprehendGameV1 {
 private:
 	uint _diskNum;
 	uint _newDiskNum;
@@ -53,7 +53,7 @@ public:
 	void beforeGame() override;
 	void beforePrompt() override;
 	void beforeTurn() override;
-	void handleSpecialOpcode(uint8 operand) override;
+	void handleSpecialOpcode() override;
 	void synchronizeSave(Common::Serializer &s) override;
 
 	void setupDisk(uint diskNum);

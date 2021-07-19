@@ -25,6 +25,7 @@
 #include "ultima/ultima4/ultima4.h"
 #include "common/translation.h"
 #include "backends/keymapper/action.h"
+#include "backends/keymapper/standard-actions.h"
 
 namespace Ultima {
 namespace Ultima4 {
@@ -112,6 +113,7 @@ static const KeybindingRecord CHEAT_KEYS[] = {
 	{ KEYBIND_CHEAT_KARMA, "CHEAT-KARMA", "List Karma", "karma", "A+k", nullptr },
 	{ KEYBIND_CHEAT_LEAVE, "CHEAT-LEAVE", "Leave Location", "leave", "A+l", nullptr },
 	{ KEYBIND_CHEAT_MIXTURES, "CHEAT-MIXTURES", "Give Mixtures", "mixtures", "A+m", nullptr },
+	{ KEYBIND_CHEAT_NO_COMBAT, "CHEAT-NOCOMBAT", "Combat Encounters", "combat", "A+n", nullptr },
 	{ KEYBIND_CHEAT_OVERHEAD, "CHEAT_OVERHEAD", "Toggle Overhead View", "overhead", "A+o", nullptr },
 	{ KEYBIND_CHEAT_PARTY, "CHEAT-PARTY", "Full Party", "companions", "A+p", nullptr },
 	{ KEYBIND_CHEAT_REAGENTS, "CHEAT-REAGENTS", "Give Reagents", "reagents", "A+r", nullptr },
@@ -142,15 +144,6 @@ static const KeybindingRecord DIRECTION_KEYS[] = {
 static const KeybindingRecord MENU_KEYS[] = {
 	{ KEYBIND_INTERACT, "INTERACT", "Interact", "interact", "RETURN", nullptr },
 	{ KEYBIND_ESCAPE, "ESCAPE", "Escape", nullptr, "ESCAPE", nullptr },
-	{ KEYBIND_UP, "UP", "Up", nullptr, "UP", nullptr },
-	{ KEYBIND_DOWN, "DOWN", "Down", nullptr, "DOWN", nullptr },
-	{ KEYBIND_LEFT, "LEFT", "Left", nullptr, "LEFT", nullptr },
-	{ KEYBIND_RIGHT, "RIGHT", "Right", nullptr, "RIGHT", nullptr },
-	{ KEYBIND_NONE, nullptr, nullptr, nullptr, nullptr, nullptr }
-};
-
-static const KeybindingRecord COMBAT_KEYS[] = {
-	{ KEYBIND_PASS, "PASS", "Pass", "pass", "SPACE", nullptr },
 	{ KEYBIND_UP, "UP", "Up", nullptr, "UP", nullptr },
 	{ KEYBIND_DOWN, "DOWN", "Down", nullptr, "DOWN", nullptr },
 	{ KEYBIND_LEFT, "LEFT", "Left", nullptr, "LEFT", nullptr },
@@ -229,13 +222,13 @@ Common::KeymapArray MetaEngine::initKeymaps(KeybindingMode mode) {
 void MetaEngine::addMouseClickActions(Common::Keymap &keyMap) {
 	Common::Action *act;
 
-	act = new Common::Action("LCLK", _("Interact via Left Click"));
+	act = new Common::Action(Common::kStandardActionLeftClick, _("Interact via Left Click"));
 	act->setLeftClickEvent();
 	act->addDefaultInputMapping("MOUSE_LEFT");
 	act->addDefaultInputMapping("JOY_A");
 	keyMap.addAction(act);
 
-	act = new Common::Action("RCLK", _("Interact via Right Click"));
+	act = new Common::Action(Common::kStandardActionRightClick, _("Interact via Right Click"));
 	act->setRightClickEvent();
 	act->addDefaultInputMapping("MOUSE_RIGHT");
 	act->addDefaultInputMapping("JOY_B");

@@ -20,7 +20,6 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 
 #include "ultima/ultima8/world/actors/clear_feign_death_process.h"
 #include "ultima/ultima8/world/actors/actor.h"
@@ -30,16 +29,15 @@
 namespace Ultima {
 namespace Ultima8 {
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(ClearFeignDeathProcess)
 
 ClearFeignDeathProcess::ClearFeignDeathProcess() : Process() {
 
 }
 
-ClearFeignDeathProcess::ClearFeignDeathProcess(Actor *actor_) {
-	assert(actor_);
-	_itemNum = actor_->getObjId();
+ClearFeignDeathProcess::ClearFeignDeathProcess(Actor *actor) {
+	assert(actor);
+	_itemNum = actor->getObjId();
 
 	_type = 0x243; // constant !
 }

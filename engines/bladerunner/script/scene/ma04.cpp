@@ -190,7 +190,11 @@ bool SceneScriptMA04::ClickedOn2DRegion(int region) {
 				} else {
 					phoneCallWithSteele();
 				}
-				Music_Play(kMusicBRBlues, 52, 0, 3, -1, 0, 0);
+				if (_vm->_cutContent) {
+					Music_Play(kMusicBRBlues, 52, 0, 3, -1, kMusicLoopPlayOnceRandomStart, 0);
+				} else {
+					Music_Play(kMusicBRBlues, 52, 0, 3, -1, kMusicLoopPlayOnce, 0);
+				}
 				return false;
 			}
 			if (Actor_Clue_Query(kActorClovis, kClueMcCoyRetiredZuben) && !Game_Flag_Query(kFlagMA04PhoneMessageFromClovis)) {
@@ -303,7 +307,7 @@ void SceneScriptMA04::PlayerWalkedIn() {
 		return;
 	}
 	if ((Game_Flag_Query(kFlagZubenRetired) || Game_Flag_Query(kFlagZubenSpared)) && !Game_Flag_Query(kFlagChapter1Ending)) {
-		Music_Play(kMusicBRBlues, 52, 0, 2, -1, 0, 0);
+		Music_Play(kMusicBRBlues, 52, 0, 2, -1, kMusicLoopPlayOnce, 0);
 		Player_Loses_Control();
 		Loop_Actor_Walk_To_XYZ(kActorMcCoy, -7199.0f, 955.0f, 1677.0f, 0, true, false, false);
 		if (isPhoneMessageWaiting() || isPhoneRinging()) {
@@ -319,10 +323,10 @@ void SceneScriptMA04::PlayerWalkedIn() {
 
 void SceneScriptMA04::PlayerWalkedOut() {
 	Ambient_Sounds_Remove_All_Non_Looping_Sounds(true);
-	Ambient_Sounds_Remove_All_Looping_Sounds(1);
+	Ambient_Sounds_Remove_All_Looping_Sounds(1u);
 	if (Game_Flag_Query(kFlagChapter2Intro)) {
 		Ambient_Sounds_Remove_All_Non_Looping_Sounds(true);
-		Ambient_Sounds_Remove_All_Looping_Sounds(1);
+		Ambient_Sounds_Remove_All_Looping_Sounds(1u);
 		Outtake_Play(kOuttakeMovieA, false, -1);
 		Game_Flag_Reset(kFlagChapter2Intro);
 	}
@@ -588,7 +592,7 @@ void SceneScriptMA04::turnOnTV() {
 void SceneScriptMA04::sleep() {
 	if (!Loop_Actor_Walk_To_Scene_Object(kActorMcCoy, "BED-SHEETS", 12, true, false)) {
 		Actor_Says(kActorMcCoy, 8530, 12);
-		Music_Stop(4);
+		Music_Stop(4u);
 		if (isPhoneMessageWaiting() || isPhoneRinging()) {
 			Overlay_Remove("MA04OVER");
 		}
@@ -609,7 +613,7 @@ void SceneScriptMA04::sleep() {
 				}
 			}
 #else // ensure valid kFlagZubenBountyPaid flag state
-			// NOTE If not for the "Report Im" to Guzza, it would be simpler to have McCoy get the money as soon as he retires Zuben
+			// NOTE If not for the "Report In" to Guzza, it would be simpler to have McCoy get the money as soon as he retires Zuben
 			//		so that would be in a single place in the code
 			if (!Game_Flag_Query(kFlagZubenBountyPaid) && Game_Flag_Query(kFlagZubenRetired)) { // get retirement money at end of day 1 only if Zuben was retired.
 				if (Query_Difficulty_Level() != kGameDifficultyEasy) {

@@ -84,7 +84,9 @@ enum {
 	kWMModeManualDrawWidgets= (1 << 5),
 	kWMModeFullscreen       = (1 << 6),
 	kWMModeButtonDialogStyle= (1 << 7),
-	kWMMode32bpp			= (1 << 8)
+	kWMMode32bpp			= (1 << 8),
+	kWMNoScummVMWallpaper   = (1 << 9),
+	kWMModeWin95            = (1 << 10)
 };
 
 }
@@ -139,10 +141,11 @@ typedef void (* MacDrawPixPtr)(int, int, int, void *);
  */
 class MacWindowManager {
 public:
-	MacWindowManager(uint32 mode = 0, MacPatterns *patterns = nullptr);
+	MacWindowManager(uint32 mode = 0, MacPatterns *patterns = nullptr, Common::Language language = Common::UNK_LANG);
 	~MacWindowManager();
 
 	MacDrawPixPtr getDrawPixel();
+	MacDrawPixPtr getDrawInvertPixel();
 
 	/**
 	 * Mutator to indicate the surface onto which the desktop will be drawn.
@@ -168,6 +171,8 @@ public:
 	 */
 	MacWindow *addWindow(bool scrollable, bool resizable, bool editable);
 	MacTextWindow *addTextWindow(const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, MacMenu *menu, bool cursorHandler = true);
+	MacTextWindow *addTextWindow(const Font *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, MacMenu *menu, bool cursorHandler = true);
+	void resizeScreen(int w, int h);
 
 	/**
 	 * Adds a window that has already been initialized to the registry.
@@ -295,7 +300,11 @@ public:
 
 	void passPalette(const byte *palette, uint size);
 	uint findBestColor(byte cr, byte cg, byte cb);
+	uint findBestColor(uint32 color);
 	void decomposeColor(uint32 color, byte &r, byte &g, byte &b);
+
+	const byte *getPalette() { return _palette; }
+	uint getPaletteSize() { return _paletteSize; }
 
 	void renderZoomBox(bool redraw = false);
 	void addZoomBox(ZoomBox *box);
@@ -303,13 +312,30 @@ public:
 	void removeMarked();
 
 	void loadDataBundle();
+	void cleanupDataBundle();
 	BorderOffsets getBorderOffsets(byte windowType);
-	Common::SeekableReadStream *getBorderFile(byte windowType, bool isActive);
+	Common::SeekableReadStream *getBorderFile(byte windowType, uint32 flags);
 	Common::SeekableReadStream *getFile(const Common::String &filename);
+
+	void setTextInClipboard(const Common::U32String &str);
+	/**
+	 * get text from WM clipboard or the global clipboard
+	 * @param size will change to the length of real text in clipboard
+	 * @return the text in clipboard, which may contained the format
+	 */
+	Common::U32String getTextFromClipboard(const Common::U32String &format = Common::U32String(), int *size = nullptr);
+
+	/**
+	 * reset events for current widgets. i.e. we reset those variables which are used for handling events for macwidgets.
+	 * e.g. we clear the active widget, set mouse down false, clear the hoveredWidget
+	 * this function should be called when we are going to other level to handling events. thus wm may not handle events correctly.
+	 */
+	void clearHandlingWidgets();
 
 public:
 	MacFontManager *_fontMan;
 	uint32 _mode;
+	Common::Language _language;
 
 	Common::Point _lastClickPos;
 	Common::Point _lastMousePos;
@@ -355,6 +381,8 @@ private:
 
 	bool _fullRefresh;
 
+	bool _inEditableArea;
+
 	MacPatterns _patterns;
 	byte *_palette;
 	uint _paletteSize;
@@ -378,6 +406,8 @@ private:
 	Common::HashMap<uint32, uint> _colorHash;
 
 	Common::Archive *_dataBundle;
+
+	Common::U32String _clipboard;
 };
 
 } // End of namespace Graphics

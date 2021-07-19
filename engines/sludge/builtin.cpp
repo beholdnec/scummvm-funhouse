@@ -21,21 +21,17 @@
  */
 
 #include "common/config-manager.h"
+#include "common/random.h"
 #include "common/savefile.h"
+#include "common/system.h"
 
-#include "sludge/allfiles.h"
-#include "sludge/backdrop.h"
-#include "sludge/bg_effects.h"
 #include "sludge/builtin.h"
 #include "sludge/cursors.h"
 #include "sludge/event.h"
 #include "sludge/floor.h"
 #include "sludge/fonttext.h"
-#include "sludge/freeze.h"
 #include "sludge/function.h"
 #include "sludge/graphics.h"
-#include "sludge/language.h"
-#include "sludge/loadsave.h"
 #include "sludge/moreio.h"
 #include "sludge/movie.h"
 #include "sludge/newfatal.h"
@@ -46,12 +42,9 @@
 #include "sludge/sludger.h"
 #include "sludge/sound.h"
 #include "sludge/speech.h"
-#include "sludge/sprbanks.h"
-#include "sludge/sprites.h"
 #include "sludge/statusba.h"
 #include "sludge/sludge.h"
-#include "sludge/utf8.h"
-#include "sludge/zbuffer.h"
+#include "sludge/timing.h"
 
 namespace Sludge {
 
@@ -59,7 +52,6 @@ Variable *launchResult = NULL;
 
 extern bool allowAnyFilename;
 extern VariableStack *noStack;
-extern StatusStuff  *nowStatus;
 extern int numBIFNames, numUserFunc;
 
 extern Common::String *allUserFunc;
@@ -71,19 +63,19 @@ bool failSecurityCheck(const Common::String &fn) {
 
 	for (uint i = 0; i < fn.size(); ++i) {
 		switch (fn[i]) {
-			case ':':
-			case '\\':
-			case '/':
-			case '*':
-			case '?':
-			case '"':
-			case '<':
-			case '>':
-			case '|':
-				fatal("Filenames may not contain the following characters: \n\n\\  /  :  \"  <  >  |  ?  *\n\nConsequently, the following filename is not allowed:", fn);
-				return true;
-			default:
-				break;
+		case ':':
+		case '\\':
+		case '/':
+		case '*':
+		case '?':
+		case '"':
+		case '<':
+		case '>':
+		case '|':
+			fatal("Filenames may not contain the following characters: \n\n\\  /  :  \"  <  >  |  ?  *\n\nConsequently, the following filename is not allowed:", fn);
+			return true;
+		default:
+			break;
 		}
 	}
 	return false;
@@ -93,6 +85,7 @@ extern LoadedFunction *saverFunc;
 
 typedef BuiltReturn (*builtInSludgeFunc)(int numParams, LoadedFunction *fun);
 struct builtInFunctionData {
+	const char *name;
 	builtInSludgeFunc func;
 	int paramNum;
 };
@@ -108,26 +101,26 @@ static BuiltReturn sayCore(int numParams, LoadedFunction *fun, bool sayIt) {
 	killSpeechTimers();
 
 	switch (numParams) {
-		case 3:
-			if (!fun->stack->thisVar.getValueType(fileNum, SVT_FILE))
-				return BR_ERROR;
-			trimStack(fun->stack);
-			// fall through
+	case 3:
+		if (!fun->stack->thisVar.getValueType(fileNum, SVT_FILE))
+			return BR_ERROR;
+		trimStack(fun->stack);
+		// fall through
 
-		case 2:
-			newText = fun->stack->thisVar.getTextFromAnyVar();
-			trimStack(fun->stack);
-			if (!fun->stack->thisVar.getValueType(objT, SVT_OBJTYPE))
-				return BR_ERROR;
-			trimStack(fun->stack);
-			p = g_sludge->_speechMan->wrapSpeech(newText, objT, fileNum, sayIt);
-			fun->timeLeft = p;
-			//debugOut ("BUILTIN: sayCore: %s (%i)\n", newText, p);
-			fun->isSpeech = true;
-			return BR_KEEP_AND_PAUSE;
+	case 2:
+		newText = fun->stack->thisVar.getTextFromAnyVar();
+		trimStack(fun->stack);
+		if (!fun->stack->thisVar.getValueType(objT, SVT_OBJTYPE))
+			return BR_ERROR;
+		trimStack(fun->stack);
+		p = g_sludge->_speechMan->wrapSpeech(newText, objT, fileNum, sayIt);
+		fun->timeLeft = p;
+		//debugOut ("BUILTIN: sayCore: %s (%i)\n", newText, p);
+		fun->isSpeech = true;
+		return BR_KEEP_AND_PAUSE;
 
-		default:
-			break;
+	default:
+		break;
 	}
 
 	fatal("Function should have either 2 or 3 parameters");
@@ -202,7 +195,7 @@ builtIn(getMouseScreenY) {
 
 builtIn(getStatusText) {
 	UNUSEDALL
-	fun->reg.makeTextVar(statusBarText());
+	fun->reg.makeTextVar(g_sludge->_statusBar->statusBarText());
 	return BR_CONTINUE;
 }
 
@@ -381,6 +374,9 @@ builtIn(pasteImage) {
 		return BR_CONTINUE;
 
 	g_sludge->_cursorMan->pasteCursor(x, y, pp);
+
+	delete pp;
+
 	return BR_CONTINUE;
 }
 
@@ -470,9 +466,7 @@ builtIn(substring) {
 	wholeString = fun->stack->thisVar.getTextFromAnyVar();
 	trimStack(fun->stack);
 
-	UTF8Converter convert;
-	convert.setUTF8String(wholeString);
-	Common::U32String str32 = convert.getU32String();
+	Common::U32String str32 = wholeString.decode(Common::kUtf8);
 
 	if ((int)str32.size() < start + length) {
 		length = str32.size() - start;
@@ -484,10 +478,7 @@ builtIn(substring) {
 		length = 0;
 	}
 
-	int startoffset = convert.getOriginOffset(start);
-	int endoffset = convert.getOriginOffset(start + length);
-
-	Common::String newString(wholeString.begin() + startoffset, wholeString.begin() + endoffset);
+	Common::String newString = str32.substr(start, length).encode(Common::kUtf8);
 
 	fun->reg.makeTextVar(newString);
 	return BR_CONTINUE;
@@ -530,20 +521,20 @@ builtIn(newStack) {
 builtIn(stackSize) {
 	UNUSEDALL
 	switch (fun->stack->thisVar.varType) {
-		case SVT_STACK:
-			// Return value
-			fun->reg.setVariable(SVT_INT, fun->stack->thisVar.varData.theStack->getStackSize());
-			trimStack(fun->stack);
-			return BR_CONTINUE;
+	case SVT_STACK:
+		// Return value
+		fun->reg.setVariable(SVT_INT, fun->stack->thisVar.varData.theStack->getStackSize());
+		trimStack(fun->stack);
+		return BR_CONTINUE;
 
-		case SVT_FASTARRAY:
-			// Return value
-			fun->reg.setVariable(SVT_INT, fun->stack->thisVar.varData.fastArray->size);
-			trimStack(fun->stack);
-			return BR_CONTINUE;
+	case SVT_FASTARRAY:
+		// Return value
+		fun->reg.setVariable(SVT_INT, fun->stack->thisVar.varData.fastArray->size);
+		trimStack(fun->stack);
+		return BR_CONTINUE;
 
-		default:
-			break;
+	default:
+		break;
 	}
 	fatal("Parameter isn't a stack or a fast array.");
 	return BR_ERROR;
@@ -727,7 +718,7 @@ builtIn(setStatusColour) {
 	if (!getRGBParams(red, green, blue, fun))
 		return BR_ERROR;
 
-	statusBarColour((byte)red, (byte)green, (byte)blue);
+	g_sludge->_statusBar->statusBarColour((byte)red, (byte)green, (byte)blue);
 	return BR_CONTINUE;
 }
 
@@ -738,7 +729,7 @@ builtIn(setLitStatusColour) {
 	if (!getRGBParams(red, green, blue, fun))
 		return BR_ERROR;
 
-	statusBarLitColour((byte)red, (byte)green, (byte)blue);
+	g_sludge->_statusBar->statusBarLitColour((byte)red, (byte)green, (byte)blue);
 	return BR_CONTINUE;
 }
 
@@ -885,7 +876,8 @@ builtIn(launch) {
 	Common::String newText = encodeFilename(newTextA);
 
 	trimStack(fun->stack);
-	if (newTextA[0] == 'h' && newTextA[1] == 't' && newTextA[2] == 't' && newTextA[3] == 'p' && (newTextA[4] == ':' || (newTextA[4] == 's' && newTextA[5] == ':'))) {
+	if (newTextA[0] == 'h' && newTextA[1] == 't' && newTextA[2] == 't' && newTextA[3] == 'p' &&
+		(newTextA[4] == ':' || (newTextA[4] == 's' && newTextA[5] == ':'))) {
 
 		// IT'S A WEBSITE!
 		g_sludge->launchMe.clear();
@@ -1226,31 +1218,31 @@ builtIn(setZBuffer) {
 builtIn(setLightMap) {
 	UNUSEDALL
 	switch (numParams) {
-		case 2:
-			if (!fun->stack->thisVar.getValueType(g_sludge->_gfxMan->_lightMapMode, SVT_INT))
-				return BR_ERROR;
-			trimStack(fun->stack);
-			g_sludge->_gfxMan->_lightMapMode %= LIGHTMAPMODE_NUM;
-			// fall through
-
-		case 1:
-			if (fun->stack->thisVar.varType == SVT_FILE) {
-				int v;
-				fun->stack->thisVar.getValueType(v, SVT_FILE);
-				trimStack(fun->stack);
-				if (!g_sludge->_gfxMan->loadLightMap(v))
-					return BR_ERROR;
-				fun->reg.setVariable(SVT_INT, 1);
-			} else {
-				trimStack(fun->stack);
-				g_sludge->_gfxMan->killLightMap();
-				fun->reg.setVariable(SVT_INT, 0);
-			}
-			break;
-
-		default:
-			fatal("Function should have either 2 or 3 parameters");
+	case 2:
+		if (!fun->stack->thisVar.getValueType(g_sludge->_gfxMan->_lightMapMode, SVT_INT))
 			return BR_ERROR;
+		trimStack(fun->stack);
+		g_sludge->_gfxMan->_lightMapMode %= LIGHTMAPMODE_NUM;
+		// fall through
+
+	case 1:
+		if (fun->stack->thisVar.varType == SVT_FILE) {
+			int v;
+			fun->stack->thisVar.getValueType(v, SVT_FILE);
+			trimStack(fun->stack);
+			if (!g_sludge->_gfxMan->loadLightMap(v))
+				return BR_ERROR;
+			fun->reg.setVariable(SVT_INT, 1);
+		} else {
+			trimStack(fun->stack);
+			g_sludge->_gfxMan->killLightMap();
+			fun->reg.setVariable(SVT_INT, 0);
+		}
+		break;
+
+	default:
+		fatal("Function should have either 2 or 3 parameters");
+		return BR_ERROR;
 	}
 	return BR_CONTINUE;
 }
@@ -1652,60 +1644,60 @@ builtIn(removeCharacter) {
 
 static BuiltReturn moveChr(int numParams, LoadedFunction *fun, bool force, bool immediate) {
 	switch (numParams) {
-		case 3: {
-			int x, y, objectNumber;
+	case 3: {
+		int x, y, objectNumber;
 
-			if (!fun->stack->thisVar.getValueType(y, SVT_INT))
-				return BR_ERROR;
-			trimStack(fun->stack);
-			if (!fun->stack->thisVar.getValueType(x, SVT_INT))
-				return BR_ERROR;
-			trimStack(fun->stack);
-			if (!fun->stack->thisVar.getValueType(objectNumber, SVT_OBJTYPE))
-				return BR_ERROR;
-			trimStack(fun->stack);
-
-			if (force) {
-				if (g_sludge->_peopleMan->forceWalkingPerson(x, y, objectNumber, fun, -1))
-					return BR_PAUSE;
-			} else if (immediate) {
-				g_sludge->_peopleMan->jumpPerson(x, y, objectNumber);
-			} else {
-				if (g_sludge->_peopleMan->makeWalkingPerson(x, y, objectNumber, fun, -1))
-					return BR_PAUSE;
-			}
-			return BR_CONTINUE;
-		}
-
-		case 2: {
-			int toObj, objectNumber;
-			ScreenRegion*reggie;
-
-			if (!fun->stack->thisVar.getValueType(toObj, SVT_OBJTYPE))
-				return BR_ERROR;
-			trimStack(fun->stack);
-			if (!fun->stack->thisVar.getValueType(objectNumber, SVT_OBJTYPE))
-				return BR_ERROR;
-			trimStack(fun->stack);
-			reggie = g_sludge->_regionMan->getRegionForObject(toObj);
-			if (reggie == NULL)
-				return BR_CONTINUE;
-
-			if (force) {
-				if (g_sludge->_peopleMan->forceWalkingPerson(reggie->sX, reggie->sY, objectNumber, fun, reggie->di))
-					return BR_PAUSE;
-			} else if (immediate) {
-				g_sludge->_peopleMan->jumpPerson(reggie->sX, reggie->sY, objectNumber);
-			} else {
-				if (g_sludge->_peopleMan->makeWalkingPerson(reggie->sX, reggie->sY, objectNumber, fun, reggie->di))
-					return BR_PAUSE;
-			}
-			return BR_CONTINUE;
-		}
-
-		default:
-			fatal("Built-in function must have either 2 or 3 parameters.");
+		if (!fun->stack->thisVar.getValueType(y, SVT_INT))
 			return BR_ERROR;
+		trimStack(fun->stack);
+		if (!fun->stack->thisVar.getValueType(x, SVT_INT))
+			return BR_ERROR;
+		trimStack(fun->stack);
+		if (!fun->stack->thisVar.getValueType(objectNumber, SVT_OBJTYPE))
+			return BR_ERROR;
+		trimStack(fun->stack);
+
+		if (force) {
+			if (g_sludge->_peopleMan->forceWalkingPerson(x, y, objectNumber, fun, -1))
+				return BR_PAUSE;
+		} else if (immediate) {
+			g_sludge->_peopleMan->jumpPerson(x, y, objectNumber);
+		} else {
+			if (g_sludge->_peopleMan->makeWalkingPerson(x, y, objectNumber, fun, -1))
+				return BR_PAUSE;
+		}
+		return BR_CONTINUE;
+	}
+
+	case 2: {
+		int toObj, objectNumber;
+		ScreenRegion*reggie;
+
+		if (!fun->stack->thisVar.getValueType(toObj, SVT_OBJTYPE))
+			return BR_ERROR;
+		trimStack(fun->stack);
+		if (!fun->stack->thisVar.getValueType(objectNumber, SVT_OBJTYPE))
+			return BR_ERROR;
+		trimStack(fun->stack);
+		reggie = g_sludge->_regionMan->getRegionForObject(toObj);
+		if (reggie == NULL)
+			return BR_CONTINUE;
+
+		if (force) {
+			if (g_sludge->_peopleMan->forceWalkingPerson(reggie->sX, reggie->sY, objectNumber, fun, reggie->di))
+				return BR_PAUSE;
+		} else if (immediate) {
+			g_sludge->_peopleMan->jumpPerson(reggie->sX, reggie->sY, objectNumber);
+		} else {
+			if (g_sludge->_peopleMan->makeWalkingPerson(reggie->sX, reggie->sY, objectNumber, fun, reggie->di))
+				return BR_PAUSE;
+		}
+		return BR_CONTINUE;
+	}
+
+	default:
+		fatal("Built-in function must have either 2 or 3 parameters.");
+		return BR_ERROR;
 	}
 }
 
@@ -1726,19 +1718,19 @@ builtIn(jumpCharacter) {
 
 builtIn(clearStatus) {
 	UNUSEDALL
-	clearStatusBar();
+	g_sludge->_statusBar->clear();
 	return BR_CONTINUE;
 }
 
 builtIn(removeLastStatus) {
 	UNUSEDALL
-	killLastStatus();
+	g_sludge->_statusBar->killLastStatus();
 	return BR_CONTINUE;
 }
 
 builtIn(addStatus) {
 	UNUSEDALL
-	addStatusBar();
+	g_sludge->_statusBar->addStatusBar();
 	return BR_CONTINUE;
 }
 
@@ -1746,7 +1738,7 @@ builtIn(statusText) {
 	UNUSEDALL
 	Common::String newText = fun->stack->thisVar.getTextFromAnyVar();
 	trimStack(fun->stack);
-	setStatusBar(newText);
+	g_sludge->_statusBar->set(newText);
 	return BR_CONTINUE;
 }
 
@@ -1756,7 +1748,7 @@ builtIn(lightStatus) {
 	if (!fun->stack->thisVar.getValueType(val, SVT_INT))
 		return BR_ERROR;
 	trimStack(fun->stack);
-	setLitStatus(val);
+	g_sludge->_statusBar->setLitStatus(val);
 	return BR_CONTINUE;
 }
 
@@ -1769,7 +1761,7 @@ builtIn(positionStatus) {
 	if (!fun->stack->thisVar.getValueType(x, SVT_INT))
 		return BR_ERROR;
 	trimStack(fun->stack);
-	positionStatus(x, y);
+	g_sludge->_statusBar->positionStatus(x, y);
 	return BR_CONTINUE;
 }
 
@@ -1779,25 +1771,25 @@ builtIn(alignStatus) {
 	if (!fun->stack->thisVar.getValueType(val, SVT_INT))
 		return BR_ERROR;
 	trimStack(fun->stack);
-	nowStatus->alignStatus = (int16)val;
+	g_sludge->_statusBar->setAlignStatus(val);
 	return BR_CONTINUE;
 }
 
 static bool getFuncNumForCallback(int numParams, LoadedFunction *fun, int &functionNum) {
 	switch (numParams) {
-		case 0:
-			functionNum = 0;
-			break;
+	case 0:
+		functionNum = 0;
+		break;
 
-		case 1:
-			if (!fun->stack->thisVar.getValueType(functionNum, SVT_FUNC))
-				return false;
-			trimStack(fun->stack);
-			break;
-
-		default:
-			fatal("Too many parameters.");
+	case 1:
+		if (!fun->stack->thisVar.getValueType(functionNum, SVT_FUNC))
 			return false;
+		trimStack(fun->stack);
+		break;
+
+	default:
+		fatal("Too many parameters.");
+		return false;
 	}
 	return true;
 }
@@ -2105,7 +2097,7 @@ builtIn(renameFile) {
 	if (failSecurityCheck(nam))
 		return BR_ERROR;
 
-	fun->reg.setVariable(SVT_INT, rename(nam.c_str(), newnam.c_str()));
+	fun->reg.setVariable(SVT_INT, !g_system->getSavefileManager()->renameSavefile(nam.c_str(), newnam.c_str()));
 
 	return BR_CONTINUE;
 }
@@ -2337,22 +2329,22 @@ builtIn(getPixelColour) {
 builtIn(makeFastArray) {
 	UNUSEDALL
 	switch (fun->stack->thisVar.varType) {
-		case SVT_STACK: {
-			bool success = fun->reg.makeFastArrayFromStack(fun->stack->thisVar.varData.theStack);
-			trimStack(fun->stack);
-			return success ? BR_CONTINUE : BR_ERROR;
-		}
-			break;
+	case SVT_STACK: {
+		bool success = fun->reg.makeFastArrayFromStack(fun->stack->thisVar.varData.theStack);
+		trimStack(fun->stack);
+		return success ? BR_CONTINUE : BR_ERROR;
+	}
+		break;
 
-		case SVT_INT: {
-			int i = fun->stack->thisVar.varData.intValue;
-			trimStack(fun->stack);
-			return fun->reg.makeFastArraySize(i) ? BR_CONTINUE : BR_ERROR;
-		}
-			break;
+	case SVT_INT: {
+		int i = fun->stack->thisVar.varData.intValue;
+		trimStack(fun->stack);
+		return fun->reg.makeFastArraySize(i) ? BR_CONTINUE : BR_ERROR;
+	}
+		break;
 
-		default:
-			break;
+	default:
+		break;
 	}
 	fatal("Parameter must be a number or a stack.");
 	return BR_ERROR;
@@ -2395,12 +2387,14 @@ builtIn(_rem_launchWith) {
 		Common::FSList files;
 		gameDataDir.getChildren(files, Common::FSNode::kListFilesOnly);
 
-		for (Common::FSList::const_iterator file = files.begin(); file != files.end(); ++file) {
-			Common::String fileName = file->getName();
-			fileName.toLowercase();
-			if (fileName.hasSuffix(".dat") || fileName == "data") {
-				g_sludge->launchNext = file->getName();
-				return BR_CONTINUE;
+		if (!files.empty()) {
+			for (Common::FSList::const_iterator file = files.begin(); file != files.end(); ++file) {
+				Common::String fileName = file->getName();
+				fileName.toLowercase();
+				if (fileName.hasSuffix(".dat") || fileName == "data") {
+					g_sludge->launchNext = file->getName();
+					return BR_CONTINUE;
+				}
 			}
 		}
 	}
@@ -2412,7 +2406,7 @@ builtIn(_rem_launchWith) {
 
 builtIn(getFramesPerSecond) {
 	UNUSEDALL
-	fun->reg.setVariable(SVT_INT, g_sludge->_timer.getLastFps());
+	fun->reg.setVariable(SVT_INT, g_sludge->_timer->getLastFps());
 	return BR_CONTINUE;
 }
 
@@ -2529,14 +2523,14 @@ builtIn(_rem_setMaximumAA) {
 
 builtIn(setBackgroundEffect) {
 	UNUSEDALL
-	bool done = blur_createSettings(numParams, fun->stack);
+	bool done = g_sludge->_gfxMan->blur_createSettings(numParams, fun->stack);
 	fun->reg.setVariable(SVT_INT, done ? 1 : 0);
 	return BR_CONTINUE;
 }
 
 builtIn(doBackgroundEffect) {
 	UNUSEDALL
-	bool done = blurScreen();
+	bool done = g_sludge->_gfxMan->blurScreen();
 	fun->reg.setVariable(SVT_INT, done ? 1 : 0);
 	return BR_CONTINUE;
 }
@@ -2578,6 +2572,13 @@ BuiltReturn callBuiltIn(int whichFunc, int numParams, LoadedFunction *fun) {
 
 	fatal("Unknown / unimplemented built-in function.");
 	return BR_ERROR;
+}
+
+const char *getBuiltInName(int num) {
+	if (num >= NUM_FUNCS)
+		error("getBuiltInName: incorrect builtin number. %d > %d", num, NUM_FUNCS);
+
+	return builtInFunctionArray[num].name;
 }
 
 } // End of namespace Sludge

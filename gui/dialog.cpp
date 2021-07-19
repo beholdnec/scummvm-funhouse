@@ -49,6 +49,7 @@ Dialog::Dialog(int x, int y, int w, int h)
 	// started a 640x480 game with a non 1x scaler.
 	g_gui.checkScreenChange();
 
+	_mouseUpdatedOnFocus = true;
 	_result = -1;
 }
 
@@ -62,10 +63,11 @@ Dialog::Dialog(const Common::String &name)
 	// resolution change, so widgets will be off screen. This forces it to
 	// recompute
 	//
-	// Fixes bug #1590596: "HE: When 3x graphics are choosen, F5 crashes game"
-	// and bug #1595627: "SCUMM: F5 crashes game (640x480)"
+	// Fixes bug #2892: "HE: When 3x graphics are choosen, F5 crashes game"
+	// and bug #2903: "SCUMM: F5 crashes game (640x480)"
 	g_gui.checkScreenChange();
 
+	_mouseUpdatedOnFocus = true;
 	_result = -1;
 }
 

@@ -38,6 +38,13 @@ FileBuffer::FileBuffer(const Common::String &filename) : _pos(0) {
 	f.read(&_data[0], f.size());
 }
 
+FileBuffer::FileBuffer(Common::ReadStream *stream, size_t size) : _pos(0) {
+	_data.resize(size);
+	_readBytes.resize(size);
+	stream->read(&_data[0], size);
+}
+
+
 bool FileBuffer::exists(const Common::String &filename) {
 	return Common::File::exists(filename);
 }
@@ -48,7 +55,7 @@ void FileBuffer::close() {
 	_pos = 0;
 }
 
-bool FileBuffer::seek(int32 offset, int whence) {
+bool FileBuffer::seek(int64 offset, int whence) {
 	switch (whence) {
 	case SEEK_SET:
 		_pos = offset;

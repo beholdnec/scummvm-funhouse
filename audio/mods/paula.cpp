@@ -35,13 +35,14 @@
 
 #include "common/scummsys.h"
 
+#include "audio/mixer.h"
 #include "audio/mods/paula.h"
 #include "audio/null.h"
 
 namespace Audio {
 
 Paula::Paula(bool stereo, int rate, uint interruptFreq, FilterMode filterMode, int periodScaleDivisor) :
-		_stereo(stereo), _rate(rate), _periodScale((double)kPalPaulaClock / (rate * periodScaleDivisor)), _intFreq(interruptFreq) {
+		_stereo(stereo), _rate(rate), _periodScale((double)kPalPaulaClock / (rate * periodScaleDivisor)), _intFreq(interruptFreq), _mutex(g_system->getMixer()->mutex()) {
 
 	_filterState.mode      = filterMode;
 	_filterState.ledFilter = false;
@@ -179,7 +180,7 @@ inline int mixBuffer(int16 *&buf, const int8 *data, Paula::Offset &offset, frac_
 
 template<bool stereo>
 int Paula::readBufferIntern(int16 *buffer, const int numSamples) {
-	int samples = _stereo ? numSamples / 2 : numSamples;
+	int samples = stereo ? numSamples / 2 : numSamples;
 	while (samples > 0) {
 
 		// Handle 'interrupts'. This gives subclasses the chance to adjust the channel data
@@ -256,7 +257,7 @@ int Paula::readBufferIntern(int16 *buffer, const int numSamples) {
 			}
 
 		}
-		buffer += _stereo ? nSamples * 2 : nSamples;
+		buffer += stereo ? nSamples * 2 : nSamples;
 		_curInt -= nSamples;
 		samples -= nSamples;
 	}

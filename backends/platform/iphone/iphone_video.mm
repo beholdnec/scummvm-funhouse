@@ -25,8 +25,6 @@
 
 #include "backends/platform/iphone/iphone_video.h"
 
-#include "graphics/colormasks.h"
-
 iPhoneView *g_iPhoneViewInstance = nil;
 static int g_fullWidth;
 static int g_fullHeight;
@@ -144,7 +142,7 @@ const char *iPhone_getDocumentsDir() {
 		_overlayTexCoords[2] = _overlayTexCoords[6] = _videoContext.overlayWidth / (GLfloat)overlayTextureWidth;
 		_overlayTexCoords[5] = _overlayTexCoords[7] = _videoContext.overlayHeight / (GLfloat)overlayTextureHeight;
 
-		_videoContext.overlayTexture.create(overlayTextureWidth, overlayTextureHeight, Graphics::createPixelFormat<5551>());
+		_videoContext.overlayTexture.create(overlayTextureWidth, overlayTextureHeight, Graphics::PixelFormat(2, 5, 5, 5, 1, 11, 6, 1, 0));
 
 		glViewport(0, 0, _renderBufferWidth, _renderBufferHeight); printOpenGLError();
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f); printOpenGLError();
@@ -269,17 +267,7 @@ const char *iPhone_getDocumentsDir() {
 
 	glBindTexture(GL_TEXTURE_2D, tex); printOpenGLError();
 
-	GLint filter = GL_LINEAR;
-
-	switch (_videoContext.graphicsMode) {
-	case kGraphicsModeLinear:
-		filter = GL_LINEAR;
-		break;
-
-	case kGraphicsModeNone:
-		filter = GL_NEAREST;
-		break;
-	}
+	GLint filter = _videoContext.filtering ? GL_LINEAR : GL_NEAREST;
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter); printOpenGLError();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter); printOpenGLError();
@@ -458,7 +446,7 @@ const char *iPhone_getDocumentsDir() {
 	_gameScreenTexCoords[2] = _gameScreenTexCoords[6] = _videoContext.screenWidth / (GLfloat)screenTexWidth;
 	_gameScreenTexCoords[5] = _gameScreenTexCoords[7] = _videoContext.screenHeight / (GLfloat)screenTexHeight;
 
-	_videoContext.screenTexture.create(screenTexWidth, screenTexHeight, Graphics::createPixelFormat<565>());
+	_videoContext.screenTexture.create(screenTexWidth, screenTexHeight, Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0));
 }
 
 - (void)initSurface {

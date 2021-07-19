@@ -23,7 +23,6 @@
 #ifndef VIDEO_MPEGPS_DECODER_H
 #define VIDEO_MPEGPS_DECODER_H
 
-#include "common/inttypes.h"
 #include "common/hashmap.h"
 #include "common/queue.h"
 #include "graphics/surface.h"
@@ -179,6 +178,36 @@ private:
 		Audio::PacketizedAudioStream *_audStream;
 	};
 #endif
+
+	class PS2AudioTrack : public AudioTrack, public MPEGStream {
+	public:
+		PS2AudioTrack(Common::SeekableReadStream *firstPacket, Audio::Mixer::SoundType soundType);
+		~PS2AudioTrack();
+
+		bool sendPacket(Common::SeekableReadStream *packet, uint32 pts, uint32 dts);
+		StreamType getStreamType() const { return kStreamTypeAudio; }
+
+	protected:
+		Audio::AudioStream *getAudioStream() const;
+
+	private:
+		Audio::PacketizedAudioStream *_audStream;
+
+		enum {
+			PS2_PCM = 0x01,
+			PS2_ADPCM = 0x10
+		};
+
+		uint32 _channels;
+		uint32 _soundType;
+		uint32 _interleave;
+		bool _isFirstPacket;
+
+		byte *_blockBuffer;
+		uint32 _blockPos, _blockUsed;
+
+		uint32 calculateSampleCount(uint32 packetSize) const;
+	};
 
 	// The different types of private streams we can detect at the moment
 	enum PrivateStreamType {

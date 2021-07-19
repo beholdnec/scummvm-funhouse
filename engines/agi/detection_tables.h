@@ -74,7 +74,7 @@ namespace Agi {
 			AD_ENTRY1s(fname,md5,size), \
 			lang, \
 			platform, \
-			ADGF_USEEXTRAASTITLE, \
+			ADGF_USEEXTRAASTITLE | ADGF_AUTOGENTARGET, \
 			guioptions \
 		}, \
 		gid, \
@@ -149,6 +149,9 @@ static const AGIGameDescription gameDescriptions[] = {
 
 	// AGI Demo 2 (PC 5.25") 01/88 [v2] [AGI 2.917]
 	GAME("agidemo", "Demo 2 1987-11-25 [version 2] 5.25\"", "1503f02086ea9f388e7e041c039eaa69", 0x2917, GID_AGIDEMO),
+
+	// AGI Demo 2 Tandy
+	GAME("agidemo", "Demo 2 Tandy", "94eca021fe7da8f8572c2edcc631bbc6", 0x2917, GID_AGIDEMO),
 
 	// AGI Demo 3 (PC) 09/88 [AGI 3.002.102]
 	GAME3("agidemo", "Demo 3 1988-09-13", "dmdir", "289c7a2c881f1d973661e961ced77d74", 0x3149, GID_AGIDEMO),
@@ -255,7 +258,7 @@ static const AGIGameDescription gameDescriptions[] = {
 	// Menus not tested
 	GAME("ddp", "1.0A 1986-08-08", "64388812e25dbd75f7af1103bc348596", 0x2272, GID_DDP),
 
-	// reported by Filippos (thebluegr) in bugreport #1654500
+	// reported by Filippos (thebluegr) in bugreport #3048
 	// Menus not tested
 	GAME_PS("ddp", "1.0C 1986-06-09", "550971d196f65190a5c760d2479406ef", 132, 0x2272, GID_DDP, Common::kPlatformDOS),
 
@@ -277,6 +280,7 @@ static const AGIGameDescription gameDescriptions[] = {
 
 	// Gold Rush!  2.01 12/22/88 - pirated copy, according to https://bugs.scummvm.org/ticket/3220
 	GAME3_PIRATED("goldrush", "2.01 1988-12-22", "grdir", "3ae052117feb483f01a9017025fbb366", 2399, GID_GOLDRUSH),
+	GAME3_PIRATED("goldrush", "2.01 1988-12-22", "grdir", "1ef85c37fcf7224f9731f20f169c8c53", 2399, GID_GOLDRUSH),
 
 	// Gold Rush! (PC 3.5", bought from The Software Farm) 3.0 1998-12-22 [AGI 3.002.149]
 	GAME3("goldrush", "3.0 1998-12-22 3.5\"", "grdir", "6882b6090473209da4cd78bb59f78dbe", 0x3149, GID_GOLDRUSH),
@@ -286,11 +290,8 @@ static const AGIGameDescription gameDescriptions[] = {
 		{
 			"goldrush",
 			"2.01 1988-12-22",
-			{
-				{ "grdir", 0, "db733d199238d4009a9e95f11ece34e9", 2399},
-				{ "vol.0", 0, "4b6423d143674d3757ab1b875d25951d", 25070},
-				AD_LISTEND
-			},
+			AD_ENTRY2s("grdir", "db733d199238d4009a9e95f11ece34e9", 2399,
+					   "vol.0", "4b6423d143674d3757ab1b875d25951d", 25070),
 			Common::EN_ANY,
 			Common::kPlatformMacintosh,
 			ADGF_NO_FLAGS,
@@ -380,8 +381,8 @@ static const AGIGameDescription gameDescriptions[] = {
 
 	// King's Quest 3 (Amiga) 2.15 11/15/89 # 2.333
 	// Original pauses with ESC, has menus accessible with mouse.
-	// ver = 0x3086 -> menus accessible with ESC or mouse, bug #2835581 (KQ3: Game Crash When Leaving Tavern as Fly).
-	// ver = 0x3149 -> menus accessible with mouse, ESC pauses game, bug #2835581 disappears.
+	// ver = 0x3086 -> menus accessible with ESC or mouse, bug #4528 (KQ3: Game Crash When Leaving Tavern as Fly).
+	// ver = 0x3149 -> menus accessible with mouse, ESC pauses game, bug #4528 disappears.
 	GAME3_PSO("kq3", "2.15 1989-11-15", "dirs", "8e35bded2bc5cf20f5eec2b15523b155", 1805, 0x3149, 0, GID_KQ3, Common::kPlatformAmiga, GAMEOPTIONS_AMIGA),
 
 	// King's Quest 3 (PC) 1.01 11/08/86 [AGI 2.272]
@@ -393,6 +394,10 @@ static const AGIGameDescription gameDescriptions[] = {
 
 	// King's Quest 3 (PC 5.25") 2.00 5/25/87 [AGI 2.435]
 	GAME("kq3", "2.00 1987-05-25 5.25\"", "18aad8f7acaaff760720c5c6885b6bab", 0x2440, GID_KQ3),
+
+	// King's Quest 3 (PC 5.25") 2.00 5/28/87 [AGI 2.435]
+	// Bugreport #10646
+	GAME("kq3", "2.00 1987-05-25 5.25\"", "b46dc63d6272fb6ed24a004ad580a033", 0x2440, GID_KQ3),
 
 	// King's Quest 3 (Mac) 2.14 3/15/88
 	// Menus not tested
@@ -467,7 +472,7 @@ static const AGIGameDescription gameDescriptions[] = {
 	// Manhunter NY (Amiga) 1.06 3/18/89
 	GAME3_PO("mh1", "1.06 1989-03-18", "dirs", "92c6183042d1c2bb76236236a7d7a847", 0x3149, GF_OLDAMIGAV20, GID_MH1, Common::kPlatformAmiga, GAMEOPTIONS_AMIGA),
 
-	// reported by Filippos (thebluegr) in bugreport #1654500
+	// reported by Filippos (thebluegr) in bugreport #3048
 	// Manhunter NY (PC 5.25") 1.22 8/31/88 [AGI 3.002.107]
 	GAME3_PS("mh1", "1.22 1988-08-31", "mhdir", "0c7b86f05fe02c2e26cff1b07450b82a", 2123, 0x3149, 0, GID_MH1, Common::kPlatformDOS),
 
@@ -502,12 +507,10 @@ static const AGIGameDescription gameDescriptions[] = {
 	// Preagi game
 	GAMEpre_P("mickey", "", "1.pic", "b6ec04c91a05df374792872c4d4ce66d", 0x0000, GID_MICKEY, Common::kPlatformDOS),
 
-#if 0
 	// Mixed-Up Mother Goose (Amiga) 1.1
 	// Problematic: crashes
 	// Menus not tested
 	GAME3_PSO("mixedup", "1.1 1986-12-10", "dirs", "5c1295fe6daaf95831195ba12894dbd9", 2021, 0x3086, 0, GID_MIXEDUP, Common::kPlatformAmiga, GAMEOPTIONS_AMIGA),
-#endif
 
 	// Mixed Up Mother Goose (IIgs)
 	GAME_PO("mixedup", "1987", "3541954a7303467c6df87665312ffb6a", 0x2917, GID_MIXEDUP, Common::kPlatformApple2GS, GAMEOPTIONS_APPLE2GS),
@@ -545,6 +548,9 @@ static const AGIGameDescription gameDescriptions[] = {
 	// Police Quest 1 (PC) 2.0G 12/3/87; entry from DAGII, but missing from Sarien?
 	// not sure about disk format -- dsymonds
 	GAME("pq1", "2.0G 1987-12-03", "d194e5d88363095f55d5096b8e32fbbb", 0x2917, GID_PQ1),
+
+	// Police Quest 1 (PC) 2.0G 12/3/87; with Hebrew translation
+	GAME_LVFPN("pq1", "2.0G 1987-12-03", "PQ1.WAG", "59e1b2fb6d025968b8ed7388f107c7b5", -1, Common::HE_ISR, 0x2917, 0, GID_PQ1, Common::kPlatformDOS, GType_V2, GAMEOPTIONS_DEFAULT),
 
 	// Police Quest 1 (CoCo3 360k) [AGI 2.023]
 	GAME_PS("pq1", "", "28a077041f75aab78f66804800940085", 375, 0x2440, GID_PQ1, Common::kPlatformCoCo3),
@@ -611,11 +617,8 @@ static const AGIGameDescription gameDescriptions[] = {
 		{
 			"sq2",
 			"2.0F 1986-12-09 [VOL.2->PICTURE.16 broken]",
-			{
-				{ "logdir", 0, "28add5125484302d213911df60d2aded", 426},
-				{ "object", 0, "5dc52be721257719f4b311a84ce22b16", 372},
-				AD_LISTEND
-			},
+			AD_ENTRY2s("logdir", "28add5125484302d213911df60d2aded", 426,
+					   "object", "5dc52be721257719f4b311a84ce22b16", 372),
 			Common::EN_ANY,
 			Common::kPlatformAmiga,
 			ADGF_NO_FLAGS,
@@ -631,11 +634,11 @@ static const AGIGameDescription gameDescriptions[] = {
 	// Space Quest 2 (Mac) 2.0D
 	GAME_P("sq2", "2.0D 1988-04-04", "bfbebe0b59d83f931f2e1c62ce9484a7", 0x2936, GID_SQ2, Common::kPlatformMacintosh),
 
-	// reported by Filippos (thebluegr) in bugreport #1654500
+	// reported by Filippos (thebluegr) in bugreport #3048
 	// Space Quest 2 (PC 5.25") 2.0A [AGI 2.912]
 	GAME_PS("sq2", "2.0A 1987-11-06 5.25\"", "ad7ce8f800581ecc536f3e8021d7a74d", 423, 0x2917, GID_SQ2, Common::kPlatformDOS),
 
-	// reported by RadG (radg123) in bug report #3260349
+	// reported by RadG (radg123) in bug report #5617
 	// Space Quest 2 (Spanish)
 	GAME_LPS("sq2", "", "1ae7640dd4d253c3ac2d708d61a35379", 426, Common::ES_ESP, 0x2917, GID_SQ2, Common::kPlatformDOS),
 
@@ -680,6 +683,7 @@ static const AGIGameDescription gameDescriptions[] = {
 	GAME_PS("xmascard", "", "25ad35e9628fc77e5e0dd35852a272b6", 768, 0x2440, GID_XMASCARD, Common::kPlatformCoCo3),
 
 	FANMADE_FO("2 Player Demo", "4279f46b3cebd855132496476b1d2cca", GF_AGIMOUSE, GAMEOPTIONS_FANMADE_MOUSE),
+	FANMADE("Advanced Epic Fighting", "6454e8c82a7351c8eef5927ad306af4f"),
 	FANMADE("AGI Combat", "0be6a8a9e19203dcca0067d280798871"),
 	FANMADE("AGI Combat (Beta)", "341a47d07be8490a488d0c709578dd10"),
 	FANMADE("AGI Contest 1 Template", "d879aed25da6fc655564b29567358ae2"),
@@ -707,6 +711,8 @@ static const AGIGameDescription gameDescriptions[] = {
 	FANMADE("Al Pond 1 - Al Lives Forever (v1.0)", "e8921c3043b749b056ff51f56d1b451b"),
 	FANMADE("Al Pond 1 - Al Lives Forever (v1.3)", "fb4699474054962e0dbfb4cf12ca52f6"),
 	FANMADE("Apocalyptic Quest (v0.03 Teaser)", "42ced528b67965d3bc3b52c635f94a57"),
+	FANMADE("Apocalyptic Quest Demo 2003-06-24", "c68c49a37eaac73e5aa80ce7f05bbd72"),
+	FANMADE("Apocalyptic Quest 4.00 Alpha 2", "30c74d194840abc3fb1341b567743ac3"),
 	FANMADE_FO("Apocalyptic Quest (v4.00 Alpha 1)", "e15581628d84949b8d352d224ec3184b", GF_AGIMOUSE, GAMEOPTIONS_FANMADE_MOUSE),
 	FANMADE_FO("Apocalyptic Quest (v4.00 Alpha 2)", "0eee850005860e46345b38fea093d194", GF_AGIMOUSE, GAMEOPTIONS_FANMADE_MOUSE),
 	FANMADE_FO("Band Quest (Demo)", "7326abefd793571cc17ed0db647bdf34", GF_AGIMOUSE, GAMEOPTIONS_FANMADE_MOUSE),
@@ -864,11 +870,11 @@ static const AGIGameDescription gameDescriptions[] = {
 	FANMADE("Snowboarding Demo (v1.0)", "24bb8f29f1eddb5c0a099705267c86e4"),
 	FANMADE("Solar System Tour", "b5a3d0f392dfd76a6aa63f3d5f578403"),
 	FANMADE("Sorceror's Appraisal", "fe62615557b3cb7b08dd60c9d35efef1"),
-	GAME("sq0", "v1.03", "d2fd6f7404e86182458494e64375e590", 0x2917, GID_FANMADE),
-	GAME("sq0", "v1.04", "2ad9d1a4624a98571ee77dcc83f231b6", 0x2917, GID_FANMADE),
+	GAME_FO("sq0", "v1.03", "d2fd6f7404e86182458494e64375e590", 0x2917, GF_FANMADE, GID_FANMADE, GAMEOPTIONS_DEFAULT),
+	GAME_FO("sq0", "v1.04", "2ad9d1a4624a98571ee77dcc83f231b6", 0x2917, GF_FANMADE, GID_FANMADE, GAMEOPTIONS_DEFAULT),
 	GAME_PS("sq0", "", "e1a8e4efcce86e1efcaa14633b9eb986", 762, 0x2440, GID_FANMADE, Common::kPlatformCoCo3),
-	GAME("sqx", "v10.0 Feb 05", "c992ae2f8ab18360404efdf16fa9edd1", 0x2917, GID_FANMADE),
-	GAME("sqx", "v10.0 Jul 18", "812edec45cefad559d190ffde2f9c910", 0x2917, GID_FANMADE),
+	GAME_FO("sqx", "v10.0 Feb 05", "c992ae2f8ab18360404efdf16fa9edd1", 0x2917, GF_FANMADE, GID_FANMADE, GAMEOPTIONS_DEFAULT),
+	GAME_FO("sqx", "v10.0 Jul 18", "812edec45cefad559d190ffde2f9c910", 0x2917, GF_FANMADE, GID_FANMADE, GAMEOPTIONS_DEFAULT),
 	GAME_PS("sqx", "", "f0a59044475a5fa37c055d8c3eb4d1a7", 768, 0x2440, GID_FANMADE, Common::kPlatformCoCo3),
 	FANMADE_FO("Space Quest 3.5", "c077bc28d7b36213dd99dc9ecb0147fc", GF_AGIMOUSE, GAMEOPTIONS_FANMADE_MOUSE),	// AGIPAL
 	FANMADE("Space Trek (v1.0)", "807a1aeadb2ace6968831d36ab5ea37a"),
@@ -896,6 +902,7 @@ static const AGIGameDescription gameDescriptions[] = {
 	FANMADE("The New Adventure of Roger Wilco (v1.00)", "e5f0a7cb8d49f66b89114951888ca688"),
 	FANMADE("The Ruby Cast (v0.02)", "ed138e461bb1516e097007e017ab62df"),
 	FANMADE("The Shadow Plan", "c02cd10267e721f4e836b1431f504a0a"),
+	FANMADE("The Sorceror's Appraisal", "b121ba95d2beb6c16e2f762a13b8baa2"),
 	FANMADE("Time Quest (Demo v0.1)", "12e1a6f03ea4b8c5531acd0400b4ed8d"),
 	FANMADE("Time Quest (Demo v0.2)", "7b710608abc99e0861ac59b967bf3f6d"),
 	FANMADE_SVP("Time Quest", "90314f473d8317be5cd1f0306f139aea", 300, 0x2440, Common::kPlatformCoCo3),
@@ -914,7 +921,7 @@ static const AGIGameDescription gameDescriptions[] = {
 			AD_ENTRY1s("vdir", "c71f5c1e008d352ae9040b77fcf79327", 3080),
 			Common::EN_ANY,
 			Common::kPlatformDOS,
-			ADGF_USEEXTRAASTITLE,
+			ADGF_USEEXTRAASTITLE | ADGF_AUTOGENTARGET,
 			GAMEOPTIONS_DEFAULT
 		},
 		GID_FANMADE,

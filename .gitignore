@@ -15,6 +15,7 @@ lib*.a
 /ScummVMDockTilePlugin*
 /config.h
 /config.mk
+/configure.stamp
 /.gdb_history
 /dumps
 /Credits.rtf
@@ -31,6 +32,12 @@ lib*.a
 /map.txt
 *.elf
 /*.nds
+/*.3dsx
+/*.cia
+/*.smdh
+/*.bnr
+/romfs
+/dist_3ds
 /.project
 /.cproject
 /.settings
@@ -39,19 +46,24 @@ lib*.a
 /scummvm-conf.cpp
 /tmp_*.cpp
 /*.apk
+/CMakeLists.txt
 
 /README
-/README.html
+/README.html*
 /NEWS
 /NEWS.html
 /CONTRIBUTING
 /CONTRIBUTING.html
 /doc/de/NEUES
 /doc/de/NEUES.html
+/doc/docportal/_build
 
 /build*
 /staging
 /portdist
+
+/backends/platform/3ds/shader.shbin
+/backends/platform/3ds/shader_shbin.h
 
 /backends/platform/dc/gui
 /backends/platform/dc/graphics
@@ -67,13 +79,6 @@ lib*.a
 /backends/platform/dc/SCUMMVM.BIN
 /backends/platform/dc/*.PLG
 
-/backends/platform/ds/arm7/arm7.bin
-/backends/platform/ds/arm7/build
-/backends/platform/ds/arm7/source/libcartreset/*.bak
-/backends/platform/ds/arm7/source/libcartreset/*.d
-/backends/platform/ds/arm9/data/*.h
-/backends/platform/ds/arm9/scummvm-?
-
 /backends/platform/maemo/scummvm
 
 /backends/platform/symbian/mmp/*.mmp
@@ -87,6 +92,9 @@ lib*.a
 /dists/codeblocks/*.depend
 /dists/codeblocks/*.layout
 /dists/codeblocks/scummvm*
+
+/doc/doxygen/html
+/doc/doxygen/doxygen_warnings.txt
 
 #Ignore XCode user data and build files
 xcuserdata
@@ -121,6 +129,7 @@ project.xcworkspace
 
 /plugins
 
+/engines/detection_table.h
 /engines/plugins_table.h
 /engines/engines.mk
 
@@ -129,6 +138,7 @@ project.xcworkspace
 /test/*.dSYM
 
 /devtools/convbdf
+/devtools/convbdf.dSYM
 /devtools/md5table
 /devtools/make-scumm-fontdata
 /devtools/create_access/create_access
@@ -140,6 +150,7 @@ project.xcworkspace
 /devtools/create_kyradat/create_kyradat
 /devtools/create_lure/create_lure
 /devtools/create_mortdat/create_mortdat
+/devtools/create_myst3/create_myst3
 /devtools/create_neverhood/create_neverhood
 /devtools/create_project/create_project
 /devtools/create_supernova/create_supernova

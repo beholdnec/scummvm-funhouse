@@ -220,7 +220,6 @@ const OSystem::GraphicsMode* OSystem_N64::getSupportedGraphicsModes() const {
 	return s_supportedGraphicsModes;
 }
 
-
 int OSystem_N64::getDefaultGraphicsMode() const {
 	return OVERS_NTSC_340X240;
 }
@@ -666,15 +665,15 @@ void OSystem_N64::clearOverlay() {
 	_dirtyOffscreen = true;
 }
 
-void OSystem_N64::grabOverlay(void *buf, int pitch) {
+void OSystem_N64::grabOverlay(Graphics::Surface &surface) {
 	int h = _overlayHeight;
 	uint16 *src = _overlayBuffer;
-	byte *dst = (byte *)buf;
+	byte *dst = (byte *)surface.getPixels();
 
 	do {
 		memcpy(dst, src, _overlayWidth * sizeof(uint16));
 		src += _overlayWidth;
-		dst += pitch;
+		dst += surface.pitch;
 	} while (--h);
 }
 
@@ -839,7 +838,7 @@ Audio::Mixer *OSystem_N64::getMixer() {
 	return _mixer;
 }
 
-void OSystem_N64::getTimeAndDate(TimeDate &t) const {
+void OSystem_N64::getTimeAndDate(TimeDate &t, bool skipRecord) const {
 	// No RTC inside the N64, read mips timer to simulate
 	// passing of time, not a perfect solution, but can't think
 	// of anything better.

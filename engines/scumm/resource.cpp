@@ -20,7 +20,10 @@
  *
  */
 
+#include "common/md5.h"
 #include "common/str.h"
+#include "common/memstream.h"
+#include "common/macresman.h"
 #ifndef MACOSX
 #include "common/config-manager.h"
 #endif
@@ -232,7 +235,7 @@ void ScummEngine::askForDisk(const char *filename, int disknum) {
 #endif
 	} else {
 		sprintf(buf, "Cannot find file: '%s'", filename);
-		InfoDialog dialog(this, (char *)buf);
+		InfoDialog dialog(this, Common::U32String(buf));
 		runDialog(dialog);
 		error("Cannot find file: '%s'", filename);
 	}
@@ -697,6 +700,10 @@ int ScummEngine::loadResource(ResType type, ResId idx) {
 	}
 	_fileHandle->read(_res->createResource(type, idx, size), size);
 
+	applyWorkaroundIfNeeded(type, idx);
+
+	// NB: The workaround may have changed the resource size, so don't rely on 'size' after this.
+
 	// dump the resource if requested
 	if (_dumpScripts && type == rtScript) {
 		dumpResource("script-", idx, getResourceAddress(rtScript, idx));
@@ -822,7 +829,7 @@ byte *ResourceManager::createResource(ResType type, ResId idx, uint32 size) {
 	if (_vm->_game.version <= 2) {
 		// Nuking and reloading a resource can be harmful in some
 		// cases. For instance, Zak tries to reload the intro music
-		// while it's playing. See bug #1253171.
+		// while it's playing. See bug #2115.
 
 		if (_types[type][idx]._address && (type == rtSound || type == rtScript || type == rtCostume))
 			return _types[type][idx]._address;
@@ -1103,11 +1110,29 @@ void ScummEngine::loadPtrToResource(ResType type, ResId idx, const byte *source)
 	byte *alloced;
 	int len;
 
+	bool sourceWasNull = !source;
+	int originalLen;
+
 	_res->nukeResource(type, idx);
 
 	len = resStrLen(source) + 1;
 	if (len <= 0)
 		return;
+
+	originalLen = len;
+
+	// Translate resource text
+	byte translateBuffer[512];
+	if (isScummvmKorTarget()) {
+		if (!source) {
+			refreshScriptPointer();
+			source = _scriptPointer;
+		}
+		translateText(source, translateBuffer);
+
+		source = translateBuffer;
+		len = resStrLen(source) + 1;
+	}
 
 	alloced = _res->createResource(type, idx, len);
 
@@ -1115,8 +1140,12 @@ void ScummEngine::loadPtrToResource(ResType type, ResId idx, const byte *source)
 		// Need to refresh the script pointer, since createResource may
 		// have caused the script resource to expire.
 		refreshScriptPointer();
-		memcpy(alloced, _scriptPointer, len);
-		_scriptPointer += len;
+		memcpy(alloced, _scriptPointer, originalLen);
+		_scriptPointer += originalLen;
+	} else if (sourceWasNull) {
+		refreshScriptPointer();
+		memcpy(alloced, source, len);
+		_scriptPointer += originalLen;
 	} else {
 		memcpy(alloced, source, len);
 	}
@@ -1153,7 +1182,7 @@ void ScummEngine_v5::readMAXS(int blockSize) {
 	_numArray = 50;
 	_numVerbs = 100;
 	// Used to be 50, which wasn't enough for MI2 and FOA. See bugs
-	// #933610, #936323 and #941275.
+	// #1591, #1600 and #1607.
 	_numNewNames = 150;
 	_objectRoomTable = NULL;
 
@@ -1619,5 +1648,128 @@ const char *nameOfResType(ResType type) {
 		return buf;
 	}
 }
+
+void ScummEngine::applyWorkaroundIfNeeded(ResType type, int idx) {
+	int size = getResourceSize(type, idx);
+
+	// WORKAROUND: FM-TOWNS Zak used the extra 40 pixels at the bottom to increase the inventory to 10 items
+	// if we trim to 200 pixels, we can show only 6 items
+	// therefore we patch the inventory script (20)
+	// replacing the 5 occurences of 10 as limit to 6
+	if (_game.platform == Common::kPlatformFMTowns && _game.id == GID_ZAK && ConfMan.getBool("trim_fmtowns_to_200_pixels")) {
+		if (type == rtScript && idx == 20) {
+			byte *ptr = getResourceAddress(rtScript, idx);
+			for (int cnt = 5; cnt; ptr++) {
+				if (*ptr == 10) {
+					*ptr = 6;
+					cnt--;
+				}
+			}
+		}
+	}
+
+	// WORKAROUND: The Mac version of Monkey Island 2 that was distributed
+	// on CD as the LucasArts Adventure Game Pack II is missing the part of
+	// the boot script that shows the copy protection and difficulty
+	// selection screen. Presumably it didn't include the code wheel. In
+	// fact, none of the games on this CD have any copy protection.
+	//
+	// The games on the first Game Pack CD does have copy protection, but
+	// since I only own the discs I can neither confirm nor deny if the
+	// necessary documentation was included.
+	//
+	// However, this means that there is no way to pick the difficulty
+	// level. Since ScummVM bypasses the copy protection check, there is
+	// no harm in showing the screen by simply re-inserging the missing
+	// part of the script.
+
+	else if (_game.id == GID_MONKEY2 && _game.platform == Common::kPlatformMacintosh && type == rtScript && idx == 1 && size == 6718) {
+		byte *unpatchedScript = getResourceAddress(type, idx);
+
+		const byte patch[] = {
+0x48, 0x00, 0x40, 0x00, 0x00, 0x13, 0x00, // if (Local[0] == 0) {
+0x33, 0x03, 0x00, 0x00, 0xc8, 0x00,       //     SetScreen(0,200);
+0x0a, 0x82, 0xff,                         //     startScript(130,[]);
+0x80,                                     //     breakHere();
+0x68, 0x00, 0x00, 0x82,                   //     VAR_RESULT = isScriptRunning(130);
+0x28, 0x00, 0x00, 0xf6, 0xff,             //     unless (!VAR_RESULT) goto 0955;
+                                          // }
+0x48, 0x00, 0x40, 0x3f, 0xe1, 0x1d, 0x00, // if (Local[0] == -7873) [
+0x1a, 0x32, 0x00, 0x3f, 0x01,             //     VAR_MAINMENU_KEY = 319;
+0x33, 0x03, 0x00, 0x00, 0xc8, 0x00,       //     SetScreen(0,200);
+0x0a, 0x82, 0xff,                         //     startScript(130,[]);
+0x80,                                     //     breakHere();
+0x68, 0x00, 0x00, 0x82,                   //     VAR_RESULT = isScriptRunning(130);
+0x28, 0x00, 0x00, 0xf6, 0xff,             //     unless (!VAR_RESULT) goto 0955;
+0x1a, 0x00, 0x40, 0x00, 0x00              //     Local[0] = 0;
+                                          // }
+		};
+
+		byte *patchedScript = new byte[6780];
+
+		memcpy(patchedScript, unpatchedScript, 2350);
+		memcpy(patchedScript + 2350, patch, sizeof(patch));
+		memcpy(patchedScript + 2350 + sizeof(patch), unpatchedScript + 2350, 6718 - 2350);
+
+		WRITE_BE_UINT32(patchedScript + 4, 6780);
+
+		// Just to be completely safe, check that the patched script now
+		// matches the boot script from the other known Mac version.
+		// Only if it does can we replace the unpatched script.
+
+		if (verifyMI2MacBootScript(patchedScript, 6780)) {
+			byte *newResource = _res->createResource(type, idx, 6780);
+			memcpy(newResource, patchedScript, 6780);
+		} else
+			warning("Could not patch MI2 Mac boot script");
+
+		delete[] patchedScript;
+	} else
+
+	// There is a cracked version of Maniac Mansion v2 that attempts to
+	// remove the security door copy protection. With it, any code is
+	// accepted as long as you get the last digit wrong. Unfortunately,
+	// it changes a script that is used by all keypads in the game, which
+	// means some puzzles are completely nerfed.
+	//
+	// Even worse, this is the version that GOG (and apparently Steam as
+	// well) are selling. No, seriously! I've reported this as a bug, but
+	// it remains unclear whether or not they will fix it.
+
+	if (_game.id == GID_MANIAC && _game.version == 2 && _game.platform == Common::kPlatformDOS && type == rtScript && idx == 44 && size == 199) {
+		byte *data = getResourceAddress(type, idx);
+
+		if (data[184] == 0) {
+			Common::MemoryReadStream stream(data, size);
+			Common::String md5 = Common::computeStreamMD5AsString(stream);
+
+			if (md5 == "11adc9b47497b26ac2b9627e0982b3fe") {
+				warning("Removing bad copy protection crack from keypad script");
+				data[184] = 1;
+			}
+		}
+	}
+}
+
+bool ScummEngine::verifyMI2MacBootScript() {
+	return verifyMI2MacBootScript(getResourceAddress(rtScript, 1), getResourceSize(rtScript, 1));
+}
+
+bool ScummEngine::verifyMI2MacBootScript(byte *buf, int size) {
+	if (size == 6780) {
+		Common::MemoryReadStream stream(buf, size);
+		Common::String md5 = Common::computeStreamMD5AsString(stream);
+
+		if (md5 != "92b1cb7902b57d02b8e7434903d8508b") {
+			warning("Unexpected MI2 Mac boot script checksum: %s", md5.c_str());
+			return false;
+		}
+	} else {
+		warning("Unexpected MI2 Mac boot script length: %d", size);
+		return false;
+	}
+	return true;
+}
+
 
 } // End of namespace Scumm

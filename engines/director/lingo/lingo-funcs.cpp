@@ -38,7 +38,6 @@
 #include "director/util.h"
 
 #include "director/lingo/lingo.h"
-#include "director/lingo/lingo-gr.h"
 
 
 namespace Director {
@@ -295,22 +294,30 @@ void Lingo::func_play(Datum &frame, Datum &movie) {
 		return;
 	}
 
+	if (movie.type != VOID) {
+		ref.movie = unixToMacPath(_vm->getCurrentMovie()->_movieArchive->getPathName());
+	}
 	ref.frameI = _vm->getCurrentMovie()->getScore()->getCurrentFrame();
+
+	// if we are issuing play command from script channel script. then play done should return to next frame
+	if (g_lingo->_currentChannelId == 0)
+		ref.frameI++;
 
 	stage->_movieStack.push_back(ref);
 
 	func_goto(frame, movie);
 }
 
-void Lingo::func_cursor(int cursorId, int maskId) {
+void Lingo::func_cursor(CastMemberID cursorId, CastMemberID maskId) {
 	Cursor cursor;
+	cursor.readFromCast(cursorId, maskId);
+	// TODO: Figure out why there are artifacts here
+	_vm->_wm->replaceCursor(cursor._cursorType, ((Graphics::Cursor *)&cursor));
+}
 
-	if (maskId == -1) {
-		cursor.readFromResource(cursorId);
-	} else {
-		cursor.readFromCast(cursorId, maskId);
-	}
-
+void Lingo::func_cursor(int cursorId) {
+	Cursor cursor;
+	cursor.readFromResource(cursorId);
 	// TODO: Figure out why there are artifacts here
 	_vm->_wm->replaceCursor(cursor._cursorType, ((Graphics::Cursor *)&cursor));
 }

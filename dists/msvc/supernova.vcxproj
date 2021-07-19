@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -161,22 +176,14 @@
 	</ImportGroup>
 	<PropertyGroup Label="UserMacros" />
 	<ItemGroup>
-		<ClCompile Include="..\..\engines\supernova\supernova1\rooms.cpp">
-			<ObjectFileName>$(IntDir)supernova1_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\supernova\supernova1\state.cpp">
-			<ObjectFileName>$(IntDir)supernova1_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\supernova\supernova2\rooms.cpp">
-			<ObjectFileName>$(IntDir)supernova2_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\supernova\supernova2\state.cpp">
-			<ObjectFileName>$(IntDir)supernova2_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\supernova\supernova1\rooms.cpp" />
+		<ClCompile Include="..\..\engines\supernova\supernova1\state.cpp" />
+		<ClCompile Include="..\..\engines\supernova\supernova2\rooms.cpp" />
+		<ClCompile Include="..\..\engines\supernova\supernova2\state.cpp" />
 		<ClCompile Include="..\..\engines\supernova\console.cpp" />
-		<ClCompile Include="..\..\engines\supernova\detection.cpp" />
 		<ClCompile Include="..\..\engines\supernova\game-manager.cpp" />
 		<ClCompile Include="..\..\engines\supernova\graphics.cpp" />
+		<ClCompile Include="..\..\engines\supernova\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\supernova\resman.cpp" />
 		<ClCompile Include="..\..\engines\supernova\room.cpp" />
 		<ClCompile Include="..\..\engines\supernova\screen.cpp" />

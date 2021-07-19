@@ -85,7 +85,7 @@ bool SceneScriptUG12::ClickedOnExit(int exitId) {
 	if (exitId == 0) {
 		if (!Loop_Actor_Walk_To_XYZ(kActorMcCoy, 375.0f, -126.21f, 180.0f, 0, true, false, false)) {
 			Ambient_Sounds_Remove_All_Non_Looping_Sounds(true);
-			Ambient_Sounds_Remove_All_Looping_Sounds(1);
+			Ambient_Sounds_Remove_All_Looping_Sounds(1u);
 			Game_Flag_Set(kFlagUG12toUG14);
 			Set_Enter(kSetUG14, kSceneUG14);
 		}
@@ -95,7 +95,7 @@ bool SceneScriptUG12::ClickedOnExit(int exitId) {
 	if (exitId == 1) {
 		if (!Loop_Actor_Walk_To_XYZ(kActorMcCoy, 207.0f, -126.21f, -364.0f, 0, true, false, false)) {
 			Ambient_Sounds_Remove_All_Non_Looping_Sounds(true);
-			Ambient_Sounds_Remove_All_Looping_Sounds(1);
+			Ambient_Sounds_Remove_All_Looping_Sounds(1u);
 			Game_Flag_Set(kFlagUG12toKP02);
 			Set_Enter(kSetKP02, kSceneKP02);
 		}
@@ -115,6 +115,16 @@ void SceneScriptUG12::ActorChangedGoal(int actorId, int newGoal, int oldGoal, bo
 }
 
 void SceneScriptUG12::PlayerWalkedIn() {
+#if !BLADERUNNER_ORIGINAL_BUGS
+	// UG12 scene is in the same set as CT08 and CT51 (kSetCT08_CT51_UG12 : 6)
+	// CT08 and CT51 belong to the Replicant hideout room at Yukon hotel,
+	// thus kItemChair is still present and with a bit of pixel hunt also visible in this scene
+	// fix: remove rogue clickable chair item in this scene only.
+	// This code has to be in PlayerWalkedIn() (which is executed after SceneLoaded() when player enters the scene)
+	// and not in SceneLoaded(), as in that method, the item is not yet available in the sceneObjects
+	// (SceneObjects::findById() returns -1 for it, in SceneLoaded())
+	Item_Remove_From_Current_Scene(kItemChair);
+#endif // !BLADERUNNER_ORIGINAL_BUGS
 }
 
 void SceneScriptUG12::PlayerWalkedOut() {

@@ -23,6 +23,7 @@
 #include "common/util.h"
 #include "common/stack.h"
 #include "common/system.h"
+#include "common/unicode-bidi.h"
 #include "graphics/primitives.h"
 
 #include "sci/sci.h"
@@ -92,8 +93,21 @@ void GfxControls16::drawListControl(Common::Rect rect, reg_t obj, int16 maxChars
 		_paint16->eraseRect(workerRect);
 		const Common::String &listEntry = entries[i];
 		if (listEntry[0]) {
-			_ports->moveTo(workerRect.left, workerRect.top);
-			_text16->Draw(listEntry.c_str(), 0, MIN<int16>(maxChars, listEntry.size()), oldFontId, oldPenColor);
+			Common::String textString = listEntry;
+			if (g_sci->isLanguageRTL())
+				textString = Common::convertBiDiString(textString, g_sci->getLanguage());
+
+			if (!g_sci->isLanguageRTL())
+				_ports->moveTo(workerRect.left, workerRect.top);
+			else {
+				// calc width, for right alignment
+				const char *textPtr = textString.c_str();
+				uint16 textWidth = 0;
+				while (*textPtr)
+					textWidth += _text16->_font->getCharWidth((byte)*textPtr++);
+				_ports->moveTo(workerRect.right - textWidth - 1, workerRect.top);
+			}
+			_text16->Draw(textString.c_str(), 0, MIN<int16>(maxChars, listEntry.size()), oldFontId, oldPenColor);
 			if ((!isAlias) && (i == cursorPos)) {
 				_paint16->invertRect(workerRect);
 			}

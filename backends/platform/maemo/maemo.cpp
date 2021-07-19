@@ -52,6 +52,7 @@ void OSystem_SDL_Maemo::init() {
 	// Use an iconless window for Maemo
 	// also N900 is hit by SDL_WM_SetIcon bug (window cannot receive input)
 	// http://bugzilla.libsdl.org/show_bug.cgi?id=586
+	initSDL();
 	_window = new SdlIconlessWindow();
 
 	OSystem_POSIX::init();
@@ -98,21 +99,8 @@ void OSystem_SDL_Maemo::setXWindowName(const char *caption) {
 	}
 }
 
-void OSystem_SDL_Maemo::setWindowCaption(const char *caption) {
-	Common::String cap;
-	byte c;
-
-	// The string caption is supposed to be in LATIN-1 encoding.
-	// SDL expects UTF-8. So we perform the conversion here.
-	while ((c = *(const byte *)caption++)) {
-		if (c < 0x80)
-			cap += c;
-		else {
-			cap += 0xC0 | (c >> 6);
-			cap += 0x80 | (c & 0x3F);
-		}
-	}
-
+void OSystem_SDL_Maemo::setWindowCaption(const Common::U32String &caption) {
+	Common::String cap = caption.encode();
 	_window->setWindowCaption(cap);
 
 	Common::String cap2("ScummVM - "); // 2 lines in OS2008 task switcher, set first line
@@ -171,15 +159,15 @@ Common::KeymapArray OSystem_SDL_Maemo::getGlobalKeymaps() {
 	act->setCustomBackendActionEvent(Maemo::kEventClickMode);
 	globalMap->addAction(act);
 
-	act = new Action("LCLK", _("Left Click"));
+	act = new Action(kStandardActionLeftClick, _("Left Click"));
 	act->setLeftClickEvent();
 	globalMap->addAction(act);
 
-	act = new Action("MCLK", _("Middle Click"));
+	act = new Action(kStandardActionMiddleClick, _("Middle Click"));
 	act->setMiddleClickEvent();
 	globalMap->addAction(act);
 
-	act = new Action("RCLK", _("Right Click"));
+	act = new Action(kStandardActionRightClick, _("Right Click"));
 	act->setRightClickEvent();
 	globalMap->addAction(act);
 
@@ -214,7 +202,7 @@ Common::KeymapperDefaultBindings *OSystem_SDL_Maemo::getKeymapperDefaultBindings
 
 	keymapperDefaultBindings->setDefaultBinding("gui", "CLOS", "ESCAPE");
 
-	keymapperDefaultBindings->setDefaultBinding("maemo", "RCLK", "ZOOMPLUS");
+	keymapperDefaultBindings->setDefaultBinding("maemo", kStandardActionRightClick, "ZOOMPLUS");
 	keymapperDefaultBindings->setDefaultBinding("maemo", "CLKM", "ZOOMMINUS");
 
 	return keymapperDefaultBindings;

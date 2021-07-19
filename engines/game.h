@@ -26,9 +26,19 @@
 #include "common/array.h"
 #include "common/hash-str.h"
 #include "common/str.h"
+#include "common/ustr.h"
 #include "common/str-array.h"
 #include "common/language.h"
 #include "common/platform.h"
+
+/**
+ * @defgroup engines_game Games
+ * @ingroup engines
+ *
+ * @brief API for managing games by engines.
+ *
+ * @{
+ */
 
 /**
  * A simple structure used to map gameids (like "monkey", "sword1", ...) to
@@ -81,9 +91,11 @@ typedef Common::Array<QualifiedGameDescriptor> QualifiedGameList;
  * Ths is an enum to describe how done a game is. This also indicates what level of support is expected.
  */
 enum GameSupportLevel {
-	kStableGame = 0, // the game is fully supported
-	kTestingGame, // the game is not supposed to end up in releases yet but is ready for public testing
-	kUnstableGame // the game is not even ready for public testing yet
+	kStableGame = 0,  // the game is fully supported
+	kTestingGame,     // the game is not supposed to end up in releases yet but is ready for public testing
+	kUnstableGame,    // the game is not even ready for public testing yet
+	kUnsupportedGame, // we don't want to support the game
+	kWarningGame      // we want to ask user to proceed and provide them with an explanation
 };
 
 
@@ -92,7 +104,7 @@ enum GameSupportLevel {
  * files while detecting a game.
  */
 struct FileProperties {
-	int32 size;
+	int64 size;
 	Common::String md5;
 
 	FileProperties() : size(-1) {}
@@ -117,7 +129,8 @@ struct DetectedGame {
 	               const Common::String &description,
 	               Common::Language language = Common::UNK_LANG,
 	               Common::Platform platform = Common::kPlatformUnknown,
-	               const Common::String &extra = Common::String());
+	               const Common::String &extra = Common::String(),
+	               bool unsupported = false);
 
 	void setGUIOptions(const Common::String &options);
 	void appendGUIOptions(const Common::String &str);
@@ -182,7 +195,7 @@ private:
 	 * Values that are missing are omitted, so e.g. (EXTRA/LANG) would be
 	 * added if no platform has been specified but a language and an extra string.
 	 */
-	Common::String updateDesc() const;
+	Common::String updateDesc(bool skipExtraField) const;
 
 	Common::String _guiOptions;
 };
@@ -233,7 +246,7 @@ public:
 	 *
 	 * @see ::generateUnknownGameReport
 	 */
-	Common::String generateUnknownGameReport(bool translate, uint32 wordwrapAt = 0) const;
+	Common::U32String generateUnknownGameReport(bool translate, uint32 wordwrapAt = 0) const;
 
 private:
 	DetectedGames _detectedGames;
@@ -248,7 +261,7 @@ private:
  *                 of last component of the path is included
  * @param wordwrapAt word wrap the text part of the report after a number of characters
  */
-Common::String generateUnknownGameReport(const DetectedGames &detectedGames, bool translate, bool fullPath, uint32 wordwrapAt = 0);
-Common::String generateUnknownGameReport(const DetectedGame &detectedGame, bool translate, bool fullPath, uint32 wordwrapAt = 0);
-
+Common::U32String generateUnknownGameReport(const DetectedGames &detectedGames, bool translate, bool fullPath, uint32 wordwrapAt = 0);
+Common::U32String generateUnknownGameReport(const DetectedGame &detectedGame, bool translate, bool fullPath, uint32 wordwrapAt = 0);
+/** @} */
 #endif

@@ -2,218 +2,218 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="nuvie">
-			<UniqueIdentifier>EEEE41E1-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D18-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\actors">
-			<UniqueIdentifier>EEEE41E2-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D19-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\conf">
-			<UniqueIdentifier>EEEE41E3-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D1A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\core">
-			<UniqueIdentifier>EEEE41E4-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D1B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\files">
-			<UniqueIdentifier>EEEE41E5-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D1C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\fonts">
-			<UniqueIdentifier>EEEE41E6-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D1D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\gui">
-			<UniqueIdentifier>EEEE41E7-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D1E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\gui\widgets">
-			<UniqueIdentifier>EEEE41E8-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D1F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\keybinding">
-			<UniqueIdentifier>EEEE41E9-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D20-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\menus">
-			<UniqueIdentifier>EEEE41EA-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D21-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\misc">
-			<UniqueIdentifier>EEEE41EB-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D22-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\pathfinder">
-			<UniqueIdentifier>EEEE41EC-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D23-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\portraits">
-			<UniqueIdentifier>EEEE41ED-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D24-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\save">
-			<UniqueIdentifier>EEEE41EE-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D25-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\screen">
-			<UniqueIdentifier>EEEE41EF-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D26-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\script">
-			<UniqueIdentifier>EEEE41F0-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D27-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\sound">
-			<UniqueIdentifier>EEEE41F1-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D28-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\sound\adplug">
-			<UniqueIdentifier>EEEE41F2-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D29-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\sound\decoder">
-			<UniqueIdentifier>EEEE41F3-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D2A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\usecode">
-			<UniqueIdentifier>EEEE41F4-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D2B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="nuvie\views">
-			<UniqueIdentifier>EEEE41F5-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D2C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared">
-			<UniqueIdentifier>EEEE41F6-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D2D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared\actions">
-			<UniqueIdentifier>EEEE41F7-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D2E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared\conf">
-			<UniqueIdentifier>EEEE41F8-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D2F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared\core">
-			<UniqueIdentifier>EEEE41F9-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D30-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared\early">
-			<UniqueIdentifier>EEEE41FA-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D31-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared\engine">
-			<UniqueIdentifier>EEEE41FB-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D32-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared\gfx">
-			<UniqueIdentifier>EEEE41FC-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D33-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared\maps">
-			<UniqueIdentifier>EEEE41FD-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D34-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="shared\std">
-			<UniqueIdentifier>EEEE41FE-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D35-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima0">
-			<UniqueIdentifier>EEEE41FF-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D36-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima0\core">
-			<UniqueIdentifier>EEEE4200-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D37-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1">
-			<UniqueIdentifier>EEEE4201-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D38-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1\actions">
-			<UniqueIdentifier>EEEE4202-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D39-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1\core">
-			<UniqueIdentifier>EEEE4203-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D3A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1\maps">
-			<UniqueIdentifier>EEEE4204-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D3B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1\spells">
-			<UniqueIdentifier>EEEE4205-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D3C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1\u1dialogs">
-			<UniqueIdentifier>EEEE4206-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D3D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1\u1gfx">
-			<UniqueIdentifier>EEEE4207-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D3E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1\u6gfx">
-			<UniqueIdentifier>EEEE4208-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D3F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima1\widgets">
-			<UniqueIdentifier>EEEE4209-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D40-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4">
-			<UniqueIdentifier>EEEE420A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D41-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\controllers">
-			<UniqueIdentifier>EEEE420B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D42-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\conversation">
-			<UniqueIdentifier>EEEE420C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D43-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\core">
-			<UniqueIdentifier>EEEE420D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D44-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\core\lzw">
-			<UniqueIdentifier>EEEE420E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D45-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\events">
-			<UniqueIdentifier>EEEE420F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D46-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\filesys">
-			<UniqueIdentifier>EEEE4210-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D47-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\game">
-			<UniqueIdentifier>EEEE4211-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D48-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\gfx">
-			<UniqueIdentifier>EEEE4212-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D49-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\map">
-			<UniqueIdentifier>EEEE4213-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D4A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\sound">
-			<UniqueIdentifier>EEEE4214-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D4B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima4\views">
-			<UniqueIdentifier>EEEE4215-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D4C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8">
-			<UniqueIdentifier>EEEE4216-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D4D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\audio">
-			<UniqueIdentifier>EEEE4217-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D4E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\conf">
-			<UniqueIdentifier>EEEE4218-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D4F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\convert">
-			<UniqueIdentifier>EEEE4219-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D50-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\convert\crusader">
-			<UniqueIdentifier>EEEE421A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D51-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\convert\u8">
-			<UniqueIdentifier>EEEE421B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D52-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\filesys">
-			<UniqueIdentifier>EEEE421C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D53-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\games">
-			<UniqueIdentifier>EEEE421D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D54-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\graphics">
-			<UniqueIdentifier>EEEE421E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D55-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\graphics\fonts">
-			<UniqueIdentifier>EEEE421F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D56-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\gumps">
-			<UniqueIdentifier>EEEE4220-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D57-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\gumps\widgets">
-			<UniqueIdentifier>EEEE4221-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D58-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\kernel">
-			<UniqueIdentifier>EEEE4222-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D59-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\misc">
-			<UniqueIdentifier>EEEE4223-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D5A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\usecode">
-			<UniqueIdentifier>EEEE4224-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D5B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\world">
-			<UniqueIdentifier>EEEE4225-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D5C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ultima8\world\actors">
-			<UniqueIdentifier>EEEE4226-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D5D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
-		<ClCompile Include="..\..\engines\ultima\detection.cpp" />
+		<ClCompile Include="..\..\engines\ultima\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\actors\actor.cpp">
 			<Filter>nuvie\actors</Filter>
 		</ClCompile>
@@ -835,9 +835,6 @@
 		<ClCompile Include="..\..\engines\ultima\shared\maps\map_widget.cpp">
 			<Filter>shared\maps</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\std\misc.cpp">
-			<Filter>shared\std</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\shared\std\string.cpp">
 			<Filter>shared\std</Filter>
 		</ClCompile>
@@ -1177,9 +1174,6 @@
 		<ClCompile Include="..\..\engines\ultima\ultima4\events\timed_event_mgr.cpp">
 			<Filter>ultima4\events</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima4\filesys\filesystem.cpp">
-			<Filter>ultima4\filesys</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima4\filesys\rle.cpp">
 			<Filter>ultima4\filesys</Filter>
 		</ClCompile>
@@ -1357,6 +1351,9 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\audio_sample.cpp">
 			<Filter>ultima8\audio</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\audio\cru_music_process.cpp">
+			<Filter>ultima8\audio</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\midi_player.cpp">
 			<Filter>ultima8\audio</Filter>
 		</ClCompile>
@@ -1367,9 +1364,6 @@
 			<Filter>ultima8\audio</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\raw_audio_sample.cpp">
-			<Filter>ultima8\audio</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\audio\remorse_music_process.cpp">
 			<Filter>ultima8\audio</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\sonarc_audio_sample.cpp">
@@ -1387,12 +1381,6 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\conf\config_file_manager.cpp">
 			<Filter>ultima8\conf</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\conf\ini_file.cpp">
-			<Filter>ultima8\conf</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\conf\setting_manager.cpp">
-			<Filter>ultima8\conf</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\convert\convert_shape.cpp">
 			<Filter>ultima8\convert</Filter>
 		</ClCompile>
@@ -1406,9 +1394,6 @@
 			<Filter>ultima8\filesys</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\archive_file.cpp">
-			<Filter>ultima8\filesys</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\data.cpp">
 			<Filter>ultima8\filesys</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\file_system.cpp">
@@ -1426,6 +1411,9 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\u8_save_file.cpp">
 			<Filter>ultima8\filesys</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\games\cru_game.cpp">
+			<Filter>ultima8\games</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\game.cpp">
 			<Filter>ultima8\games</Filter>
 		</ClCompile>
@@ -1433,9 +1421,6 @@
 			<Filter>ultima8\games</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\game_info.cpp">
-			<Filter>ultima8\games</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\games\remorse_game.cpp">
 			<Filter>ultima8\games</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\start_crusader_process.cpp">
@@ -1464,9 +1449,6 @@
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fade_to_modal_process.cpp">
 			<Filter>ultima8\graphics</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\fixed_width_font.cpp">
-			<Filter>ultima8\graphics\fonts</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\font.cpp">
 			<Filter>ultima8\graphics\fonts</Filter>
@@ -1519,9 +1501,6 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\palette_manager.cpp">
 			<Filter>ultima8\graphics</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\point_scaler.cpp">
-			<Filter>ultima8\graphics</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\raw_shape_frame.cpp">
 			<Filter>ultima8\graphics</Filter>
 		</ClCompile>
@@ -1544,18 +1523,6 @@
 			<Filter>ultima8\graphics</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\soft_render_surface.cpp">
-			<Filter>ultima8\graphics</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\texture.cpp">
-			<Filter>ultima8\graphics</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\texture_bitmap.cpp">
-			<Filter>ultima8\graphics</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\texture_png.cpp">
-			<Filter>ultima8\graphics</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\texture_targa.cpp">
 			<Filter>ultima8\graphics</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\type_flags.cpp">
@@ -1588,6 +1555,12 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_ammo_gump.cpp">
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_credits_gump.cpp">
+			<Filter>ultima8\gumps</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_demo_gump.cpp">
+			<Filter>ultima8\gumps</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_energy_gump.cpp">
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
@@ -1595,6 +1568,9 @@
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_inventory_gump.cpp">
+			<Filter>ultima8\gumps</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_menu_gump.cpp">
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_pickup_area_gump.cpp">
@@ -1613,6 +1589,9 @@
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\desktop_gump.cpp">
+			<Filter>ultima8\gumps</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\difficulty_gump.cpp">
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\fast_area_vis_gump.cpp">
@@ -1669,13 +1648,7 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\readable_gump.cpp">
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\remorse_menu_gump.cpp">
-			<Filter>ultima8\gumps</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\resizable_gump.cpp">
-			<Filter>ultima8\gumps</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\scaler_gump.cpp">
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\scroll_gump.cpp">
@@ -1696,6 +1669,12 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\u8_save_gump.cpp">
 			<Filter>ultima8\gumps</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\weasel_dat.cpp">
+			<Filter>ultima8\gumps</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\weasel_gump.cpp">
+			<Filter>ultima8\gumps</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\widgets\button_widget.cpp">
 			<Filter>ultima8\gumps\widgets</Filter>
 		</ClCompile>
@@ -1707,9 +1686,6 @@
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\widgets\text_widget.cpp">
 			<Filter>ultima8\gumps\widgets</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\core_app.cpp">
-			<Filter>ultima8\kernel</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\delay_process.cpp">
 			<Filter>ultima8\kernel</Filter>
@@ -1732,9 +1708,6 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\meta_engine.cpp">
 			<Filter>ultima8</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\misc\args.cpp">
-			<Filter>ultima8\misc</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\misc\debugger.cpp">
 			<Filter>ultima8\misc</Filter>
 		</ClCompile>
@@ -1742,9 +1715,6 @@
 			<Filter>ultima8\misc</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\misc\id_man.cpp">
-			<Filter>ultima8\misc</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\misc\istring.cpp">
 			<Filter>ultima8\misc</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\misc\util.cpp">
@@ -1798,6 +1768,12 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\animation_tracker.cpp">
 			<Filter>ultima8\world\actors</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\attack_process.cpp">
+			<Filter>ultima8\world\actors</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\auto_firer_process.cpp">
+			<Filter>ultima8\world\actors</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\avatar_death_process.cpp">
 			<Filter>ultima8\world\actors</Filter>
 		</ClCompile>
@@ -1819,7 +1795,13 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\combat_process.cpp">
 			<Filter>ultima8\world\actors</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\cru_avatar_mover_process.cpp">
+			<Filter>ultima8\world\actors</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\cru_healer_process.cpp">
+			<Filter>ultima8\world\actors</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\cru_pathfinder_process.cpp">
 			<Filter>ultima8\world\actors</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\grant_peace_process.cpp">
@@ -1840,6 +1822,9 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\npc_dat.cpp">
 			<Filter>ultima8\world\actors</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\pace_process.cpp">
+			<Filter>ultima8\world\actors</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\pathfinder.cpp">
 			<Filter>ultima8\world\actors</Filter>
 		</ClCompile>
@@ -1850,6 +1835,9 @@
 			<Filter>ultima8\world\actors</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\resurrection_process.cpp">
+			<Filter>ultima8\world\actors</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\rolling_thunder_process.cpp">
 			<Filter>ultima8\world\actors</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\scheduler_process.cpp">
@@ -1863,6 +1851,12 @@
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\teleport_to_egg_process.cpp">
 			<Filter>ultima8\world\actors</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\u8_avatar_mover_process.cpp">
+			<Filter>ultima8\world\actors</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\bobo_boomer_process.cpp">
+			<Filter>ultima8\world</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\camera_process.cpp">
 			<Filter>ultima8\world</Filter>
@@ -1958,6 +1952,7 @@
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\ultima\detection.h" />
 		<ClInclude Include="..\..\engines\ultima\detection_tables.h" />
+		<ClInclude Include="..\..\engines\ultima\metaengine.h" />
 		<ClInclude Include="..\..\engines\ultima\nuvie\actors\actor.h">
 			<Filter>nuvie\actors</Filter>
 		</ClInclude>
@@ -2660,9 +2655,6 @@
 		<ClInclude Include="..\..\engines\ultima\shared\std\containers.h">
 			<Filter>shared\std</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\shared\std\misc.h">
-			<Filter>shared\std</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\shared\std\string.h">
 			<Filter>shared\std</Filter>
 		</ClInclude>
@@ -3032,9 +3024,6 @@
 		<ClInclude Include="..\..\engines\ultima\ultima4\events\timed_event_mgr.h">
 			<Filter>ultima4\events</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima4\filesys\filesystem.h">
-			<Filter>ultima4\filesys</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima4\filesys\rle.h">
 			<Filter>ultima4\filesys</Filter>
 		</ClInclude>
@@ -3221,6 +3210,9 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\audio_sample.h">
 			<Filter>ultima8\audio</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\audio\cru_music_process.h">
+			<Filter>ultima8\audio</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\midi_player.h">
 			<Filter>ultima8\audio</Filter>
 		</ClInclude>
@@ -3231,9 +3223,6 @@
 			<Filter>ultima8\audio</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\raw_audio_sample.h">
-			<Filter>ultima8\audio</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\audio\remorse_music_process.h">
 			<Filter>ultima8\audio</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\sonarc_audio_sample.h">
@@ -3251,19 +3240,19 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\conf\config_file_manager.h">
 			<Filter>ultima8\conf</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\conf\ini_file.h">
-			<Filter>ultima8\conf</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\conf\setting_manager.h">
-			<Filter>ultima8\conf</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\convert_shape.h">
+			<Filter>ultima8\convert</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\convert\convert_usecode.h">
 			<Filter>ultima8\convert</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\crusader\convert_shape_crusader.h">
 			<Filter>ultima8\convert\crusader</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\crusader\convert_usecode_crusader.h">
+			<Filter>ultima8\convert\crusader</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\convert\crusader\convert_usecode_regret.h">
 			<Filter>ultima8\convert\crusader</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\u8\convert_shape_u8.h">
@@ -3284,13 +3273,7 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\flex_file.h">
 			<Filter>ultima8\filesys</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\idata_source.h">
-			<Filter>ultima8\filesys</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\named_archive_file.h">
-			<Filter>ultima8\filesys</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\odata_source.h">
 			<Filter>ultima8\filesys</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\raw_archive.h">
@@ -3302,6 +3285,9 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\u8_save_file.h">
 			<Filter>ultima8\filesys</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\games\cru_game.h">
+			<Filter>ultima8\games</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\game.h">
 			<Filter>ultima8\games</Filter>
 		</ClInclude>
@@ -3309,9 +3295,6 @@
 			<Filter>ultima8\games</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\game_info.h">
-			<Filter>ultima8\games</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\games\remorse_game.h">
 			<Filter>ultima8\games</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\start_crusader_process.h">
@@ -3340,9 +3323,6 @@
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\fade_to_modal_process.h">
 			<Filter>ultima8\graphics</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\fonts\fixed_width_font.h">
-			<Filter>ultima8\graphics\fonts</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\fonts\font.h">
 			<Filter>ultima8\graphics\fonts</Filter>
@@ -3386,9 +3366,6 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\main_shape_archive.h">
 			<Filter>ultima8\graphics</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\manips.h">
-			<Filter>ultima8\graphics</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\movie_player.h">
 			<Filter>ultima8\graphics</Filter>
 		</ClInclude>
@@ -3401,16 +3378,10 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\palette_manager.h">
 			<Filter>ultima8\graphics</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\point_scaler.h">
-			<Filter>ultima8\graphics</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\raw_shape_frame.h">
 			<Filter>ultima8\graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\render_surface.h">
-			<Filter>ultima8\graphics</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\scaler.h">
 			<Filter>ultima8\graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\shape.h">
@@ -3432,15 +3403,6 @@
 			<Filter>ultima8\graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\texture.h">
-			<Filter>ultima8\graphics</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\texture_bitmap.h">
-			<Filter>ultima8\graphics</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\texture_png.h">
-			<Filter>ultima8\graphics</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\texture_targa.h">
 			<Filter>ultima8\graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\type_flags.h">
@@ -3473,7 +3435,10 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_ammo_gump.h">
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_display_shapes.h">
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_credits_gump.h">
+			<Filter>ultima8\gumps</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_demo_gump.h">
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_energy_gump.h">
@@ -3483,6 +3448,9 @@
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_inventory_gump.h">
+			<Filter>ultima8\gumps</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_menu_gump.h">
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_pickup_area_gump.h">
@@ -3501,6 +3469,9 @@
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\desktop_gump.h">
+			<Filter>ultima8\gumps</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\difficulty_gump.h">
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\fast_area_vis_gump.h">
@@ -3557,13 +3528,7 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\readable_gump.h">
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\remorse_menu_gump.h">
-			<Filter>ultima8\gumps</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\resizable_gump.h">
-			<Filter>ultima8\gumps</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\scaler_gump.h">
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\scroll_gump.h">
@@ -3584,6 +3549,12 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\u8_save_gump.h">
 			<Filter>ultima8\gumps</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\weasel_dat.h">
+			<Filter>ultima8\gumps</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\weasel_gump.h">
+			<Filter>ultima8\gumps</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\widgets\button_widget.h">
 			<Filter>ultima8\gumps\widgets</Filter>
 		</ClInclude>
@@ -3595,9 +3566,6 @@
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\widgets\text_widget.h">
 			<Filter>ultima8\gumps\widgets</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\core_app.h">
-			<Filter>ultima8\kernel</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\delay_process.h">
 			<Filter>ultima8\kernel</Filter>
@@ -3620,10 +3588,10 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\meta_engine.h">
 			<Filter>ultima8</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\misc\args.h">
+		<ClInclude Include="..\..\engines\ultima\ultima8\misc\box.h">
 			<Filter>ultima8\misc</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\misc\box.h">
+		<ClInclude Include="..\..\engines\ultima\ultima8\misc\classtype.h">
 			<Filter>ultima8\misc</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\common_types.h">
@@ -3647,12 +3615,6 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\istring.h">
 			<Filter>ultima8\misc</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\misc\memset_n.h">
-			<Filter>ultima8\misc</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\ultima\ultima8\misc\p_dynamic_cast.h">
-			<Filter>ultima8\misc</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\pent_include.h">
 			<Filter>ultima8\misc</Filter>
 		</ClInclude>
@@ -3660,6 +3622,9 @@
 			<Filter>ultima8\misc</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\rect.h">
+			<Filter>ultima8\misc</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\misc\stream_util.h">
 			<Filter>ultima8\misc</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\util.h">
@@ -3678,6 +3643,9 @@
 			<Filter>ultima8\usecode</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\intrinsics.h">
+			<Filter>ultima8\usecode</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\regret_intrinsics.h">
 			<Filter>ultima8\usecode</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\remorse_intrinsics.h">
@@ -3728,6 +3696,12 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\animation_tracker.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\attack_process.h">
+			<Filter>ultima8\world\actors</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\auto_firer_process.h">
+			<Filter>ultima8\world\actors</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\avatar_death_process.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
@@ -3749,7 +3723,13 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\combat_process.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\cru_avatar_mover_process.h">
+			<Filter>ultima8\world\actors</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\cru_healer_process.h">
+			<Filter>ultima8\world\actors</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\cru_pathfinder_process.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\grant_peace_process.h">
@@ -3773,6 +3753,9 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\npc_dat.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\pace_process.h">
+			<Filter>ultima8\world\actors</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\pathfinder.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
@@ -3783,6 +3766,9 @@
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\resurrection_process.h">
+			<Filter>ultima8\world\actors</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\rolling_thunder_process.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\scheduler_process.h">
@@ -3800,10 +3786,16 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\treasure_info.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\u8_avatar_mover_process.h">
+			<Filter>ultima8\world\actors</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\weapon_overlay.h">
 			<Filter>ultima8\world\actors</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\armour_info.h">
+			<Filter>ultima8\world</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\bobo_boomer_process.h">
 			<Filter>ultima8\world</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\camera_process.h">
@@ -3879,6 +3871,9 @@
 			<Filter>ultima8\world</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\snap_process.h">
+			<Filter>ultima8\world</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\sort_item.h">
 			<Filter>ultima8\world</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\split_item_process.h">

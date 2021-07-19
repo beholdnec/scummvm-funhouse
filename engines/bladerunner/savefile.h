@@ -60,7 +60,9 @@ struct SaveFileHeader {
 class SaveFileManager {
 private:
 	static const uint32 kTag = MKTAG('B', 'R', 'S', 'V');
-	static const uint32 kVersion = 3; // kVersion: 3 as of Feb 5th 2020 (UTC) - ScummVM development version 2.2.0git
+	// kVersion: 3 as of Feb 5th 2020 (UTC) - ScummVM development version 2.2.0git
+	// kVersion: 4 as of Apr 17th 2021 - Added full-size thumbnails
+	static const uint32 kVersion = 4;
 
 public:
 	// kVersion
@@ -93,7 +95,7 @@ public:
 
 	uint32 write(const void *dataPtr, uint32 dataSize) override { return _s.write(dataPtr, dataSize); }
 	bool flush() override { return _s.flush(); }
-	int32 pos() const override { return _s.pos(); }
+	int64 pos() const override { return _s.pos(); }
 
 	void debug(char *p);
 
@@ -118,9 +120,9 @@ public:
 
 	bool eos() const override { return _s.eos(); }
 	uint32 read(void *dataPtr, uint32 dataSize) override { return _s.read(dataPtr, dataSize); }
-	int32 pos() const override { return _s.pos(); }
-	int32 size() const override { return _s.size(); }
-	bool seek(int32 offset, int whence = SEEK_SET) override { return _s.seek(offset, whence); }
+	int64 pos() const override { return _s.pos(); }
+	int64 size() const override { return _s.size(); }
+	bool seek(int64 offset, int whence = SEEK_SET) override { return _s.seek(offset, whence); }
 
 	int32 readInt();
 	float readFloat();

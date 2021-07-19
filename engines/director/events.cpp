@@ -86,13 +86,12 @@ void DirectorEngine::processEvents() {
 }
 
 bool Window::processEvent(Common::Event &event) {
-	if (MacWindow::processEvent(event))
-		return true;
+	bool flag = MacWindow::processEvent(event);
 
 	if (_currentMovie && _currentMovie->processEvent(event))
-		return true;
+		flag = true;
 
-	return false;
+	return flag;
 }
 
 bool Movie::processEvent(Common::Event &event) {
@@ -113,6 +112,18 @@ bool Movie::processEvent(Common::Event &event) {
 		_lastRollTime =	 _lastEventTime;
 
 		sc->renderCursor(pos);
+
+		// hiliteChannelId is specified for BitMap castmember, so we deal with them separately with other castmember
+		// if we are moving out of bounds, then we don't hilite it anymore
+		if (_currentHiliteChannelId && !sc->_channels[_currentHiliteChannelId]->isMouseIn(pos)) {
+			g_director->getCurrentWindow()->setDirty(true);
+			g_director->getCurrentWindow()->addDirtyRect(sc->_channels[_currentHiliteChannelId]->getBbox());
+			_currentHiliteChannelId = 0;
+			_currentHandlingChannelId = 0;
+		}
+
+		if (_currentHandlingChannelId && !sc->_channels[_currentHandlingChannelId]->getBbox().contains(pos))
+			_currentHandlingChannelId = 0;
 
 		if (_currentDraggedChannel) {
 			if (_currentDraggedChannel->_sprite->_moveable) {
@@ -135,11 +146,19 @@ bool Movie::processEvent(Common::Event &event) {
 
 			// D3 doesn't have both mouse up and down.
 			// But we still want to know if the mouse is down for press effects.
-			spriteId = sc->getMouseSpriteIDFromPos(pos);
+			// Since we don't have mouse up and down before D3, then we use ActiveSprite
+			if (g_director->getVersion() < 400)
+				spriteId = sc->getActiveSpriteIDFromPos(pos);
+			else
+				spriteId = sc->getMouseSpriteIDFromPos(pos);
 			_currentClickOnSpriteId = sc->getActiveSpriteIDFromPos(pos);
+			_currentHandlingChannelId = spriteId;
 
-			if (spriteId > 0 && sc->_channels[spriteId]->_sprite->shouldHilite())
-				g_director->getCurrentWindow()->invertChannel(sc->_channels[spriteId]);
+			if (spriteId > 0 && sc->_channels[spriteId]->_sprite->shouldHilite()) {
+				_currentHiliteChannelId = spriteId;
+				g_director->getCurrentWindow()->setDirty(true);
+				g_director->getCurrentWindow()->addDirtyRect(sc->_channels[_currentHiliteChannelId]->getBbox());
+			}
 
 			_lastEventTime = g_director->getMacTicks();
 			_lastClickTime = _lastEventTime;
@@ -159,24 +178,28 @@ bool Movie::processEvent(Common::Event &event) {
 	case Common::EVENT_LBUTTONUP:
 		pos = _window->getMousePos();
 
-		spriteId = sc->getMouseSpriteIDFromPos(pos);
 		_currentClickOnSpriteId = sc->getActiveSpriteIDFromPos(pos);
 
-		if (spriteId > 0 && sc->_channels[spriteId]->_sprite->shouldHilite())
-			g_director->getCurrentWindow()->invertChannel(sc->_channels[spriteId]);
+		if (_currentHiliteChannelId && sc->_channels[_currentHiliteChannelId]) {
+			g_director->getCurrentWindow()->setDirty(true);
+			g_director->getCurrentWindow()->addDirtyRect(sc->_channels[_currentHiliteChannelId]->getBbox());
+		}
 
-		debugC(3, kDebugEvents, "event: Button Up @(%d, %d), movie '%s', sprite id: %d", pos.x, pos.y, _macName.c_str(), spriteId);
+		debugC(3, kDebugEvents, "event: Button Up @(%d, %d), movie '%s', sprite id: %d", pos.x, pos.y, _macName.c_str(), _currentHandlingChannelId);
 
 		_currentDraggedChannel = nullptr;
 
-		{
-			CastMember *cast = getCastMember(sc->getSpriteById(spriteId)->_castId);
+		if (_currentHandlingChannelId) {
+			CastMember *cast = getCastMember(sc->_channels[_currentHandlingChannelId]->_sprite->_castId);
 			if (cast && cast->_type == kCastButton)
 				cast->_hilite = !cast->_hilite;
 		}
 
-		registerEvent(kEventMouseUp, spriteId);
+		registerEvent(kEventMouseUp, _currentHandlingChannelId);
 		sc->renderCursor(pos);
+
+		_currentHiliteChannelId = 0;
+		_currentHandlingChannelId = 0;
 		return true;
 
 	case Common::EVENT_KEYDOWN:

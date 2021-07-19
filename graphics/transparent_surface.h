@@ -35,15 +35,19 @@
  *
  */
 
-#ifdef SCUMM_LITTLE_ENDIAN
-#define TS_RGB(R,G,B)       (uint32)((0xff << 24) | ((R) << 16) | ((G) << 8) | (B))
+#define TS_RGB(R,G,B)       (uint32)(((R) << 24) | ((G) << 16) | ((B) << 8) | 0xff)
 #define TS_ARGB(A,R,G,B)    (uint32)(((R) << 24) | ((G) << 16) | ((B) << 8) | (A))
-#else
-#define TS_RGB(R,G,B)       (uint32)(((R) << 24) | ((G) << 16) | (B << 8) | 0xff)
-#define TS_ARGB(A,R,G,B)    (uint32)(((R) << 24) | ((G) << 16) | ((B) << 8) | (A))
-#endif
 
 namespace Graphics {
+
+/**
+ * @defgroup graphics_transparent_surface Transparent surface
+ * @ingroup graphics
+ *
+ * @brief TransparentSurface class.
+ *
+ * @{
+ */
 
 // Enums
 /**
@@ -68,11 +72,6 @@ enum AlphaType {
 	ALPHA_FULL = 2
 };
 
-enum TFilteringMode {
-	FILTER_NEAREST = 0,
-	FILTER_BILINEAR = 1
-};
-
 /**
  * A transparent graphics surface, which implements alpha blitting.
  */
@@ -91,9 +90,6 @@ struct TransparentSurface : public Graphics::Surface {
 	static PixelFormat getSupportedPixelFormat() {
 		return PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0);
 	}
-
-	void setColorKey(char r, char g, char b);
-	void disableColorKey();
 
 	/**
 	 @brief renders the surface to another surface
@@ -148,19 +144,17 @@ struct TransparentSurface : public Graphics::Surface {
 	 * @param filtering Whether or not to use bilinear filtering.
 	 * @see TransformStruct
 	 */
-	TransparentSurface *scale(uint16 newWidth, uint16 newHeight, bool filtering = false) const;
+	TransparentSurface *scale(int16 newWidth, int16 newHeight, bool filtering = false) const;
 
 	/**
 	 * @brief Rotoscale function; this returns a transformed version of this surface after rotation and
 	 * scaling. Please do not use this if angle == 0, use plain old scaling function.
 	 *
 	 * @param transform a TransformStruct wrapping the required info. @see TransformStruct
+	 * @param filtering Whether or not to use bilinear filtering.
 	 *
 	 */
-	template <TFilteringMode filteringMode>
-	TransparentSurface *rotoscaleT(const TransformStruct &transform) const;
-
-	TransparentSurface *rotoscale(const TransformStruct &transform) const;
+	TransparentSurface *rotoscale(const TransformStruct &transform, bool filtering = false) const;
 
 	TransparentSurface *convertTo(const PixelFormat &dstFormat, const byte *palette = 0) const;
 
@@ -183,12 +177,12 @@ private:
  * This deleter assures Surface::free is called on deletion.
  */
 /*struct SharedPtrTransparentSurfaceDeleter {
-    void operator()(TransparentSurface *ptr) {
-        ptr->free();
-        delete ptr;
-    }
+	void operator()(TransparentSurface *ptr) {
+		ptr->free();
+		delete ptr;
+	}
 };*/
-
+/** @} */
 } // End of namespace Graphics
 
 

@@ -32,6 +32,7 @@
 #include "scumm/imuse_digi/dimuse.h"
 #ifdef ENABLE_HE
 #include "scumm/he/intern_he.h"
+#include "scumm/he/localizer.h"
 #endif
 #include "scumm/resource.h"
 #include "scumm/scumm.h"
@@ -39,6 +40,8 @@
 #include "scumm/scumm_v8.h"
 #include "scumm/verbs.h"
 #include "scumm/he/sound_he.h"
+
+#include "scumm/ks_check.h"
 
 namespace Scumm {
 
@@ -96,7 +99,7 @@ void ScummEngine::debugMessage(const byte *msg) {
 		b = buffer[10] | (buffer[11] << 8) | (buffer[14] << 16) | (buffer[15] << 24);
 
 		// Sam and Max uses a caching system, printing empty messages
-		// and setting VAR_V6_SOUNDMODE beforehand. See patch 609791.
+		// and setting VAR_V6_SOUNDMODE beforehand. See patch #8051.
 		if (_game.id == GID_SAMNMAX)
 			channel = VAR(VAR_V6_SOUNDMODE);
 
@@ -115,7 +118,7 @@ void ScummEngine::showMessageDialog(const byte *msg) {
 	if (_string[3].color == 0)
 		_string[3].color = 4;
 
-	InfoDialog dialog(this, (char *)buf);
+	InfoDialog dialog(this, Common::U32String((char *)buf));
 	VAR(VAR_KEYPRESS) = runDialog(dialog);
 }
 
@@ -128,6 +131,17 @@ void ScummEngine::showMessageDialog(const byte *msg) {
 void ScummEngine_v6::enqueueText(const byte *text, int x, int y, byte color, byte charset, bool center) {
 	BlastText &bt = _blastTextQueue[_blastTextQueuePos++];
 	assert(_blastTextQueuePos <= ARRAYSIZE(_blastTextQueue));
+
+	if (_useCJKMode) {
+		// The Dig expressly checks for x == 160 && y == 189 && charset == 3. Usually, if the game wants to print CJK text at the bottom
+		// of the screen it will use y = 183. So maybe this is a hack to fix some script texts that weren forgotten in the CJK converting
+		// process.
+		if (_game.id == GID_DIG && x == 160 && y == 189 && charset == 3)
+			y -= 6;
+		// COMI always adds a y-offset of 2 in CJK mode.
+		if (_game.id == GID_CMI)
+			y += 2;
+	}
 
 	convertMessageToString(text, bt.text, sizeof(bt.text));
 	bt.xpos = x;
@@ -170,7 +184,7 @@ void ScummEngine_v6::drawBlastTexts() {
 			do {
 				c = *buf++;
 
-				// FIXME: This is a workaround for bugs #864030 and #1399843:
+				// FIXME: This is a workaround for bugs #1347 and #2440:
 				// In COMI, some text contains ASCII character 11 = 0xB. It's
 				// not quite clear what it is good for; so for now we just ignore
 				// it, which seems to match the original engine (BTW, traditionally,
@@ -180,7 +194,7 @@ void ScummEngine_v6::drawBlastTexts() {
 
 				// Some localizations may override colors
 				// See credits in Chinese COMI
-				if (_game.id == GID_CMI &&	_language == Common::ZH_TWN &&
+				if (_game.id == GID_CMI && _language == Common::ZH_TWN &&
 				      c == '^' && (buf == _blastTextQueue[i].text + 1)) {
 					if (*buf == 'c') {
 						int color = buf[3] - '0' + 10 *(buf[2] - '0');
@@ -191,7 +205,7 @@ void ScummEngine_v6::drawBlastTexts() {
 					}
 				}
 
-				if (c != 0 && c != 0xFF && c != '\n') {
+				if (c != 0 && c != 0xFF && c != '\n' && c != _newLineCharacter) {
 					if (c & 0x80 && _useCJKMode) {
 						if (_language == Common::JA_JPN && !checkSJISCode(c)) {
 							c = 0x20; //not in S-JIS
@@ -323,7 +337,11 @@ bool ScummEngine::handleNextCharsetCode(Actor *a, int *code) {
 			talk_sound_b = buffer[8] | (buffer[9] << 8) | (buffer[12] << 16) | (buffer[13] << 24);
 			buffer += 14;
 			if (_game.heversion >= 60) {
+#ifdef ENABLE_HE
+				((SoundHE *)_sound)->startHETalkSound(_localizer ? _localizer->mapTalk(talk_sound_a) : talk_sound_a);
+#else
 				((SoundHE *)_sound)->startHETalkSound(talk_sound_a);
+#endif
 			} else {
 				_sound->talkSound(talk_sound_a, talk_sound_b, 2);
 			}
@@ -393,7 +411,7 @@ bool ScummEngine_v72he::handleNextCharsetCode(Actor *a, int *code) {
 			}
 			value[i] = 0;
 			//talk_sound_b = atoi(value);
-			((SoundHE *)_sound)->startHETalkSound(talk_sound_a);
+			((SoundHE *)_sound)->startHETalkSound(_localizer ? _localizer->mapTalk(talk_sound_a) : talk_sound_a);
 			break;
 		case 104:
 			_haveMsg = 0;
@@ -416,7 +434,7 @@ bool ScummEngine_v72he::handleNextCharsetCode(Actor *a, int *code) {
 			value[i] = 0;
 			talk_sound_a = atoi(value);
 			//talk_sound_b = 0;
-			((SoundHE *)_sound)->startHETalkSound(talk_sound_a);
+			((SoundHE *)_sound)->startHETalkSound(_localizer ? _localizer->mapTalk(talk_sound_a) : talk_sound_a);
 			break;
 		case 119:
 			_haveMsg = 0xFF;
@@ -438,7 +456,12 @@ bool ScummEngine::newLine() {
 	if (_charset->_center) {
 		_nextLeft -= _charset->getStringWidth(0, _charsetBuffer + _charsetBufPos) / 2;
 		if (_nextLeft < 0)
-			_nextLeft = _game.version >= 6 ? _string[0].xpos : 0;
+			// The commented out part of the next line was meant as a fix for Kanji text glitches in DIG.
+			// But these glitches couldn't be reproduced in recent tests. So the underlying issue might
+			// have been taken care of in a different manner. And the fix actually caused other text glitches
+			// (FT/German, if you look at the sign on the container at game start). After counterchecking
+			// the original code it seems that setting _nextLeft to 0 is the right thing to do here.
+			_nextLeft = /*_game.version >= 6 ? _string[0].xpos :*/ 0;
 	} else if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _language == Common::HE_ISR) {
 		if (_game.id == GID_MONKEY && _charset->getCurID() == 4) {
 			_nextLeft = _screenWidth - _charset->getStringWidth(0, _charsetBuffer + _charsetBufPos) - _nextLeft;
@@ -638,7 +661,7 @@ void ScummEngine::CHARSET_1() {
 		memcpy(_charsetColorMap, _charsetData[_charset->getCurID()], 4);
 
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
-	if (_keepText && _game.platform == Common::kPlatformFMTowns)
+	if (_game.platform == Common::kPlatformFMTowns && (_keepText || _haveMsg == 0xFF))
 		memcpy(&_charset->_str, &_curStringRect, sizeof(Common::Rect));
 #endif
 
@@ -658,7 +681,11 @@ void ScummEngine::CHARSET_1() {
 		return;
 	}
 
-	if (a && !_string[0].no_talk_anim) {
+	// The second check is from LOOM DOS EGA disasm. It prevents weird speech animations
+	// with empty strings (bug #990). The same code is present in actorTalk(). The FM-Towns
+	// versions don't have such code, but I do not get the weird speech animations either.
+	// So apparently it is not needed there.
+	if (a && !_string[0].no_talk_anim && !(_game.id == GID_LOOM && _game.platform != Common::kPlatformFMTowns && !_charsetBuffer[_charsetBufPos])) {
 		a->runActorTalkScript(a->_talkStartFrame);
 		_useTalkAnims = true;
 	}
@@ -714,6 +741,9 @@ void ScummEngine::CHARSET_1() {
 		fakeBidiString(_charsetBuffer + _charsetBufPos, true);
 	}
 
+	bool createTextBox = (_macScreen && _game.id == GID_INDY3);
+	bool drawTextBox = false;
+
 	while (handleNextCharsetCode(a, &c)) {
 		if (c == 0) {
 			// End of text reached, set _haveMsg accordingly
@@ -735,7 +765,7 @@ void ScummEngine::CHARSET_1() {
 			continue;
 		}
 
-		// Handle line overflow for V3. See also bug #1306269.
+		// Handle line overflow for V3. See also bug #2213.
 		if (_game.version == 3 && _nextLeft >= _screenWidth) {
 			_nextLeft = _screenWidth;
 		}
@@ -747,6 +777,13 @@ void ScummEngine::CHARSET_1() {
 
 		_charset->_left = _nextLeft;
 		_charset->_top = _nextTop;
+
+		if (createTextBox) {
+			if (!_keepText)
+				mac_createIndy3TextBox(a);
+			createTextBox = false;
+			drawTextBox = true;
+		}
 
 		if (_game.version >= 7) {
 #ifdef ENABLE_SCUMM_7_8
@@ -760,7 +797,7 @@ void ScummEngine::CHARSET_1() {
 #endif
 		} else {
 			if (c & 0x80 && _useCJKMode) {
-				if (checkSJISCode(c)) {
+				if (is2ByteCharacter(_language, c)) {
 					byte *buffer = _charsetBuffer + _charsetBufPos;
 					c += *buffer++ * 256; //LE
 					_charsetBufPos = buffer - _charsetBuffer;
@@ -786,6 +823,9 @@ void ScummEngine::CHARSET_1() {
 			_nextLeft = _charset->_left;
 			_nextTop = _charset->_top;
 		}
+
+		if (drawTextBox)
+			mac_drawIndy3TextBox();
 
 		if (_game.version <= 2) {
 			_talkDelay += _defaultTalkDelay;
@@ -996,8 +1036,8 @@ void ScummEngine::drawString(int a, const byte *msg) {
 	_charset->setCurID(_string[a].charset);
 
 	// HACK: Correct positions of text in books in Indy3 Mac.
-	// See also patch #1851568.
-	if (_game.id == GID_INDY3 && _game.platform == Common::kPlatformMacintosh && a == 1) {
+	// See also bug #8759. Not needed when using the Mac font.
+	if (_game.id == GID_INDY3 && _game.platform == Common::kPlatformMacintosh && a == 1 && !_macScreen) {
 		if (_currentRoom == 75) {
 			// Grail Diary Page 1 (Library)
 			if (_charset->_startLeft < 160)
@@ -1049,28 +1089,9 @@ void ScummEngine::drawString(int a, const byte *msg) {
 	} else if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _game.id != GID_SAMNMAX && _language == Common::HE_ISR) {
 		// Ignore INDY4 verbs (but allow dialogue)
 		if (_game.id != GID_INDY4 || buf[0] == 127) {
-			int ll = 0;
-			if (_game.id == GID_INDY4 && buf[0] == 127) {
+			if (_game.id == GID_INDY4)
 				buf[0] = 32;
-				ll++;
-			}
-
-			// Skip control characters as they might contain '\0' which results in incorrect string width.
-			byte *ltext = buf;
-			while (ltext[ll] == 0xFF) {
-				ll += 4;
-			}
-			byte lenbuf[270];
-			memset(lenbuf, 0, sizeof(lenbuf));
-			int pos = ll;
-			while (ltext[pos]) {
-				if ((ltext[pos] == 0xFF || (_game.version <= 6 && ltext[pos] == 0xFE)) && ltext[pos+1] == 8) {
-					break;
-				}
-				pos++;
-			}
-			memcpy(lenbuf, ltext, pos);
-			_charset->_left = _screenWidth - _charset->_startLeft - _charset->getStringWidth(a, lenbuf);
+			_charset->_left = _screenWidth - _charset->_startLeft - _charset->getStringWidth(a, buf);
 		}
 	}
 
@@ -1115,24 +1136,7 @@ void ScummEngine::drawString(int a, const byte *msg) {
 				if (_charset->_center) {
 					_charset->_left = _charset->_startLeft - _charset->getStringWidth(a, buf + i);
 				} else if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _language == Common::HE_ISR) {
-					// Skip control characters as they might contain '\0' which results in incorrect string width.
-					int ll = 0;
-					byte *ltext = buf + i;
-					while (ltext[ll] == 0xFF) {
-						ll += 4;
-					}
-					byte lenbuf[270];
-					memset(lenbuf, 0, sizeof(lenbuf));
-					memcpy(lenbuf, ltext, ll);
-					int u = ll;
-					while (ltext[u]) {
-						if ((ltext[u] == 0xFF || (_game.version <= 6 && ltext[u] == 0xFE)) && ltext[u + 1] == 8) {
-							break;
-						}
-						u++;
-					}
-					memcpy(lenbuf, ltext, u);
-					_charset->_left = _screenWidth - _charset->_startLeft - _charset->getStringWidth(a, lenbuf);
+					_charset->_left = _screenWidth - _charset->_startLeft - _charset->getStringWidth(a, buf + i);
 				} else {
 					_charset->_left = _charset->_startLeft;
 				}
@@ -1171,7 +1175,7 @@ void ScummEngine::drawString(int a, const byte *msg) {
 				}
 			}
 			if (c & 0x80 && _useCJKMode) {
-				if (checkSJISCode(c))
+				if (is2ByteCharacter(_language, c))
 					c += buf[i++] * 256;
 			}
 			_charset->printChar(c, true);
@@ -1199,7 +1203,7 @@ int ScummEngine::convertMessageToString(const byte *msg, byte *dst, int dstSize)
 	byte lastChr = 0;
 	const byte *src;
 	byte *end;
-	byte transBuf[384];
+	byte transBuf[2048];
 
 	assert(dst);
 	end = dst + dstSize;
@@ -1209,7 +1213,7 @@ int ScummEngine::convertMessageToString(const byte *msg, byte *dst, int dstSize)
 		return 0;
 	}
 
-	if (_game.version >= 7) {
+	if (_game.version >= 7 || isScummvmKorTarget()) {
 		translateText(msg, transBuf);
 		src = transBuf;
 	} else {
@@ -1244,7 +1248,7 @@ int ScummEngine::convertMessageToString(const byte *msg, byte *dst, int dstSize)
 		if (chr == 0xFF) {
 			chr = src[num++];
 
-			// WORKAROUND for bug #985948, a script bug in Indy3. Apparently,
+			// WORKAROUND for bug #1675, a script bug in Indy3. Apparently,
 			// a german 'sz' was encoded incorrectly as 0xFF2E. We replace
 			// this by the correct encoding here. See also ScummEngine::resStrLen().
 			if (_game.id == GID_INDY3 && chr == 0x2E) {
@@ -1252,7 +1256,7 @@ int ScummEngine::convertMessageToString(const byte *msg, byte *dst, int dstSize)
 				continue;
 			}
 
-			// WORKAROUND for bug #1514457: Yet another script bug in Indy3.
+			// WORKAROUND for bug #2715: Yet another script bug in Indy3.
 			// Once more a german 'sz' was encoded incorrectly, but this time
 			// they simply encoded it as 0xFF instead of 0xE1. Happens twice
 			// in script 71.
@@ -1302,7 +1306,7 @@ int ScummEngine::convertMessageToString(const byte *msg, byte *dst, int dstSize)
 				num += (_game.version == 8) ? 4 : 2;
 			}
 		} else {
-			if ((chr != '@') || (_game.id == GID_CMI && _language == Common::ZH_TWN) ||
+			if ((chr != '@') || (_game.version >= 7 && is2ByteCharacter(_language, lastChr)) ||
 				(_game.id == GID_LOOM && _game.platform == Common::kPlatformPCEngine && _language == Common::JA_JPN) ||
 				(_game.platform == Common::kPlatformFMTowns && _language == Common::JA_JPN && checkSJISCode(lastChr))) {
 				*dst++ = chr;
@@ -1387,13 +1391,78 @@ int ScummEngine::convertIntMessage(byte *dst, int dstSize, int var) {
 int ScummEngine::convertVerbMessage(byte *dst, int dstSize, int var) {
 	int num, k;
 
+	bool isKorVerbGlue = false;
+
+	if (isScummvmKorTarget() && _useCJKMode && var & (1 << 15)) {
+		isKorVerbGlue = true;
+		var &= ~(1 << 15);
+	}
+
 	num = readVar(var);
 	if (num) {
 		for (k = 1; k < _numVerbs; k++) {
-			// Fix ZAK FM-TOWNS bug #1013617 by emulating exact (inconsistant?) behavior of the original code
+			// Fix ZAK FM-TOWNS bug #1734 by emulating exact (inconsistant?) behavior of the original code
 			if (num == _verbs[k].verbid && !_verbs[k].type && (!_verbs[k].saveid || (_game.version == 3 && _game.platform == Common::kPlatformFMTowns))) {
-				const byte *ptr = getResourceAddress(rtVerb, k);
-				return convertMessageToString(ptr, dst, dstSize);
+				// Process variation of Korean postpositions
+				// Used by Korean fan translated games (monkey1, monkey2)
+				if (isKorVerbGlue) {
+					static const byte code0380[4] = {0xFF, 0x07, 0x03, 0x80};                                 // "eul/reul"
+					static const byte code0480[4] = {0xFF, 0x07, 0x04, 0x80};                                 // "wa/gwa"
+					static const byte codeWalkTo[9] = {0xFF, 0x07, 0x03, 0x80, 0x20, 0xC7, 0xE2, 0xC7, 0xD8}; // "eul/reul hyang-hae"
+					byte _transText[10];
+					memset(_transText, 0, sizeof(_transText));
+					// WORKAROUND: MI Korean verb parser
+					if (_game.id == GID_MONKEY_VGA) {
+						switch (_verbs[k].verbid) {
+							case 1:		// Open
+							case 2:		// Close
+							case 3:		// Give
+							case 4:		// Turn on
+							case 5:		// Turn off
+							case 6:		// Push
+							case 7:		// Pull
+							case 8:		// Use
+							case 9:		// Look at
+							case 10:	// Walk to
+								memcpy(_transText, codeWalkTo, 9);
+								break;
+							case 11:	// Pick up
+								memcpy(_transText, code0380, 4);
+								break;
+							case 13:	// Talk to
+								memcpy(_transText, code0480, 4);
+								break;
+						}
+						return convertMessageToString(_transText, dst, dstSize);
+					}
+					// WORKAROUND: MI2 Korean verb parser
+					if (_game.id == GID_MONKEY2) {
+						if (_verbs[k].verbid <= 11) {
+							switch (_verbs[k].verbid) {
+								case 2:		// Open
+								case 3:		// Close
+								case 4:		// Give
+								case 5:		// Push
+								case 6:		// Pull
+								case 7:		// Use
+								case 8:		// Look at
+								case 9:		// Pick up
+									memcpy(_transText, code0380, 4);
+									break;
+								case 10:	// Talk to
+									memcpy(_transText, code0480, 4);
+									break;
+								case 11:	// Walk to
+									memcpy(_transText, codeWalkTo, 9);
+									break;
+							}
+							return convertMessageToString(_transText, dst, dstSize);
+						}
+					}
+				} else {
+					const byte *ptr = getResourceAddress(rtVerb, k);
+					return convertMessageToString(ptr, dst, dstSize);
+				}
 			}
 		}
 	}
@@ -1407,7 +1476,28 @@ int ScummEngine::convertNameMessage(byte *dst, int dstSize, int var) {
 	if (num) {
 		const byte *ptr = getObjOrActorName(num);
 		if (ptr) {
-			return convertMessageToString(ptr, dst, dstSize);
+			int increment = convertMessageToString(ptr, dst, dstSize);
+			// Save the final consonant (jongsung) of the last Korean character
+			// Used by Korean fan translated games (monkey1, monkey2)
+			if (isScummvmKorTarget() && _useCJKMode) {
+				_krStrPost = 0;
+				int len = resStrLen(ptr);
+				if (len >= 2) {
+					for (int i = len; i > 1; i--) {
+						byte k1 = ptr[i - 2];
+						byte k2 = ptr[i - 1];
+						if (checkKSCode(k1, k2)) {
+							int jongsung = checkJongsung(k1, k2);
+							if (jongsung)
+								_krStrPost |= 1;
+							if (jongsung == 8) // 'ri-eul' final consonant
+								_krStrPost |= (1 << 1);
+							break;
+						}
+					}
+				}
+			}
+			return increment;
 		}
 	}
 	return 0;
@@ -1432,10 +1522,46 @@ int ScummEngine::convertStringMessage(byte *dst, int dstSize, int var) {
 	if (_game.version == 3 || (_game.version >= 6 && _game.heversion < 72))
 		var = readVar(var);
 
-	if (var) {
+	// Process variation of Korean postpositions
+	// Used by Korean fan translated games (monkey1, monkey2)
+	if (isScummvmKorTarget() && _useCJKMode && (var & (1 << 15))) {
+		int idx;
+		static const byte codeIdx[] = {0x00, 0x00, 0xC0, 0xB8, 0x00, 0x00, 0xC0, 0xCC, 0xB0, 0xA1, 0xC0, 0xCC, 0xB8, 0xA6, 0xC0, 0xBB, 0xBF, 0xCD, 0xB0, 0xFA, 0xB4, 0xC2, 0xC0, 0xBA};
+
+		if ((var & ~(1 << 15)) == 0)
+			idx = (2 * (var & ~(1 << 15)) + (_krStrPost & 1) - bool(_krStrPost & 2)) * 2;
+		else
+			idx = (2 * (var & ~(1 << 15)) + (_krStrPost & 1)) * 2;
+
+		byte _transText[3];
+		const byte byteIdx[] = {codeIdx[idx], codeIdx[idx + 1]};
+
+		memset(_transText, 0, sizeof(_transText));
+		memcpy(_transText, byteIdx, 2);
+
+		return convertMessageToString(_transText, dst, dstSize);
+	} else if (var) {
 		ptr = getStringAddress(var);
 		if (ptr) {
-			return convertMessageToString(ptr, dst, dstSize);
+			int increment = convertMessageToString(ptr, dst, dstSize);
+			// Save the final consonant (jongsung) of the last Korean character
+			// Used by Korean fan translated games (monkey1, monkey2)
+			if (isScummvmKorTarget() && _useCJKMode) {
+				_krStrPost = 0;
+				for (int i = resStrLen(ptr); i > 1; i--) {
+					byte k1 = ptr[i - 2];
+					byte k2 = ptr[i - 1];
+					if (checkKSCode(k1, k2)) {
+						int jongsung = checkJongsung(k1, k2);
+						if (jongsung)
+							_krStrPost |= 1;
+						if (jongsung == 8)	// 'ri-eul' final consonant
+							_krStrPost |= (1 << 1);
+						break;
+					}
+				}
+			}
+			return increment;
 		}
 	}
 	return 0;
@@ -1485,16 +1611,13 @@ static int indexCompare(const void *p1, const void *p2) {
 
 // Create an index of the language file.
 void ScummEngine_v7::loadLanguageBundle() {
-	ScummFile file;
-	int32 size;
-
-	// if game is manually set to English, don't try to load localized text
-	if ((_language == Common::EN_ANY) || (_language == Common::EN_USA) || (_language == Common::EN_GRB)) {
-		warning("Language file is forced to be ignored");
-
-		_existLanguageFile = false;
+	if (isScummvmKorTarget()) {
+		// Support language bundle for FT
+		ScummEngine::loadLanguageBundle();
 		return;
 	}
+	ScummFile file;
+	int32 size;
 
 	if (_game.id == GID_DIG) {
 		openFile(file, "language.bnd");
@@ -1622,7 +1745,7 @@ void ScummEngine_v7::loadLanguageBundle() {
 			while (*ptr == '\n' || *ptr == '\r')
 				*ptr++ = 0;
 
-			// Convert '\n' code to a newline. See also bug #902415.
+			// Convert '\n' code to a newline. See also bug #1487.
 			char *src, *dst;
 			src = dst = _languageBuffer + _languageIndex[i].offset;
 			while (*src) {
@@ -1661,6 +1784,11 @@ void ScummEngine_v7::playSpeech(const byte *ptr) {
 }
 
 void ScummEngine_v7::translateText(const byte *text, byte *trans_buff) {
+	if (isScummvmKorTarget()) {
+		// Support language bundle for FT
+		ScummEngine::translateText(text, trans_buff);
+		return;
+	}
 	LangIndexNode target;
 	LangIndexNode *found = NULL;
 	int i;
@@ -1675,7 +1803,7 @@ void ScummEngine_v7::translateText(const byte *text, byte *trans_buff) {
 		_lastStringTag[i] = 0;
 	}
 
-	// WORKAROUND for bug #1172655.
+	// WORKAROUND for bug #1977.
 	if (_game.id == GID_DIG) {
 		// Based on the second release of The Dig
 		// Only applies to the subtitles and not speech
@@ -1766,7 +1894,183 @@ void ScummEngine_v7::translateText(const byte *text, byte *trans_buff) {
 
 #endif
 
+void ScummEngine::loadLanguageBundle() {
+	if (!isScummvmKorTarget()) {
+		_existLanguageFile = false;
+		return;
+	}
+
+	ScummFile file;
+	openFile(file, "korean.trs");
+
+	if (!file.isOpen()) {
+		_existLanguageFile = false;
+		return;
+	}
+
+	_existLanguageFile = true;
+
+	int size = file.size();
+
+	uint32 magic1 = file.readUint32BE();
+	uint32 magic2 = file.readUint32BE();
+
+	if (magic1 != MKTAG('S', 'C', 'V', 'M') || magic2 != MKTAG('T', 'R', 'S', ' ')) {
+		_existLanguageFile = false;
+		return;
+	}
+
+	_numTranslatedLines = file.readUint16LE();
+	_translatedLines = new TranslatedLine[_numTranslatedLines];
+	_languageLineIndex = new uint16[_numTranslatedLines];
+
+	// sanity check
+	for (int i = 0; i < _numTranslatedLines; i++) {
+		_languageLineIndex[i] = 0xffff;
+	}
+
+	for (int i = 0; i < _numTranslatedLines; i++) {
+		int idx = file.readUint16LE();
+		assert(idx < _numTranslatedLines);
+		_languageLineIndex[idx] = i;
+		_translatedLines[i].originalTextOffset = file.readUint32LE();
+		_translatedLines[i].translatedTextOffset = file.readUint32LE();
+	}
+
+	// sanity check
+	for (int i = 0; i < _numTranslatedLines; i++) {
+		if (_languageLineIndex[i] == 0xffff) {
+			error("Invalid language bundle file");
+		}
+	}
+
+	// Room
+	byte numTranslatedRoom = file.readByte();
+	for (uint32 i = 0; i < numTranslatedRoom; i++) {
+		byte roomId = file.readByte();
+
+		TranslationRoom &room = _roomIndex.getOrCreateVal(roomId);
+
+		uint16 numScript = file.readUint16LE();
+		for (int sc = 0; sc < numScript; sc++) {
+			uint32 scrpKey = file.readUint32LE();
+			uint16 scrpLeft = file.readUint16LE();
+			uint16 scrpRight = file.readUint16LE();
+
+			room.scriptRanges.setVal(scrpKey, TranslationRange(scrpLeft, scrpRight));
+		}
+	}
+
+	int bodyPos = file.pos();
+
+	for (int i = 0; i < _numTranslatedLines; i++) {
+		_translatedLines[i].originalTextOffset -= bodyPos;
+		_translatedLines[i].translatedTextOffset -= bodyPos;
+	}
+	_languageBuffer = new byte[size - bodyPos];
+	file.read(_languageBuffer, size - bodyPos);
+	file.close();
+
+	debug(2, "loadLanguageBundle: Loaded %d entries", _numTranslatedLines);
+}
+
+const byte *ScummEngine::searchTranslatedLine(const byte *text, const TranslationRange &range, bool useIndex) {
+	int textLen = resStrLen(text);
+
+	int left = range.left;
+	int right = range.right;
+
+	int dbgIterationCount = 0;
+
+	while (left <= right) {
+		dbgIterationCount++;
+		debug(8, "searchTranslatedLine: Range: %d - %d", left, right);
+		int mid = (left + right) / 2;
+		int idx = useIndex ? _languageLineIndex[mid] : mid;
+		const byte *originalText = &_languageBuffer[_translatedLines[idx].originalTextOffset];
+		int originalLen = resStrLen(originalText);
+		int compare = memcmp(text, originalText, MIN(textLen + 1, originalLen + 1));
+		if (compare == 0) {
+			debug(8, "searchTranslatedLine: Found in %d iteration", dbgIterationCount);
+			const byte *translatedText = &_languageBuffer[_translatedLines[idx].translatedTextOffset];
+			return translatedText;
+		} else if (compare < 0) {
+			right = mid - 1;
+		} else if (compare > 0) {
+			left = mid + 1;
+		}
+	}
+
+	debug(8, "searchTranslatedLine: Not found in %d iteration", dbgIterationCount);
+
+	return nullptr;
+}
+
 void ScummEngine::translateText(const byte *text, byte *trans_buff) {
+	if (_existLanguageFile) {
+		if (_currentScript == 0xff) {
+			// used in drawVerb(), etc
+			debug(7, "translateText: Room=%d, CurrentScript == 0xff", _currentRoom);
+		} else {
+			// Use series of heuristics to preserve "the context of the conversation",
+			// since one English text can be translated differently depending on the context.
+			ScriptSlot *slot = &vm.slot[_currentScript];
+			debug(7, "translateText: Room=%d, Script=%d, WIO=%d", _currentRoom, slot->number, slot->where);
+
+			byte roomKey = 0;
+			if (slot->where != WIO_GLOBAL) {
+				roomKey = _currentRoom;
+			}
+
+			uint32 scriptKey = slot->where << 16 | slot->number;
+			if (slot->where == WIO_ROOM) {
+				scriptKey = slot->where << 16;
+			}
+
+			// First search by _currentRoom and _currentScript
+			Common::HashMap<byte, TranslationRoom>::const_iterator iterator = _roomIndex.find(roomKey);
+			if (iterator != _roomIndex.end()) {
+				const TranslationRoom &room = iterator->_value;
+				TranslationRange scrpRange;
+				if (room.scriptRanges.tryGetVal(scriptKey, scrpRange)) {
+					const byte *translatedText = searchTranslatedLine(text, scrpRange, true);
+					if (translatedText) {
+						debug(7, "translateText: Found by heuristic #1");
+						memcpy(trans_buff, translatedText, resStrLen(translatedText) + 1);
+						return;
+					}
+				}
+			}
+
+			// If not found, search for current room
+			roomKey = _currentRoom;
+			scriptKey = WIO_ROOM << 16;
+			iterator = _roomIndex.find(roomKey);
+			if (iterator != _roomIndex.end()) {
+				const TranslationRoom &room = iterator->_value;
+				TranslationRange scrpRange;
+				if (room.scriptRanges.tryGetVal(scriptKey, scrpRange)) {
+					const byte *translatedText = searchTranslatedLine(text, scrpRange, true);
+					if (translatedText) {
+						debug(7, "translateText: Found by heuristic #2");
+						memcpy(trans_buff, translatedText, resStrLen(translatedText) + 1);
+						return;
+					}
+				}
+			}
+		}
+
+		// Try full search
+		const byte *translatedText = searchTranslatedLine(text, TranslationRange(0, _numTranslatedLines - 1), false);
+		if (translatedText) {
+			debug(7, "translateText: Found by full search");
+			memcpy(trans_buff, translatedText, resStrLen(translatedText) + 1);
+			return;
+		}
+
+		debug(7, "translateText: Not found");
+	}
+
 	// Default: just copy the string
 	memcpy(trans_buff, text, resStrLen(text) + 1);
 }

@@ -306,7 +306,7 @@ void GdiV1::roomChanged(byte *roomptr) {
 	decodeV1Gfx(roomptr + READ_LE_UINT16(roomptr + 16), _V1.maskMap, roomptr[4] * roomptr[5]);
 
 	// Read the mask data. The 16bit length value seems to always be 8 too big.
-	// See bug #1837375 for details on this.
+	// See bug #3458 for details on this.
 	const byte *maskPtr = roomptr + READ_LE_UINT16(roomptr + 18);
 	decodeV1Gfx(maskPtr + 2, _V1.maskChar, READ_LE_UINT16(maskPtr) - 8);
 	_objectMode = true;
@@ -343,6 +343,11 @@ void ScummEngine::initScreens(int b, int h) {
 	}
 #endif
 
+	if (_macScreen) {
+		_macScreen->fillRect(Common::Rect(_macScreen->w, _macScreen->h), 0);
+		clearTextSurface();
+	}
+
 	if (!getResourceAddress(rtBuffer, 4)) {
 		// Since the size of screen 3 is fixed, there is no need to reallocate
 		// it if its size changed.
@@ -372,6 +377,11 @@ void ScummEngine::initScreens(int b, int h) {
 	_screenH = h;
 
 	_gdi->init();
+
+#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
+	// The right most visible strip for FM-Towns smooth scrolling
+	_scrollFeedStrips[0] = _gdi->_numStrips - 1;
+#endif
 }
 
 void ScummEngine::initVirtScreen(VirtScreenNumber slot, int top, int width, int height, bool twobufs,
@@ -633,6 +643,11 @@ void ScummEngine::drawStripToScreen(VirtScreen *vs, int x, int width, int top, i
 	if (width <= 0 || height <= 0)
 		return;
 
+	if (_macScreen) {
+		mac_drawStripToScreen(vs, top, x, y, width, height);
+		return;
+	}
+
 	const void *src = vs->getPixels(x, top);
 	int m = _textSurfaceMultiplier;
 	int vsPitch;
@@ -661,13 +676,13 @@ void ScummEngine::drawStripToScreen(VirtScreen *vs, int x, int width, int top, i
 		assert(IS_ALIGNED(text, 4));
 		assert(0 == (width & 3));
 
-		// Compose the text over the game graphics
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 		if (_game.platform == Common::kPlatformFMTowns) {
 			towns_drawStripToScreen(vs, x, y, x, top, width, height);
 			return;
 		} else
 #endif
+		// Compose the text over the game graphics
 		if (_outputPixelFormat.bytesPerPixel == 2) {
 			const byte *srcPtr = (const byte *)src;
 			const byte *textPtr = (byte *)_textSurface.getBasePtr(x * m, y * m);
@@ -965,10 +980,10 @@ void ScummEngine::redrawBGAreas() {
 		diff = camera._cur.x - camera._last.x;
 		if (!_fullRedraw && diff == 8) {
 			val = -1;
-			redrawBGStrip(_gdi->_numStrips - 1, 1);
+			scrollLeft();
 		} else if (!_fullRedraw && diff == -8) {
 			val = +1;
-			redrawBGStrip(0, 1);
+			scrollRight();
 		} else if (_fullRedraw || diff != 0) {
 			if (_game.version <= 5) {
 				((ScummEngine_v5 *)this)->clearFlashlight();
@@ -1023,7 +1038,7 @@ void ScummEngine::restoreBackground(Common::Rect rect, byte backColor) {
 	VirtScreen *vs;
 	byte *screenBuf;
 
- 	if (rect.top < 0)
+	if (rect.top < 0)
 		rect.top = 0;
 	if (rect.left >= rect.right || rect.top >= rect.bottom)
 		return;
@@ -1093,6 +1108,11 @@ void ScummEngine::restoreBackground(Common::Rect rect, byte backColor) {
 		}
 #endif
 
+		if (_macScreen) {
+			byte *mask = (byte *)_textSurface.getBasePtr(rect.left * _textSurfaceMultiplier, (rect.top + vs->topline) * _textSurfaceMultiplier);
+			fill(mask, _textSurface.pitch, CHARSET_MASK_TRANSPARENCY, width * _textSurfaceMultiplier, height * _textSurfaceMultiplier, _textSurface.format.bytesPerPixel);
+		}
+
 		if (_game.features & GF_16BIT_COLOR)
 			fill(screenBuf, vs->pitch, _16BitPalette[backColor], width, height, vs->format.bytesPerPixel);
 		else
@@ -1108,6 +1128,11 @@ void ScummEngine::restoreCharsetBg() {
 		_charset->_hasMask = false;
 		_charset->_str.left = -1;
 		_charset->_left = -1;
+
+		if (_macScreen && _game.id == GID_INDY3 && _charset->_textScreenID == kTextVirtScreen) {
+			mac_undrawIndy3TextBox();
+			return;
+		}
 
 		// Restore background on the whole text area. This code is based on
 		// restoreBackground(), but was changed to only restore those parts which are
@@ -1135,7 +1160,7 @@ void ScummEngine::restoreCharsetBg() {
 				memset(screenBuf, 0, vs->h * vs->pitch);
 		}
 
-		if (vs->hasTwoBuffers) {
+		if (vs->hasTwoBuffers || _macScreen) {
 			// Clean out the charset mask
 			clearTextSurface();
 		}
@@ -1313,7 +1338,7 @@ void ScummEngine::drawBox(int x, int y, int x2, int y2, int color) {
 	width = x2 - x;
 	height = y2 - y;
 
-	// This will happen in the Sam & Max intro - see bug #1039162 - where
+	// This will happen in the Sam & Max intro - see bug #1797 - where
 	// it would trigger an assertion in blit().
 
 	if (width <= 0 || height <= 0)
@@ -1391,6 +1416,11 @@ void ScummEngine::drawBox(int x, int y, int x2, int y2, int color) {
 					return;
 			}
 #endif
+
+			if (_macScreen) {
+				byte *mask = (byte *)_textSurface.getBasePtr(x * _textSurfaceMultiplier, (y - _screenTop + vs->topline) * _textSurfaceMultiplier);
+				fill(mask, _textSurface.pitch, CHARSET_MASK_TRANSPARENCY, width * _textSurfaceMultiplier, height * _textSurfaceMultiplier, _textSurface.format.bytesPerPixel);
+			}
 
 			fill(backbuff, vs->pitch, color, width, height, vs->format.bytesPerPixel);
 		}
@@ -1903,7 +1933,7 @@ bool Gdi::drawStrip(byte *dstPtr, VirtScreen *vs, int x, int y, const int width,
 	// Do some input verification and make sure the strip/strip offset
 	// are actually valid. Normally, this should never be a problem,
 	// but if e.g. a savegame gets corrupted, we can easily get into
-	// trouble here. See also bug #795214.
+	// trouble here. See also bug #1191.
 	int offset = -1, smapLen;
 	if (_vm->_game.features & GF_16COLOR) {
 		smapLen = READ_LE_UINT16(smap_ptr);
@@ -3747,7 +3777,7 @@ void GdiHE16bit::writeRoomColor(byte *dst, byte color) const {
 #endif
 
 void Gdi::writeRoomColor(byte *dst, byte color) const {
-	// As described in bug #1294513 "FOA/Amiga: Palette problem (Regression)"
+	// As described in bug #2204 "FOA/Amiga: Palette problem (Regression)"
 	// the original AMIGA version of Indy4: The Fate of Atlantis allowed
 	// overflowing of the palette index. To have the same result in our code,
 	// we need to do an logical AND 0xFF here to keep the result in [0, 255].
@@ -3769,7 +3799,7 @@ void ScummEngine::fadeIn(int effect) {
 		_screenEffectFlag = true;
 		return;
 	}
-
+	towns_waitForScroll(0);
 	updatePalette();
 
 	switch (effect) {
@@ -3815,8 +3845,9 @@ void ScummEngine::fadeIn(int effect) {
 }
 
 void ScummEngine::fadeOut(int effect) {
-	VirtScreen *vs = &_virtscr[kMainVirtScreen];
+	towns_waitForScroll(0);
 
+	VirtScreen *vs = &_virtscr[kMainVirtScreen];
 	vs->setDirtyRange(0, 0);
 	if (_game.version < 7)
 		camera._last.x = camera._cur.x;
@@ -3859,10 +3890,7 @@ void ScummEngine::fadeOut(int effect) {
 			// Just blit screen 0 to the display (i.e. display will be black)
 			vs->setDirtyRange(0, vs->h);
 			updateDirtyScreen(kMainVirtScreen);
-#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
-			if (_townsScreen)
-				_townsScreen->update();
-#endif
+			towns_updateGfx();
 			break;
 		case 134:
 			dissolveEffect(1, 1);
@@ -4045,6 +4073,9 @@ void ScummEngine::dissolveEffect(int width, int height) {
 			towns_drawStripToScreen(vs, x, y + vs->topline, x, y, width, height);
 		else
 #endif
+		if (_macScreen)
+			mac_drawStripToScreen(vs, y, x, y + vs->topline, width, height);
+		else
 			_system->copyRectToScreen(vs->getPixels(x, y), vs->pitch, x, y + vs->topline, width, height);
 
 
@@ -4062,6 +4093,13 @@ void ScummEngine::dissolveEffect(int width, int height) {
 }
 
 void ScummEngine::scrollEffect(int dir) {
+#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
+	// The FM-Towns versions use smooth scrolling here, but only for left and right.
+	if (_game.platform == Common::kPlatformFMTowns && dir > 1) {
+		towns_scriptScrollEffect((dir & 1) * 2 - 1);
+		return;
+	}
+#endif
 	VirtScreen *vs = &_virtscr[kMainVirtScreen];
 
 	int x, y;
@@ -4084,7 +4122,7 @@ void ScummEngine::scrollEffect(int dir) {
 		//up
 		y = 1 + step;
 		while (y < vs->h) {
-			moveScreen(0, -step, vs->h);
+			moveScreen(0, -step * m, vs->h * m);
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 			if (_townsScreen) {
 				towns_drawStripToScreen(vs, 0, vs->topline + vs->h - step, 0, y - step, vs->w, step);
@@ -4107,7 +4145,7 @@ void ScummEngine::scrollEffect(int dir) {
 		// down
 		y = 1 + step;
 		while (y < vs->h) {
-			moveScreen(0, step, vs->h);
+			moveScreen(0, step * m, vs->h * m);
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 			if (_townsScreen) {
 				towns_drawStripToScreen(vs, 0, vs->topline, 0, vs->h - y, vs->w, step);
@@ -4130,21 +4168,14 @@ void ScummEngine::scrollEffect(int dir) {
 		// left
 		x = 1 + step;
 		while (x < vs->w) {
-			moveScreen(-step, 0, vs->h);
+			moveScreen(-step * m, 0, vs->h * m);
 
-#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
-			if (_townsScreen) {
-				towns_drawStripToScreen(vs, vs->w - step, vs->topline, x - step, 0, step, vs->h);
-			} else
-#endif
-			{
-				src = vs->getPixels(x - step, 0);
-				_system->copyRectToScreen(src,
-					vsPitch,
-					(vs->w - step) * m, 0,
-					step * m, vs->h * m);
-				_system->updateScreen();
-			}
+			src = vs->getPixels(x - step, 0);
+			_system->copyRectToScreen(src,
+				vsPitch,
+				(vs->w - step) * m, 0,
+				step * m, vs->h * m);
+			_system->updateScreen();
 
 			waitForTimer(delay);
 			x += step;
@@ -4154,21 +4185,14 @@ void ScummEngine::scrollEffect(int dir) {
 		// right
 		x = 1 + step;
 		while (x < vs->w) {
-			moveScreen(step, 0, vs->h);
+			moveScreen(step * m, 0, vs->h * m);
 
-#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
-			if (_townsScreen) {
-				towns_drawStripToScreen(vs, 0, vs->topline, vs->w - x, 0, step, vs->h);
-			} else
-#endif
-			{
-				src = vs->getPixels(vs->w - x, 0);
-				_system->copyRectToScreen(src,
-					vsPitch,
-					0, 0,
-					step, vs->h);
-				_system->updateScreen();
-			}
+			src = vs->getPixels(vs->w - x, 0);
+			_system->copyRectToScreen(src,
+				vsPitch,
+				0, 0,
+				step, vs->h);
+			_system->updateScreen();
 
 			waitForTimer(delay);
 			x += step;

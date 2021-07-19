@@ -27,6 +27,9 @@
  */
 
 #include "engines/wintermute/ad/ad_actor.h"
+#ifdef ENABLE_WME3D
+#include "engines/wintermute/ad/ad_actor_3dx.h"
+#endif
 #include "engines/wintermute/ad/ad_game.h"
 #include "engines/wintermute/ad/ad_entity.h"
 #include "engines/wintermute/ad/ad_inventory.h"
@@ -56,6 +59,7 @@
 #include "engines/wintermute/base/scriptables/script.h"
 #include "engines/wintermute/base/scriptables/script_stack.h"
 #include "engines/wintermute/base/scriptables/script_value.h"
+#include "engines/wintermute/ext/scene_hooks.h"
 #include "engines/wintermute/ui/ui_entity.h"
 #include "engines/wintermute/ui/ui_window.h"
 #include "engines/wintermute/utils/utils.h"
@@ -368,10 +372,9 @@ bool AdGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, 
 		}
 		stack->pushNULL();
 
-
-		//bool ret = ChangeScene(stack->pop()->getString());
-		//if (DID_FAIL(ret)) stack->pushBool(false);
-		//else stack->pushBool(true);
+		// HACK: Emulate things that present in some game versions only based on scene name
+		// Currect usecase is adding Steam Achievements to non-steam game editions
+		EmulateSceneHook(filename);
 
 		return STATUS_OK;
 	}
@@ -392,6 +395,47 @@ bool AdGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, 
 		}
 		return STATUS_OK;
 	}
+
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// LoadActor3D
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "LoadActor3D") == 0) {
+		stack->correctParams(1);
+		// assume that we have an .X model here
+		// wme3d has also support for .ms3d files
+		// but they are deprecated
+		AdActor3DX *act = new AdActor3DX(_gameRef);
+		if (act && DID_SUCCEED(act->loadFile(stack->pop()->getString()))) {
+			addObject(act);
+			stack->pushNative(act, true);
+		} else {
+			delete act;
+			act = nullptr;
+			stack->pushNULL();
+		}
+		return STATUS_OK;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// UnloadActor3D
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "UnloadActor3D") == 0) {
+		// this does the same as UnloadActor etc. ..
+		// even WmeLite has this script call in AdScene
+		stack->correctParams(1);
+		ScValue *val = stack->pop();
+		AdObject *obj = static_cast<AdObject *>(val->getNative());
+
+		removeObject(obj);
+		if (val->getType() == VAL_VARIABLE_REF) {
+			val->setNULL();
+		}
+
+		stack->pushNULL();
+		return STATUS_OK;
+	}
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	// LoadEntity
@@ -1063,6 +1107,17 @@ ScValue *AdGame::scGetProperty(const Common::String &name) {
 		return _scValue;
 	}
 
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// VideoSkipButton
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "VideoSkipButton") {
+		warning("AdGame::scGetProperty VideoSkipButton not implemented");
+		_scValue->setInt(0);
+		return _scValue;
+	}
+#endif
+
 	//////////////////////////////////////////////////////////////////////////
 	// ChangingScene
 	//////////////////////////////////////////////////////////////////////////
@@ -1184,6 +1239,16 @@ bool AdGame::scSetProperty(const char *name, ScValue *value) {
 		_talkSkipButton = (TTalkSkipButton)val;
 		return STATUS_OK;
 	}
+
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// VideoSkipButton
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "VideoSkipButton") == 0) {
+		warning("AdGame::scSetProperty VideoSkipButton not implemented");
+		return STATUS_OK;
+	}
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	// StartupScene
@@ -1537,7 +1602,7 @@ bool AdGame::scheduleChangeScene(const char *filename, bool fadeIn) {
 //////////////////////////////////////////////////////////////////////////
 bool AdGame::handleCustomActionStart(BaseGameCustomAction action) {
 	bool isCorrosion = BaseEngine::instance().getGameId() == "corrosion";
-	
+
 	if (isCorrosion) {
 		// Corrosion Enhanced Edition contain city map screen, which is
 		// mouse controlled and conflicts with those custom actions
@@ -1593,7 +1658,7 @@ bool AdGame::handleCustomActionStart(BaseGameCustomAction action) {
 			for (uint32 i = 0; i < objects.size(); i++) {
 				BaseRegion *region;
 				if (objects[i]->getType() != OBJECT_ENTITY ||
-					!objects[i]->_active || 
+					!objects[i]->_active ||
 					!objects[i]->_registrable ||
 					(!(region = ((AdEntity *)objects[i])->_region))
 				) {
@@ -1608,7 +1673,7 @@ bool AdGame::handleCustomActionStart(BaseGameCustomAction action) {
 					break;
 				}
 
-				// Something at the edge? Available with other actions. 
+				// Something at the edge? Available with other actions.
 				if (region->pointInRegion(xLeft, yCenter) ||
 					region->pointInRegion(xRight, yCenter) ||
 					region->pointInRegion(xCenter, yBottom) ||
@@ -1634,7 +1699,7 @@ bool AdGame::handleCustomActionStart(BaseGameCustomAction action) {
 	}
 
 	BasePlatform::setCursorPos(p.x, p.y);
-	setActiveObject(_gameRef->_renderer->getObjectAt(p.x, p.y)); 
+	setActiveObject(_gameRef->_renderer->getObjectAt(p.x, p.y));
 	onMouseLeftDown();
 	onMouseLeftUp();
 	return true;
@@ -1771,6 +1836,32 @@ AdSceneState *AdGame::getSceneState(const char *filename, bool saving) {
 		return nullptr;
 	}
 }
+
+#ifdef ENABLE_WME3D
+//////////////////////////////////////////////////////////////////////////
+uint32 Wintermute::AdGame::getAmbientLightColor() {
+	if (_scene) {
+		return _scene->_ambientLightColor;
+	} else {
+		return BaseGame::getAmbientLightColor();
+	}
+}
+
+Wintermute::TShadowType Wintermute::AdGame::getMaxShadowType(Wintermute::BaseObject *object) {
+	TShadowType ret = BaseGame::getMaxShadowType(object);
+
+	return MIN(ret, _scene->_maxShadowType);
+}
+
+bool Wintermute::AdGame::getFogParams(FogParameters &fogParameters) {
+	if (_scene) {
+		fogParameters = _scene->_fogParameters;
+		return true;
+	} else {
+		return BaseGame::getFogParams(fogParameters);
+	}
+}
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -2331,7 +2422,7 @@ bool AdGame::onMouseLeftUp() {
 	} else {
 		handled = DID_SUCCEED(applyEvent("LeftRelease"));
 	}
-	
+
 	if (!handled) {
 		if (_activeObject != nullptr) {
 			_activeObject->applyEvent("LeftRelease");

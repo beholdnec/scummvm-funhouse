@@ -25,6 +25,7 @@
 #include "common/textconsole.h"
 #include "common/util.h"
 
+#include "graphics/macega.h"
 #include "graphics/palette.h"
 
 #include "scumm/resource.h"
@@ -55,7 +56,7 @@ uint16 ScummEngine::get16BitColor(uint8 r, uint8 g, uint8 b) {
 
 void ScummEngine::resetPalette() {
 	static const byte tableC64Palette[] = {
-#if 1  // VICE-based palette. See bug #2847001
+#if 1  // VICE-based palette. See bug #4576
 		0x00, 0x00, 0x00,	0xFF, 0xFF, 0xFF,	0x7E, 0x35, 0x2B,	0x6E, 0xB7, 0xC1,
 		0x7F, 0x3B, 0xA6,	0x5C, 0xA0, 0x35,	0x33, 0x27, 0x99,	0xCB, 0xD7, 0x65,
 		0x85, 0x53, 0x1C,	0x50, 0x3C, 0x00,	0xB4, 0x6B, 0x61,	0x4A, 0x4A, 0x4A,
@@ -164,7 +165,7 @@ void ScummEngine::resetPalette() {
 	static const byte tableHercGPalette[] = {
 		0x00, 0x00, 0x00, 	0x00, 0xFF, 0x00
 	};
-	
+
 	// Palette based on Apple IIgs Technical Notes: IIgs 2523063 Master Color Values
 	// Rearranged to match C64 color positions
 	static const byte tableApple2gsPalette[] = {
@@ -214,6 +215,10 @@ void ScummEngine::resetPalette() {
 
 		switch (_renderMode) {
 		case Common::kRenderEGA:
+		case Common::kRenderMacintoshBW:
+			// Use EGA palette for MacintoshBW, because that makes
+			// white 0xFFFFFF there. The Mac EGA palette, would
+			// make it 0xFCFCFC.
 			setPaletteFromTable(tableEGAPalette, sizeof(tableEGAPalette) / 3);
 			break;
 
@@ -239,6 +244,8 @@ void ScummEngine::resetPalette() {
 		default:
 			if ((_game.platform == Common::kPlatformAmiga) || (_game.platform == Common::kPlatformAtariST))
 				setPaletteFromTable(tableAmigaPalette, sizeof(tableAmigaPalette) / 3);
+			else if ((_game.id == GID_LOOM || _game.id == GID_INDY3) && _game.platform == Common::kPlatformMacintosh)
+				setPaletteFromTable(Graphics::macEGAPalette, sizeof(Graphics::macEGAPalette) / 3);
 			else
 				setPaletteFromTable(tableEGAPalette, sizeof(tableEGAPalette) / 3);
 		}
@@ -1416,7 +1423,11 @@ void ScummEngine::updatePalette() {
 		for (i = _palDirtyMin; i <= _palDirtyMax; i++) {
 			byte *data;
 
-			if (_game.features & GF_SMALL_HEADER && _game.version > 2)
+			// In b/w Mac rendering mode, the shadow palette is
+			// handled by the renderer itself. See comment in
+			// mac_drawStripToScreen().
+
+			if (_game.features & GF_SMALL_HEADER && _game.version > 2 && _renderMode != Common::kRenderMacintoshBW)
 				data = _currentPalette + _shadowPalette[i] * 3;
 			else
 				data = _currentPalette + i * 3;

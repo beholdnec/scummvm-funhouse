@@ -50,20 +50,31 @@ struct MacFontRun {
 	uint16 palinfo2;
 	uint16 palinfo3;
 	uint16 fgcolor;
-
+	// to determine whether the next word is part of this one
+	bool wordContinuation;
 	const Font *font;
 	MacWindowManager *wm;
 
 	MacFontRun() {
 		wm = nullptr;
 		fontId = textSlant = fontSize = 0;
-		palinfo1 = palinfo2  = palinfo3 = 0;
+		palinfo1 = palinfo2 = palinfo3 = 0;
+		fgcolor = 0;
 		font = nullptr;
+		wordContinuation = false;
 	}
 
 	MacFontRun(MacWindowManager *wm_, uint16 fontId_, byte textSlant_, uint16 fontSize_,
 			uint16 palinfo1_, uint16 palinfo2_, uint16 palinfo3_) {
 		setValues(wm_, fontId_, textSlant_, fontSize_, palinfo1_, palinfo2_, palinfo3_);
+		wordContinuation = false;
+	}
+
+	MacFontRun(MacWindowManager *wm_, const Font *font_, byte textSlant_, uint16 fontSize_,
+			uint16 palinfo1_, uint16 palinfo2_, uint16 palinfo3_) {
+		setValues(wm_, 0, textSlant_, fontSize_, palinfo1_, palinfo2_, palinfo3_);
+		font = font_;
+		wordContinuation = false;
 	}
 
 	void setValues(MacWindowManager *wm_, uint16 fontId_, byte textSlant_, uint16 fontSize_,
@@ -83,6 +94,10 @@ struct MacFontRun {
 
 	const Common::String toString();
 	bool equals(MacFontRun &to);
+
+	Common::CodePage getEncoding();
+	bool plainByteMode();
+	Common::String getEncodedText();
 };
 
 struct MacTextLine {
@@ -134,12 +149,12 @@ struct SelectedText {
 
 class MacText : public MacWidget {
 public:
-	MacText(MacWidget *parent, int x, int y, int w, int h, MacWindowManager *wm, const Common::U32String &s, const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment = kTextAlignLeft, int interlinear = 0, uint16 border = 0, uint16 gutter = 0, uint16 boxShadow = 0, uint16 textShadow = 0);
-	MacText(MacWidget *parent, int x, int y, int w, int h, MacWindowManager *wm, const Common::String &s, const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment = kTextAlignLeft, int interlinear = 0, uint16 border = 0, uint16 gutter = 0, uint16 boxShadow = 0, uint16 textShadow = 0);
+	MacText(MacWidget *parent, int x, int y, int w, int h, MacWindowManager *wm, const Common::U32String &s, const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment = kTextAlignLeft, int interlinear = 0, uint16 border = 0, uint16 gutter = 0, uint16 boxShadow = 0, uint16 textShadow = 0, bool fixedDims = true);
 	// 0 pixels between the lines by default
 
-	MacText(const Common::U32String &s, MacWindowManager *wm, const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, int interlinear = 0);
-	MacText(const Common::String &s, MacWindowManager *wm, const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, int interlinear = 0);
+	MacText(const Common::U32String &s, MacWindowManager *wm, const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, int interlinear = 0, bool fixedDims = true);
+
+	MacText(const Common::U32String &s, MacWindowManager *wm, const Font *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, int interlinear = 0, bool fixedDims = true);
 
 	virtual ~MacText();
 
@@ -170,21 +185,68 @@ public:
 	virtual void setActive(bool active) override;
 	void setEditable(bool editable);
 
+	void setColors(uint32 fg, uint32 bg) override;
+	// set fgcolor for line x
+	void setTextColor(uint32 color, uint32 line);
+	void setTextColor(uint32 color, uint32 start, uint32 end);
+
 	void appendText(const Common::U32String &str, int fontId = kMacFontChicago, int fontSize = 12, int fontSlant = kMacFontRegular, bool skipAdd = false);
-	void appendText(const Common::String &str, int fontId = kMacFontChicago, int fontSize = 12, int fontSlant = kMacFontRegular, bool skipAdd = false);
+	void appendText(const Common::U32String &str, int fontId = kMacFontChicago, int fontSize = 12, int fontSlant = kMacFontRegular, uint16 r = 0, uint16 g = 0, uint16 b = 0, bool skipAdd = false);
+	void appendText(const Common::U32String &str, const Font *font, uint16 r = 0, uint16 g = 0, uint16 b = 0, bool skipAdd = false);
+
+	int getTextFont() { return _defaultFormatting.fontId; }
+
+	// because currently, we are counting linespacing as font height
+	int getTextSize() { return _defaultFormatting.fontSize; }
+	void setTextSize(int textSize);
+
+	int getTextSize(int start, int end);
+	void setTextSize(int textSize, int start, int end);
+
+	uint getTextColor() { return _defaultFormatting.fgcolor; }
+	uint getTextColor(int start, int end);
+
+	int getTextFont(int start, int end);
+	void setTextFont(int fontId, int start, int end);
+
+	int getTextSlant(int start, int end);
+	void setTextSlant(int textSlant, int start, int end);
+
+private:
+	MacFontRun getTextChunks(int start, int end);
+	void setTextChunks(int start, int end, int param, void (*callback)(MacFontRun &, int));
+
+	void appendText_(const Common::U32String &strWithFont, uint oldLen);
+	void deletePreviousCharInternal(int *row, int *col);
+	void insertTextFromClipboard();
+	// getStringWidth for mactext version, because we may have the plain bytes mode
+	int getStringWidth(MacFontRun &format, const Common::U32String &str);
+	int getAlignOffset(int row);
+	MacFontRun getFgColor();
+
+public:
 	void appendTextDefault(const Common::U32String &str, bool skipAdd = false);
 	void appendTextDefault(const Common::String &str, bool skipAdd = false);
 	void clearText();
 	void removeLastLine();
 	int getLineCount() { return _textLines.size(); }
 	int getLineCharWidth(int line, bool enforce = false);
+	int getLastLineWidth();
 	int getTextHeight() { return _textMaxHeight; }
 	int getLineHeight(int line);
+	int getTextMaxWidth() { return _textMaxWidth; }
 
+	void setText(const Common::U32String &str);
+
+	void setFixDims(bool fixed) { _fixedDims = fixed; }
+	bool getFixDims() { return _fixedDims; }
+
+	void deleteSelection();
 	void deletePreviousChar(int *row, int *col);
 	void addNewLine(int *row, int *col);
 	void insertChar(byte c, int *row, int *col);
 
+	void getChunkPosFromIndex(int index, uint &lineNum, uint &chunkNum, uint &offset);
 	void getRowCol(int x, int y, int *sx, int *sy, int *row, int *col);
 	Common::U32String getTextChunk(int startRow, int startCol, int endRow, int endCol, bool formatted = false, bool newlines = true);
 
@@ -194,9 +256,19 @@ public:
 	Common::U32String cutSelection();
 	const SelectedText *getSelectedText() { return &_selectedText; }
 
+	int getLineSpacing() { return _interLinear; }
+
+	/**
+	 * set the selection of mactext
+	 * @param pos pos of selection, 0 represent first, -1 represent the end of text
+	 * @param start selection start or selection end
+	 */
 	void setSelection(int pos, bool start);
 
 	Common::U32String getEditedString();
+	Common::U32String getText() { return _str; }
+
+	void setSelRange(int selStart, int selEnd);
 
 private:
 	void init();
@@ -222,14 +294,14 @@ private:
 	void reshuffleParagraph(int *row, int *col);
 
 	void chopChunk(const Common::U32String &str, int *curLine);
-	void splitString(const Common::U32String &s, int curLine = -1);
+	void splitString(const Common::U32String &str, int curLine = -1);
 	void render(int from, int to);
 	void recalcDims();
 	void reallocSurface();
 
 	void scroll(int delta);
 
-	void drawSelection();
+	void drawSelection(int xoff, int yoff);
 	void updateCursorPos();
 
 	void startMarking(int x, int y);
@@ -250,14 +322,17 @@ public:
 	bool _fullRefresh;
 
 protected:
-	Common::Point _alignOffset;
-
 	Common::U32String _str;
 	const MacFont *_macFont;
 
 	int _maxWidth;
 	int _interLinear;
 	int _textShadow;
+
+	bool _fixedDims;
+
+	int _selEnd;
+	int _selStart;
 
 	int _textMaxWidth;
 	int _textMaxHeight;
@@ -269,6 +344,8 @@ protected:
 	Common::Array<MacTextLine> _textLines;
 	MacFontRun _defaultFormatting;
 	MacFontRun _currentFormatting;
+
+	bool _macFontMode;
 
 private:
 	ManagedSurface *_cursorSurface;

@@ -97,6 +97,20 @@
 	kFeatures640x480,
 	0, 0, 0
 },
+{ // Russian Akella version
+	{
+		"woodruff",
+		"",
+		AD_ENTRY1s("intro.stk", "dccf9d31cb720b34d75487408821b77e", 20296390),
+		RU_RUS,
+		kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO2(GUIO_NOSPEECH, GUIO_NOASPECT)
+	},
+	kGameTypeWoodruff,
+	kFeatures640x480,
+	0, 0, 0
+},
 {
 	{
 		"woodruff",
@@ -251,49 +265,7 @@
 	kFeatures640x480,
 	0, 0, 0
 },
-{ // Supplied by Hkz on #scummvm
-	{
-		"woodruff",
-		"",
-		AD_ENTRY1s("intro.stk", "f4c344023b073782d2fddd9d8b515318", 7069736),
-		IT_ITA,
-		kPlatformDOS,
-		ADGF_NO_FLAGS,
-		GUIO2(GUIO_NOSPEECH, GUIO_NOASPECT)
-	},
-	kGameTypeWoodruff,
-	kFeatures640x480,
-	0, 0, 0
-},
-{ // Supplied by Hkz on #scummvm
-	{
-		"woodruff",
-		"",
-		AD_ENTRY1s("intro.stk", "f4c344023b073782d2fddd9d8b515318", 7069736),
-		DE_DEU,
-		kPlatformDOS,
-		ADGF_NO_FLAGS,
-		GUIO2(GUIO_NOSPEECH, GUIO_NOASPECT)
-	},
-	kGameTypeWoodruff,
-	kFeatures640x480,
-	0, 0, 0
-},
-{ // Supplied by Hkz on #scummvm
-	{
-		"woodruff",
-		"",
-		AD_ENTRY1s("intro.stk", "f4c344023b073782d2fddd9d8b515318", 7069736),
-		FR_FRA,
-		kPlatformDOS,
-		ADGF_NO_FLAGS,
-		GUIO2(GUIO_NOSPEECH, GUIO_NOASPECT)
-	},
-	kGameTypeWoodruff,
-	kFeatures640x480,
-	0, 0, 0
-},
-{ // Supplied by DjDiabolik in bug report #1971294
+{ // Supplied by DjDiabolik in bug report #3737
 	{
 		"woodruff",
 		"",
@@ -307,7 +279,7 @@
 	kFeatures640x480,
 	0, 0, 0
 },
-{ // Supplied by DjDiabolik in bug report #1971294
+{ // Supplied by DjDiabolik in bug report #3737
 	{
 		"woodruff",
 		"",
@@ -321,7 +293,7 @@
 	kFeatures640x480,
 	0, 0, 0
 },
-{ // Supplied by DjDiabolik in bug report #1971294
+{ // Supplied by DjDiabolik in bug report #3737
 	{
 		"woodruff",
 		"",
@@ -335,7 +307,7 @@
 	kFeatures640x480,
 	0, 0, 0
 },
-{ // Supplied by DjDiabolik in bug report #1971294
+{ // Supplied by DjDiabolik in bug report #3737
 	{
 		"woodruff",
 		"",
@@ -349,7 +321,7 @@
 	kFeatures640x480,
 	0, 0, 0
 },
-{ // Supplied by DjDiabolik in bug report #1971294
+{ // Supplied by DjDiabolik in bug report #3737
 	{
 		"woodruff",
 		"",
@@ -363,12 +335,26 @@
 	kFeatures640x480,
 	0, 0, 0
 },
-{ // Supplied by goodoldgeorg in bug report #2098838
+{ // Supplied by goodoldgeorg in bug report #3950
 	{
 		"woodruff",
 		"",
 		AD_ENTRY1s("intro.stk", "08a96bf061af1fa4f75c6a7cc56b60a4", 20734979),
 		PL_POL,
+		kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO2(GUIO_NOSPEECH, GUIO_NOASPECT)
+	},
+	kGameTypeWoodruff,
+	kFeatures640x480,
+	0, 0, 0
+},
+{ // Russian fanmade translation by PRCA
+	{
+		"woodruff",
+		"Fanmade",
+		AD_ENTRY1s("intro.stk", "3767f779996d64e8413fc1e2300ba032", 20651219),
+		RU_RUS,
 		kPlatformDOS,
 		ADGF_NO_FLAGS,
 		GUIO2(GUIO_NOSPEECH, GUIO_NOASPECT)
@@ -384,11 +370,8 @@
 	{
 		"woodruff",
 		"Non-Interactive Demo",
-		{
-			{"demo.scn", 0, "16bb85fc5f8e519147b60475dbf33962", 89},
-			{"wooddem3.vmd", 0, "a1700596172c2d4e264760030c3a3d47", 8994250},
-			{0, 0, 0, 0}
-		},
+		AD_ENTRY2s("demo.scn",		"16bb85fc5f8e519147b60475dbf33962", 89,
+				   "wooddem3.vmd",	"a1700596172c2d4e264760030c3a3d47", 8994250),
 		EN_ANY,
 		kPlatformDOS,
 		ADGF_NO_FLAGS,

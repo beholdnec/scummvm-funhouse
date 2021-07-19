@@ -45,7 +45,7 @@ Glossary
   object    - inventory item
   icon      - clickable rectangle with some action tied to it
   dialog    - a set of of dialog lines for character. further divided by categories and each entry may have associated
-              condition to be validated
+			  condition to be validated
   global    - game-wide storage area. must be preserved when saving/loading
   phase     - current story progress. Incremented by 1 for minor events, by 0x10 for major advancements
 */
@@ -321,13 +321,13 @@ struct perso_t {
 	byte    _lastLoc;    // For party member this is mini sprite x offset
 	byte    _speed;      // num ticks per step
 	byte    _steps;      // current ticks
-};
 
-class EdenGame;
-
-struct phase_t {
-	int16 _id;
-	void (EdenGame::*disp)();
+	void clear() {
+		_roomNum = _actionId = _partyMask = 0;
+		_id = _flags = _roomBankId = _spriteBank = 0;
+		_items = _powers = 0;
+		_targetLoc = _lastLoc = _speed = _steps = 0;
+	}
 };
 
 namespace ObjectFlags {
@@ -345,6 +345,13 @@ struct object_t {
 	uint16  _itemMask;
 	uint16  _powerMask;          // object of power bitmask
 	int16  _count;
+
+	void clear() {
+		_id = _flags = 0;
+		_locations = 0;
+		_itemMask = _powerMask = 0;
+		_count = 0;
+	}
 };
 
 namespace DialogFlags {
@@ -473,6 +480,14 @@ struct Area {
 	byte   _placeNum;
 	Room  *_citadelRoomPtr;
 	int16  _visitCount;
+
+	void clear() {
+		_num = _type = 0;
+		_flags = _firstRoomIdx = 0;
+		_citadelLevel = _placeNum = 0;
+		_citadelRoomPtr = nullptr;
+		_visitCount = 0;
+	}
 };
 
 namespace ValleyNews {
@@ -742,6 +757,8 @@ struct global_t {
 	byte   _var119;     // unused
 };
 
+#include "common/pack-end.h"
+
 struct PakHeaderItem {
 	Common::String _name; //[16];
 	int32 _size;
@@ -758,12 +775,18 @@ public:
 	PakHeaderItem* _files;
 };
 
-#include "common/pack-end.h"
-
 struct Citadel {
 	int16 _id;
 	int16 _bank[8];
 	int16 _video[8];
+
+	void clear() {
+		_id = 0;
+		for (int i = 0; i < 8; ++i) {
+			_bank[i] = 0;
+			_video[i] = 0;
+		}
+	}
 };
 
 /*

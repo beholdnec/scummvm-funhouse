@@ -38,7 +38,6 @@
 
 #include "adl/adl.h"
 #include "adl/display_a2.h"
-#include "adl/detection.h"
 #include "adl/graphics.h"
 #include "adl/sound.h"
 
@@ -103,7 +102,6 @@ AdlEngine::AdlEngine(OSystem *syst, const AdlGameDescription *gd) :
 		_canRestoreNow(false) {
 
 	_random = new Common::RandomSource("adl");
-	DebugMan.addDebugChannel(kDebugChannelScript, "Script", "Trace script execution");
 }
 
 bool AdlEngine::pollEvent(Common::Event &event) const {

@@ -134,7 +134,7 @@ bool SceneScriptNR05::ClickedOnExit(int exitId) {
 	if (exitId == 0) {
 		if (!Loop_Actor_Walk_To_XYZ(kActorMcCoy, -444.0f, 0.0f, -451.0f, 0, true, false, false)) {
 			Player_Loses_Control();
-			Music_Stop(2);
+			Music_Stop(2u);
 			Player_Set_Combat_Mode(false);
 			Actor_Face_Heading(kActorMcCoy, 1021, false);
 			Actor_Change_Animation_Mode(kActorMcCoy, kAnimationModeSit);
@@ -180,6 +180,9 @@ void SceneScriptNR05::SceneFrameAdvanced(int frame) {
 	}
 
 	rotateActorOnGround(kActorHysteriaPatron2);
+	if (_vm->_cutContent) {
+		rotateActorOnGround(kActorHysteriaPatron3);
+	}
 	rotateActorOnGround(kActorMcCoy);
 
 	if (Actor_Query_Goal_Number(kActorEarlyQ) == kGoalEarlyQNR05UnlockNR08) {
@@ -204,7 +207,7 @@ void SceneScriptNR05::ActorChangedGoal(int actorId, int newGoal, int oldGoal, bo
 
 void SceneScriptNR05::PlayerWalkedIn() {
 	if (Game_Flag_Query(kFlagNR08toNR05)) {
-		Music_Stop(2);
+		Music_Stop(2u);
 		Loop_Actor_Walk_To_XYZ(kActorMcCoy, -697.56f, 0.0f, -174.86f, 0, true, false, false);
 		Game_Flag_Reset(kFlagNR08toNR05);
 	}
@@ -213,10 +216,10 @@ void SceneScriptNR05::PlayerWalkedIn() {
 
 void SceneScriptNR05::PlayerWalkedOut() {
 	if (Game_Flag_Query(kFlagNR05toNR03)) {
-		Music_Stop(2);
+		Music_Stop(2u);
 	}
 	Ambient_Sounds_Remove_All_Non_Looping_Sounds(true);
-	Ambient_Sounds_Remove_All_Looping_Sounds(1);
+	Ambient_Sounds_Remove_All_Looping_Sounds(1u);
 }
 
 void SceneScriptNR05::DialogueQueueFlushed(int a1) {
@@ -302,6 +305,12 @@ void SceneScriptNR05::talkToEarlyQ() {
 			DM_Add_To_List_Never_Repeat_Once_Selected(900, 5, 6, 5); // LUCY
 		}
 		if (Actor_Clue_Query(kActorMcCoy, kClueDektorasDressingRoom)) {
+			// TODO A bug? kClueDektorasDressingRoom is acquired from EarlyQ
+			// at his office (nr04) while being threatened by McCoy.
+			// At which point EarlyQ already tells McCoy who the people on the photograph are.
+			// It makes no sense that McCoy will next find EarlyQ at the VIP area (this area, nr05)
+			// and casually ask him about who the woman is in this photo.
+			// (McCoy won't be able to even find EarlyQ there again).
 			DM_Add_To_List_Never_Repeat_Once_Selected(910, 5, 5, 5); // BLOND WOMAN
 		}
 	}
@@ -353,6 +362,9 @@ void SceneScriptNR05::talkToEarlyQ() {
 		Actor_Says(kActorMcCoy, 3515, 14);
 		Actor_Modify_Friendliness_To_Other(kActorEarlyQ, kActorMcCoy, -1);
 		if (Actor_Clue_Query(kActorMcCoy, kClueGrigoriansNote)) { // cut content? this clue is unobtanium
+			// TODO why is Grigorian's Note needed here, for EarlyQ to reveal who Hecuba is?
+			// TODO could CrazysInvolvement also do here?
+			//      maybe another clue should be required in its place or some additional ones?
 			Actor_Says(kActorEarlyQ, 580, 12);
 			Actor_Says(kActorMcCoy, 3560, 13);
 			Actor_Says(kActorEarlyQ, 590, 16);
@@ -397,15 +409,19 @@ void SceneScriptNR05::rotateActorOnGround(int actorId) {
 
 void SceneScriptNR05::playNextMusic() {
 	if (Music_Is_Playing()) {
-		Music_Adjust(51, 0, 2);
+		Music_Adjust(51, 0, 2u);
 	} else {
 		int track = Global_Variable_Query(kVariableEarlyQBackMusic);
+		int loop = kMusicLoopPlayOnce;
+		if (_vm->_cutContent && Random_Query(0, 2) == 1) {
+			loop = kMusicLoopPlayOnceRandomStart;
+		}
 		if (track == 0) {
-			Music_Play(kMusicDkoDnce1, 61, -80, 2, -1, 0, 0);
+			Music_Play(kMusicDkoDnce1, 61, -80, 2, -1, loop, 0);
 		} else if (track == 1) {
-			Music_Play(kMusicStrip1, 41, -80, 2, -1, 0, 0);
+			Music_Play(kMusicStrip1, 41, -80, 2, -1, loop, 0);
 		} else if (track == 2) {
-			Music_Play(kMusicArkDnce1, 41, -80, 2, -1, 0, 0);
+			Music_Play(kMusicArkDnce1, 41, -80, 2, -1, loop, 0);
 		}
 		++track;
 		if (track > 2) {

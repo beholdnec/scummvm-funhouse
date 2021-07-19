@@ -30,12 +30,15 @@ namespace Ultima8 {
 
 class Actor;
 
+/**
+ * A process for Crusader where the NPC mostly just stands around until
+ * they see the avatar.
+ */
 class GuardProcess : public Process {
 public:
 	GuardProcess();
 	GuardProcess(Actor *actor);
 
-	// p_dynamic_cast stuff
 	ENABLE_RUNTIME_CLASSTYPE()
 
 	void run() override;

@@ -5,7 +5,7 @@
 	</ImportGroup>
 	<PropertyGroup>
 		<_PropertySheetDisplayName>ScummVM_Analysisarm64</_PropertySheetDisplayName>
-		<LinkIncremental>true</LinkIncremental>
+		<LinkIncremental>false</LinkIncremental>
 		<GenerateManifest>false</GenerateManifest>
 	</PropertyGroup>
 	<ItemDefinitionGroup>

@@ -38,23 +38,25 @@
 #include "mohawk/myst.h"
 #include "mohawk/myst_actions.h"
 #include "mohawk/myst_scripts.h"
+#include "mohawk/myst_metaengine.h"
 #endif
 
 #ifdef ENABLE_RIVEN
 #include "mohawk/riven.h"
 #include "mohawk/riven_graphics.h"
+#include "mohawk/riven_metaengine.h"
 #endif
 
 namespace Mohawk {
 
 // This used to have GUI::Dialog("MohawkDummyDialog"), but that doesn't work with the gui branch merge :P (Sorry, Tanoku!)
-InfoDialog::InfoDialog(MohawkEngine *vm, const Common::String &message) : _vm(vm), GUI::Dialog(0, 0, 1, 1), _message(message) {
+InfoDialog::InfoDialog(MohawkEngine *vm, const Common::U32String &message) : _vm(vm), GUI::Dialog(0, 0, 1, 1), _message(message) {
 	_backgroundType = GUI::ThemeEngine::kDialogBackgroundSpecial;
 
 	_text = new GUI::StaticTextWidget(this, 0, 0, 10, 10, _message, Graphics::kTextAlignCenter);
 }
 
-void InfoDialog::setInfoText(const Common::String &message) {
+void InfoDialog::setInfoText(const Common::U32String &message) {
 	_message = message;
 	_text->setLabel(_message);
 }
@@ -74,7 +76,7 @@ void InfoDialog::reflowLayout() {
 	_text->setSize(_w, _h);
 }
 
-PauseDialog::PauseDialog(MohawkEngine *vm, const Common::String &message) : InfoDialog(vm, message) {
+PauseDialog::PauseDialog(MohawkEngine *vm, const Common::U32String &message) : InfoDialog(vm, message) {
 }
 
 void PauseDialog::handleKeyDown(Common::KeyState state) {
@@ -93,10 +95,12 @@ enum {
 #ifdef ENABLE_MYST
 
 MystOptionsWidget::MystOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain) :
-		OptionsContainerWidget(boss, name, "MystOptionsDialog", false, domain),
+		OptionsContainerWidget(boss, name, "MystGameOptionsDialog", false, domain),
 		_zipModeCheckbox(nullptr),
 		_transitionsCheckbox(nullptr),
 		_mystFlyByCheckbox(nullptr),
+		_spaceshipFuzzyLogicCheckbox(nullptr),
+		_addCdromDelayCheckbox(nullptr),
 		_languagePopUp(nullptr),
 		_dropPageButton(nullptr),
 		_showMapButton(nullptr),
@@ -107,40 +111,56 @@ MystOptionsWidget::MystOptionsWidget(GuiObject *boss, const Common::String &name
 
 	if (!isDemo) {
 		// I18N: Option for fast scene switching
-		_zipModeCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "MystOptionsDialog.ZipMode", _("~Z~ip Mode Activated"));
+		_zipModeCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "MystGameOptionsDialog.ZipMode", _("~Z~ip Mode Activated"),
+																_("When activated, clicking on an item or area with the lightning bolt cursor takes you directly there, skipping intermediate screens. You can only 'Zip' to a precise area you've already been."));
 	}
 
-	_transitionsCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "MystOptionsDialog.Transistions", _("~T~ransitions Enabled"));
+	_transitionsCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "MystGameOptionsDialog.Transistions", _("~T~ransitions Enabled"),
+																_("Toggle screen transitions on or off. Turning off screen transitions will enable you to navigate more quickly through the game."));
 
 	if (isME) {
-		_mystFlyByCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "MystOptionsDialog.PlayMystFlyBy", _("Play the Myst fly by movie"),
-		                                             _("The Myst fly by movie was not played by the original engine."));
+		_mystFlyByCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "MystGameOptionsDialog.PlayMystFlyBy", _("Play the Myst fly by movie"),
+																  _("The Myst fly by movie was not played by the original engine."));
 	}
+
+	if (!isDemo) {
+		/**
+		 * I18N:
+		 * This Option is for hard-of-hearing.
+		 * It makes it easier to solve the spaceship puzzle.
+		 * Normally game uses strict binary logic here.
+		 * We change it to use fuzzy logic.
+		 * By default the option is off.
+		 */
+		_spaceshipFuzzyLogicCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "MystGameOptionsDialog.FuzzyMode", _("~F~uzzy Logic in SpaceShip Active"));
+	}
+
+	_addCdromDelayCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "MystGameOptionsDialog.CdromDelay", _("Simulate loading times of old CD drives"));
 
 	if (isInGame()) {
 		MohawkEngine_Myst *vm = static_cast<MohawkEngine_Myst *>(g_engine);
 		assert(vm);
 
 		// I18N: Drop book page
-		_dropPageButton = new GUI::ButtonWidget(widgetsBoss(), "MystOptionsDialog.DropPage", _("~D~rop Page"), nullptr, kDropCmd);
+		_dropPageButton = new GUI::ButtonWidget(widgetsBoss(), "MystGameOptionsDialog.DropPage", _("~D~rop Page"), Common::U32String(), kDropCmd);
 
 		// Myst ME only has maps
 		if (vm->isGameVariant(GF_ME)) {
-			_showMapButton = new GUI::ButtonWidget(widgetsBoss(), "MystOptionsDialog.ShowMap", _("Show ~M~ap"), nullptr, kMapCmd);
+			_showMapButton = new GUI::ButtonWidget(widgetsBoss(), "MystGameOptionsDialog.ShowMap", _("Show ~M~ap"), Common::U32String(), kMapCmd);
 		}
 
 		// Myst demo only has a menu
 		if (vm->isGameVariant(GF_DEMO)) {
-			_returnToMenuButton = new GUI::ButtonWidget(widgetsBoss(), "MystOptionsDialog.MainMenu", _("Main Men~u~"), nullptr, kMenuCmd);
+			_returnToMenuButton = new GUI::ButtonWidget(widgetsBoss(), "MystGameOptionsDialog.MainMenu", _("Main Men~u~"), Common::U32String(), kMenuCmd);
 		}
 
 		if (vm->isGameVariant(GF_25TH)) {
-			GUI::StaticTextWidget *languageCaption = new GUI::StaticTextWidget(widgetsBoss(), "MystOptionsDialog.LanguageDesc", _("Language:"));
+			GUI::StaticTextWidget *languageCaption = new GUI::StaticTextWidget(widgetsBoss(), "MystGameOptionsDialog.LanguageDesc", _("Language:"));
 			languageCaption->setAlign(Graphics::kTextAlignRight);
 
-			_languagePopUp = new GUI::PopUpWidget(widgetsBoss(), "MystOptionsDialog.Language");
+			_languagePopUp = new GUI::PopUpWidget(widgetsBoss(), "MystGameOptionsDialog.Language");
 
-			const MystLanguage *languages = MohawkEngine_Myst::listLanguages();
+			const MystLanguage *languages = MohawkMetaEngine_Myst::listLanguages();
 			while (languages->language != Common::UNK_LANG) {
 				_languagePopUp->appendEntry(Common::getLanguageDescription(languages->language), languages->language);
 				languages++;
@@ -159,6 +179,8 @@ void MystOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::Stri
 	                .addWidget("ZipMode", "Checkbox")
 	                .addWidget("Transistions", "Checkbox")
 	                .addWidget("PlayMystFlyBy", "Checkbox")
+	                .addWidget("FuzzyMode", "Checkbox")
+					.addWidget("CdromDelay", "Checkbox")
 	                .addLayout(GUI::ThemeLayout::kLayoutHorizontal)
 	                    .addPadding(0, 0, 0, 0)
 	                    .addWidget("LanguageDesc", "OptionsLabel")
@@ -189,6 +211,14 @@ void MystOptionsWidget::load() {
 
 	if (_mystFlyByCheckbox) {
 		_mystFlyByCheckbox->setState(ConfMan.getBool("playmystflyby", _domain));
+	}
+
+	if (_spaceshipFuzzyLogicCheckbox) {
+		_spaceshipFuzzyLogicCheckbox->setState(ConfMan.getBool("fuzzy_logic", _domain));
+	}
+
+	if (_addCdromDelayCheckbox) {
+		_addCdromDelayCheckbox->setState(ConfMan.getBool("cdromdelay", _domain));
 	}
 
 	if (_languagePopUp) {
@@ -225,6 +255,14 @@ bool MystOptionsWidget::save() {
 
 	if (_mystFlyByCheckbox) {
 		ConfMan.setBool("playmystflyby", _mystFlyByCheckbox->getState(), _domain);
+	}
+
+	if (_spaceshipFuzzyLogicCheckbox) {
+		ConfMan.setBool("fuzzy_logic", _spaceshipFuzzyLogicCheckbox->getState(), _domain);
+	}
+
+	if (_addCdromDelayCheckbox) {
+		ConfMan.setBool("cdromdelay", _addCdromDelayCheckbox->getState(), _domain);
 	}
 
 	if (_languagePopUp) {
@@ -342,7 +380,7 @@ RivenOptionsWidget::RivenOptionsWidget(GuiObject *boss, const Common::String &na
 		_languagePopUp = new GUI::PopUpWidget(widgetsBoss(), "RivenOptionsDialog.Language");
 		_languagePopUp->setEnabled(canChangeLanguage);
 
-		const RivenLanguage *languages = MohawkEngine_Riven::listLanguages();
+		const RivenLanguage *languages = MohawkMetaEngine_Riven::listLanguages();
 		while (languages->language != Common::UNK_LANG) {
 			_languagePopUp->appendEntry(Common::getLanguageDescription(languages->language), languages->language);
 			languages++;

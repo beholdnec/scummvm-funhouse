@@ -1035,6 +1035,7 @@ void Screen::copyRegionToBuffer(int pageNum, int x, int y, int w, int h, uint8 *
 		h = _screenHeight - y;
 	}
 
+	int pitch = w;
 	if (x < 0) {
 		dest += -x * _bytesPerPixel;
 		w += x;
@@ -1049,7 +1050,7 @@ void Screen::copyRegionToBuffer(int pageNum, int x, int y, int w, int h, uint8 *
 	uint8 *pagePtr = getPagePtr(pageNum);
 
 	for (int i = y; i < y + h; ++i)
-		memcpy(dest + (i - y) * w * _bytesPerPixel, pagePtr + i * SCREEN_W * _bytesPerPixel + x * _bytesPerPixel, w * _bytesPerPixel);
+		memcpy(dest + (i - y) * pitch * _bytesPerPixel, pagePtr + i * SCREEN_W * _bytesPerPixel + x * _bytesPerPixel, w * _bytesPerPixel);
 }
 
 void Screen::copyPage(uint8 srcPage, uint8 dstPage) {
@@ -1335,10 +1336,13 @@ bool Screen::loadFont(FontId fontId, const char *filename) {
 	}
 
 	Font *&fnt = _fonts[fontId];
+	int temp = 0;
 
 	if (!fnt) {
 		if (_vm->game() == GI_KYRA1 && _isAmiga)
 			fnt = new AMIGAFont();
+		else if (_vm->game() == GI_KYRA3 && fontId == FID_CHINESE_FNT)
+			fnt = new Big5Font(_vm->staticres()->loadRawData(k3FontData, temp), SCREEN_W);
 		else
 			fnt = new DOSFont();
 
@@ -1373,7 +1377,7 @@ int Screen::getFontWidth() const {
 
 int Screen::getCharWidth(uint16 c) const {
 	const int width = _fonts[_currentFont]->getCharWidth(c);
-	return width + ((_currentFont != FID_SJIS_FNT && _currentFont != FID_SJIS_LARGE_FNT && _currentFont != FID_SJIS_SMALL_FNT) ? _charSpacing : 0);
+	return width + (_isSegaCD || _fonts[_currentFont]->getType() == Font::kASCII ? _charSpacing : 0);
 }
 
 int Screen::getCharHeight(uint16 c) const {
@@ -1406,6 +1410,13 @@ int Screen::getTextWidth(const char *str, bool nextWordOnly) {
 	}
 
 	return MAX(curLineLen, maxLineLen);
+}
+
+int Screen::getNumberOfCharacters(const char *str) {
+	int res = 0;
+	while (fetchChar(str))
+		++res;
+	return res;
 }
 
 void Screen::printText(const char *str, int x, int y, uint8 color1, uint8 color2, int pitch) {
@@ -1479,7 +1490,7 @@ uint16 Screen::fetchChar(const char *&s) const {
 
 	uint16 ch = (uint8)*s++;
 
-	if (ch <= 0x7F || (ch >= 0xA1 && ch <= 0xDF))
+	if ((_fonts[_currentFont]->getType() == Font::kSJIS && (ch <= 0x7F || (ch >= 0xA1 && ch <= 0xDF))) || (_fonts[_currentFont]->getType() == Font::kBIG5 && ch < 0x7F))
 		return ch;
 
 	ch |= (uint8)(*s++) << 8;
@@ -3325,7 +3336,7 @@ bool Screen::loadPalette(const char *filename, Palette &pal) {
 			numCols = stream->size() / Palette::kVGABytesPerColor;
 			pal.loadVGAPalette(*stream, 0, MIN(maxCols, numCols));
 		} else {
-			error("Screen::loadPalette(): Failed to load file '%s' with invalid size %d in HiColor mode", filename, stream->size());
+			error("Screen::loadPalette(): Failed to load file '%s' with invalid size %d in HiColor mode", filename, (int)stream->size());
 		}
 	}
 
@@ -3879,7 +3890,7 @@ void Palette::loadEGAPalette(Common::ReadStream &stream, int startIndex, int col
 void Palette::setCGAPalette(int palIndex, CGAIntensity intensity) {
 	assert(_numColors >= _cgaNumColors);
 	assert(!(palIndex & ~1));
-	memcpy(_palData, _cgaColors[palIndex * 2 + intensity], _numColors * 3);
+	memcpy(_palData, _cgaColors[palIndex * 2 + intensity], _cgaNumColors * 3);
 }
 
 void Palette::loadAmigaPalette(Common::ReadStream &stream, int startIndex, int colors) {

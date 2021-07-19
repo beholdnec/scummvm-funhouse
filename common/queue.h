@@ -29,6 +29,14 @@
 namespace Common {
 
 /**
+ * @defgroup common_queue Queue
+ * @ingroup common
+ *
+ * @brief API and templates for queues.
+ * @{
+ */
+
+/**
  * Variable size Queue class, implemented using our List class.
  */
 template<class T>
@@ -37,9 +45,6 @@ class Queue {
 //	typedef T value_type;
 
 public:
-	Queue<T>() : _impl() {}
-	Queue<T>(const Queue<T> &queue) : _impl(queue._impl) {}
-
 	bool empty() const {
 		return _impl.empty();
 	}
@@ -81,6 +86,8 @@ public:
 private:
 	List<T>	_impl;
 };
+
+/** @} */
 
 } // End of namespace Common
 

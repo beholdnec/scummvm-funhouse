@@ -48,8 +48,10 @@ void InterfaceMap::start(int id) {
 	const BGInfo *info = g_vm->getQSystem()->_mainInterface->findBGInfo(bg->_id);
 	for (uint i = 0; i < info->attachedObjIds.size(); ++i) {
 		QMessageObject *obj = sys->findObject(info->attachedObjIds[i]);
-		FlicDecoder *flc = g_vm->resMgr()->loadFlic(obj->_resourceId);
-		flc->setFrame(1);
+		FlicDecoder *flc = g_vm->resMgr()->getFlic(obj->_resourceId);
+		if (flc) {
+			flc->setFrame(1);
+		}
 		obj->_z = 1;
 		obj->_x = 0;
 		obj->_y = 0;
@@ -86,7 +88,7 @@ void InterfaceMap::onMouseMove(Common::Point p) {
 	for (int i = _objs.size() - 1; i > 0; --i) {
 		QMessageObject *obj = (QMessageObject *)_objs[i];
 		if (obj->_resourceId != 4901 && obj->_resourceId != _roomResID) {
-			FlicDecoder *flc = g_vm->resMgr()->loadFlic(obj->_resourceId);
+			FlicDecoder *flc = g_vm->resMgr()->getFlic(obj->_resourceId);
 			if (flc) {
 				bool show = false;
 				if (!found && obj->isInPoint(p)) {
@@ -114,7 +116,7 @@ void InterfaceMap::onMouseMove(Common::Point p) {
 			setText(Common::convertToU32String(obj->_name.c_str(), Common::kWindows1251), fmt.RGBToColor(0x80, 0, 0), fmt.RGBToColor(0xA, 0xA, 0xA));
 		}
 	} else if (oldObj && !_objUnderCursor) {
-		setText(Common::U32String(""), 0, 0);
+		setText(Common::U32String(), 0, 0);
 	}
 }
 

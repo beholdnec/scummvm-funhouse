@@ -147,6 +147,7 @@ public:
 	uint16 getMainCursor() { return _mainCursor; }
 	void refreshCursor();
 	bool wait(uint32 duration, bool skippable = false);
+	bool addCdRomDelay;
 
 	/** Update the game state according to events and update the screen */
 	void doFrame();
@@ -197,7 +198,7 @@ public:
 	}
 
 	bool hasFeature(EngineFeature f) const override;
-	static void registerDefaultSettings();
+
 	void applyGameSettings() override;
 	static Common::Array<Common::Keymap *> initKeymaps(const char *target);
 
@@ -210,7 +211,6 @@ public:
 	void doAction(MystEventAction action);
 	void scheduleAction(MystEventAction action);
 
-	static const MystLanguage *listLanguages();
 	static const MystLanguage *getLanguageDesc(Common::Language language);
 	Common::Language getLanguage() const override;
 
@@ -245,11 +245,6 @@ private:
 
 	Common::Language _currentLanguage;
 	MystEventAction _scheduledAction;
-};
-
-struct MystLanguage {
-	Common::Language language;
-	const char *archiveSuffix;
 };
 
 } // End of namespace Mohawk

@@ -29,10 +29,6 @@
 #include "common/str.h"
 #include "audio/mididrv.h"
 
-#ifdef GUI_ENABLE_KEYSDIALOG
-#include "gui/KeysDialog.h"
-#endif
-
 #ifdef USE_FLUIDSYNTH
 #include "gui/fluidsynth-dialog.h"
 #endif
@@ -59,6 +55,7 @@ class CommandSender;
 class GuiObject;
 class RadiobuttonGroup;
 class RadiobuttonWidget;
+class OptionsContainerWidget;
 
 class OptionsDialog : public Dialog {
 public:
@@ -94,7 +91,8 @@ protected:
 
 	void addControlControls(GuiObject *boss, const Common::String &prefix);
 	void addKeyMapperControls(GuiObject *boss, const Common::String &prefix, const Common::Array<Common::Keymap *> &keymaps, const Common::String &domain);
-	void addAchievementsControls(GuiObject *boss, const Common::String &prefix, const Common::AchievementsInfo &info);
+	void addAchievementsControls(GuiObject *boss, const Common::String &prefix);
+	void addStatisticsControls(GuiObject *boss, const Common::String &prefix);
 	void addGraphicControls(GuiObject *boss, const Common::String &prefix);
 	void addShaderControls(GuiObject *boss, const Common::String &prefix);
 	void addAudioControls(GuiObject *boss, const Common::String &prefix);
@@ -114,6 +112,7 @@ protected:
 	void setSubtitleSettingsState(bool enabled);
 
 	virtual void setupGraphicsTab();
+	void updateScaleFactors(uint32 tag);
 
 	bool loadMusicDeviceSetting(PopUpWidget *popup, Common::String setting, MusicType preferredType = MT_AUTO);
 	void saveMusicDeviceSetting(PopUpWidget *popup, Common::String setting);
@@ -154,9 +153,16 @@ private:
 	PopUpWidget *_gfxPopUp;
 	StaticTextWidget *_stretchPopUpDesc;
 	PopUpWidget *_stretchPopUp;
+	StaticTextWidget *_scalerPopUpDesc;
+	PopUpWidget *_scalerPopUp, *_scaleFactorPopUp;
 	CheckboxWidget *_fullscreenCheckbox;
 	CheckboxWidget *_filteringCheckbox;
 	CheckboxWidget *_aspectCheckbox;
+	CheckboxWidget *_vsyncCheckbox;
+	StaticTextWidget *_rendererTypePopUpDesc;
+	PopUpWidget *_rendererTypePopUp;
+	StaticTextWidget *_antiAliasPopUpDesc;
+	PopUpWidget *_antiAliasPopUp;
 	StaticTextWidget *_renderModePopUpDesc;
 	PopUpWidget *_renderModePopUp;
 
@@ -241,6 +247,11 @@ protected:
 	//
 	Common::String _guioptions;
 	Common::String _guioptionsString;
+
+	//
+	// Backend controls
+	//
+	OptionsContainerWidget *_backendOptions;
 };
 
 
@@ -262,9 +273,6 @@ protected:
 
 	Common::String _newTheme;
 	LauncherDialog *_launcher;
-#ifdef GUI_ENABLE_KEYSDIALOG
-	KeysDialog *_keysDialog;
-#endif
 #ifdef USE_FLUIDSYNTH
 	FluidSynthSettingsDialog *_fluidSynthSettingsDialog;
 #endif
@@ -288,6 +296,8 @@ protected:
 	// Misc controls
 	//
 	StaticTextWidget *_curTheme;
+	StaticTextWidget *_guiBasePopUpDesc;
+	PopUpWidget *_guiBasePopUp;
 	StaticTextWidget *_rendererPopUpDesc;
 	PopUpWidget *_rendererPopUp;
 	StaticTextWidget *_autosavePeriodPopUpDesc;
@@ -296,6 +306,8 @@ protected:
 	PopUpWidget *_guiLanguagePopUp;
 	CheckboxWidget *_guiLanguageUseGameLanguageCheckbox;
 	CheckboxWidget *_useSystemDialogsCheckbox;
+	CheckboxWidget *_guiReturnToLauncherAtExit;
+	CheckboxWidget *_guiConfirmExit;
 
 
 #ifdef USE_UPDATES

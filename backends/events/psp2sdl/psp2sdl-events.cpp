@@ -61,6 +61,11 @@ PSP2EventSource::PSP2EventSource() {
 
 	_hiresDX = 0;
 	_hiresDY = 0;
+
+#if SDL_VERSION_ATLEAST(2,0,10)
+	// ensure that touch doesn't create double-events
+	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+#endif
 }
 
 bool PSP2EventSource::pollEvent(Common::Event &event) {
@@ -226,8 +231,8 @@ void PSP2EventSource::preprocessFingerMotion(SDL_Event *event) {
 	if (numFingersDown >= 1) {
 		int x = _mouseX;
 		int y = _mouseY;
-		int xMax = _graphicsManager->getWindowWidth()  - 1;
-		int yMax = _graphicsManager->getWindowHeight() - 1;
+		int xMax = dynamic_cast<WindowedGraphicsManager *>(_graphicsManager)->getWindowWidth() - 1;
+		int yMax = dynamic_cast<WindowedGraphicsManager *>(_graphicsManager)->getWindowHeight() - 1;
 
 		if (port == 0 && !ConfMan.getBool("frontpanel_touchpad_mode")) {
 			convertTouchXYToGameXY(event->tfinger.x, event->tfinger.y, &x, &y);
@@ -316,7 +321,7 @@ void PSP2EventSource::preprocessFingerMotion(SDL_Event *event) {
 					}
 				}
 				if (numFingersDownLong >= 2) {
-					// starting drag, so push mouse down at current location (back) 
+					// starting drag, so push mouse down at current location (back)
 					// or location of "oldest" finger (front)
 					int mouseDownX = _mouseX;
 					int mouseDownY = _mouseY;
@@ -379,8 +384,8 @@ void PSP2EventSource::preprocessFingerMotion(SDL_Event *event) {
 }
 
 void PSP2EventSource::convertTouchXYToGameXY(float touchX, float touchY, int *gameX, int *gameY) {
-	int screenH = _graphicsManager->getWindowHeight();
-	int screenW = _graphicsManager->getWindowWidth();
+	int screenH = dynamic_cast<WindowedGraphicsManager *>(_graphicsManager)->getWindowHeight();
+	int screenW = dynamic_cast<WindowedGraphicsManager *>(_graphicsManager)->getWindowWidth();
 
 	const int dispW = TOUCHSCREEN_WIDTH;
 	const int dispH = TOUCHSCREEN_HEIGHT;

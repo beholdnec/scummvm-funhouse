@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -218,6 +233,7 @@
 		</ClCompile>
 	</ItemDefinitionGroup>
 	<ItemGroup>
+		<ClCompile Include="..\..\engines\tinsel\noir\lzss.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\actors.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\adpcm.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\anim.cpp" />
@@ -228,7 +244,6 @@
 		<ClCompile Include="..\..\engines\tinsel\config.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\cursor.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\debugger.cpp" />
-		<ClCompile Include="..\..\engines\tinsel\detection.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\dialogs.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\drives.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\effect.cpp" />
@@ -239,6 +254,7 @@
 		<ClCompile Include="..\..\engines\tinsel\handle.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\heapmem.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\mareels.cpp" />
+		<ClCompile Include="..\..\engines\tinsel\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\move.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\multiobj.cpp" />
 		<ClCompile Include="..\..\engines\tinsel\music.cpp" />
@@ -265,6 +281,7 @@
 		<ClCompile Include="..\..\engines\tinsel\token.cpp" />
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="..\..\engines\tinsel\noir\lzss.h" />
 		<ClInclude Include="..\..\engines\tinsel\actors.h" />
 		<ClInclude Include="..\..\engines\tinsel\adpcm.h" />
 		<ClInclude Include="..\..\engines\tinsel\anim.h" />
@@ -274,6 +291,7 @@
 		<ClInclude Include="..\..\engines\tinsel\config.h" />
 		<ClInclude Include="..\..\engines\tinsel\cursor.h" />
 		<ClInclude Include="..\..\engines\tinsel\debugger.h" />
+		<ClInclude Include="..\..\engines\tinsel\detection.h" />
 		<ClInclude Include="..\..\engines\tinsel\detection_tables.h" />
 		<ClInclude Include="..\..\engines\tinsel\dialogs.h" />
 		<ClInclude Include="..\..\engines\tinsel\drives.h" />

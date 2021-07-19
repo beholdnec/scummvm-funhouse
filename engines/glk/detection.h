@@ -26,16 +26,12 @@
 #include "engines/advancedDetector.h"
 #include "engines/game.h"
 
-#define MAX_SAVES 99
-
 /**
  * ScummVM Meta Engine interface
  */
-class GlkMetaEngine : public MetaEngine {
-private:
-	Common::String findFileByGameId(const Common::String &gameId) const;
+class GlkMetaEngineDetection : public MetaEngineDetection {
 public:
-	GlkMetaEngine() : MetaEngine() {}
+	GlkMetaEngineDetection() : MetaEngineDetection() {}
 
 	const char *getName() const override {
 		return "Glk";
@@ -49,12 +45,7 @@ public:
 		return "Infocom games (C) Infocom\nScott Adams games (C) Scott Adams";
 	}
 
-	bool hasFeature(MetaEngineFeature f) const override;
-	Common::Error createInstance(OSystem *syst, Engine **engine) const override;
-	SaveStateList listSaves(const char *target) const override;
-	int getMaximumSaveSlot() const override;
-	void removeSaveState(const char *target, int slot) const override;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	const DebugChannelDef *getDebugChannels() const override;
 
 	/**
 	 * Returns a list of games supported by this engine.

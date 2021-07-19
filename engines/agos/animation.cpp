@@ -344,9 +344,9 @@ void MoviePlayerDXA::handleNextFrame() {
 }
 
 bool MoviePlayerDXA::processFrame() {
-	Graphics::Surface *screen = _vm->_system->lockScreen();
+	Graphics::Surface *screen = _vm->getBackendSurface();
 	copyFrameToBuffer((byte *)screen->getPixels(), (_vm->_screenWidth - getWidth()) / 2, (_vm->_screenHeight - getHeight()) / 2, screen->pitch);
-	_vm->_system->unlockScreen();
+	_vm->updateBackendSurface();
 
 	uint32 soundTime = _mixer->getSoundElapsedTime(_bgSound);
 	uint32 nextFrameStartTime = ((Video::VideoDecoder::VideoTrack *)getTrack(0))->getNextFrameStartTime();
@@ -495,9 +495,9 @@ void MoviePlayerSMK::nextFrame() {
 }
 
 bool MoviePlayerSMK::processFrame() {
-	Graphics::Surface *screen = _vm->_system->lockScreen();
+	Graphics::Surface *screen = _vm->getBackendSurface();
 	copyFrameToBuffer((byte *)screen->getPixels(), (_vm->_screenWidth - getWidth()) / 2, (_vm->_screenHeight - getHeight()) / 2, screen->pitch);
-	_vm->_system->unlockScreen();
+	_vm->updateBackendSurface();
 
 	uint32 waitTime = getTimeToNextFrame();
 
@@ -555,7 +555,7 @@ MoviePlayer *makeMoviePlayer(AGOSEngine_Feeble *vm, const char *name) {
 		return new MoviePlayerSMK(vm, baseName);
 	}
 
-	Common::String buf = Common::String::format(_("Cutscene file '%s' not found!"), baseName);
+	Common::U32String buf = Common::U32String::format(_("Cutscene file '%s' not found!"), baseName);
 	GUI::MessageDialog dialog(buf, _("OK"));
 	dialog.runModal();
 

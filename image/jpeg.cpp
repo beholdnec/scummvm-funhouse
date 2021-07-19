@@ -172,7 +172,7 @@ void errorExit(j_common_ptr cinfo) {
 	(*cinfo->err->format_message)(cinfo, buffer);
 	// This function is not allowed to return to the caller, thus we simply
 	// error out with our error handling here.
-	error("%s", buffer);
+	error("libjpeg: %s", buffer);
 }
 
 void outputMessage(j_common_ptr cinfo) {
@@ -298,7 +298,7 @@ bool JPEGDecoder::loadStream(Common::SeekableReadStream &stream) {
 
 	// Allocate buffer for one scanline
 	JDIMENSION pitch = cinfo.output_width * _surface.format.bytesPerPixel;
-	assert(_surface.pitch >= pitch);
+	assert(_surface.pitch >= (int)pitch);
 	JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, pitch, 1);
 
 	// Go through the image data scanline by scanline

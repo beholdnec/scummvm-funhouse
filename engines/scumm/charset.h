@@ -25,6 +25,7 @@
 
 #include "common/scummsys.h"
 #include "common/rect.h"
+#include "graphics/fonts/macfont.h"
 #include "graphics/sjis.h"
 #include "scumm/scumm.h"
 #include "scumm/gfx.h"
@@ -35,12 +36,33 @@ class ScummEngine;
 class NutRenderer;
 struct VirtScreen;
 
+static inline bool checkKSCode(byte hi, byte lo) {
+	//hi : xx
+	//lo : yy
+	if ((0xA1 > lo) || (0xFE < lo)) {
+		return false;
+	}
+	if ((hi >= 0xB0) && (hi <= 0xC8)) {
+		return true;
+	}
+	return false;
+}
+
 static inline bool checkSJISCode(byte c) {
 	if ((c >= 0x80 && c <= 0x9f) || (c >= 0xe0 && c <= 0xfd))
 		return true;
 	return false;
 }
 
+static inline bool is2ByteCharacter(Common::Language lang, byte c) {
+	if (lang == Common::JA_JPN)
+		return (c >= 0x80 && c <= 0x9F) || (c >= 0xE0 && c <= 0xFD);
+	else if (lang == Common::KO_KOR)
+		return (c >= 0xB0 && c <= 0xD0);
+	else if (lang == Common::ZH_TWN || lang == Common::ZH_CNA)
+		return (c >= 0x80);
+	return false;
+}
 
 class CharsetRenderer {
 public:
@@ -121,6 +143,7 @@ class CharsetRendererPC : public CharsetRendererCommon {
 protected:
 	virtual void enableShadow(bool enable);
 	virtual void drawBits1(Graphics::Surface &dest, int x, int y, const byte *src, int drawTop, int width, int height);
+	void drawBits1Kor(Graphics::Surface &dest, int x1, int y1, const byte *src, int drawTop, int width, int height);
 
 public:
 	CharsetRendererPC(ScummEngine *vm) : CharsetRendererCommon(vm), _shadowType(kNoShadowType) { }
@@ -250,6 +273,32 @@ public:
 
 	void setCurID(int32 id) override {}
 	int getCharWidth(uint16 chr) override { return 8; }
+};
+
+class CharsetRendererMac : public CharsetRendererCommon {
+protected:
+	Graphics::MacFONTFont _macFonts[2];
+	bool _pad;
+	int _lastTop;
+
+	void printCharInternal(int chr, int color, bool shadow, int x, int y);
+	void printCharToTextBox(int chr, int color, int x, int y);
+
+	byte getTextColor();
+	byte getTextShadowColor();
+
+	Graphics::Surface *_glyphSurface;
+
+public:
+	CharsetRendererMac(ScummEngine *vm, const Common::String &fontFile);
+	~CharsetRendererMac() override;
+
+	void setCurID(int32 id) override;
+	int getFontHeight() override;
+	int getCharWidth(uint16 chr) override;
+	void printChar(int chr, bool ignoreCharsetMask) override;
+	void drawChar(int chr, Graphics::Surface &s, int x, int y) override;
+	void setColor(byte color) override;
 };
 
 #ifdef ENABLE_SCUMM_7_8

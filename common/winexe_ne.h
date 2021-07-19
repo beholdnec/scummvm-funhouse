@@ -29,6 +29,15 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_winexe_ne Windows New Executable resources
+ * @ingroup common_winexe
+ *
+ * @brief API for managing Windows New Executable resources.
+ *
+ * @{
+ */
+
 template<class T> class Array;
 class SeekableReadStream;
 
@@ -50,13 +59,19 @@ public:
 	using WinResources::loadFromEXE;
 
 	/** Load from a stream. */
-	bool loadFromEXE(SeekableReadStream *stream);
+	bool loadFromEXE(SeekableReadStream *stream, DisposeAfterUse::Flag disposeFileHandle = DisposeAfterUse::YES);
 
 	/** Return a list of resources for a given type. */
 	const Array<WinResourceID> getIDList(const WinResourceID &type) const;
 
 	/** Return a stream to the specified resource (or 0 if non-existent). */
 	SeekableReadStream *getResource(const WinResourceID &type, const WinResourceID &id);
+
+	/** Get a string from a string resource. */
+	String loadString(uint32 stringID);
+
+protected:
+	VersionInfo *parseVersionInfo(SeekableReadStream *stream);
 
 private:
 	/** A resource. */
@@ -74,6 +89,7 @@ private:
 	};
 
 	SeekableReadStream *_exe;        ///< Current file.
+	DisposeAfterUse::Flag _disposeFileHandle;
 
 	/** All resources. */
 	List<Resource> _resources;
@@ -89,6 +105,8 @@ private:
 	/** Read a resource string. */
 	static String getResourceString(SeekableReadStream &exe, uint32 offset);
 };
+
+/** @} */
 
 } // End of namespace Common
 

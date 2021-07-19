@@ -36,12 +36,12 @@
 #include "cryomni3d/datstream.h"
 
 #include "cryomni3d/image/hlz.h"
-#include "cryomni3d/video/hnm_decoder.h"
+#include "video/hnm_decoder.h"
 
 namespace CryOmni3D {
 
 CryOmni3DEngine::CryOmni3DEngine(OSystem *syst,
-                                 const CryOmni3DGameDescription *gamedesc) : Engine(syst), _gameDescription(gamedesc),
+								 const CryOmni3DGameDescription *gamedesc) : Engine(syst), _gameDescription(gamedesc),
 	_canLoadSave(false), _fontManager(), _sprites(), _dragStatus(kDragStatus_NoDrag), _lastMouseButton(0),
 	_autoRepeatNextEvent(uint(-1)), _hnmHasClip(false) {
 	if (!_mixer->isReady()) {
@@ -52,14 +52,9 @@ CryOmni3DEngine::CryOmni3DEngine(OSystem *syst,
 	syncSoundSettings();
 
 	unlockPalette();
-
-	DebugMan.addDebugChannel(kDebugFile, "File", "Track File Accesses");
-	DebugMan.addDebugChannel(kDebugVariable, "Variable", "Track Variable Accesses");
-	DebugMan.addDebugChannel(kDebugSaveLoad, "SaveLoad", "Track Save/Load Function");
 }
 
 CryOmni3DEngine::~CryOmni3DEngine() {
-	DebugMan.clearAllDebugChannels();
 }
 
 Common::Error CryOmni3DEngine::run() {
@@ -100,7 +95,7 @@ DATSeekableStream *CryOmni3DEngine::getStaticData(uint32 gameId, uint16 version)
 }
 
 Common::String CryOmni3DEngine::prepareFileName(const Common::String &baseName,
-        const char *const *extensions) const {
+		const char *const *extensions) const {
 	Common::String fname(baseName);
 
 	int lastDotPos = fname.size() - 1;
@@ -134,7 +129,7 @@ Common::String CryOmni3DEngine::prepareFileName(const Common::String &baseName,
 }
 
 void CryOmni3DEngine::playHNM(const Common::String &filename, Audio::Mixer::SoundType soundType,
-                              HNMCallback beforeDraw, HNMCallback afterDraw) {
+							  HNMCallback beforeDraw, HNMCallback afterDraw) {
 	const char *const extensions[] = { "hns", "hnm", nullptr };
 	Common::String fname(prepareFileName(filename, extensions));
 

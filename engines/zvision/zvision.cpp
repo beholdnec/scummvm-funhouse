@@ -44,6 +44,7 @@
 #include "common/debug-channels.h"
 #include "common/textconsole.h"
 #include "common/timer.h"
+#include "common/translation.h"
 #include "common/error.h"
 #include "common/system.h"
 #include "common/file.h"
@@ -127,9 +128,6 @@ ZVision::~ZVision() {
 	delete _midiManager;
 
 	getTimerManager()->removeTimerProc(&fpsTimerCallback);
-
-	// Remove all of our debug levels
-	DebugMan.clearAllDebugChannels();
 }
 
 void ZVision::registerDefaultSettings() {
@@ -308,7 +306,7 @@ Common::Error ZVision::run() {
 	}
 
 	if (!foundAllFonts) {
-		GUI::MessageDialog dialog(
+		GUI::MessageDialog dialog(_(
 				"Before playing this game, you'll need to copy the required "
 				"fonts into ScummVM's extras directory, or into the game directory. "
 				"On Windows, you'll need the following font files from the Windows "
@@ -318,7 +316,7 @@ Common::Error ZVision::run() {
 				"fonts from the font package you choose, i.e., LiberationMono, "
 				"LiberationSans and LiberationSerif, or FreeMono, FreeSans and "
 				"FreeSerif respectively."
-		);
+		));
 		dialog.runModal();
 		quitGame();
 		return Common::kUnknownError;

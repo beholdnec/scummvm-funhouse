@@ -140,7 +140,9 @@ bool GfxFrameout::detectHiRes() const {
 	}
 
 	// PQ4 DOS floppy is low resolution only
-	if (g_sci->getGameId() == GID_PQ4 && !g_sci->isCD()) {
+	if (g_sci->getGameId() == GID_PQ4 &&
+		g_sci->getPlatform() == Common::kPlatformDOS &&
+		!g_sci->isCD()) {
 		return false;
 	}
 
@@ -350,11 +352,11 @@ void GfxFrameout::deletePlanesForMacRestore() {
 	//  their Game:restore script before calling kRestore.
 	//  In Mac this work was moved into the interpreter
 	//  for some games, while others added it back to
-    //  Game:restore or used their own scripts that took
+	//  Game:restore or used their own scripts that took
 	//  care of this in both PC and Mac versions.
 	if (!(g_sci->getGameId() == GID_GK1 ||
 		  g_sci->getGameId() == GID_PQ4 ||
-		  g_sci->getGameId() == GID_LSL6 ||
+		  g_sci->getGameId() == GID_LSL6HIRES ||
 		  g_sci->getGameId() == GID_KQ7)) {
 		return;
 	}

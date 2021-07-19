@@ -99,12 +99,9 @@ SupernovaEngine::SupernovaEngine(OSystem *syst)
 		_MSPart = 0;
 
 	_improved = ConfMan.getBool("improved");
-	DebugMan.addDebugChannel(kDebugGeneral, "general", "Supernova general debug channel");
 }
 
 SupernovaEngine::~SupernovaEngine() {
-	DebugMan.clearAllDebugChannels();
-
 	delete _sleepAutoSave;
 	delete _gm;
 	delete _sound;
@@ -824,8 +821,8 @@ bool SupernovaEngine::saveGame(int slot, const Common::String &description) {
 
 void SupernovaEngine::errorTempSave(bool saving) {
 	GUIErrorMessage(saving
-		? "Failed to save temporary game state. Make sure your save game directory is set in ScummVM and that you can write to it."
-		: "Failed to load temporary game state.");
+		? _("Failed to save temporary game state. Make sure your save game directory is set in ScummVM and that you can write to it.")
+		: _("Failed to load temporary game state."));
 	error("Unrecoverable error");
 }
 

@@ -3,6 +3,7 @@
 #
 ###############################################
 
+ifeq ($(LOAD_RULES_MK), 1)
 
 # Copy the list of objects to a new variable. The name of the new variable
 # contains the module name, a trick we use so we can keep multiple different
@@ -24,7 +25,7 @@ TOOL_LIBS-$(TOOL-$(MODULE)) := $(TOOL_LIBS)
 TOOL_CFLAGS-$(TOOL-$(MODULE)) := $(TOOL_CFLAGS)
 
 $(TOOL-$(MODULE)): $(MODULE_OBJS-$(MODULE)) $(TOOL_DEPS)
-	$(QUIET_CXX)$(CXX) $(LDFLAGS) $(TOOL_CFLAGS-$@) $+ $(TOOL_LIBS-$@) -o $@
+	+$(QUIET_LINK)$(LD) $(LDFLAGS) $(TOOL_CFLAGS-$@) $+ $(TOOL_LIBS-$@) -o $@
 
 # Reset TOOL_* vars
 TOOL_EXECUTABLE:=
@@ -47,7 +48,7 @@ ifdef PLUGIN
 PLUGIN-$(MODULE) := plugins/$(PLUGIN_PREFIX)$(notdir $(MODULE))$(PLUGIN_SUFFIX)
 $(PLUGIN-$(MODULE)): $(MODULE_OBJS-$(MODULE)) $(PLUGIN_EXTRA_DEPS)
 	$(QUIET)$(MKDIR) plugins
-	$(QUIET_PLUGIN)$(CXX) $(SAVED_LDFLAGS) $(filter-out $(PLUGIN_EXTRA_DEPS),$+) $(PLUGIN_LDFLAGS) -o $@
+	+$(QUIET_PLUGIN)$(LD) $(SAVED_LDFLAGS) $(filter-out $(PLUGIN_EXTRA_DEPS),$+) $(PLUGIN_LDFLAGS) -o $@
 
 # Reset PLUGIN var
 PLUGIN:=
@@ -103,3 +104,5 @@ ifdef SPLIT_DWARF
 endif
 
 .PHONY: clean-$(MODULE) $(MODULE)
+
+endif # LOAD_RULES_MK

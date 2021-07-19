@@ -30,6 +30,13 @@
 
 class MidiDriver_BASE;
 
+/**
+ * @defgroup audio_midiparser MIDI parser
+ * @ingroup audio
+ *
+ * @brief A framework and common functionality for parsing event-based music streams.
+ * @{
+ */
 
 
 //////////////////////////////////////////////////
@@ -57,16 +64,6 @@ struct Tracker {
 	byte   _runningStatus;  ///< Cached MIDI command, for MIDI streams that rely on implied event codes
 
 	Tracker() { clear(); }
-
-	/// Copy constructor for each duplication of Tracker information.
-	Tracker(const Tracker &copy) :
-	_playPos(copy._playPos),
-	_playTime(copy._playTime),
-	_playTick(copy._playTick),
-	_lastEventTime(copy._lastEventTime),
-	_lastEventTick(copy._lastEventTick),
-	_runningStatus(copy._runningStatus)
-	{ }
 
 	/// Clears all data; used by the constructor for initialization.
 	void clear() {
@@ -493,10 +490,10 @@ public:
 
 	static void defaultXMidiCallback(byte eventData, void *refCon);
 
-	static MidiParser *createParser_SMF();
+	static MidiParser *createParser_SMF(int8 source = -1);
 	static MidiParser *createParser_XMIDI(XMidiCallbackProc proc = defaultXMidiCallback, void *refCon = 0, int source = -1);
-	static MidiParser *createParser_QT();
+	static MidiParser *createParser_QT(int8 source = -1);
 	static void timerCallback(void *data) { ((MidiParser *) data)->onTimer(); }
 };
-
+/** @} */
 #endif

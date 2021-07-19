@@ -30,6 +30,7 @@
 #include "common/list.h"
 
 #include "gui/ThemeEngine.h"
+#include "gui/widget.h"
 
 class OSystem;
 
@@ -91,8 +92,10 @@ public:
 
 	ThemeEval *xmlEval() { return _theme->getEvaluator(); }
 
-	int getWidth() const { return _width; }
-	int getHeight() const { return _height; }
+	int16 getGUIWidth() const { return _baseWidth; }
+	int16 getGUIHeight() const { return _baseHeight; }
+	float getScaleFactor() const { return _scaleFactor; }
+	void computeScaleFactor();
 
 	bool useRTL() const { return _useRTL; }
 	void setLanguageRTL();
@@ -103,6 +106,7 @@ public:
 	const Graphics::Font &getFont(ThemeEngine::FontStyle style = ThemeEngine::kFontStyleBold) const { return *(_theme->getFont(style)); }
 	int getFontHeight(ThemeEngine::FontStyle style = ThemeEngine::kFontStyleBold) const { return _theme->getFontHeight(style); }
 	int getStringWidth(const Common::String &str, ThemeEngine::FontStyle style = ThemeEngine::kFontStyleBold) const { return _theme->getStringWidth(str, style); }
+	int getStringWidth(const Common::U32String &str, ThemeEngine::FontStyle style = ThemeEngine::kFontStyleBold) const { return _theme->getStringWidth(str, style); }
 	int getCharWidth(byte c, ThemeEngine::FontStyle style = ThemeEngine::kFontStyleBold) const { return _theme->getCharWidth(c, style); }
 	int getKerningOffset(byte left, byte right, ThemeEngine::FontStyle font = ThemeEngine::kFontStyleBold) const { return _theme->getKerningOffset(left, right, font); }
 
@@ -142,7 +146,8 @@ protected:
 //	bool		_needRedraw;
 	RedrawStatus _redrawStatus;
 	int			_lastScreenChangeID;
-	int			_width, _height;
+	int16		_baseWidth, _baseHeight;
+	float		_scaleFactor;
 	DialogStack	_dialogStack;
 
 	bool		_stateIsSaved;
@@ -161,6 +166,13 @@ protected:
 		uint32 time;	// Time
 		int count;	// How often was it already pressed?
 	} _lastClick, _lastMousePosition, _globalMousePosition;
+
+	struct TooltipData {
+		TooltipData() : x(-1), y(-1) { time = 0; wdg = nullptr; }
+		uint32 time; // Time
+		Widget *wdg; // Widget that had its tooltip shown
+		int16 x, y;  // Position of mouse before tooltip was focused
+	} _lastTooltipShown;
 
 	// mouse cursor state
 	int		_cursorAnimateCounter;

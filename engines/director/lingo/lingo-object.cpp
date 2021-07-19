@@ -22,6 +22,8 @@
 
 #include "common/endian.h"
 
+#include "graphics/macgui/mactext.h"
+
 #include "director/director.h"
 #include "director/cast.h"
 #include "director/channel.h"
@@ -32,10 +34,12 @@
 #include "director/lingo/lingo-code.h"
 #include "director/lingo/lingo-object.h"
 #include "director/lingo/lingo-the.h"
-#include "director/lingo/lingo-gr.h"
+
 #include "director/lingo/xlibs/fileio.h"
-#include "director/lingo/xlibs/palxobj.h"
 #include "director/lingo/xlibs/flushxobj.h"
+#include "director/lingo/xlibs/fplayxobj.h"
+#include "director/lingo/xlibs/labeldrvxobj.h"
+#include "director/lingo/xlibs/palxobj.h"
 #include "director/lingo/xlibs/winxobj.h"
 
 namespace Director {
@@ -106,9 +110,11 @@ static struct XLibProto {
 	int type;
 	int version;
 } xlibs[] = {
-	{ "FileIO",					FileIO::initialize,					kXObj | kFactoryObj,	200 },	// D2
+	{ "FileIO",					FileIO::initialize,					kXObj | kXtraObj,		200 },	// D2
 	{ "FlushXObj",				FlushXObj::initialize,				kXObj,					400 },	// D4
+	{ "FPlayXObj",				FPlayXObj::initialize,				kXObj,					200 },	// D2
 	{ "PalXObj",				PalXObj:: initialize,				kXObj,					400 }, 	// D4
+	{ "LabelDrv",				LabelDrvXObj:: initialize,			kXObj,					400 }, 	// D4
 	{ "winXObj",				RearWindowXObj::initialize,			kXObj,					400 },	// D4
 	{ 0, 0, 0, 0 }
 
@@ -200,6 +206,40 @@ ScriptContext::~ScriptContext() {}
 
 Common::String ScriptContext::asString() {
 	return Common::String::format("script: #%s %d %p", _name.c_str(), _inheritanceLevel, (void *)this);
+}
+
+Symbol ScriptContext::define(const Common::String &name, ScriptData *code, Common::Array<Common::String> *argNames, Common::Array<Common::String> *varNames) {
+	Symbol sym;
+	sym.name = new Common::String(name);
+	sym.type = HANDLER;
+	sym.u.defn = code;
+	sym.nargs = argNames->size();
+	sym.maxArgs = argNames->size();
+	sym.argNames = argNames;
+	sym.varNames = varNames;
+	sym.ctx = this;
+	sym.archive = _archive;
+
+	if (debugChannelSet(1, kDebugCompile)) {
+		uint pc = 0;
+		while (pc < sym.u.defn->size()) {
+			uint spc = pc;
+			Common::String instr = g_lingo->decodeInstruction(_archive, sym.u.defn, pc, &pc);
+			debugC(1, kDebugCompile, "[%5d] %s", spc, instr.c_str());
+		}
+		debugC(1, kDebugCompile, "<end define code>");
+	}
+
+	if (!g_lingo->_eventHandlerTypeIds.contains(name)) {
+		_functionHandlers[name] = sym;
+		if (_scriptType == kMovieScript && _archive && !_archive->functionHandlers.contains(name)) {
+			_archive->functionHandlers[name] = sym;
+		}
+	} else {
+		_eventHandlers[g_lingo->_eventHandlerTypeIds[name]] = sym;
+	}
+
+	return sym;
 }
 
 Symbol ScriptContext::getMethod(const Common::String &methodName) {
@@ -636,7 +676,7 @@ bool CastMember::setField(int field, const Datum &d) {
 			warning("CastMember::setField(): CastMember info for %d not found", _castId);
 			return false;
 		}
-		_cast->_lingoArchive->addCode(d.u.s->c_str(), kCastScript, _castId);
+		_cast->_lingoArchive->addCode(*d.u.s, kCastScript, _castId);
 		castInfo->script = d.asString();
 		return true;
 	case kTheWidth:
@@ -843,7 +883,7 @@ Datum TextCastMember::getField(int field) {
 		d = _hilite;
 		break;
 	case kTheText:
-		d = getText();
+		d = getText().encode(Common::kUtf8);
 		break;
 	case kTheTextAlign:
 		d.type = STRING;
@@ -863,16 +903,16 @@ Datum TextCastMember::getField(int field) {
 		}
 		break;
 	case kTheTextFont:
-		warning("TextCastMember::getField(): Unprocessed getting field \"%s\" of field %d", g_lingo->field2str(field), _castId);
+		d.u.i = _fontId;
 		break;
 	case kTheTextHeight:
-		warning("TextCastMember::getField(): Unprocessed getting field \"%s\" of field %d", g_lingo->field2str(field), _castId);
+		d.u.i = getTextHeight();
 		break;
 	case kTheTextSize:
-		warning("TextCastMember::getField(): Unprocessed getting field \"%s\" of field %d", g_lingo->field2str(field), _castId);
+		d.u.i = getTextSize();
 		break;
 	case kTheTextStyle:
-		warning("TextCastMember::getField(): Unprocessed getting field \"%s\" of field %d", g_lingo->field2str(field), _castId);
+		d.u.i = _textSlant;
 		break;
 	default:
 		d = CastMember::getField(field);
@@ -899,11 +939,12 @@ bool TextCastMember::setField(int field, const Datum &d) {
 		// TODO: Understand how texts can be selected programmatically as well.
 		if (_type == kCastButton) {
 			_hilite = (bool)d.asInt();
+			_modified = true;
 			return true;
 		}
 		break;
 	case kTheText:
-		setText(d.asString().c_str());
+		setText(d.asString());
 		return true;
 	case kTheTextAlign:
 		{
@@ -924,25 +965,117 @@ bool TextCastMember::setField(int field, const Datum &d) {
 
 			_textAlign = align;
 			_modified = true;
-		}
+	}
 		return true;
 	case kTheTextFont:
-		warning("TextCastMember::setField(): Unprocessed setting field \"%s\" of field %d", g_lingo->field2str(field), _castId);
+		_fontId = d.asInt();
+		_modified = true;
 		return false;
 	case kTheTextHeight:
-		warning("TextCastMember::setField(): Unprocessed setting field \"%s\" of field %d", g_lingo->field2str(field), _castId);
+		_lineSpacing = d.asInt();
+		_modified = true;
 		return false;
 	case kTheTextSize:
-		warning("TextCastMember::setField(): Unprocessed setting field \"%s\" of field %d", g_lingo->field2str(field), _castId);
+		setTextSize(d.asInt());
 		return false;
 	case kTheTextStyle:
-		warning("TextCastMember::setField(): Unprocessed setting field \"%s\" of field %d", g_lingo->field2str(field), _castId);
+		_textSlant = d.asInt();
+		_modified = true;
 		return false;
 	default:
 		break;
 	}
 
 	return CastMember::setField(field, d);
+}
+
+bool TextCastMember::hasChunkField(int field) {
+	switch (field) {
+	case kTheForeColor:
+	case kTheTextFont:
+	case kTheTextHeight:
+	case kTheTextSize:
+	case kTheTextStyle:
+		return true;
+	default:
+		break;
+	}
+	return false;
+}
+
+Datum TextCastMember::getChunkField(int field, int start, int end) {
+	Datum d;
+
+	Graphics::MacText *macText = ((Graphics::MacText *)_widget);
+	if (!_widget)
+		warning("TextCastMember::getChunkField getting chunk field when there is no linked widget, returning the default value");
+
+	switch (field) {
+	case kTheForeColor:
+		if (_widget)
+			d.u.i = macText->getTextColor(start, end);
+		else
+			d.u.i = getForeColor();
+		break;
+	case kTheTextFont:
+		if (_widget)
+			d.u.i = macText->getTextFont(start, end);
+		else
+			d.u.i = _fontId;
+		break;
+	case kTheTextHeight:
+		warning("TextCastMember::getChunkField getting text height(line spacing) is not implemented yet, returning the default one");
+		d.u.i = _lineSpacing;
+		break;
+	case kTheTextSize:
+		if (_widget)
+			d.u.i = macText->getTextSize(start, end);
+		else
+			d.u.i = _fontSize;
+		break;
+	case kTheTextStyle:
+		if (_widget)
+			d.u.i = macText->getTextSlant(start, end);
+		else
+			d.u.i = _textSlant;
+		break;
+	default:
+		break;
+	}
+
+	return d;
+}
+
+bool TextCastMember::setChunkField(int field, int start, int end, const Datum &d) {
+	Graphics::MacText *macText = ((Graphics::MacText *)_widget);
+	if (!_widget)
+		warning("TextCastMember::setChunkField setting chunk field when there is no linked widget");
+
+	switch (field) {
+	case kTheForeColor:
+		if (_widget)
+			macText->setTextColor(d.asInt(), start, end);
+		return true;
+	case kTheTextFont:
+		if (_widget)
+			macText->setTextFont(d.asInt(), start, end);
+		return true;
+	case kTheTextHeight:
+		warning("TextCastMember::setChunkField setting text height(line spacing) is not implemented yet");
+		return false;
+	case kTheTextSize:
+		if (_widget)
+			macText->setTextSize(d.asInt(), start, end);
+		return true;
+	case kTheTextStyle:
+		if (_widget)
+			macText->setTextSlant(d.asInt(), start, end);
+		return true;
+	default:
+		break;
+	}
+
+	return false;
 }
 
 } // End of namespace Director

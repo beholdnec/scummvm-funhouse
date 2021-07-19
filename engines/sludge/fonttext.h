@@ -26,7 +26,11 @@
 #include "common/ustr.h"
 
 #include "sludge/sprites.h"
-#include "sludge/utf8.h"
+
+namespace Common {
+class SeekableReadStream;
+class WriteStream;
+}
 
 namespace Sludge {
 
@@ -62,7 +66,7 @@ public:
 private:
 	SpriteBank _theFont;
 	int _fontHeight, _numFontColours, _loadedFontNum;
-	UTF8Converter _fontOrder;
+	Common::U32String _fontOrder;
 	int16 _fontSpace;
 	SpritePalette _pastePalette;
 

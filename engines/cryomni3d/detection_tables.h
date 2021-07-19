@@ -20,7 +20,7 @@
  *
  */
 
-// This file is included in CryOmni3D namespace
+namespace CryOmni3D {
 
 #define GUI_OPTIONS_VERSAILLES                   GUIO3(GUIO_NOMIDI, GUIO_NOSFX, GUIO_NOASPECT)
 
@@ -28,11 +28,11 @@
 // We use files common to all installations except the documentation links and the binary
 // We only check the file presence to simplify and use program to discriminate the version
 #define VERSAILLES_ENTRY(f, x, s, lien_doc_ext) { \
-    { "11D_LEB1.HNM", 0, nullptr, -1}, \
-    { "COFBOUM.HNM", 0, nullptr, -1}, \
-    { "lien_doc." lien_doc_ext, 0, nullptr, -1}, \
-    { f, 0, x, s}, \
-    AD_LISTEND}
+	{ "11D_LEB1.HNM", 0, nullptr, -1}, \
+	{ "COFBOUM.HNM", 0, nullptr, -1}, \
+	{ "lien_doc." lien_doc_ext, 0, nullptr, -1}, \
+	{ f, 0, x, s}, \
+	AD_LISTEND}
 
 #define VERSAILLES_ENTRY_DEF(f, x, s) VERSAILLES_ENTRY(f, x, s, "txt")
 
@@ -316,6 +316,23 @@ static const CryOmni3DGameDescription gameDescriptions[] = {
 
 	// Versailles 1685
 	// German Windows compressed from DVD
+	// From laenion, ticket #11963
+	{
+		{
+			"versailles",
+			"",
+			VERSAILLES_ENTRY("PROGRAM.Z", "cdd35a623d1ed05d1dc3248735cea868", 236363, "ALM"),
+			Common::DE_DEU,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUI_OPTIONS_VERSAILLES
+		},
+		GType_VERSAILLES,
+		GF_VERSAILLES_FONTS_NUMERIC | GF_VERSAILLES_AUDIOPADDING_YES | GF_VERSAILLES_LINK_LOCALIZED,
+	},
+
+	// Versailles 1685
+	// German Windows compressed from DVD
 	// From Uka in forum
 	{
 		{
@@ -579,3 +596,5 @@ static const ADFileBasedFallback fileBased[] = {
 	{ &fallbackDescs[0].desc,  { "11D_LEB1.HNM", "COFBOUM.HNM", "Versailles", 0 } },
 	{ 0, { 0 } }
 };
+
+} // End of namespace CryOmni3D

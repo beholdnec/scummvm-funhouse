@@ -22,6 +22,7 @@
 
 #include "glk/advsys/vm.h"
 #include "common/translation.h"
+#include "common/ustr.h"
 
 namespace Glk {
 namespace AdvSys {
@@ -311,12 +312,12 @@ void VM::opYORN() {
 
 void VM::opSAVE() {
 	if (saveGame().getCode() != Common::kNoError)
-		print("Sorry, the savegame couldn't be created");
+		print(_("Sorry, the savegame couldn't be created"));
 }
 
 void VM::opRESTORE() {
 	if (loadGame().getCode() != Common::kNoError)
-		print("Sorry, the savegame couldn't be restored");
+		print(_("Sorry, the savegame couldn't be restored"));
 }
 
 void VM::opARG() {
@@ -557,7 +558,7 @@ bool VM::getLine() {
 
 	skipSpaces(line);
 	if (line.empty()) {
-		print("Speak up! I can't hear you!\n");
+		print(_("Speak up! I can't hear you!\n"));
 		return false;
 	}
 
@@ -593,7 +594,7 @@ bool VM::getWord(Common::String &line) {
 		_words.push_back(iw);
 		return true;
 	} else {
-		Common::String msg = Common::String::format("I don't know the word \"%s\".\n", iw._text.c_str());
+		Common::U32String msg = Common::U32String::format(_("I don't know the word \"%s\".\n"), iw._text.c_str());
 		print(msg);
 		return false;
 	}
@@ -679,7 +680,7 @@ bool VM::match(int obj, int noun, const VM::AdjectiveEntry *adjectives) {
 }
 
 void VM::parseError() {
-	print("I don't understand.\n");
+	print(_("I don't understand.\n"));
 }
 
 bool VM::isWhitespace(char c) {

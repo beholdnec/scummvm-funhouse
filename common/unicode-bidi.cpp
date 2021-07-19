@@ -30,12 +30,30 @@
 
 namespace Common {
 
-UnicodeBiDiText::UnicodeBiDiText(const Common::U32String &str) : logical(str), _log_to_vis_index(NULL), _vis_to_log_index(NULL) {
+uint32 GetFriBiDiParType(BiDiParagraph dir) {
+#ifdef USE_FRIBIDI
+	if (dir == BIDI_PAR_ON) {
+		return FRIBIDI_PAR_ON;
+	} else if (dir == BIDI_PAR_RTL) {
+		return FRIBIDI_PAR_RTL;
+	} else if (dir == BIDI_PAR_LTR) {
+		return FRIBIDI_PAR_LTR;
+	}
+#endif
+	return 0;
+}
+
+UnicodeBiDiText::UnicodeBiDiText(const Common::U32String &str, BiDiParagraph dir) :
+	logical(str), _pbase_dir(GetFriBiDiParType(dir)),
+	_log_to_vis_index(NULL), _vis_to_log_index(NULL) {
 	initWithU32String(str);
 }
 
-UnicodeBiDiText::UnicodeBiDiText(const Common::String &str, const Common::CodePage page) : logical(str), _log_to_vis_index(NULL), _vis_to_log_index(NULL) {
+UnicodeBiDiText::UnicodeBiDiText(const Common::String &str, const Common::CodePage page,
+		uint32 *pbase_dir) : logical(str), _log_to_vis_index(NULL), _vis_to_log_index(NULL) {
+	_pbase_dir = *pbase_dir;
 	initWithU32String(str.decode(page));
+	*pbase_dir = _pbase_dir;
 }
 
 UnicodeBiDiText::~UnicodeBiDiText() {
@@ -43,7 +61,7 @@ UnicodeBiDiText::~UnicodeBiDiText() {
 	delete[] _vis_to_log_index;
 }
 
-uint32 UnicodeBiDiText::getVisualPosition(uint32 logicalPos) const { 
+uint32 UnicodeBiDiText::getVisualPosition(uint32 logicalPos) const {
 	if (NULL != _log_to_vis_index && logicalPos < size()) {
 		return _log_to_vis_index[logicalPos];
 	}
@@ -64,8 +82,8 @@ void UnicodeBiDiText::initWithU32String(const U32String &input) {
 	FriBidiChar *visual_str = new FriBidiChar[buff_length * sizeof(FriBidiChar)];
 	_log_to_vis_index = new uint32[input_size];
 	_vis_to_log_index = new uint32[input_size];
-	FriBidiParType pbase_dir = FRIBIDI_PAR_ON;
 
+	FriBidiParType pbase_dir = FriBidiParType(_pbase_dir);
 	if (!fribidi_log2vis(
 		/* input */
 		(const FriBidiChar *)input.c_str(),
@@ -88,6 +106,7 @@ void UnicodeBiDiText::initWithU32String(const U32String &input) {
 		visual = U32String((uint32 *)visual_str, input.size());
 		delete[] visual_str;
 	}
+	_pbase_dir = pbase_dir;
 #else
 	static bool fribidiWarning = true;
 	if (fribidiWarning) {
@@ -99,19 +118,35 @@ void UnicodeBiDiText::initWithU32String(const U32String &input) {
 
 }
 
-String convertBiDiString(const String &input, const Common::Language lang) {
-	if (lang != Common::HE_ISR)		//TODO: modify when we'll support other RTL languages, such as Arabic and Farsi
+Common::String bidiByLineHelper(Common::String line, va_list args) {
+	/* Common::CodePage is int
+	 * GCC warns that using Common::CodePage in va_arg would abort program */
+	Common::CodePage page = (Common::CodePage) va_arg(args, int);
+	uint32 *pbase_dir = va_arg(args, uint32*);
+	return UnicodeBiDiText(line, page, pbase_dir).visual.encode(page);
+}
+
+String convertBiDiStringByLines(const String &input, const Common::CodePage page, BiDiParagraph dir) {
+	uint32 pbase_dir = GetFriBiDiParType(dir);
+	return input.forEachLine(bidiByLineHelper, page, &pbase_dir);
+}
+
+String convertBiDiString(const String &input, const Common::Language lang, BiDiParagraph dir) {
+	if (lang == Common::HE_ISR) {
+		return Common::convertBiDiString(input, kWindows1255, dir);
+	} else if (lang == Common::FA_IRN) {
+		return Common::convertBiDiString(input, kWindows1256, dir);
+	} else {
 		return input;
-
-	return Common::convertBiDiString(input, kWindows1255);
+	}
 }
 
-String convertBiDiString(const String &input, const Common::CodePage page) {
-	return convertBiDiU32String(input.decode(page)).visual.encode(page);
+String convertBiDiString(const String &input, const Common::CodePage page, BiDiParagraph dir) {
+	return convertBiDiU32String(input.decode(page), dir).visual.encode(page);
 }
 
-UnicodeBiDiText convertBiDiU32String(const U32String &input) {
-	return UnicodeBiDiText(input);
+UnicodeBiDiText convertBiDiU32String(const U32String &input, BiDiParagraph dir) {
+	return UnicodeBiDiText(input, dir);
 }
 
 } // End of namespace Common

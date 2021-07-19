@@ -31,13 +31,12 @@
 #include "common/tokenizer.h"
 #include "common/translation.h"
 
-#include "engines/util.h"
 #include "engines/wintermute/ad/ad_game.h"
 #include "engines/wintermute/wintermute.h"
 #include "engines/wintermute/debugger.h"
-#include "engines/wintermute/game_description.h"
 #include "engines/wintermute/platform_osystem.h"
 #include "engines/wintermute/base/base_engine.h"
+#include "engines/wintermute/detection.h"
 
 #include "engines/wintermute/base/sound/base_sound_manager.h"
 #include "engines/wintermute/base/base_file_manager.h"
@@ -71,14 +70,6 @@ WintermuteEngine::WintermuteEngine(OSystem *syst, const WMEGameDescription *desc
 	const Common::FSNode gameDataDir(ConfMan.get("path"));
 	//SearchMan.addSubDirectoryMatching(gameDataDir, "sound");
 
-	// Here is the right place to set up the engine specific debug channels
-	DebugMan.addDebugChannel(kWintermuteDebugLog, "enginelog", "Covers the same output as the log-file in WME");
-	DebugMan.addDebugChannel(kWintermuteDebugSaveGame, "savegame", "Savegames");
-	DebugMan.addDebugChannel(kWintermuteDebugFont, "font", "Text-drawing-related messages");
-	DebugMan.addDebugChannel(kWintermuteDebugFileAccess, "file-access", "Non-critical problems like missing files");
-	DebugMan.addDebugChannel(kWintermuteDebugAudio, "audio", "audio-playback-related issues");
-	DebugMan.addDebugChannel(kWintermuteDebugGeneral, "general", "various issues not covered by any of the above");
-
 	_game = nullptr;
 	_debugger = nullptr;
 	_dbgController = nullptr;
@@ -89,9 +80,6 @@ WintermuteEngine::~WintermuteEngine() {
 	deinit();
 	delete _game;
 	//_debugger deleted by Engine
-
-	// Remove all of our debug levels here
-	DebugMan.clearAllDebugChannels();
 }
 
 bool WintermuteEngine::hasFeature(EngineFeature f) const {
@@ -102,6 +90,10 @@ bool WintermuteEngine::hasFeature(EngineFeature f) const {
 		return true;
 	case kSupportsSavingDuringRuntime:
 		return true;
+#ifdef ENABLE_WME3D
+	case kSupportsArbitraryResolutions:
+		return true;
+#endif
 	default:
 		return false;
 	}
@@ -109,21 +101,6 @@ bool WintermuteEngine::hasFeature(EngineFeature f) const {
 }
 
 Common::Error WintermuteEngine::run() {
-	// Initialize graphics using following:
-	Graphics::PixelFormat format(4, 8, 8, 8, 8, 24, 16, 8, 0);
-	if (_gameDescription->adDesc.flags & GF_LOWSPEC_ASSETS) {
-		initGraphics(320, 240, &format);
-#ifdef ENABLE_FOXTAIL
-	} else if (BaseEngine::isFoxTailCheck(_gameDescription->targetExecutable)) {
-		initGraphics(640, 360, &format);
-#endif
-	} else {
-		initGraphics(800, 600, &format);
-	}
-	if (g_system->getScreenFormat() != format) {
-		return Common::kUnsupportedColorMode;
-	}
-
 	// Create debugger console. It requires GFX to be initialized
 	_dbgController = new DebuggerController(this);
 	_debugger = new Console(this);
@@ -160,6 +137,12 @@ int WintermuteEngine::init() {
 		}
 	}
 
+	#ifdef ENABLE_WME3D
+	if (instance.getFlags() & GF_3D) {
+		instance.getClassRegistry()->register3DClasses();
+	}
+	#endif
+
 	// check dependencies for games with high resolution assets
 	#if !defined(USE_PNG) || !defined(USE_JPEG) || !defined(USE_VORBIS)
 		if (!(instance.getFlags() & GF_LOWSPEC_ASSETS)) {
@@ -193,9 +176,10 @@ int WintermuteEngine::init() {
 		}
 	#endif
 
+	#ifndef ENABLE_WME3D
 	// check if game require 3D capabilities
 	if (instance.getFlags() & GF_3D) {
-		GUI::MessageDialog dialog(_("This game requires 3D capabilities that are out ScummVM scope. As such, it"
+		GUI::MessageDialog dialog(_("This game requires 3D capabilities, which is not compiled in. As such, it"
 			" is likely to be unplayable totally or partially."), _("Start anyway"), _("Cancel"));
 		if (dialog.runModal() != GUI::kMessageOK) {
 			delete _game;
@@ -203,11 +187,18 @@ int WintermuteEngine::init() {
 			return false;
 		}
 	}
+	#endif
 
 	_game = new AdGame(_targetName);
 	if (!_game) {
 		return 1;
 	}
+
+	#ifdef ENABLE_WME3D
+	Common::ArchiveMemberList actors3d;
+	_game->_playing3DGame = instance.getFlags() & GF_3D;
+	_game->_playing3DGame |= BaseEngine::instance().getFileManager()->listMatchingPackageMembers(actors3d, "*.act3d");
+	#endif
 	instance.setGameRef(_game);
 	BasePlatform::initialize(this, _game, 0, nullptr);
 
@@ -228,7 +219,13 @@ int WintermuteEngine::init() {
 		return 2;
 	}
 
-	_game->initialize2();
+	if (!_game->initialize2()) {
+		_game->LOG(0, "Error initializing renderer. Exiting.");
+
+		delete _game;
+		_game = nullptr;
+		return 3;
+	}
 
 	bool ret = _game->initRenderer();
 

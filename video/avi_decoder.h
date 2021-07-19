@@ -54,6 +54,7 @@ namespace Video {
  * Decoder for AVI videos.
  *
  * Video decoder used in engines:
+ *  - petka
  *  - sci
  *  - sword1
  *  - sword2
@@ -220,6 +221,7 @@ protected:
 		bool hasDirtyPalette() const;
 		void setCurFrame(int frame) { _curFrame = frame; }
 		void loadPaletteFromChunk(Common::SeekableReadStream *chunk);
+		void loadPaletteFromChunkRaw(Common::SeekableReadStream *chunk, int firstEntry, int numEntries);
 		void useInitialPalette();
 		bool canDither() const;
 		void setDither(const byte *palette);
@@ -295,16 +297,6 @@ protected:
 	protected:
 		Audio::AudioStream *getAudioStream() const { return _audioStream; }
 
-		// Audio Codecs
-		enum {
-			kWaveFormatNone = 0,
-			kWaveFormatPCM = 1,
-			kWaveFormatMSADPCM = 2,
-			kWaveFormatMSIMAADPCM = 17,
-			kWaveFormatMP3 = 85,
-			kWaveFormatDK3 = 98		// rogue format number
-		};
-
 		AVIStreamHeader _audsHeader;
 		PCMWaveFormat _wvInfo;
 		Audio::AudioStream *_audioStream;
@@ -347,6 +339,7 @@ protected:
 	void handleList(uint32 listSize);
 	void handleStreamHeader(uint32 size);
 	void readStreamName(uint32 size);
+	void readPalette8(uint32 size);
 	uint16 getStreamType(uint32 tag) const { return tag & 0xFFFF; }
 	static byte getStreamIndex(uint32 tag);
 	void checkTruemotion1();

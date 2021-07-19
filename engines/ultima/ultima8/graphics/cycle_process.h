@@ -25,12 +25,12 @@
 
 #include "ultima/ultima8/kernel/process.h"
 #include "ultima/ultima8/graphics/palette_manager.h"
-#include "ultima/ultima8/usecode/intrinsics.h"
-#include "ultima/ultima8/misc/p_dynamic_cast.h"
+#include "ultima/ultima8/misc/classtype.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
+/** The process to cycle some palette colors in Crusader */
 class CycleProcess : public Process {
 	uint8 	_running;
 	uint8 	_cycleColData[7][3];
@@ -40,7 +40,7 @@ public:
 	// p_dynamic_class stuff
 	ENABLE_RUNTIME_CLASSTYPE()
 	CycleProcess();
-	~CycleProcess(void) override;
+	~CycleProcess() override;
 
 	void run() override;
 

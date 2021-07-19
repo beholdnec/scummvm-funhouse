@@ -25,11 +25,10 @@
 
 #include "graphics/surface.h"
 #include "backends/platform/iphone/iphone_common.h"
-#include "backends/base-backend.h"
+#include "backends/modular-backend.h"
 #include "common/events.h"
 #include "audio/mixer_intern.h"
 #include "backends/fs/posix/posix-fs-factory.h"
-#include "graphics/colormasks.h"
 #include "graphics/palette.h"
 
 #include <AudioToolbox/AudioQueue.h>
@@ -52,9 +51,8 @@ struct AQCallbackStruct {
 	AudioStreamBasicDescription dataFormat;
 };
 
-class OSystem_IPHONE : public EventsBaseBackend, public PaletteManager {
+class OSystem_IPHONE : public EventsBaseBackend, public ModularMutexBackend, public PaletteManager {
 protected:
-	static const OSystem::GraphicsMode s_supportedGraphicsModes[];
 	static AQCallbackStruct s_AudioQueue;
 	static SoundProc s_soundCallback;
 	static void *s_soundParam;
@@ -122,10 +120,6 @@ public:
 	virtual bool hasFeature(Feature f);
 	virtual void setFeatureState(Feature f, bool enable);
 	virtual bool getFeatureState(Feature f);
-	virtual const GraphicsMode *getSupportedGraphicsModes() const;
-	virtual int getDefaultGraphicsMode() const;
-	virtual bool setGraphicsMode(int mode);
-	virtual int getGraphicsMode() const;
 	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format);
 
 	virtual void beginGFXTransaction();
@@ -154,12 +148,13 @@ public:
 
 	virtual void showOverlay();
 	virtual void hideOverlay();
+	virtual bool isOverlayVisible() const { return _videoContext->overlayVisible; }
 	virtual void clearOverlay();
-	virtual void grabOverlay(void *buf, int pitch);
+	virtual void grabOverlay(Graphics::Surface &surface);
 	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h);
 	virtual int16 getOverlayHeight();
 	virtual int16 getOverlayWidth();
-	virtual Graphics::PixelFormat getOverlayFormat() const { return Graphics::createPixelFormat<5551>(); }
+	virtual Graphics::PixelFormat getOverlayFormat() const;
 
 	virtual bool showMouse(bool visible);
 
@@ -171,11 +166,6 @@ public:
 	virtual uint32 getMillis(bool skipRecord = false);
 	virtual void delayMillis(uint msecs);
 
-	virtual MutexRef createMutex(void);
-	virtual void lockMutex(MutexRef mutex);
-	virtual void unlockMutex(MutexRef mutex);
-	virtual void deleteMutex(MutexRef mutex);
-
 	static void mixCallback(void *sys, byte *samples, int len);
 	virtual void setupMixer(void);
 	virtual void setTimerCallback(TimerProc callback, int interval);
@@ -183,7 +173,7 @@ public:
 	virtual void quit();
 
 	virtual void addSysArchivesToSearchSet(Common::SearchSet &s, int priority = 0);
-	virtual void getTimeAndDate(TimeDate &t) const;
+	virtual void getTimeAndDate(TimeDate &td, bool skipRecord = false) const;
 
 	virtual Audio::Mixer *getMixer();
 

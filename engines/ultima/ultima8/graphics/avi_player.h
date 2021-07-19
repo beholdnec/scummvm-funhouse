@@ -23,9 +23,8 @@
 #ifndef ULTIMA8_GRAPHICS_AVIPLAYER_H
 #define ULTIMA8_GRAPHICS_AVIPLAYER_H
 
-#include "ultima/shared/std/containers.h"
 #include "ultima/ultima8/graphics/movie_player.h"
-#include "ultima/ultima8/graphics/texture.h"
+#include "graphics/managed_surface.h"
 
 namespace Video {
 class AVIDecoder;
@@ -36,7 +35,13 @@ namespace Ultima8 {
 
 class AVIPlayer : public MoviePlayer {
 public:
-	AVIPlayer(Common::SeekableReadStream *rs, int width, int height, const byte *overridePal);
+	//!
+	//! Create a new player for the given stream at the given size.  Playback is
+	//! automatically scaled up using the line-skip style from Crusader, unless
+	//! noScale flag is set.
+	//! If overridePal is set, use that as the palette instead of the AVI's one.
+	//!
+	AVIPlayer(Common::SeekableReadStream *rs, int width, int height, const byte *overridePal, bool noScale);
 	~AVIPlayer();
 
 	void run() override;
@@ -48,11 +53,16 @@ public:
 		return _playing;
 	}
 
+	int getFrameNo() const;
+
+	// Adjust the offsets by the given values
+	void setOffset(int xoff, int yoff) override;
+
 private:
 
 	bool _playing;
 	Video::AVIDecoder *_decoder;
-	Texture _currentFrame;
+	Graphics::ManagedSurface _currentFrame;
 	// Width and height of the area we've been given to play back in
 	uint32 _width;
 	uint32 _height;
@@ -61,6 +71,7 @@ private:
 	uint32 _yoff;
 	bool _doubleSize;
 	const byte *_overridePal;
+	bool _pausedMusic;
 
 };
 

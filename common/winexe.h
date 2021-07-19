@@ -25,8 +25,18 @@
 
 #include "common/hash-str.h"
 #include "common/str.h"
+#include "common/types.h"
 
 namespace Common {
+
+/**
+ * @defgroup common_winexe Windows resources
+ * @ingroup common
+ *
+ * @brief API for managing Windows resources.
+ *
+ * @{
+ */
 
 class SeekableReadStream;
 
@@ -85,7 +95,7 @@ private:
 };
 
 struct WinResourceID_Hash {
-	uint operator()(const WinResourceID &id) const { return hashit(id.toString()); }
+	uint operator()(const WinResourceID &id) const { return id.toString().hash(); }
 };
 
 struct WinResourceID_EqualTo {
@@ -110,7 +120,7 @@ public:
 	virtual bool loadFromCompressedEXE(const String &fileName);
 
 	/** Load from a stream. */
-	virtual bool loadFromEXE(SeekableReadStream *stream) = 0;
+	virtual bool loadFromEXE(SeekableReadStream *stream, DisposeAfterUse::Flag disposeFileHandle = DisposeAfterUse::YES) = 0;
 
 	/** Return a list of IDs for a given type. */
 	virtual const Array<WinResourceID> getIDList(const WinResourceID &type) const = 0;
@@ -130,11 +140,38 @@ public:
 	}
 
 	static WinResources *createFromEXE(const String &fileName);
+	static WinResources *createFromEXE(SeekableReadStream *stream);
 
 	typedef Common::HashMap<Common::String, Common::U32String, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> VersionHash;
 
-	static VersionHash *parseVersionInfo(SeekableReadStream *stream);
+	/** The structure of the version resource inside an NE EXE */
+	struct VersionInfo {
+		VersionInfo();
+
+		uint16 fileVersion[4];
+		uint16 productVersion[4];
+		uint32 fileFlagsMask;
+		uint32 fileFlags;
+		uint32 fileOS;
+		uint32 fileType;
+		uint32 fileSubtype;
+		uint32 fileDate[2];
+
+		VersionHash hash;
+
+		bool readVSVersionInfo(SeekableReadStream *res);
+	};
+
+	VersionInfo *getVersionResource(const WinResourceID &id);
+
+	/** Get a string from a string resource. */
+	virtual String loadString(uint32 stringID) = 0;
+
+protected:
+	virtual VersionInfo *parseVersionInfo(SeekableReadStream *stream) = 0;
 };
+
+/** @} */
 
 } // End of namespace Common
 

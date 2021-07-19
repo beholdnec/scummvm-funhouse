@@ -2,13 +2,13 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="drivers">
-			<UniqueIdentifier>EEEE4145-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C18-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="drivers\accolade">
-			<UniqueIdentifier>EEEE4146-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C19-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="drivers\simon1">
-			<UniqueIdentifier>EEEE4147-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C1A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -20,7 +20,6 @@
 		<ClCompile Include="..\..\engines\agos\cursor.cpp" />
 		<ClCompile Include="..\..\engines\agos\debug.cpp" />
 		<ClCompile Include="..\..\engines\agos\debugger.cpp" />
-		<ClCompile Include="..\..\engines\agos\detection.cpp" />
 		<ClCompile Include="..\..\engines\agos\draw.cpp" />
 		<ClCompile Include="..\..\engines\agos\drivers\accolade\adlib.cpp">
 			<Filter>drivers\accolade</Filter>
@@ -29,6 +28,9 @@
 			<Filter>drivers\accolade</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\agos\drivers\accolade\mt32.cpp">
+			<Filter>drivers\accolade</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\agos\drivers\accolade\pc98.cpp">
 			<Filter>drivers\accolade</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\agos\drivers\simon1\adlib.cpp">
@@ -42,6 +44,7 @@
 		<ClCompile Include="..\..\engines\agos\input_pn.cpp" />
 		<ClCompile Include="..\..\engines\agos\items.cpp" />
 		<ClCompile Include="..\..\engines\agos\menus.cpp" />
+		<ClCompile Include="..\..\engines\agos\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\agos\midi.cpp" />
 		<ClCompile Include="..\..\engines\agos\midiparser_s1d.cpp" />
 		<ClCompile Include="..\..\engines\agos\oracle.cpp" />
@@ -82,6 +85,7 @@
 		<ClInclude Include="..\..\engines\agos\animation.h" />
 		<ClInclude Include="..\..\engines\agos\debug.h" />
 		<ClInclude Include="..\..\engines\agos\debugger.h" />
+		<ClInclude Include="..\..\engines\agos\detection.h" />
 		<ClInclude Include="..\..\engines\agos\detection_tables.h" />
 		<ClInclude Include="..\..\engines\agos\drivers\accolade\adlib.h">
 			<Filter>drivers\accolade</Filter>
@@ -96,7 +100,9 @@
 			<Filter>drivers\simon1</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\agos\intern.h" />
+		<ClInclude Include="..\..\engines\agos\intern_detection.h" />
 		<ClInclude Include="..\..\engines\agos\midi.h" />
+		<ClInclude Include="..\..\engines\agos\obsolete.h" />
 		<ClInclude Include="..\..\engines\agos\sound.h" />
 		<ClInclude Include="..\..\engines\agos\vga.h" />
 	</ItemGroup>

@@ -77,7 +77,14 @@ public:
 		error("MT32emu: Init Error - Missing PCM ROM image");
 	}
 	void showLCDMessage(const char *message) {
-		Common::OSDMessageQueue::instance().addMessage(message);
+		// Don't show messages that are only spaces, e.g. the first
+		// message in Operation Stealth.
+		for (const char *ptr = message; *ptr; ptr++) {
+			if (*ptr != ' ') {
+				Common::OSDMessageQueue::instance().addMessage(Common::U32String(message));
+				break;
+			}
+		}
 	}
 
 	// Unused callbacks
@@ -159,18 +166,6 @@ MidiDriver_MT32::~MidiDriver_MT32() {
 int MidiDriver_MT32::open() {
 	if (_isOpen)
 		return MERR_ALREADY_OPEN;
-
-	Graphics::PixelFormat screenFormat = g_system->getScreenFormat();
-
-	if (screenFormat.bytesPerPixel == 1) {
-		const byte dummy_palette[] = {
-			0, 0, 0,		// background
-			0, 171, 0,	// border, font
-			171, 0, 0	// fill
-		};
-
-		g_system->getPaletteManager()->setPalette(dummy_palette, 0, 3);
-	}
 
 	debug(4, _s("Initializing MT-32 Emulator"));
 

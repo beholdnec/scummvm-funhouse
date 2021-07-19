@@ -2,14 +2,13 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="modules">
-			<UniqueIdentifier>EEEE418F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CAF-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\neverhood\background.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\blbarchive.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\console.cpp" />
-		<ClCompile Include="..\..\engines\neverhood\detection.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\diskplayerscene.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\entity.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\gamemodule.cpp" />
@@ -17,8 +16,9 @@
 		<ClCompile Include="..\..\engines\neverhood\graphics.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\klaymen.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\menumodule.cpp" />
+		<ClCompile Include="..\..\engines\neverhood\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\microtiles.cpp" />
-		<ClCompile Include="..\..\engines\neverhood\module.cpp" />
+		<ClCompile Include="..\..\engines\neverhood\module_scene.cpp" />
 		<ClCompile Include="..\..\engines\neverhood\modules\module1000.cpp">
 			<Filter>modules</Filter>
 		</ClCompile>
@@ -155,6 +155,7 @@
 		<ClInclude Include="..\..\engines\neverhood\background.h" />
 		<ClInclude Include="..\..\engines\neverhood\blbarchive.h" />
 		<ClInclude Include="..\..\engines\neverhood\console.h" />
+		<ClInclude Include="..\..\engines\neverhood\detection.h" />
 		<ClInclude Include="..\..\engines\neverhood\diskplayerscene.h" />
 		<ClInclude Include="..\..\engines\neverhood\entity.h" />
 		<ClInclude Include="..\..\engines\neverhood\gamemodule.h" />

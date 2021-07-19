@@ -14,8 +14,9 @@ Mode 1:
       Operate in MacBinary encoding mode
 
 Mode 2:
-  $0 <file.iso>
+  $0 [jap] <file.iso>
       Operate in disk dumping mode
+	  Optionally specify 'jap' for using 'recode' for converting Japanese file names
 
 Miscellaneous:
   -h, --help   display this help and exit
@@ -23,6 +24,7 @@ EOF
 }
 
 path=
+jap=
 
 macbinarydump() {
 	mypath=`realpath $0`
@@ -45,31 +47,45 @@ macbinarydump() {
 }
 
 hfsdump() {
-	IFS=$'\n'
 	mypath=`realpath $0`
 
-	for i in `hls -F1a`
-	do
+	hls -F1a | while read i ; do
+		macname=$i
+		if  [ -n $jap ] ; then
+			i=`echo -n $i|recode $jap..utf-8`
+		fi
+
+		# Guard empty directories
+		if [[ "$i" == "" ]] ; then
+			continue
+		fi
+
 		if [[ "$i" =~ ":" ]] ; then
-			dir="${i%?}"
-			hcd "$dir"
-			mkdir "$dir"
-			cd "$dir"
-			bash $mypath hfsutils-phase2 "$path:$i"
+			dir="${i%?}"	# Strip trailing ':'
+			dir="${dir//\//:}"	# Files could contain '/', replace those with ':'
+			macdir="${macname%?}"
+			hcd "$macdir"
+			mkdir -- "$dir"
+			cd -- "$dir"
+			bash $mypath $jap hfsutils-phase2 "$path:$i"
 			hcd ::
 			cd ..
 		else
 			echo -ne "$path$i...                 \r"
 			# Executable files have star at their end. Strip it
 			if [[ "$i" =~ \*$ ]] ; then
+				macfile="${macname%?}"
 				file="${i%?}"
 			else
+				macfile="$macname"
 				file="$i"
 			fi
-			fileunix="$file"
-			# Files count contain stars
-			file="${file//\*/\\*}"
-			hcopy -m "$file" "./$fileunix"
+			fileunix="${file//\//:}"	# Files could contain '/', replace those with ':'
+
+			# Files could contain '*', '{', so backslash them to avoid globbing
+			macfile="${macfile//\*/\\*}"
+			macfile="${macfile//{/\\{}"
+			hcopy -m -- "$macfile" "./$fileunix"
 		fi
 	done
 }
@@ -81,8 +97,13 @@ for parm in "$@" ; do
 	fi
 done  # for parm in ...
 
+if [[ $# -eq 0 ]] ; then
+	usage
+	exit 0
+fi
+
 if [[ $1 == "macbinary" ]] ; then
-	if test ! `type macbinary >/dev/null 2>/dev/null` ; then
+	if ! `command -v macbinary >/dev/null 2>/dev/null` ; then
 		echo "macbinary not found. Exiting"
 		exit 1
 	fi
@@ -102,6 +123,24 @@ fi
 if  [ "$#" -lt 1 ] ; then
 	usage
 	exit 1
+fi
+
+case $1 in
+	jap|SJIS)
+		jap=SJIS
+		shift
+		;;
+	es|macintosh)
+		jap=macintosh
+		shift
+		;;
+esac
+
+if [ -n $jap ] ; then
+	if ! `command -v recode >/dev/null 2>/dev/null` ; then
+		echo "recode not found. Exiting"
+		exit 1
+	fi
 fi
 
 if [[ $1 == "hfsutils-phase2" ]] ; then

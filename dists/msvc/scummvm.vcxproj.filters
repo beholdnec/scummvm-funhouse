@@ -2,248 +2,269 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="audio">
-			<UniqueIdentifier>EEEE4247-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DDE-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\decoders">
-			<UniqueIdentifier>EEEE4248-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DDF-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\mods">
-			<UniqueIdentifier>EEEE4249-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE0-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\softsynth">
-			<UniqueIdentifier>EEEE424A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE1-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\softsynth\fmtowns_pc98">
-			<UniqueIdentifier>EEEE424B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE2-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\softsynth\mt32">
-			<UniqueIdentifier>EEEE424C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE3-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\softsynth\mt32\c_interface">
-			<UniqueIdentifier>EEEE424D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE4-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\softsynth\mt32\sha1">
-			<UniqueIdentifier>EEEE424E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE5-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\softsynth\opl">
-			<UniqueIdentifier>EEEE424F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE6-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\soundfont">
-			<UniqueIdentifier>EEEE4250-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE7-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="audio\soundfont\vab">
-			<UniqueIdentifier>EEEE4251-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE8-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends">
-			<UniqueIdentifier>EEEE4252-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DE9-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\audiocd">
-			<UniqueIdentifier>EEEE4253-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DEA-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\audiocd\default">
-			<UniqueIdentifier>EEEE4254-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DEB-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\audiocd\win32">
-			<UniqueIdentifier>EEEE4255-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DEC-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\cloud">
-			<UniqueIdentifier>EEEE4256-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DED-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\cloud\box">
-			<UniqueIdentifier>EEEE4257-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DEE-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\cloud\dropbox">
-			<UniqueIdentifier>EEEE4258-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DEF-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\cloud\googledrive">
-			<UniqueIdentifier>EEEE4259-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF0-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\cloud\id">
-			<UniqueIdentifier>EEEE425A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF1-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\cloud\onedrive">
-			<UniqueIdentifier>EEEE425B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF2-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\dialogs">
-			<UniqueIdentifier>EEEE425C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF3-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\dialogs\win32">
-			<UniqueIdentifier>EEEE425D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF4-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\events">
-			<UniqueIdentifier>EEEE425E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF5-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\events\default">
-			<UniqueIdentifier>EEEE425F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF6-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\events\sdl">
-			<UniqueIdentifier>EEEE4260-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF7-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\fs">
-			<UniqueIdentifier>EEEE4261-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF8-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\fs\windows">
-			<UniqueIdentifier>EEEE4262-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DF9-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\graphics">
-			<UniqueIdentifier>EEEE4263-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DFA-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="backends\graphics3d">
+			<UniqueIdentifier>2C569DFB-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="backends\graphics3d\openglsdl">
+			<UniqueIdentifier>2C569DFC-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\graphics\opengl">
-			<UniqueIdentifier>EEEE4264-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DFD-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\graphics\opengl\pipelines">
-			<UniqueIdentifier>EEEE4265-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DFE-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\graphics\openglsdl">
-			<UniqueIdentifier>EEEE4266-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569DFF-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\graphics\sdl">
-			<UniqueIdentifier>EEEE4267-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E00-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\graphics\surfacesdl">
-			<UniqueIdentifier>EEEE4268-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E01-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\keymapper">
-			<UniqueIdentifier>EEEE4269-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E02-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\log">
-			<UniqueIdentifier>EEEE426A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E03-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\midi">
-			<UniqueIdentifier>EEEE426B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E04-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\mixer">
-			<UniqueIdentifier>EEEE426C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E05-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\mixer\sdl">
-			<UniqueIdentifier>EEEE426D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E06-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\mutex">
-			<UniqueIdentifier>EEEE426E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E07-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\mutex\sdl">
-			<UniqueIdentifier>EEEE426F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E08-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\networking">
-			<UniqueIdentifier>EEEE4270-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E09-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\networking\curl">
-			<UniqueIdentifier>EEEE4271-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E0A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\networking\sdl_net">
-			<UniqueIdentifier>EEEE4272-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E0B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\networking\sdl_net\handlers">
-			<UniqueIdentifier>EEEE4273-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E0C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\platform">
-			<UniqueIdentifier>EEEE4274-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E0D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\platform\sdl">
-			<UniqueIdentifier>EEEE4275-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E0E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\platform\sdl\win32">
-			<UniqueIdentifier>EEEE4276-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E0F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\plugins">
-			<UniqueIdentifier>EEEE4277-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E10-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\plugins\sdl">
-			<UniqueIdentifier>EEEE4278-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E11-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\plugins\win32">
-			<UniqueIdentifier>EEEE4279-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E12-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\saves">
-			<UniqueIdentifier>EEEE427A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E13-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\saves\default">
-			<UniqueIdentifier>EEEE427B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E14-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\saves\windows">
-			<UniqueIdentifier>EEEE427C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E15-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\taskbar">
-			<UniqueIdentifier>EEEE427D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E16-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\taskbar\win32">
-			<UniqueIdentifier>EEEE427E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E17-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\text-to-speech">
-			<UniqueIdentifier>EEEE427F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E18-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\text-to-speech\windows">
-			<UniqueIdentifier>EEEE4280-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E19-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\timer">
-			<UniqueIdentifier>EEEE4281-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E1A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\timer\default">
-			<UniqueIdentifier>EEEE4282-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E1B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\timer\sdl">
-			<UniqueIdentifier>EEEE4283-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E1C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\updates">
-			<UniqueIdentifier>EEEE4284-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E1D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="backends\updates\win32">
-			<UniqueIdentifier>EEEE4285-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E1E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base">
-			<UniqueIdentifier>EEEE4286-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E1F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="common">
-			<UniqueIdentifier>EEEE4287-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E20-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="common\encodings">
+			<UniqueIdentifier>2C569E21-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="common\lua">
-			<UniqueIdentifier>EEEE4288-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E22-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="dists">
-			<UniqueIdentifier>EEEE4289-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E23-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="engines">
-			<UniqueIdentifier>EEEE428A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E24-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics">
-			<UniqueIdentifier>EEEE428B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E25-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics\fonts">
-			<UniqueIdentifier>EEEE428C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E26-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics\macgui">
-			<UniqueIdentifier>EEEE428D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E27-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="graphics\opengl">
+			<UniqueIdentifier>2C569E28-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics\scaler">
-			<UniqueIdentifier>EEEE428E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E29-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="graphics\tinygl">
+			<UniqueIdentifier>2C569E2A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="gui">
-			<UniqueIdentifier>EEEE428F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E2B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="gui\animation">
-			<UniqueIdentifier>EEEE4290-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E2C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="gui\widgets">
-			<UniqueIdentifier>EEEE4291-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E2D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="icons">
-			<UniqueIdentifier>EEEE4292-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E2E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="image">
-			<UniqueIdentifier>EEEE4293-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E2F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="image\codecs">
-			<UniqueIdentifier>EEEE4294-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E30-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="image\codecs\indeo">
-			<UniqueIdentifier>EEEE4295-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E31-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="math">
+			<UniqueIdentifier>2C569E32-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="video">
-			<UniqueIdentifier>EEEE4296-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569E33-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\audio\adlib.cpp">
+			<Filter>audio</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\audio\adlib_ms.cpp">
 			<Filter>audio</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\audio\audiostream.cpp">
@@ -261,7 +282,13 @@
 		<ClCompile Include="..\..\audio\decoders\aiff.cpp">
 			<Filter>audio\decoders</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\audio\decoders\asf.cpp">
+			<Filter>audio\decoders</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\audio\decoders\flac.cpp">
+			<Filter>audio\decoders</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\audio\decoders\g711.cpp">
 			<Filter>audio\decoders</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\audio\decoders\iff_sound.cpp">
@@ -291,13 +318,22 @@
 		<ClCompile Include="..\..\audio\decoders\wave.cpp">
 			<Filter>audio\decoders</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\audio\decoders\wma.cpp">
+			<Filter>audio\decoders</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\audio\decoders\xa.cpp">
+			<Filter>audio\decoders</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\audio\decoders\xan_dpcm.cpp">
 			<Filter>audio\decoders</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\audio\fmopl.cpp">
 			<Filter>audio</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\audio\mididrv.cpp">
+			<Filter>audio</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\audio\mididrv_ms.cpp">
 			<Filter>audio</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\audio\midiparser.cpp">
@@ -355,6 +391,9 @@
 			<Filter>audio\mods</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\audio\mpu401.cpp">
+			<Filter>audio</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\audio\mt32gm.cpp">
 			<Filter>audio</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\audio\musicplugin.cpp">
@@ -570,6 +609,9 @@
 		<ClCompile Include="..\..\backends\cloud\dropbox\dropboxstorage.cpp">
 			<Filter>backends\cloud\dropbox</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\backends\cloud\dropbox\dropboxtokenrefresher.cpp">
+			<Filter>backends\cloud\dropbox</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\backends\cloud\dropbox\dropboxuploadrequest.cpp">
 			<Filter>backends\cloud\dropbox</Filter>
 		</ClCompile>
@@ -656,6 +698,9 @@
 		</ClCompile>
 		<ClCompile Include="..\..\backends\fs\windows\windows-fs.cpp">
 			<Filter>backends\fs\windows</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\backends\graphics3d\openglsdl\openglsdl-graphics3d.cpp">
+			<Filter>backends\graphics3d\openglsdl</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\backends\graphics\opengl\context.cpp">
 			<Filter>backends\graphics\opengl</Filter>
@@ -888,6 +933,9 @@
 		<ClCompile Include="..\..\common\archive.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\common\base-str.cpp">
+			<Filter>common</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\common\config-manager.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
@@ -906,8 +954,8 @@
 		<ClCompile Include="..\..\common\debug.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\common\encoding.cpp">
-			<Filter>common</Filter>
+		<ClCompile Include="..\..\common\encodings\singlebyte.cpp">
+			<Filter>common\encodings</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\common\error.cpp">
 			<Filter>common</Filter>
@@ -937,6 +985,9 @@
 			<Filter>common</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\common\installshield_cab.cpp">
+			<Filter>common</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\common\installshieldv3_archive.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\common\json.cpp">
@@ -1050,6 +1101,9 @@
 		<ClCompile Include="..\..\common\md5.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\common\mdct.cpp">
+			<Filter>common</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\common\memorypool.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
@@ -1080,6 +1134,9 @@
 		<ClCompile Include="..\..\common\sinetables.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\common\sinewindows.cpp">
+			<Filter>common</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\common\str-enc.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
@@ -1087,6 +1144,12 @@
 			<Filter>common</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\common\stream.cpp">
+			<Filter>common</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\common\streamdebug.cpp">
+			<Filter>common</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\common\stuffit.cpp">
 			<Filter>common</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\common\system.cpp">
@@ -1173,6 +1236,9 @@
 		<ClCompile Include="..\..\graphics\fontman.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\graphics\fonts\amigafont.cpp">
+			<Filter>graphics\fonts</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\graphics\fonts\bdf.cpp">
 			<Filter>graphics\fonts</Filter>
 		</ClCompile>
@@ -1193,6 +1259,9 @@
 		</ClCompile>
 		<ClCompile Include="..\..\graphics\fonts\winfont.cpp">
 			<Filter>graphics\fonts</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\korfont.cpp">
+			<Filter>graphics</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\graphics\larryScale.cpp">
 			<Filter>graphics</Filter>
@@ -1236,28 +1305,67 @@
 		<ClCompile Include="..\..\graphics\nine_patch.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\box_shaders.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\compat_shaders.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\context.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\control_shaders.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\framebuffer.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\shader.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\surfacerenderer.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\texture.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\opengl\tiledsurface.cpp">
+			<Filter>graphics\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\pixelbuffer.cpp">
+			<Filter>graphics</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\graphics\pixelformat.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\graphics\primitives.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\graphics\scaler.cpp">
+		<ClCompile Include="..\..\graphics\renderer.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\graphics\scaler\2xsai.cpp">
+		<ClCompile Include="..\..\graphics\scaler\aspect.cpp">
 			<Filter>graphics\scaler</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\graphics\scaler\aspect.cpp">
+		<ClCompile Include="..\..\graphics\scaler\dotmatrix.cpp">
 			<Filter>graphics\scaler</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\graphics\scaler\downscaler.cpp">
 			<Filter>graphics\scaler</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\graphics\scaler\hq2x.cpp">
+		<ClCompile Include="..\..\graphics\scaler\edge.cpp">
 			<Filter>graphics\scaler</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\graphics\scaler\hq3x.cpp">
+		<ClCompile Include="..\..\graphics\scaler\hq.cpp">
+			<Filter>graphics\scaler</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\scaler\normal.cpp">
+			<Filter>graphics\scaler</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\scaler\pm.cpp">
+			<Filter>graphics\scaler</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\scaler\sai.cpp">
 			<Filter>graphics\scaler</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\graphics\scaler\scale2x.cpp">
@@ -1272,6 +1380,12 @@
 		<ClCompile Include="..\..\graphics\scaler\thumbnail_intern.cpp">
 			<Filter>graphics\scaler</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\graphics\scaler\tv.cpp">
+			<Filter>graphics\scaler</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\scalerplugin.cpp">
+			<Filter>graphics</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\graphics\screen.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
@@ -1281,8 +1395,80 @@
 		<ClCompile Include="..\..\graphics\surface.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\graphics\svg.cpp">
+			<Filter>graphics</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\graphics\thumbnail.cpp">
 			<Filter>graphics</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\api.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\arrays.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\clear.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\clip.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\get.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\image_util.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\init.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\light.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\list.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\matrix.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\memory.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\misc.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\select.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\specbuf.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\texelbuffer.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\texture.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\vertex.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\zblit.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\zbuffer.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\zdirtyrect.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\zline.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\zmath.cpp">
+			<Filter>graphics\tinygl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\graphics\tinygl\ztriangle.cpp">
+			<Filter>graphics\tinygl</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\graphics\transform_struct.cpp">
 			<Filter>graphics</Filter>
@@ -1422,6 +1608,9 @@
 		<ClCompile Include="..\..\image\bmp.cpp">
 			<Filter>image</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\image\cel_3do.cpp">
+			<Filter>image</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\image\codecs\bmp_raw.cpp">
 			<Filter>image\codecs</Filter>
 		</ClCompile>
@@ -1432,6 +1621,9 @@
 			<Filter>image\codecs</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\image\codecs\codec.cpp">
+			<Filter>image\codecs</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\image\codecs\hlz.cpp">
 			<Filter>image\codecs</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\image\codecs\indeo3.cpp">
@@ -1485,6 +1677,12 @@
 		<ClCompile Include="..\..\image\codecs\truemotion1.cpp">
 			<Filter>image\codecs</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\image\codecs\xan.cpp">
+			<Filter>image\codecs</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\image\gif.cpp">
+			<Filter>image</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\image\iff.cpp">
 			<Filter>image</Filter>
 		</ClCompile>
@@ -1503,6 +1701,54 @@
 		<ClCompile Include="..\..\image\tga.cpp">
 			<Filter>image</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\math\aabb.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\angle.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\frustum.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\glmath.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\line2d.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\line3d.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\matrix3.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\matrix4.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\plane.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\quat.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\ray.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\rect2d.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\vector2d.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\vector3d.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\math\vector4d.cpp">
+			<Filter>math</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\video\3do_decoder.cpp">
+			<Filter>video</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\video\avi_decoder.cpp">
 			<Filter>video</Filter>
 		</ClCompile>
@@ -1516,6 +1762,9 @@
 			<Filter>video</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\video\flic_decoder.cpp">
+			<Filter>video</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\video\hnm_decoder.cpp">
 			<Filter>video</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\video\mpegps_decoder.cpp">
@@ -1541,6 +1790,9 @@
 		</ClCompile>
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="..\..\audio\adlib_ms.h">
+			<Filter>audio</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\audio\audiostream.h">
 			<Filter>audio</Filter>
 		</ClInclude>
@@ -1548,6 +1800,9 @@
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\decoders\aac.h">
+			<Filter>audio\decoders</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\audio\decoders\ac3.h">
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\decoders\adpcm.h">
@@ -1559,10 +1814,16 @@
 		<ClInclude Include="..\..\audio\decoders\aiff.h">
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\audio\decoders\asf.h">
+			<Filter>audio\decoders</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\audio\decoders\codec.h">
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\decoders\flac.h">
+			<Filter>audio\decoders</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\audio\decoders\g711.h">
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\decoders\iff_sound.h">
@@ -1589,6 +1850,9 @@
 		<ClInclude Include="..\..\audio\decoders\raw.h">
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\audio\decoders\util.h">
+			<Filter>audio\decoders</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\audio\decoders\voc.h">
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
@@ -1598,13 +1862,28 @@
 		<ClInclude Include="..\..\audio\decoders\wave.h">
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\audio\decoders\wave_types.h">
+			<Filter>audio\decoders</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\audio\decoders\wma.h">
+			<Filter>audio\decoders</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\audio\decoders\wmadata.h">
+			<Filter>audio\decoders</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\audio\decoders\xa.h">
+			<Filter>audio\decoders</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\audio\decoders\xan_dpcm.h">
 			<Filter>audio\decoders</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\fmopl.h">
 			<Filter>audio</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\mididrv.h">
+			<Filter>audio</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\audio\mididrv_ms.h">
 			<Filter>audio</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\midiparser.h">
@@ -1656,6 +1935,9 @@
 			<Filter>audio\mods</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\mpu401.h">
+			<Filter>audio</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\audio\mt32gm.h">
 			<Filter>audio</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\musicplugin.h">
@@ -1764,6 +2046,9 @@
 			<Filter>audio\softsynth\mt32</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\softsynth\mt32\Types.h">
+			<Filter>audio\softsynth\mt32</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\audio\softsynth\mt32\VersionTagging.h">
 			<Filter>audio\softsynth\mt32</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\audio\softsynth\mt32\c_interface\c_interface.h">
@@ -1904,6 +2189,9 @@
 		<ClInclude Include="..\..\backends\cloud\dropbox\dropboxstorage.h">
 			<Filter>backends\cloud\dropbox</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\backends\cloud\dropbox\dropboxtokenrefresher.h">
+			<Filter>backends\cloud\dropbox</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\backends\cloud\dropbox\dropboxuploadrequest.h">
 			<Filter>backends\cloud\dropbox</Filter>
 		</ClInclude>
@@ -1999,6 +2287,9 @@
 		</ClInclude>
 		<ClInclude Include="..\..\backends\fs\windows\windows-fs.h">
 			<Filter>backends\fs\windows</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\backends\graphics3d\openglsdl\openglsdl-graphics3d.h">
+			<Filter>backends\graphics3d\openglsdl</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\backends\graphics\default-palette.h">
 			<Filter>backends\graphics</Filter>
@@ -2180,9 +2471,6 @@
 		<ClInclude Include="..\..\backends\platform\sdl\sdl.h">
 			<Filter>backends\platform\sdl</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\backends\platform\sdl\win32\codepage.h">
-			<Filter>backends\platform\sdl\win32</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\backends\platform\sdl\win32\win32-window.h">
 			<Filter>backends\platform\sdl\win32</Filter>
 		</ClInclude>
@@ -2255,6 +2543,12 @@
 		<ClInclude Include="..\..\common\array.h">
 			<Filter>common</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\common\base-str.h">
+			<Filter>common</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\common\bitarray.h">
+			<Filter>common</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\common\bitstream.h">
 			<Filter>common</Filter>
 		</ClInclude>
@@ -2291,7 +2585,7 @@
 		<ClInclude Include="..\..\common\dialogs.h">
 			<Filter>common</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\common\encoding.h">
+		<ClInclude Include="..\..\common\enc-internal.h">
 			<Filter>common</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\common\endian.h">
@@ -2310,6 +2604,9 @@
 			<Filter>common</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\common\forbidden.h">
+			<Filter>common</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\common\foreach.h">
 			<Filter>common</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\common\frac.h">
@@ -2342,7 +2639,13 @@
 		<ClInclude Include="..\..\common\ini-file.h">
 			<Filter>common</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\common\initializer_list.h">
+			<Filter>common</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\common\installshield_cab.h">
+			<Filter>common</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\common\installshieldv3_archive.h">
 			<Filter>common</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\common\inttypes.h">
@@ -2453,6 +2756,9 @@
 		<ClInclude Include="..\..\common\md5.h">
 			<Filter>common</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\common\mdct.h">
+			<Filter>common</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\common\memory.h">
 			<Filter>common</Filter>
 		</ClInclude>
@@ -2498,6 +2804,9 @@
 		<ClInclude Include="..\..\common\rdft.h">
 			<Filter>common</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\common\recorderfile.h">
+			<Filter>common</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\common\rect.h">
 			<Filter>common</Filter>
 		</ClInclude>
@@ -2519,6 +2828,9 @@
 		<ClInclude Include="..\..\common\sinetables.h">
 			<Filter>common</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\common\sinewindows.h">
+			<Filter>common</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\common\singleton.h">
 			<Filter>common</Filter>
 		</ClInclude>
@@ -2538,6 +2850,12 @@
 			<Filter>common</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\common\stream.h">
+			<Filter>common</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\common\streamdebug.h">
+			<Filter>common</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\common\stuffit.h">
 			<Filter>common</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\common\substream.h">
@@ -2577,6 +2895,9 @@
 			<Filter>common</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\common\unzip.h">
+			<Filter>common</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\common\updates.h">
 			<Filter>common</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\common\ustr.h">
@@ -2651,6 +2972,9 @@
 		<ClInclude Include="..\..\graphics\fontman.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\graphics\fonts\amigafont.h">
+			<Filter>graphics\fonts</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\graphics\fonts\bdf.h">
 			<Filter>graphics\fonts</Filter>
 		</ClInclude>
@@ -2663,10 +2987,16 @@
 		<ClInclude Include="..\..\graphics\fonts\winfont.h">
 			<Filter>graphics\fonts</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\graphics\korfont.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\graphics\larryScale.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\graphics\maccursor.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\macega.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\graphics\macgui\macbutton.h">
@@ -2705,7 +3035,31 @@
 		<ClInclude Include="..\..\graphics\nine_patch.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\graphics\opengl\context.h">
+			<Filter>graphics\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\opengl\framebuffer.h">
+			<Filter>graphics\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\opengl\shader.h">
+			<Filter>graphics\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\opengl\surfacerenderer.h">
+			<Filter>graphics\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\opengl\system_headers.h">
+			<Filter>graphics\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\opengl\texture.h">
+			<Filter>graphics\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\opengl\tiledsurface.h">
+			<Filter>graphics\opengl</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\graphics\palette.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\pixelbuffer.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\graphics\pixelformat.h">
@@ -2714,16 +3068,37 @@
 		<ClInclude Include="..\..\graphics\primitives.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\graphics\renderer.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\graphics\scaler.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\graphics\scaler\aspect.h">
 			<Filter>graphics\scaler</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\graphics\scaler\dotmatrix.h">
+			<Filter>graphics\scaler</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\graphics\scaler\downscaler.h">
 			<Filter>graphics\scaler</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\graphics\scaler\edge.h">
+			<Filter>graphics\scaler</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\scaler\hq.h">
+			<Filter>graphics\scaler</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\graphics\scaler\intern.h">
+			<Filter>graphics\scaler</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\scaler\normal.h">
+			<Filter>graphics\scaler</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\scaler\pm.h">
+			<Filter>graphics\scaler</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\scaler\sai.h">
 			<Filter>graphics\scaler</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\graphics\scaler\scale2x.h">
@@ -2735,6 +3110,12 @@
 		<ClInclude Include="..\..\graphics\scaler\scalebit.h">
 			<Filter>graphics\scaler</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\graphics\scaler\tv.h">
+			<Filter>graphics\scaler</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\scalerplugin.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\graphics\screen.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
@@ -2744,8 +3125,35 @@
 		<ClInclude Include="..\..\graphics\surface.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\graphics\svg.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\graphics\thumbnail.h">
 			<Filter>graphics</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\tinygl\gl.h">
+			<Filter>graphics\tinygl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\tinygl\opinfo.h">
+			<Filter>graphics\tinygl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\tinygl\texelbuffer.h">
+			<Filter>graphics\tinygl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\tinygl\zblit.h">
+			<Filter>graphics\tinygl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\tinygl\zbuffer.h">
+			<Filter>graphics\tinygl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\tinygl\zdirtyrect.h">
+			<Filter>graphics\tinygl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\tinygl\zgl.h">
+			<Filter>graphics\tinygl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\graphics\tinygl\zmath.h">
+			<Filter>graphics\tinygl</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\graphics\transform_struct.h">
 			<Filter>graphics</Filter>
@@ -2762,16 +3170,7 @@
 		<ClInclude Include="..\..\graphics\yuv_to_rgb.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\gui\Actions.h">
-			<Filter>gui</Filter>
-		</ClInclude>
 		<ClInclude Include="..\..\gui\EventRecorder.h">
-			<Filter>gui</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\gui\Key.h">
-			<Filter>gui</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\gui\KeysDialog.h">
 			<Filter>gui</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\gui\ThemeEngine.h">
@@ -2849,6 +3248,9 @@
 		<ClInclude Include="..\..\gui\editgamedialog.h">
 			<Filter>gui</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\gui\editrecorddialog.h">
+			<Filter>gui</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\gui\error.h">
 			<Filter>gui</Filter>
 		</ClInclude>
@@ -2873,10 +3275,16 @@
 		<ClInclude Include="..\..\gui\object.h">
 			<Filter>gui</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\gui\onscreendialog.h">
+			<Filter>gui</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\gui\options.h">
 			<Filter>gui</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\gui\predictivedialog.h">
+			<Filter>gui</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\gui\recorderdialog.h">
 			<Filter>gui</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\gui\remotebrowser.h">
@@ -2892,6 +3300,9 @@
 			<Filter>gui</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\gui\unknown-game-dialog.h">
+			<Filter>gui</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\gui\updates-dialog.h">
 			<Filter>gui</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\gui\widget.h">
@@ -2921,6 +3332,9 @@
 		<ClInclude Include="..\..\image\bmp.h">
 			<Filter>image</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\image\cel_3do.h">
+			<Filter>image</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\image\codecs\bmp_raw.h">
 			<Filter>image\codecs</Filter>
 		</ClInclude>
@@ -2934,6 +3348,9 @@
 			<Filter>image\codecs</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\image\codecs\codec.h">
+			<Filter>image\codecs</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\image\codecs\hlz.h">
 			<Filter>image\codecs</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\image\codecs\indeo3.h">
@@ -2964,6 +3381,9 @@
 			<Filter>image\codecs</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\image\codecs\mjpeg.h">
+			<Filter>image\codecs</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\image\codecs\mpeg.h">
 			<Filter>image\codecs</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\image\codecs\msrle.h">
@@ -2999,6 +3419,12 @@
 		<ClInclude Include="..\..\image\codecs\truemotion1data.h">
 			<Filter>image\codecs</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\image\codecs\xan.h">
+			<Filter>image\codecs</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\image\gif.h">
+			<Filter>image</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\image\iff.h">
 			<Filter>image</Filter>
 		</ClInclude>
@@ -3020,6 +3446,75 @@
 		<ClInclude Include="..\..\image\tga.h">
 			<Filter>image</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\math\aabb.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\angle.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\frustum.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\glmath.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\line2d.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\line3d.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\mathfwd.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\matrix.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\matrix3.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\matrix4.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\plane.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\quat.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\ray.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\rect2d.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\rotation3d.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\squarematrix.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\transform.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\utils.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\vector.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\vector2d.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\vector3d.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\math\vector4d.h">
+			<Filter>math</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\video\3do_decoder.h">
+			<Filter>video</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\video\avi_decoder.h">
 			<Filter>video</Filter>
 		</ClInclude>
@@ -3038,6 +3533,9 @@
 		<ClInclude Include="..\..\video\flic_decoder.h">
 			<Filter>video</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\video\hnm_decoder.h">
+			<Filter>video</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\video\mpegps_decoder.h">
 			<Filter>video</Filter>
 		</ClInclude>
@@ -3045,6 +3543,9 @@
 			<Filter>video</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\video\psx_decoder.h">
+			<Filter>video</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\video\qt_data.h">
 			<Filter>video</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\video\qt_decoder.h">
@@ -3065,10 +3566,15 @@
 		<None Include="..\..\COPYING" />
 		<None Include="..\..\COPYING.BSD" />
 		<None Include="..\..\COPYING.FREEFONT" />
+		<None Include="..\..\COPYING.ISC" />
 		<None Include="..\..\COPYING.LGPL" />
+		<None Include="..\..\COPYING.LUA" />
+		<None Include="..\..\COPYING.MIT" />
 		<None Include="..\..\COPYING.OFL" />
+		<None Include="..\..\COPYING.TINYGL" />
 		<None Include="..\..\COPYRIGHT" />
-		<None Include="..\..\TODO" />
+		<None Include="..\..\NEWS.md" />
+		<None Include="..\..\README.md" />
 		<None Include="..\..\audio\module.mk">
 			<Filter>audio</Filter>
 		</None>
@@ -3083,6 +3589,9 @@
 		</None>
 		<None Include="..\..\base\module.mk">
 			<Filter>base</Filter>
+		</None>
+		<None Include="..\..\common\lua\COPYRIGHT">
+			<Filter>common\lua</Filter>
 		</None>
 		<None Include="..\..\common\module.mk">
 			<Filter>common</Filter>
@@ -3101,6 +3610,9 @@
 		</None>
 		<None Include="..\..\image\module.mk">
 			<Filter>image</Filter>
+		</None>
+		<None Include="..\..\math\module.mk">
+			<Filter>math</Filter>
 		</None>
 		<None Include="..\..\video\module.mk">
 			<Filter>video</Filter>

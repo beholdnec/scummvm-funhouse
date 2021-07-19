@@ -27,6 +27,7 @@
 
 #include "common/events.h"
 #include "common/str.h"
+#include "common/ustr.h"
 
 #include "engines/dialogs.h"
 
@@ -49,13 +50,13 @@ class MohawkEngine;
 class InfoDialog : public GUI::Dialog {
 protected:
 	MohawkEngine *_vm;
-	Common::String _message;
+	Common::U32String _message;
 	GUI::StaticTextWidget *_text;
 
 public:
-	InfoDialog(MohawkEngine *vm, const Common::String &message);
+	InfoDialog(MohawkEngine *vm, const Common::U32String &message);
 
-	void setInfoText(const Common::String &message);
+	void setInfoText(const Common::U32String &message);
 
 	void handleMouseDown(int x, int y, int button, int clickCount) override {
 		setResult(0);
@@ -72,7 +73,7 @@ public:
 
 class PauseDialog : public InfoDialog {
 public:
-	PauseDialog(MohawkEngine* vm, const Common::String &message);
+	PauseDialog(MohawkEngine* vm, const Common::U32String &message);
 	void handleKeyDown(Common::KeyState state) override;
 };
 
@@ -99,6 +100,9 @@ private:
 	GUI::CheckboxWidget *_zipModeCheckbox;
 	GUI::CheckboxWidget *_transitionsCheckbox;
 	GUI::CheckboxWidget *_mystFlyByCheckbox;
+	GUI::CheckboxWidget *_spaceshipFuzzyLogicCheckbox;
+	GUI::CheckboxWidget *_addCdromDelayCheckbox;
+
 	GUI::PopUpWidget *_languagePopUp;
 
 	GUI::ButtonWidget *_dropPageButton;

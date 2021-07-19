@@ -602,7 +602,7 @@ bool DrasculaEngine::runCurrentChapter() {
 
 		// Do not show the inventory screen in chapter 5, if the right mouse button is clicked
 		// while the plug (object 16) is held
-		// Fixes bug #2059621 - "DRASCULA: Plug bug"
+		// Fixes bug #3885 - "DRASCULA: Plug bug"
 		if (_rightMouseButton == 1 && !_menuScreen &&
 			!(currentChapter == 5 && pickedObject == 16)) {
 			_rightMouseButton = 0;
@@ -928,9 +928,11 @@ bool DrasculaEngine::loadDrasculaDat() {
 	in.open(filename.c_str());
 
 	if (!in.isOpen()) {
-		Common::String errorMessage = Common::String::format(_("Unable to locate the '%s' engine data file."), filename.c_str());
+		const char *msg = _s("Unable to locate the '%s' engine data file.");
+
+		Common::U32String errorMessage = Common::U32String::format(_(msg), filename.c_str());
 		GUIErrorMessage(errorMessage);
-		warning("%s", errorMessage.c_str());
+		warning(msg, filename.c_str());
 
 		return false;
 	}
@@ -942,9 +944,10 @@ bool DrasculaEngine::loadDrasculaDat() {
 	buf[8] = '\0';
 
 	if (strcmp(buf, "DRASCULA") != 0) {
-		Common::String errorMessage = Common::String::format(_("The '%s' engine data file is corrupt."), filename.c_str());
+		const char *msg = _s("The '%s' engine data file is corrupt.");
+		Common::U32String errorMessage = Common::U32String::format(_(msg), filename.c_str());
 		GUIErrorMessage(errorMessage);
-		warning("%s", errorMessage.c_str());
+		warning(msg, filename.c_str());
 
 		return false;
 	}
@@ -952,11 +955,10 @@ bool DrasculaEngine::loadDrasculaDat() {
 	ver = in.readByte();
 
 	if (ver != DRASCULA_DAT_VER) {
-		Common::String errorMessage = Common::String::format(
-			_("Incorrect version of the '%s' engine data file found. Expected %d.%d but got %d.%d."),
-			filename.c_str(), DRASCULA_DAT_VER, 0, ver, 0);
+		const char *msg = _s("Incorrect version of the '%s' engine data file found. Expected %d.%d but got %d.%d.");
+		Common::U32String errorMessage = Common::U32String::format(_(msg), filename.c_str(), DRASCULA_DAT_VER, 0, ver, 0);
 		GUIErrorMessage(errorMessage);
-		warning("%s", errorMessage.c_str());
+		warning(msg, filename.c_str(), DRASCULA_DAT_VER, 0, ver, 0);
 
 		return false;
 	}

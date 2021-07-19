@@ -21,10 +21,10 @@
  */
 
 #include "ultima/shared/std/containers.h"
-#include "ultima/shared/std/misc.h"
 #include "ultima/nuvie/core/nuvie_defs.h"
 #include "ultima/nuvie/misc/u6_misc.h"
 #include "ultima/nuvie/conf/configuration.h"
+#include "common/config-manager.h"
 #include "common/file.h"
 #include "common/fs.h"
 #include "common/str.h"
@@ -229,7 +229,7 @@ void build_path(Std::string path, Std::string filename, Std::string &full_path) 
 
 bool has_fmtowns_support(Configuration *config) {
 	Std::string townsdir;
-	config->value("config/ultima6/townsdir", townsdir, "");
+	config->value("config/townsdir", townsdir, "");
 	if (townsdir != "" && directory_exists(townsdir.c_str()))
 		return true;
 
@@ -237,8 +237,8 @@ bool has_fmtowns_support(Configuration *config) {
 }
 
 bool directory_exists(const char *directory) {
-	Common::FSNode dir(directory);
-	return dir.exists();
+	Common::FSNode gameDir(ConfMan.get("path"));
+	return Common::FSNode(directory).exists() || gameDir.getChild(directory).exists();
 }
 
 bool file_exists(const char *path) {
@@ -617,9 +617,9 @@ void draw_line_8bit(int sx, int sy, int ex, int ey, uint8 col, uint8 *pixels, ui
 		}
 	}
 	// Diagonal xdiff >= ydiff
-	else if (Std::labs(sx - ex) >= Std::labs(sy - ey)) {
+	else if (ABS(sx - ex) >= ABS(sy - ey)) {
 		//Std::cout << "Diagonal 1" << Std::endl;
-		uint32 fraction = Std::labs((LINE_FRACTION * (sy - ey)) / (sx - ex));
+		uint32 fraction = ABS((LINE_FRACTION * (sy - ey)) / (sx - ex));
 		uint32 ycounter = 0;
 
 		for (; ;) {
@@ -641,7 +641,7 @@ void draw_line_8bit(int sx, int sy, int ex, int ey, uint8 col, uint8 *pixels, ui
 	// Diagonal ydiff > xdiff
 	else {
 		//Std::cout << "Diagonal 2" << Std::endl;
-		uint32 fraction = Std::labs((LINE_FRACTION * (sx - ex)) / (sy - ey));
+		uint32 fraction = ABS((LINE_FRACTION * (sx - ex)) / (sy - ey));
 		uint32 xcounter = 0;
 
 		for (; ;) {
@@ -722,7 +722,7 @@ void scaleLine8Bit(unsigned char *Target, unsigned char *Source, int SrcWidth, i
 
 //Coarse 2D scaling from http://www.compuphase.com/graphic/scale.htm
 void scale_rect_8bit(unsigned char *Source, unsigned char *Target, int SrcWidth, int SrcHeight,
-                     int TgtWidth, int TgtHeight) {
+					 int TgtWidth, int TgtHeight) {
 	int NumPixels = TgtHeight;
 	int IntPart = (SrcHeight / TgtHeight) * SrcWidth;
 	int FractPart = SrcHeight % TgtHeight;

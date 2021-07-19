@@ -27,23 +27,18 @@
 #include "ultima/ultima8/filesys/flex_file.h"
 #include "ultima/ultima8/filesys/raw_archive.h"
 #include "ultima/ultima8/world/item_factory.h"
-#include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
 #include "ultima/ultima8/world/loop_script.h"
 #include "ultima/ultima8/usecode/uc_list.h"
-#include "ultima/ultima8/misc/id_man.h"
 #include "ultima/ultima8/misc/direction_util.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/kernel/object_manager.h"
-#include "ultima/ultima8/ultima8.h"
 #include "ultima/ultima8/world/camera_process.h" // for resetting the camera
 #include "ultima/ultima8/gumps/gump.h" // For CloseItemDependents notification
-#include "ultima/ultima8/world/actors/animation.h"
 #include "ultima/ultima8/world/get_object.h"
+#include "ultima/ultima8/world/target_reticle_process.h"
 #include "ultima/ultima8/audio/audio_process.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/usecode/intrinsics.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -52,8 +47,8 @@ namespace Ultima8 {
 
 World *World::_world = nullptr;
 
-World::World() : _currentMap(nullptr), _alertActive(false), _difficulty(1),
-				 _controlledNPCNum(1) {
+World::World() : _currentMap(nullptr), _alertActive(false), _difficulty(3),
+				 _controlledNPCNum(1), _vargasShield(5000) {
 	debugN(MM_INFO, "Creating World...\n");
 
 	_world = this;
@@ -82,6 +77,10 @@ void World::clear() {
 	if (_currentMap)
 		delete _currentMap;
 	_currentMap = nullptr;
+
+	_alertActive = false;
+	_controlledNPCNum = 1;
+	_vargasShield = 5000;
 }
 
 void World::reset() {
@@ -115,10 +114,9 @@ bool World::switchMap(uint32 newmap) {
 
 	// Map switching procedure:
 
-	// get rid of camera
 	// stop all sound effects (except speech, such as Guardian barks)
 	// notify all gumps of a map change
-	// delete any _ethereal objects
+	// delete any ethereal objects
 	// write back CurrentMap to the old map, which
 	//   deletes all disposable items
 	//   deletes the EggHatcher
@@ -131,11 +129,7 @@ bool World::switchMap(uint32 newmap) {
 	//   assigns objIDs to nonfixed items
 	//   creates an EggHatcher and notifies it of all eggs
 	//   sets up all NPCs in the new map
-	// reset camera
-
-
-	// kill camera
-	CameraProcess::ResetCameraProcess();
+	// update camera if needed
 
 	AudioProcess *ap = AudioProcess::get_instance();
 	if (ap) ap->stopAllExceptSpeech();
@@ -179,9 +173,16 @@ bool World::switchMap(uint32 newmap) {
 
 	_currentMap->loadMap(_maps[newmap]);
 
-	// reset camera
-	CameraProcess::SetCameraProcess(new CameraProcess(1));
-	CameraProcess::SetEarthquake(0);
+	// update camera if needed (u8 only)
+	// TODO: This may not even be needed, but do it just in case the
+	// camera was looking at something else during teleport.
+	if (GAME_IS_U8) {
+		CameraProcess *camera = CameraProcess::GetCameraProcess();
+		if (camera && camera->getItemNum() != 1) {
+			CameraProcess::SetCameraProcess(new CameraProcess(1));
+		}
+		CameraProcess::SetEarthquake(0);
+	}
 
 	return true;
 }
@@ -343,8 +344,10 @@ void World::save(Common::WriteStream *ws) {
 	ws->writeUint16LE(_currentMap->_eggHatcher);
 
 	if (GAME_IS_CRUSADER) {
-		ws->writeByte(_alertActive ? 0 : 1);
+		ws->writeByte(_alertActive ? 1 : 0);
 		ws->writeByte(_difficulty);
+		ws->writeUint16LE(_controlledNPCNum);
+		ws->writeUint32LE(_vargasShield);
 	}
 
 	uint16 es = static_cast<uint16>(_ethereal.size());
@@ -375,6 +378,8 @@ bool World::load(Common::ReadStream *rs, uint32 version) {
 	if (GAME_IS_CRUSADER) {
 		_alertActive = (rs->readByte() != 0);
 		_difficulty = rs->readByte();
+		_controlledNPCNum = rs->readUint16LE();
+		_vargasShield = rs->readUint32LE();
 	}
 
 	uint32 etherealcount = rs->readUint32LE();
@@ -395,6 +400,12 @@ void World::saveMaps(Common::WriteStream *ws) {
 bool World::loadMaps(Common::ReadStream *rs, uint32 version) {
 	uint32 mapcount = rs->readUint32LE();
 
+	// Integrity check
+	if (mapcount > _maps.size()) {
+		warning("Invalid mapcount in save: %d.  Corrupt save?", mapcount);
+		return false;
+	}
+
 	// Map objects have already been created by reset()
 	for (unsigned int i = 0; i < mapcount; ++i) {
 		bool res = _maps[i]->load(rs, version);
@@ -407,8 +418,17 @@ bool World::loadMaps(Common::ReadStream *rs, uint32 version) {
 void World::setAlertActive(bool active)
 {
 	assert(GAME_IS_CRUSADER);
-    _alertActive = active;
+	_alertActive = active;
 
+	if (GAME_IS_REMORSE) {
+		setAlertActiveRemorse(active);
+	} else {
+		setAlertActiveRegret(active);
+	}
+}
+
+void World::setAlertActiveRemorse(bool active)
+{
 	// Replicate the behavior of the original game.
 	LOOPSCRIPT(script,
 		LS_OR(
@@ -426,6 +446,7 @@ void World::setAlertActive(bool active)
 	for (uint32 i = 0; i < itemlist.getSize(); i++) {
 		uint16 itemid = itemlist.getuint16(i);
 		Item *item = getItem(itemid);
+		assert(item);
 		int frame = item->getFrame();
 		if (_alertActive) {
 			if (item->getShape() == 0x477) {
@@ -445,9 +466,67 @@ void World::setAlertActive(bool active)
 	}
 }
 
-void World::setControlledNPCNum(uint16 num) {
-	warning("TODO: World::setControlledNPCNum(%d): IMPLEMENT ME", num);
+void World::setAlertActiveRegret(bool active)
+{
+	setAlertActiveRemorse(active);
+
+	LOOPSCRIPT(offscript, LS_OR(LS_SHAPE_EQUAL(0x660), LS_SHAPE_EQUAL(0x661)));
+	LOOPSCRIPT(onscript, LS_OR(LS_SHAPE_EQUAL(0x662), LS_SHAPE_EQUAL(0x663)));
+
+	const uint8 *script = active ? onscript : offscript;
+	// note: size should be the same, but just to be explicit.
+	int scriptlen = active ? sizeof(onscript) : sizeof(offscript);
+
+	UCList itemlist(2);
+	_world->getCurrentMap()->areaSearch(&itemlist, script, scriptlen,
+										nullptr, 0xffff, false);
+	for (uint32 i = 0; i < itemlist.getSize(); i++) {
+		uint16 itemid = itemlist.getuint16(i);
+		Item *item = getItem(itemid);
+		assert(item);
+		switch (item->getShape()) {
+			case 0x660:
+				item->setShape(0x663);
+				break;
+			case 0x661:
+				item->setShape(0x662);
+				break;
+			case 0x662:
+				item->setShape(0x661);
+				break;
+			case 0x663:
+				item->setShape(0x660);
+				break;
+			default:
+				warning("unexpected shape %d returned from search", item->getShape());
+				break;
+		}
+		item->setFrame(0);
+	}
 }
+
+void World::setControlledNPCNum(uint16 num) {
+	uint16 oldnpc = _controlledNPCNum;
+	_controlledNPCNum = num;
+	CameraProcess::SetCameraProcess(new CameraProcess(num));
+	Actor *previous = getActor(oldnpc);
+	if (previous && !previous->isDead() && previous->isInCombat()) {
+		previous->clearInCombat();
+	}
+
+	Actor *controlled = getActor(num);
+	if (controlled && num != 1) {
+		Kernel::get_instance()->killProcesses(num, Kernel::PROC_TYPE_ALL, true);
+		if (controlled->isInCombat())
+			controlled->clearInCombat();
+	}
+
+	TargetReticleProcess *t = TargetReticleProcess::get_instance();
+	if (t) {
+		t->avatarMoved();
+	}
+}
+
 
 uint32 World::I_getAlertActive(const uint8 * /*args*/,
 	unsigned int /*argsize*/) {
@@ -480,6 +559,12 @@ uint32 World::I_setControlledNPCNum(const uint8 *args,
 	unsigned int /*argsize*/) {
 	ARG_UINT16(num);
 	get_instance()->_world->setControlledNPCNum(num);
+	return 0;
+}
+
+uint32 World::I_resetVargasShield(const uint8 * /*args*/,
+	unsigned int /*argsize*/) {
+	get_instance()->setVargasShield(500);
 	return 0;
 }
 

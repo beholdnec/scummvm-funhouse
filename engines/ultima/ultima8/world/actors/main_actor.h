@@ -47,17 +47,26 @@ public:
 	bool CanAddItem(Item *item, bool checkwghtvol = false) override;
 	bool addItem(Item *item, bool checkwghtvol = false) override;
 
+	//! Get the ShapeInfo object for this MainActor.  Overrided because it changes
+	//! when Crusader is kneeling.
+	const ShapeInfo *getShapeInfoFromGameInstance() const override;
+
+	void move(int32 X, int32 Y, int32 Z) override;
+
 	//! Add item to avatar's inventory, but with some extra logic to do things like combine
 	//! ammo and credits, use batteries, etc.
 	int16 addItemCru(Item *item, bool showtoast);
 
+	//! Remove a single item - only called from an intrinsic
+	bool removeItemCru(Item *item);
+
 	//! teleport to the given location on the given map
-	void teleport(int mapNum_, int32 x_, int32 y_, int32 z_) override;
+	void teleport(int mapNum, int32 x, int32 y, int32 z) override;
 
 	//! teleport to a teleport-destination egg
 	//! \param mapnum The map to teleport to
 	//! \param teleport_id The ID of the egg to teleport to
-	void teleport(int mapNum_, int teleport_id); // to teleportegg
+	void teleport(int mapNum, int teleport_id); // to teleportegg
 
 	bool hasJustTeleported() const {
 		return _justTeleported;
@@ -89,10 +98,18 @@ public:
 	uint16 getDamageType() const override;
 	int getDamageAmount() const override;
 
-	void setInCombat() override;
+	void toggleInCombat() {
+		if (isInCombat())
+			clearInCombat();
+		else
+			setInCombat(0);
+	}
+
+	// Note: activity num parameter is ignored for Avatar.
+	void setInCombat(int activity) override;
 	void clearInCombat() override;
 
-	ProcId die(uint16 DamageType) override;
+	ProcId die(uint16 damageType, uint16 damagePts, Direction srcDir) override;
 
 	const Std::string &getName() const {
 		return _name;
@@ -111,6 +128,14 @@ public:
 		setMana(getMaxEnergy());
 	}
 
+	void setShieldType(uint16 shieldtype) {
+		_shieldType = shieldtype;
+	}
+
+	uint16 getShieldType() {
+		return _shieldType;
+	}
+
 	bool hasKeycard(int num) const;
 	void addKeycard(int bitno);
 
@@ -122,14 +147,17 @@ public:
 		return _activeInvItem;
 	}
 
-	//!< Swap to the next active weapon (in Crusader)
+	//! Swap to the next active weapon (Crusader)
 	void nextWeapon();
 
-	//!< Swap to the next inventory item (in Crusader)
+	//! Swap to the next inventory item (Crusader)
 	void nextInvItem();
 
 	//! Check if we can absorb a hit with the shield. Returns the modified damage value.
 	int receiveShieldHit(int damage, uint16 damage_type) override;
+
+	//! Detonate used bomb (Crusader)
+	void detonateBomb();
 
 	bool loadData(Common::ReadStream *rs, uint32 version);
 	void saveData(Common::WriteStream *ws) override;
@@ -148,8 +176,10 @@ public:
 	INTRINSIC(I_clrKeycards);
 	INTRINSIC(I_addItemCru);
 	INTRINSIC(I_getNumberOfCredits);
+	INTRINSIC(I_switchMap);
+	INTRINSIC(I_removeItemCru);
 
-	void getWeaponOverlay(const WeaponOverlayFrame *&frame_, uint32 &shape_);
+	void getWeaponOverlay(const WeaponOverlayFrame *&frame, uint32 &shape);
 
 
 protected:
@@ -168,8 +198,12 @@ protected:
 
 	Std::string _name;
 
+	//! Process for a shield zap animation sprite
 	uint16 _shieldSpriteProc;
+	//! Type of shield (only used in Crusader)
 	uint16 _shieldType;
+
+	static ShapeInfo *_kneelingShapeInfo;
 
 };
 

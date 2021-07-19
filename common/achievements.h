@@ -25,10 +25,20 @@
 
 #include "common/array.h"
 #include "common/ini-file.h"
+#include "common/hashmap.h"
 #include "common/singleton.h"
 #include "common/str.h"
 
 namespace Common {
+
+/**
+ * @defgroup common_achieve Achievements
+ * @ingroup common
+ *
+ * @brief API related to in-game achievements.
+ *
+ * @{
+ */
 
 /**
  * List of game achievements provider platforms.
@@ -40,62 +50,235 @@ enum AchievementsPlatform {
 	UNK_ACHIEVEMENTS = -1
 };
 
+/**
+ * Information structure for game-specific statistics.
+ */
+struct StatDescription {
+	String id;      //!< Stat internal ID, such as "ITEMS_THROWN".
+	String comment; //!< Optional stat comment, such as "Items Thrown".
+	String start;   //!< Stat default value, such as "0".
+};
 
 /**
- * Per-game achievements information structure item.
+ * Information structure for game-specific achievements.
  */
 struct AchievementDescription {
-	const char *id;            // achievement internal id, e.g. "ACHIEVEMENT_TIMING"
-	bool isHidden;             // achievement is hidden
-	const char *title;         // achievement displayed text, e.g. "Marathon Runner"
-	const char *comment;       // optional achievement hint / comment, e.g. "Finish the game in less than 4 hours"
+	String id;      //!< Achievement internal ID, such as "ACHIEVEMENT_TIMING".
+	String title;   //!< Achievement displayed text, such as "Marathon Runner".
+	String comment; //!< Optional achievement hint or comment, such as "Finish the game in less than 4 hours".
+	bool isHidden;  //!< Whether the achievement is hidden.
 };
-
 
 /**
- * Per-game achievements information structure item.
+ * Information structure for platform-specific achievements.
  */
 struct AchievementsInfo {
-	Common::AchievementsPlatform platform;              // achievements platform, e.g. STEAM_ACHIEVEMENTS
-	Common::String appId;                               // achievements application ID of given platform
-	Common::Array<AchievementDescription> descriptions; // descriptions of all game achievements
+	Common::AchievementsPlatform platform;              //!< Achievements platform, such as "STEAM_ACHIEVEMENTS".
+	Common::String appId;                               //!< Achievements application ID of the given platform.
 
-	AchievementsInfo() {platform = Common::UNK_ACHIEVEMENTS;}
+	AchievementsInfo() { platform = Common::UNK_ACHIEVEMENTS; }
 };
 
+/**
+ * The meta engine returns an array of achievement descriptions
+ *
+ * @note This array (if not @c nullptr) must end on a terminating entry
+ * @sa ACHIEVEMENT_DESC_TABLE_END_MARKER
+ */
+struct AchievementDescriptionList {
+	const char *gameId;
+	Common::AchievementsPlatform platform;
+	const char *appId;
+};
 
+#define ACHIEVEMENT_DESC_TABLE_END_MARKER \
+	{ nullptr, Common::UNK_ACHIEVEMENTS, nullptr }
+
+/**
+ * Class for manipulating the achievements.
+ *
+ * Use the Achievements Manager class to edit the in-game achievements.
+ */
 class AchievementsManager : public Singleton<AchievementsManager> {
 public:
 	AchievementsManager();
 	~AchievementsManager();
 
-	bool setActiveDomain(AchievementsPlatform platform, const String &appId);
-	bool unsetActiveDomain();
-	bool isReady() { return _iniFile != nullptr; }
+	/**
+	 * Set a game targeted by platform type and application ID as active domain.
+	 * Automaticly loads messages texts from achievements.dat.
+	 *
+	 * @param[in] info Achievements platform type and application ID.
+	 */
+	bool setActiveDomain(const AchievementsInfo &info);
+	bool unsetActiveDomain();                            //!< Unset the current active domain.
+	bool isReady() const { return _iniFile != nullptr; } //!< Check whether the domain is ready.
 
-	// Methods to manipulate individual achievements
-	bool setAchievement(const String &id, const String &displayedMessage);
-	bool isAchieved(const String &id);
+	/**
+	 * @name Methods for manipulating individual achievements
+	 * @{
+	 */
+
+	/** Set an achievement. Message is automatically displayed with text from active domain.
+	 *
+	 * @param[in] id			   Internal ID of the achievement.
+	 */
+	bool setAchievement(const String &id);
+
+	/**
+	 * Check if an achievement as achieved.
+	 *
+	 * @param[in] id Internal ID of the achievement.
+	 */
+	bool isAchieved(const String &id) const;
+
+	/**
+	 * Clear an achieved achievement.
+	 *
+	 * @param[in] id Internal ID of the achievement.
+	 */
 	bool clearAchievement(const String &id);
 
-	// Methods to manipulate individual statistics
-	int getStatInt(const String &id);
+	/** @} */
+
+	/**
+	 * @name Methods for manipulating individual statistics
+	 * @{
+	 */
+
+	/**
+	 * Get a statistic (integer).
+	 *
+	 * @param[in] id Internal ID of the achievement.
+	 */
+	int getStatInt(const String &id) const;
+
+	/**
+	 * Set a statistic to an integer number.
+	 *
+	 * @param[in] id	Internal ID of the achievement.
+	 * @param[in] value Value to which the statistic is set.
+	 */
 	bool setStatInt(const String &id, int value);
-	float getStatFloat(const String &id);
+
+	/**
+	 * Get a statistic (float).
+	 *
+	 * @param[in] id	Internal ID of the achievement.
+	 */
+	float getStatFloat(const String &id) const;
+
+	/**
+	 * Set a statistic to a float number.
+	 *
+	 * @param[in] id	Internal ID of the achievement.
+	 * @param[in] value Value to which the statistic is set.
+	 */
 	bool setStatFloat(const String &id, float value);
 
-	// Methods to reset everything
-	bool resetAllAchievements();
-	bool resetAllStats();
+	/**
+	 * Get a statistic (raw string).
+	 *
+	 * @param[in] id	Internal ID of the achievement.
+	 */
+	const String getStatRaw(const String &id) const;
+
+	/**
+	 * Get an average rate statistic (float).
+	 * Calcucated by devision the sum of count by the sum of times.
+	 *
+	 * @param[in] id	Internal ID of the achievement.
+	 */
+	float getAverageRateStatFloat(const String &id) const;
+
+	/**
+	 * Update an average rate statistic (float).
+	 *
+	 * @param[in] id	Internal ID of the achievement.
+	 * @param[in] count Value to which the statistic count is increased.
+	 * @param[in] times Value to which the statistic times is increased.
+	 */
+	bool updateAverageRateStatFloat(const String &id, float count, float times);
+
+	/** @} */
+
+	/**
+	 * @name Methods for resetting achievements and statistics
+	 * @{
+	 */
+	bool resetAllAchievements(); //!< Reset all achievements.
+	bool resetAllStats();        //!< Reset all statistics.
+
+	/** @} */
+
+	/**
+	 * @name Methods for storing platform-specific data
+	 * @{
+	 */
+
+	/**
+	 * Store provided key and value pair in additional section.
+	 * May be useful for posting achievements to original platform.
+	 *
+	 * @param[in] id	Internal ID of the achievement.
+	 * @param[in] value Value to which the statistic is set.
+	 */
+	bool setSpecialString(const String &id, const String &value);
+
+	/** @} */
+
+	/**
+	 * @name Methods for getting achievements and statistics descriptions
+	 * @{
+	 */
+
+	/**
+	 * Get number of achivement descriptions available.
+	 *
+	 */
+	uint16 getAchievementCount() const;
+
+	/**
+	 * Get achivement description by index.
+	 *
+	 * @param[in] index	Internal index of the achievement, counted from 0 to (getAchievementCount() - 1)
+	 *
+	 */
+	const AchievementDescription *getAchievementDescription(uint16 index) const;
+
+	/**
+	 * Get number of stat descriptions available.
+	 *
+	 */
+	uint16 getStatCount() const;
+
+	/**
+	 * Get stat description by index.
+	 *
+	 * @param[in] index	Internal index of the stat, counted from 0 to (getStatCount() - 1)
+	 *
+	 */
+	const StatDescription *getStatDescription(uint16 index) const;
+
+	/** @} */
 
 private:
+	String getCurrentLang() const;
+	bool loadAchievementsData(const char *platform, const char *appId);
+
+	float getStatFloatEx(const String &id, const String &section) const;
+	bool setStatFloatEx(const String &id, float value, const String &section) const;
+
 	INIFile *_iniFile;
 	String _iniFileName;
+	Common::Array<StatDescription> _stats;
+	Common::HashMap<String, Common::Array<AchievementDescription> > _achievements;
 };
 
-/** Shortcut for accessing the achievements manager. */
+/** Shortcut for accessing the Achievements Manager. */
 #define AchMan Common::AchievementsManager::instance()
 
+/** @} */
 
 } // End of namespace Common
 

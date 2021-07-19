@@ -1,7 +1,166 @@
 For a more comprehensive changelog of the latest experimental code, see:
         https://github.com/scummvm/scummvm/commits/
 
-#### 2.2.0 (2020-09-27)
+#### 2.3.0 (XXXX-XX-XX)
+
+ New games:
+   - Added support for Grim Fandango.
+   - Added support for The Longest Journey.
+   - Added support for Myst 3: Exile.
+   - Added support for Hades' Challenge.
+   - Added support for Little Big Adventure.
+   - Added support for Red Comrades 1: Save the Galaxy.
+   - Added support for Red Comrades 2: For the Great Justice.
+   - Added support for Transylvania.
+   - Added support for Crimson Crown.
+   - Added support for OO-Topos.
+   - Added support for Glulx interactive fiction games
+   - Added support for Lure of the Temptress Konami release.
+   - Added support for Private Eye (US release).
+   - Added support for Spanish Blue Force.
+   - Added support for Spanish Ringworld.
+   - Added support for Spanish Amazon: Guardians of Eden.
+   - Added support for AGS Games versions 2.5+.
+   - Added support for Nightlong: Union City Conspiracy.
+   - Added support for The Journeyman Project 2: Buried in Time.
+   - Added support for Crusader: No Remorse.
+
+ New ports:
+   - The Nintendo DS port got a major rewrite.
+
+ General:
+   - Switched ScummVM GUI output to UTF-32.
+   - Updated the Roland MT-32 emulation code to the Munt project's mt32emu 2.5.1.
+   - Updated Dropbox Cloud Storage to use the new Dropbox OAuth workflow.
+   - Major extension to the number of supported graphics scalers.
+   - Display path to scummvm configuration file in GUI -> Options -> Paths.
+   - Added new optional dependency, giflib >= 5.0.0. Used by some version of LBA.
+   - Added HiDPI support to the ScummVM GUI.
+   - Added command line option --window-size for specifying ScummVM window size,
+     applicable only to the OpenGL renderer.
+
+ AGOS:
+   - Added support for the Japanese PC-98 version of Elvira 1.
+
+ Dreamweb:
+   - Rendering fixes for Russian fan translation.
+
+ Glk:
+   - Fixed savegame issues with several subengines.
+   - Fixed memory overrun in Level9 game detector.
+   - Added detections for 2020 IF Comp games.
+   - Enabled Glulx sub-engine.
+
+ Gob:
+   - Added support for Bargon Attack Russian translation.
+   - Added support for Woodruff Russian translation.
+
+ Griffon:
+   - Fixed Return to Launcher from The Griffon Legend.
+
+ Grim:
+   - Added support for Brazillian Portuguese Grim Fandango.
+
+ Kyra:
+   - Added support for the Japanese Sega-CD version of Eye of the Beholder.
+   - Added support for the Hebrew fan translation of Legend of Kyrandia.
+   - Added support for the Simplified Chinese version of Legend of Kyrandia 3.
+   - Added support for the playable demo of Lands of Lore.
+
+ Lure:
+   - Fixed fire animation in first room when loading saves.
+   - Fixed AdLib support.
+   - Fixed MT-32 support.
+
+ Pegasus:
+   - Added support for DVD/GOG.com release.
+
+ Queen:
+   - Added support for German Amiga floppy release.
+
+ SAGA:
+   - Added support for ITE GOG Mac CD v1.1.
+   - Added support for ITE PC-98 Japanese.
+
+ SCI:
+   - Added RGB rendering mode (16/32bpp) for SCI0 - SCI1.1 games, which addresses palette
+     issues in screen transitions and avoids mode changes when playing Mac QuickTime videos.
+   - Added custom palette mods for SQ3 and LSL2 from the FreeSCI project. When enabled, the mods improve the visuals
+     in these two games.
+   - Added support for the Korean fan translations of Castle of Dr. Brain, Eco Quest, Gabriel Knight,
+     King's Quest 1, 5 and 6, Laura Bow 2: Dagger of Amon Ra and Space Quest 4.
+   - Added support for numerous Korean translations from scummkor project.
+   - Added detection for LSL6 Russian.
+   - Added detection for alternate LSL7 Russian.
+
+ SCUMM:
+   - Fixed Chinese, Japanese and Korean text display for The Dig and for The Curse of Monkey Island. These fixes
+     also include some improvements to the common text display (mainly the formatting of wrapped texts).
+   - Fixed display of Chinese, Japanese and Korean pause and restart dialogs.
+   - Added support for numerous Korean translations from scummkor project.
+   - Added support for Russobit-M versions of Pajama2 and SpyOzone.
+   - Fixed speech playback in Akella version of COMI.
+   - Added support for Discord and Humble Bundle versions of Indiana Jones and the Fate of Atlantis.
+   - Added smooth scrolling for FM-TOWNS versions of games.
+   - Added optional trimming to 200 pixels for some FM-TOWNS games, so aspect-ratio correction is possible.
+   - Fixed audio distortion in Loom for PC-Engine.
+   - Added support for the high resolution font and cursor in the 16-color Macintosh version of Loom.
+   - Added support for Japanese Mac version of The Dig.
+   - Added partial support for the high resolution fonts and cursor in the
+     16-color Macintosh version of Indiana Jones and the Last Crusade.
+   - Fixed missing instruments in the m68k Mac versions of Monkey Island 2
+     and Indiana Jones and the Fate of Atlantis.
+   - Added "Macintosh b/w" render mode for the 16-color Macintosh versions of
+     Loom and Indiana Jones and the Last Crusade.
+   - Enabled difficulty selection in the version of Monkey Island 2 that was
+     included on the LucasArts Mac CD Game Pack II compilation. (It had been
+     disabled along with the copy protection.)
+   - Repair clumsy crack in Maniac Mansion (enhanced)'s keypad script.
+     This means that the GOG (and Steam?) versions will no longer accept
+     incorrect numbers, e.g. for Edna's phone number. (Why are they selling
+     a cracked version anyway?!)
+
+ Tinsel:
+   - Enabled the Return to Launcher feature.
+
+ TsAGE:
+   - Added support for uninstalled floppy version.
+
+ Stark:
+   - Added support for Hungarian translation.
+
+ Supernova:
+   - Added Italian translation for part 1.
+
+ Sword25:
+   - Made the extracted version working.
+   - Fixed crash when selecting Croatian language.
+
+ Ultima:
+   - Ultima 4: Added several debugger commands.
+   - Ultima 4: Allow Enter key to exit ZStats display.
+   - Ultima 8: Fixed several animation bugs for events and objects.
+   - Ultima 8: Restored original text for the Spell of Resurrection book.
+
+ Xeen:
+   - Fixed occasional border corruption during fights.
+   - Improvements to cutscenes to better match the original games.
+   - Fixes for character selection, deselection, and dismissing to better match original.
+
+ AmigaOS port:
+   - Add native system file browser feature.
+   - Re-activate nuked OPL Adlib driver.
+
+ MorphOS port:
+   - Added native system file browser feature.
+   - Added Cloud feature.
+   - Re-activate nuked OPL Adlib driver.
+   - Added CAMD MIDI driver support.
+
+  Windows port:
+   - Use OpenGL renderer by default, providing better support for HiDPI displays.
+
+#### 2.2.0 "Interactive Fantasy" (2020-09-27)
 
  New games:
    - Added support for Blazing Dragons.
@@ -31,6 +190,7 @@ For a more comprehensive changelog of the latest experimental code, see:
    - Added option to select the default voice for ports that support Text-to-Speech.
    - Added support for Discord Rich Presence integration on supported platforms (Windows Vista+, macOS 10.9+ 64 Bit)
    - Major improvements to the keymapper.
+   - Games are now recognised by engineid:gameid combination.
 
  BBVS:
    - Added support for the demo, available from our website.
@@ -403,6 +563,8 @@ For a more comprehensive changelog of the latest experimental code, see:
  ZVISION:
    - Fixed graphical glitch in Zork: Grand Inquisitor.
    - Packaged the required fonts with ScummVM.
+   - Enabled hires movies in the DVD version of Zork: Grand Inquisitor (requires
+     libmpeg2 and libac52).
 
  Android port:
    - Rewrote to make use of the OpenGL Graphics Manager.
@@ -1095,7 +1257,7 @@ For a more comprehensive changelog of the latest experimental code, see:
    - Implemented Roland MT-32 output driver.
 
  Drascula:
-   - Added Spanish subtitles in the Von Braun cutscene (#3069981: no subtitles
+   - Added Spanish subtitles in the Von Braun cutscene (#5372: no subtitles
      in scene with "von Braun").
 
  Gob:
@@ -1282,7 +1444,7 @@ For a more comprehensive changelog of the latest experimental code, see:
      glitches remain so not official supported.
 
  Drascula:
-   - Added German and French subtitles in the Von Braun cutscene (#3069981:
+   - Added German and French subtitles in the Von Braun cutscene (#5372:
      no subtitles in scene with "von Braun").
    - Improved French translation of the game.
    - Added support for "Return To Launcher".
@@ -1477,7 +1639,7 @@ For a more comprehensive changelog of the latest experimental code, see:
  Broken Sword 2:
    - Fixed missing speech in some cutscenes.
    - Fixed a memory leak that would eventually cause the game to hang.
-     (#2976008 - BS2: Game lockup in British Museum)
+     (#4828 - BS2: Game lockup in British Museum)
 
  Drascula:
    - Fixed number of GFX glitches.
@@ -1542,7 +1704,7 @@ For a more comprehensive changelog of the latest experimental code, see:
 
  Drascula:
    - Fixed regression that caused some texts to always be in English, even when
-     using another language. (#2970211 - DRASCULA: missing german translation)
+     using another language. (#4819 - DRASCULA: missing german translation)
 
  KYRA:
    - Fixed a bug which caused the DOS versions to crash before the credits when
@@ -2212,7 +2374,7 @@ For a more comprehensive changelog of the latest experimental code, see:
    - Fixed last-minute crash when playing sound effects.
 
  WinCE Port:
-   - Should fix weird crashes with DOTT stamp and in FOA. (#1399830 #1392815)
+   - Should fix weird crashes with DOTT stamp and in FOA. (#2439 #2430)
    - Fixed Monkey Island blocking keyboard panel on Smartphones. (thks Knakos)
    - Fixed QVGA Smartphone detection (mean it this time :p).
    - Fixed Smartphone double right click issue.

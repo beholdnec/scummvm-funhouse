@@ -20,22 +20,17 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/world/camera_process.h"
 #include "ultima/ultima8/world/world.h"
 #include "ultima/ultima8/world/current_map.h"
-#include "ultima/ultima8/world/item.h"
 #include "ultima/ultima8/world/actors/actor.h"
-#include "ultima/ultima8/usecode/uc_machine.h"
-#include "ultima/ultima8/graphics/shape_info.h"
 #include "ultima/ultima8/kernel/kernel.h"
-#include "ultima/ultima8/kernel/core_app.h"
+#include "ultima/ultima8/ultima8.h"
 #include "ultima/ultima8/world/get_object.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(CameraProcess)
 
 //
@@ -66,6 +61,20 @@ uint16 CameraProcess::SetCameraProcess(CameraProcess *cam) {
 void CameraProcess::ResetCameraProcess() {
 	if (_camera) _camera->terminate();
 	_camera = nullptr;
+}
+
+void CameraProcess::moveToLocation(int32 x, int32 y, int32 z) {
+	if (_itemNum) {
+		Item *item = getItem(_itemNum);
+		if (item) item->clearExtFlag(Item::EXT_CAMERA);
+	}
+
+	_sx = _sy = _sz = _time = _elapsed = _lastFrameNum = _itemNum = 0;
+	_eqX = _eqY = _earthquake = 0;
+	_ex = x;
+	_ey = y;
+	_ez = z;
+	GetCameraLocation(_sx, _sy, _sz);
 }
 
 void CameraProcess::GetCameraLocation(int32 &x, int32 &y, int32 &z) {
@@ -122,14 +131,14 @@ CameraProcess::CameraProcess(uint16 _itemnum) :
 }
 
 // Stay over point
-CameraProcess::CameraProcess(int32 x_, int32 y_, int32 z_) :
-	_ex(x_), _ey(y_), _ez(z_), _time(0), _elapsed(0), _itemNum(0), _lastFrameNum(0) {
+CameraProcess::CameraProcess(int32 x, int32 y, int32 z) :
+	_ex(x), _ey(y), _ez(z), _time(0), _elapsed(0), _itemNum(0), _lastFrameNum(0) {
 	GetCameraLocation(_sx, _sy, _sz);
 }
 
 // Scroll
-CameraProcess::CameraProcess(int32 x_, int32 y_, int32 z_, int32 time_) :
-	_ex(x_), _ey(y_), _ez(z_), _time(time_), _elapsed(0), _itemNum(0), _lastFrameNum(0) {
+CameraProcess::CameraProcess(int32 x, int32 y, int32 z, int32 time) :
+	_ex(x), _ey(y), _ez(z), _time(time), _elapsed(0), _itemNum(0), _lastFrameNum(0) {
 	GetCameraLocation(_sx, _sy, _sz);
 	//pout << "Scrolling from (" << sx << "," << sy << "," << sz << ") to (" <<
 	//  ex << "," << ey << "," << ez << ") in " << _time << " frames" << Std::endl;
@@ -162,7 +171,7 @@ void CameraProcess::run() {
 	_elapsed++;
 }
 
-void CameraProcess::ItemMoved() {
+void CameraProcess::itemMoved() {
 	if (!_itemNum)
 		return;
 
@@ -187,9 +196,6 @@ void CameraProcess::ItemMoved() {
 }
 
 void CameraProcess::GetLerped(int32 &x, int32 &y, int32 &z, int32 factor, bool noupdate) {
-	// TODO: For Crusader, only update the camera position if the
-	// distance to the target object passes a threshold.
-
 	if (_time == 0) {
 		if (!noupdate) {
 
@@ -268,14 +274,16 @@ void CameraProcess::GetLerped(int32 &x, int32 &y, int32 &z, int32 factor, bool n
 	}
 }
 
-uint16 CameraProcess::FindRoof(int32 factor) {
+uint16 CameraProcess::findRoof(int32 factor) {
 	int32 x, y, z;
 	int32 earthquake_old = _earthquake;
 	_earthquake = 0;
 	GetLerped(x, y, z, factor);
 	_earthquake = earthquake_old;
 	Item *avatar = getItem(1);
-	assert(avatar);
+	if (!avatar) // avatar gone?
+		return 0;
+
 	int32 dx, dy, dz;
 	avatar->getFootpadWorld(dx, dy, dz);
 	uint16 roofid;

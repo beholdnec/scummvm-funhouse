@@ -23,7 +23,7 @@
 #ifndef SCI_INCLUDE_FEATURES_H
 #define SCI_INCLUDE_FEATURES_H
 
-#include "sci/resource.h"
+#include "sci/resource/resource.h"
 #include "sci/engine/seg_manager.h"
 
 namespace Sci {
@@ -172,6 +172,18 @@ public:
 			 g_sci->getGameId() == GID_SQ6);
 	}
 
+	inline bool useMacGammaLevel() const {
+		// SCI32 Mac interpreters were hard-coded to use gamma level 2 until
+		//  Torin's Passage, PQSWAT, and the 2.1 Late games. The colors in
+		//  the game resources are significantly darker than their PC versions.
+		//  Confirmed in disassembly of all Mac interpreters.
+		return g_sci->getPlatform() == Common::kPlatformMacintosh &&
+			getSciVersion() >= SCI_VERSION_2 &&
+			getSciVersion() < SCI_VERSION_2_1_LATE &&
+			g_sci->getGameId() != GID_PQSWAT &&
+			g_sci->getGameId() != GID_TORIN;
+	}
+
 	inline bool usesAlternateSelectors() const {
 		return g_sci->getGameId() == GID_PHANTASMAGORIA2;
 	}
@@ -223,7 +235,7 @@ public:
 	MoveCountType detectMoveCountType();
 
 	int detectPlaneIdBase();
-	
+
 	bool handleMoveCount() { return detectMoveCountType() == kIncrementMoveCount; }
 
 	bool usesCdTrack() { return _usesCdTrack; }
@@ -245,6 +257,8 @@ public:
 	 * selected a MIDI output device
 	 */
 	void forceDOSTracks() { _forceDOSTracks = true; }
+
+	bool useWindowsCursors() { return _useWindowsCursors; }
 
 	/**
 	 * Autodetects, if Pseudo Mouse ability is enabled (different behavior in keyboard driver)
@@ -273,6 +287,7 @@ private:
 	MoveCountType _moveCountType;
 	bool _usesCdTrack;
 	bool _forceDOSTracks;
+	bool _useWindowsCursors;
 
 	PseudoMouseAbilityType _pseudoMouseAbility;
 

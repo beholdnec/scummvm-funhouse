@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -161,18 +176,14 @@
 	</ImportGroup>
 	<PropertyGroup Label="UserMacros" />
 	<ItemGroup>
-		<ClCompile Include="..\..\engines\ultima\nuvie\actors\actor.cpp">
-			<ObjectFileName>$(IntDir)nuvie_actors_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\actors\actor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\actors\actor_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\actors\md_actor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\actors\se_actor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\actors\u6_actor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\actors\wou_actor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\conf\configuration.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\conf\misc.cpp">
-			<ObjectFileName>$(IntDir)nuvie_conf_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\conf\misc.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\anim_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\book.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\converse.cpp" />
@@ -180,35 +191,21 @@
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\converse_speech.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\cursor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\debug.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\core\debugger.cpp">
-			<ObjectFileName>$(IntDir)nuvie_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\core\debugger.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\effect.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\effect_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\egg_manager.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\core\events.cpp">
-			<ObjectFileName>$(IntDir)nuvie_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\nuvie\core\game.cpp">
-			<ObjectFileName>$(IntDir)nuvie_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\core\events.cpp" />
+		<ClCompile Include="..\..\engines\ultima\nuvie\core\game.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\game_clock.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\look.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\core\magic.cpp">
-			<ObjectFileName>$(IntDir)nuvie_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\nuvie\core\map.cpp">
-			<ObjectFileName>$(IntDir)nuvie_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\core\magic.cpp" />
+		<ClCompile Include="..\..\engines\ultima\nuvie\core\map.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\nuvie_defs.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\obj.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\obj_manager.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\core\party.cpp">
-			<ObjectFileName>$(IntDir)nuvie_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\nuvie\core\player.cpp">
-			<ObjectFileName>$(IntDir)nuvie_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\core\party.cpp" />
+		<ClCompile Include="..\..\engines\ultima\nuvie\core\player.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\tile_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\timed_event.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\core\weather.cpp" />
@@ -221,17 +218,11 @@
 		<ClCompile Include="..\..\engines\ultima\nuvie\files\u6_lib_n.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\files\u6_lzw.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\files\u6_shape.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\files\utils.cpp">
-			<ObjectFileName>$(IntDir)nuvie_files_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\files\utils.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\fonts\bmp_font.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\fonts\conv_font.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\fonts\font.cpp">
-			<ObjectFileName>$(IntDir)nuvie_fonts_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\nuvie\fonts\font_manager.cpp">
-			<ObjectFileName>$(IntDir)nuvie_fonts_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\fonts\font.cpp" />
+		<ClCompile Include="..\..\engines\ultima\nuvie\fonts\font_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\fonts\u6_font.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\fonts\wou_font.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\gui\widgets\background.cpp" />
@@ -289,16 +280,10 @@
 		<ClCompile Include="..\..\engines\ultima\nuvie\save\save_game.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\screen\dither.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\screen\game_palette.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\screen\scale.cpp">
-			<ObjectFileName>$(IntDir)nuvie_screen_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\nuvie\screen\screen.cpp">
-			<ObjectFileName>$(IntDir)nuvie_screen_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\screen\scale.cpp" />
+		<ClCompile Include="..\..\engines\ultima\nuvie\screen\screen.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\screen\surface.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\script\script.cpp">
-			<ObjectFileName>$(IntDir)nuvie_script_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\script\script.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\script\script_actor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\script\script_cutscene.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\sound\adplug\adplug_player.cpp" />
@@ -322,9 +307,7 @@
 		<ClCompile Include="..\..\engines\ultima\nuvie\sound\sound_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\sound\towns_sfx_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\usecode\u6_usecode.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\usecode\usecode.cpp">
-			<ObjectFileName>$(IntDir)nuvie_usecode_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\usecode\usecode.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\views\actor_view.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\views\container_view_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\views\container_widget.cpp" />
@@ -348,13 +331,9 @@
 		<ClCompile Include="..\..\engines\ultima\nuvie\views\sun_moon_strip_widget.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\views\vew.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\views\view_manager.cpp" />
-		<ClCompile Include="..\..\engines\ultima\nuvie\meta_engine.cpp">
-			<ObjectFileName>$(IntDir)nuvie_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\nuvie\meta_engine.cpp" />
 		<ClCompile Include="..\..\engines\ultima\nuvie\nuvie.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\actions\action.cpp">
-			<ObjectFileName>$(IntDir)shared_actions_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\actions\action.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\actions\huh.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\actions\pass.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\conf\xml_node.cpp" />
@@ -362,133 +341,68 @@
 		<ClCompile Include="..\..\engines\ultima\shared\core\base_object.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\core\character.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\core\file.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\core\lzw.cpp">
-			<ObjectFileName>$(IntDir)shared_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\core\map.cpp">
-			<ObjectFileName>$(IntDir)shared_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\core\lzw.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\core\map.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\core\message_target.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\core\mouse_cursor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\core\named_item.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\core\party.cpp">
-			<ObjectFileName>$(IntDir)shared_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\core\party.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\core\str.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\core\tree_item.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\core\utils.cpp">
-			<ObjectFileName>$(IntDir)shared_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\core\utils.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\core\widgets.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\early\font_resources.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\early\game.cpp">
-			<ObjectFileName>$(IntDir)shared_early_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\early\game.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\early\game_base.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\early\ultima_early.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\engine\data_archive.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\engine\debugger.cpp">
-			<ObjectFileName>$(IntDir)shared_engine_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\engine\events.cpp">
-			<ObjectFileName>$(IntDir)shared_engine_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\engine\debugger.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\engine\events.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\engine\input_handler.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\engine\input_translator.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\engine\messages.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\engine\resources.cpp">
-			<ObjectFileName>$(IntDir)shared_engine_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\engine\resources.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\engine\ultima.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\gfx\bitmap.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\gfx\character_input.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\gfx\dungeon_surface.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\gfx\font.cpp">
-			<ObjectFileName>$(IntDir)shared_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\gfx\info.cpp">
-			<ObjectFileName>$(IntDir)shared_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\gfx\font.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\gfx\info.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\gfx\popup.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\gfx\screen.cpp">
-			<ObjectFileName>$(IntDir)shared_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\gfx\sprites.cpp">
-			<ObjectFileName>$(IntDir)shared_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\gfx\text_cursor.cpp">
-			<ObjectFileName>$(IntDir)shared_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\gfx\screen.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\gfx\sprites.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\gfx\text_cursor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\gfx\text_input.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\gfx\viewport_dungeon.cpp">
-			<ObjectFileName>$(IntDir)shared_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\gfx\viewport_map.cpp">
-			<ObjectFileName>$(IntDir)shared_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\gfx\viewport_dungeon.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\gfx\viewport_map.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\gfx\visual_container.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\gfx\visual_item.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\gfx\visual_surface.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\maps\creature.cpp">
-			<ObjectFileName>$(IntDir)shared_maps_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\maps\map.cpp">
-			<ObjectFileName>$(IntDir)shared_maps_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\maps\map_base.cpp">
-			<ObjectFileName>$(IntDir)shared_maps_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\shared\maps\map_tile.cpp">
-			<ObjectFileName>$(IntDir)shared_maps_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\shared\maps\creature.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\maps\map.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\maps\map_base.cpp" />
+		<ClCompile Include="..\..\engines\ultima\shared\maps\map_tile.cpp" />
 		<ClCompile Include="..\..\engines\ultima\shared\maps\map_widget.cpp" />
-		<ClCompile Include="..\..\engines\ultima\shared\std\misc.cpp">
-			<ObjectFileName>$(IntDir)shared_std_%(Filename).obj</ObjectFileName>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\ultima\shared\std\string.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima0\core\resources.cpp">
-			<ObjectFileName>$(IntDir)ultima0_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima0\game.cpp">
-			<ObjectFileName>$(IntDir)ultima0_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima0\resources.cpp">
-			<ObjectFileName>$(IntDir)ultima0_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\actions\action.cpp">
-			<ObjectFileName>$(IntDir)ultima1_actions_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima0\core\resources.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima0\game.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima0\resources.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\actions\action.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\actions\attack.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\actions\move.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\actions\quit.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\actions\ready.cpp">
-			<ObjectFileName>$(IntDir)ultima1_actions_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\actions\stats.cpp">
-			<ObjectFileName>$(IntDir)ultima1_actions_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\core\debugger.cpp">
-			<ObjectFileName>$(IntDir)ultima1_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\core\party.cpp">
-			<ObjectFileName>$(IntDir)ultima1_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\actions\ready.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\actions\stats.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\core\debugger.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\core\party.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\core\quests.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\core\resources.cpp">
-			<ObjectFileName>$(IntDir)ultima1_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map.cpp">
-			<ObjectFileName>$(IntDir)ultima1_maps_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map_base.cpp">
-			<ObjectFileName>$(IntDir)ultima1_maps_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\core\resources.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map_base.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map_city_castle.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map_dungeon.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map_overworld.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map_tile.cpp">
-			<ObjectFileName>$(IntDir)ultima1_maps_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\maps\map_tile.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\spells\blink.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\spells\create.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\spells\destroy.cpp" />
@@ -497,9 +411,7 @@
 		<ClCompile Include="..\..\engines\ultima\ultima1\spells\ladder_up.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\spells\open_unlock.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\spells\prayer.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\spells\spell.cpp">
-			<ObjectFileName>$(IntDir)ultima1_spells_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\spells\spell.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\spells\steal.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\armoury.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\buy_sell_dialog.cpp" />
@@ -508,41 +420,23 @@
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\drop.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\full_screen_dialog.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\grocery.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\king.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1dialogs_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\magic.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1dialogs_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\ready.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1dialogs_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\stats.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1dialogs_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\king.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\magic.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\ready.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\stats.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\tavern.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\transports.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1dialogs\weaponry.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\drawing_support.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\info.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\sprites.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\info.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\sprites.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\status.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\text_cursor.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\text_cursor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\view_char_gen.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\view_game.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\view_title.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\viewport_dungeon.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\viewport_map.cpp">
-			<ObjectFileName>$(IntDir)ultima1_u1gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\viewport_dungeon.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima1\u1gfx\viewport_map.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\u6gfx\game_view.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\attack_effect.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\bard.cpp" />
@@ -553,9 +447,7 @@
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\dungeon_player.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\dungeon_widget.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\guard.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\king.cpp">
-			<ObjectFileName>$(IntDir)ultima1_widgets_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\king.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\merchant.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\merchant_armour.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\merchant_grocer.cpp" />
@@ -565,17 +457,13 @@
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\merchant_weapons.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\overworld_monster.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\overworld_widget.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\person.cpp">
-			<ObjectFileName>$(IntDir)ultima1_widgets_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\person.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\princess.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\transport.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\urban_player.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\urban_widget.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima1\widgets\wench.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima1\game.cpp">
-			<ObjectFileName>$(IntDir)ultima1_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima1\game.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\controllers\alpha_action_controller.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\controllers\camp_controller.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\controllers\combat_controller.cpp" />
@@ -599,59 +487,34 @@
 		<ClCompile Include="..\..\engines\ultima\ultima4\conversation\dialogueloader_lb.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\conversation\dialogueloader_tlk.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\core\lzw\hash.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\core\lzw\lzw.cpp">
-			<ObjectFileName>$(IntDir)ultima4_core_lzw_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\core\lzw\lzw.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\core\lzw\u4decode.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\core\config.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\core\debugger.cpp">
-			<ObjectFileName>$(IntDir)ultima4_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\core\debugger.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\core\debugger_actions.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\core\settings.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\core\utils.cpp">
-			<ObjectFileName>$(IntDir)ultima4_core_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\core\utils.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\events\event_handler.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\events\timed_event_mgr.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\filesys\filesystem.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\filesys\rle.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\filesys\savegame.cpp">
-			<ObjectFileName>$(IntDir)ultima4_filesys_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\filesys\savegame.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\filesys\u4file.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\armor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\aura.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\codex.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\context.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\game\creature.cpp">
-			<ObjectFileName>$(IntDir)ultima4_game_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\game\creature.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\death.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\game\game.cpp">
-			<ObjectFileName>$(IntDir)ultima4_game_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima4\game\item.cpp">
-			<ObjectFileName>$(IntDir)ultima4_game_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\game\game.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima4\game\item.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\moongate.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\names.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\game\object.cpp">
-			<ObjectFileName>$(IntDir)ultima4_game_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima4\game\person.cpp">
-			<ObjectFileName>$(IntDir)ultima4_game_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima4\game\player.cpp">
-			<ObjectFileName>$(IntDir)ultima4_game_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\game\object.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima4\game\person.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima4\game\player.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\portal.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\game\script.cpp">
-			<ObjectFileName>$(IntDir)ultima4_game_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima4\game\spell.cpp">
-			<ObjectFileName>$(IntDir)ultima4_game_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\game\script.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima4\game\spell.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\game\weapon.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\image.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\imageloader.cpp" />
@@ -659,23 +522,15 @@
 		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\imageloader_png.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\imageloader_u4.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\imagemgr.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\scale.cpp">
-			<ObjectFileName>$(IntDir)ultima4_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\screen.cpp">
-			<ObjectFileName>$(IntDir)ultima4_gfx_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\scale.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima4\gfx\screen.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\map\annotation.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\map\city.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\map\direction.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\map\dungeon.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\map\location.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\map\map.cpp">
-			<ObjectFileName>$(IntDir)ultima4_map_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima4\map\map_tile.cpp">
-			<ObjectFileName>$(IntDir)ultima4_map_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\map\map.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima4\map\map_tile.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\map\maploader.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\map\mapmgr.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\map\movement.cpp" />
@@ -690,62 +545,46 @@
 		<ClCompile Include="..\..\engines\ultima\ultima4\views\imageview.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\views\menu.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\views\menuitem.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\views\stats.cpp">
-			<ObjectFileName>$(IntDir)ultima4_views_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\views\stats.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\views\textview.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\views\tileview.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\views\view.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima4\meta_engine.cpp">
-			<ObjectFileName>$(IntDir)ultima4_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima4\meta_engine.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima4\ultima4.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\audio_channel.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\audio_mixer.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\audio_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\audio_sample.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\audio\cru_music_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\midi_player.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\music_flex.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\music_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\raw_audio_sample.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\audio\remorse_music_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\sonarc_audio_sample.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\sound_flex.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\speech_flex.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\audio\u8_music_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\conf\config_file_manager.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\conf\ini_file.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\conf\setting_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\convert\crusader\convert_shape_crusader.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\convert\u8\convert_shape_u8.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\convert\convert_shape.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\archive.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\archive_file.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\data.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\file_system.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\flex_file.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\raw_archive.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\savegame.cpp">
-			<ObjectFileName>$(IntDir)ultima8_filesys_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\savegame.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\filesys\u8_save_file.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\games\game.cpp">
-			<ObjectFileName>$(IntDir)ultima8_games_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\games\cru_game.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\games\game.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\game_data.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\game_info.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\games\remorse_game.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\start_crusader_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\start_u8_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\treasure_loader.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\games\u8_game.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\fixed_width_font.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\font.cpp">
-			<ObjectFileName>$(IntDir)ultima8_graphics_fonts_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\font_manager.cpp">
-			<ObjectFileName>$(IntDir)ultima8_graphics_fonts_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\font.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\font_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\font_shape_archive.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\jp_font.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\fonts\jp_rendered_text.cpp" />
@@ -766,7 +605,6 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\palette.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\palette_fader_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\palette_manager.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\point_scaler.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\raw_shape_frame.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\render_surface.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\shape.cpp" />
@@ -775,10 +613,6 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\shape_info.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\skf_player.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\soft_render_surface.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\texture.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\texture_bitmap.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\texture_png.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\texture_targa.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\type_flags.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\wpn_ovlay_dat.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\graphics\xform_blend.cpp" />
@@ -793,15 +627,19 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\container_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\credits_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_ammo_gump.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_credits_gump.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_demo_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_energy_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_health_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_inventory_gump.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_menu_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_pickup_area_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_pickup_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_stat_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_status_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\cru_weapon_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\desktop_gump.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\difficulty_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\fast_area_vis_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\game_map_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\gump.cpp" />
@@ -820,31 +658,24 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\paperdoll_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\quit_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\readable_gump.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\remorse_menu_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\resizable_gump.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\scaler_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\scroll_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\shape_viewer_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\slider_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\target_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\translucent_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\u8_save_gump.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\core_app.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\weasel_dat.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\gumps\weasel_gump.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\delay_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\kernel.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\mouse.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\object.cpp">
-			<ObjectFileName>$(IntDir)ultima8_kernel_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\object.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\object_manager.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\kernel\process.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\misc\args.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\misc\debugger.cpp">
-			<ObjectFileName>$(IntDir)ultima8_misc_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\misc\debugger.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\misc\encoding.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\misc\id_man.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\misc\istring.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\misc\util.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\usecode\bit_set.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\usecode\byte_set.cpp" />
@@ -852,19 +683,17 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\usecode\uc_machine.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\usecode\uc_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\usecode\uc_stack.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\usecode\usecode.cpp">
-			<ObjectFileName>$(IntDir)ultima8_usecode_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\usecode\usecode.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\usecode\usecode_flex.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\actor.cpp">
-			<ObjectFileName>$(IntDir)ultima8_world_actors_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\actor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\actor_anim_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\actor_bark_notify_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\ambush_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\anim_action.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\animation.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\animation_tracker.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\attack_process.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\auto_firer_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\avatar_death_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\avatar_gravity_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\avatar_mover_process.cpp" />
@@ -872,21 +701,27 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\clear_feign_death_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\combat_dat.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\combat_process.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\cru_avatar_mover_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\cru_healer_process.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\cru_pathfinder_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\grant_peace_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\guard_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\heal_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\loiter_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\main_actor.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\npc_dat.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\pace_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\pathfinder.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\pathfinder_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\quick_avatar_mover_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\resurrection_process.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\rolling_thunder_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\scheduler_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\surrender_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\targeted_anim_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\teleport_to_egg_process.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\actors\u8_avatar_mover_process.cpp" />
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\bobo_boomer_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\camera_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\container.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\create_item_process.cpp" />
@@ -902,15 +737,11 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\get_object.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\glob_egg.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\gravity_process.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\world\item.cpp">
-			<ObjectFileName>$(IntDir)ultima8_world_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\item.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\item_factory.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\item_selection_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\item_sorter.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\world\map.cpp">
-			<ObjectFileName>$(IntDir)ultima8_world_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\world\map.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\map_glob.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\missile_tracker.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\monster_egg.cpp" />
@@ -921,11 +752,9 @@
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\target_reticle_process.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\teleport_egg.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\world\world.cpp" />
-		<ClCompile Include="..\..\engines\ultima\ultima8\meta_engine.cpp">
-			<ObjectFileName>$(IntDir)ultima8_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\ultima\ultima8\meta_engine.cpp" />
 		<ClCompile Include="..\..\engines\ultima\ultima8\ultima8.cpp" />
-		<ClCompile Include="..\..\engines\ultima\detection.cpp" />
+		<ClCompile Include="..\..\engines\ultima\metaengine.cpp" />
 	</ItemGroup>
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\ultima\nuvie\actors\actor.h" />
@@ -1162,7 +991,6 @@
 		<ClInclude Include="..\..\engines\ultima\shared\maps\map_tile.h" />
 		<ClInclude Include="..\..\engines\ultima\shared\maps\map_widget.h" />
 		<ClInclude Include="..\..\engines\ultima\shared\std\containers.h" />
-		<ClInclude Include="..\..\engines\ultima\shared\std\misc.h" />
 		<ClInclude Include="..\..\engines\ultima\shared\std\string.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima0\core\resources.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima0\game.h" />
@@ -1286,7 +1114,6 @@
 		<ClInclude Include="..\..\engines\ultima\ultima4\core\utils.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima4\events\event_handler.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima4\events\timed_event_mgr.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima4\filesys\filesystem.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima4\filesys\rle.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima4\filesys\savegame.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima4\filesys\u4file.h" />
@@ -1349,42 +1176,39 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\audio_mixer.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\audio_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\audio_sample.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\audio\cru_music_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\midi_player.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\music_flex.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\music_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\raw_audio_sample.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\audio\remorse_music_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\sonarc_audio_sample.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\sound_flex.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\speech_flex.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\audio\u8_music_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\conf\config_file_manager.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\conf\ini_file.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\conf\setting_manager.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\crusader\convert_shape_crusader.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\crusader\convert_usecode_crusader.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\convert\crusader\convert_usecode_regret.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\u8\convert_shape_u8.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\u8\convert_usecode_u8.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\convert\convert_shape.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\convert\convert_usecode.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\archive.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\archive_file.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\file_system.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\flex_file.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\idata_source.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\named_archive_file.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\odata_source.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\raw_archive.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\savegame.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\filesys\u8_save_file.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\games\cru_game.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\game.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\game_data.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\game_info.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\games\remorse_game.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\start_crusader_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\start_u8_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\treasure_loader.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\games\u8_game.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\fonts\fixed_width_font.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\fonts\font.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\fonts\font_manager.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\fonts\font_shape_archive.h" />
@@ -1404,15 +1228,12 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\gump_shape_archive.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\inverter_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\main_shape_archive.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\manips.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\movie_player.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\palette.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\palette_fader_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\palette_manager.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\point_scaler.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\raw_shape_frame.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\render_surface.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\scaler.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\shape.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\shape_archive.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\shape_frame.h" />
@@ -1420,9 +1241,6 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\skf_player.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\soft_render_surface.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\texture.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\texture_bitmap.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\texture_png.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\texture_targa.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\type_flags.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\wpn_ovlay_dat.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\graphics\xform_blend.h" />
@@ -1437,16 +1255,19 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\container_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\credits_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_ammo_gump.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_display_shapes.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_credits_gump.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_demo_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_energy_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_health_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_inventory_gump.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_menu_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_pickup_area_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_pickup_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_stat_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_status_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\cru_weapon_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\desktop_gump.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\difficulty_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\fast_area_vis_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\game_map_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\gump.h" />
@@ -1465,24 +1286,23 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\paperdoll_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\quit_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\readable_gump.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\remorse_menu_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\resizable_gump.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\scaler_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\scroll_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\shape_viewer_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\slider_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\target_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\translucent_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\u8_save_gump.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\core_app.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\weasel_dat.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\gumps\weasel_gump.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\delay_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\kernel.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\mouse.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\object.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\object_manager.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\kernel\process.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\misc\args.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\box.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\misc\classtype.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\common_types.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\debugger.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\direction.h" />
@@ -1490,16 +1310,16 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\encoding.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\id_man.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\istring.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\misc\memset_n.h" />
-		<ClInclude Include="..\..\engines\ultima\ultima8\misc\p_dynamic_cast.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\pent_include.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\point3.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\rect.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\misc\stream_util.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\misc\util.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\bit_set.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\byte_set.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\global_storage.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\intrinsics.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\regret_intrinsics.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\remorse_intrinsics.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\u8_intrinsics.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\usecode\uc_list.h" />
@@ -1516,6 +1336,8 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\anim_action.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\animation.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\animation_tracker.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\attack_process.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\auto_firer_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\avatar_death_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\avatar_gravity_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\avatar_mover_process.h" />
@@ -1523,7 +1345,9 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\clear_feign_death_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\combat_dat.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\combat_process.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\cru_avatar_mover_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\cru_healer_process.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\cru_pathfinder_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\grant_peace_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\guard_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\heal_process.h" />
@@ -1531,17 +1355,21 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\main_actor.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\monster_info.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\npc_dat.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\pace_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\pathfinder.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\pathfinder_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\quick_avatar_mover_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\resurrection_process.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\rolling_thunder_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\scheduler_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\surrender_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\targeted_anim_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\teleport_to_egg_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\treasure_info.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\u8_avatar_mover_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\actors\weapon_overlay.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\armour_info.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\bobo_boomer_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\camera_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\container.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\create_item_process.h" />
@@ -1567,6 +1395,7 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\missile_tracker.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\monster_egg.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\snap_process.h" />
+		<ClInclude Include="..\..\engines\ultima\ultima8\world\sort_item.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\split_item_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\sprite_process.h" />
 		<ClInclude Include="..\..\engines\ultima\ultima8\world\super_sprite_process.h" />
@@ -1579,6 +1408,7 @@
 		<ClInclude Include="..\..\engines\ultima\ultima8\ultima8.h" />
 		<ClInclude Include="..\..\engines\ultima\detection.h" />
 		<ClInclude Include="..\..\engines\ultima\detection_tables.h" />
+		<ClInclude Include="..\..\engines\ultima\metaengine.h" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="..\..\engines\ultima\module.mk" />

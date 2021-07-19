@@ -108,7 +108,7 @@ void OSystem_PSP::engineDone() {
 }
 
 bool OSystem_PSP::hasFeature(Feature f) {
-	return (f == kFeatureOverlaySupportsAlpha || f == kFeatureCursorPalette || 
+	return (f == kFeatureOverlaySupportsAlpha || f == kFeatureCursorPalette ||
 			f == kFeatureKbdMouseSpeed || f == kFeatureJoystickDeadzone);
 }
 
@@ -246,6 +246,11 @@ void OSystem_PSP::hideOverlay() {
 	_cursor.useGlobalScaler(true);	// mouse needs to be scaled with screen
 }
 
+bool OSystem_PSP::isOverlayVisible() const {
+	DEBUG_ENTER_FUNC();
+	return _overlay.isVisible();
+}
+
 void OSystem_PSP::clearOverlay() {
 	DEBUG_ENTER_FUNC();
 	_displayManager.waitUntilRenderFinished();
@@ -253,9 +258,9 @@ void OSystem_PSP::clearOverlay() {
 	_overlay.clearBuffer();
 }
 
-void OSystem_PSP::grabOverlay(void *buf, int pitch) {
+void OSystem_PSP::grabOverlay(Graphics::Surface &surface) {
 	DEBUG_ENTER_FUNC();
-	_overlay.copyToArray(buf, pitch);
+	_overlay.copyToArray(surface.getPixels(), surface.pitch);
 }
 
 void OSystem_PSP::copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h) {
@@ -424,7 +429,7 @@ void OSystem_PSP::logMessage(LogMessageType::Type type, const char *message) {
 		PspDebugTrace(false, "%s", message);	// write to file
 }
 
-void OSystem_PSP::getTimeAndDate(TimeDate &td) const {
+void OSystem_PSP::getTimeAndDate(TimeDate &td, bool skipRecord) const {
 	time_t curTime = time(0);
 	struct tm t = *localtime(&curTime);
 	td.tm_sec = t.tm_sec;

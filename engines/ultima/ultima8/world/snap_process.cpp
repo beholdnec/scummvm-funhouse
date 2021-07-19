@@ -20,11 +20,9 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/world/snap_process.h"
-#include "ultima/ultima8/world/item.h"
 #include "ultima/ultima8/world/get_object.h"
-#include "ultima/ultima8/world/actors/main_actor.h"
+#include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/camera_process.h"
 
 namespace Ultima {
@@ -33,11 +31,16 @@ namespace Ultima8 {
 
 SnapProcess *SnapProcess::_instance = nullptr;
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(SnapProcess)
 
 SnapProcess::SnapProcess() : Process(), _currentSnapEgg() {
 	_instance = this;
+	_type = 1; // persistent
+}
+
+SnapProcess::~SnapProcess() {
+	if (_instance == this)
+		_instance = nullptr;
 }
 
 void SnapProcess::run() {
@@ -62,7 +65,11 @@ void SnapProcess::updateCurrentEgg() {
 	if (!_currentSnapEgg && !_snapEggs.size())
 		return;
 
-	const MainActor *a = getMainActor();
+	const Actor *a = getControlledActor();
+
+	if (!a)
+		return;
+
 	int32 ax, ay, az, axd, ayd, azd, x, y, z;
 	a->getLocation(ax, ay, az);
 	a->getFootpadWorld(axd, ayd, azd);
@@ -76,7 +83,7 @@ void SnapProcess::updateCurrentEgg() {
 		Rect r;
 		egg->getLocation(x, y, z);
 		getSnapEggRange(egg, r);
-		if (r.intersects(arect) && (az < z + 0x30 && az > z - 0x30)) {
+		if (r.intersects(arect) && (az <= z + 0x30 && az >= z - 0x30)) {
 			_currentSnapEgg = *iter;
 			_currentSnapEggRange = r;
 			CameraProcess::SetCameraProcess(new CameraProcess(_currentSnapEgg));
@@ -103,7 +110,7 @@ bool SnapProcess::isNpcInRangeOfCurrentEgg() const {
 	if (!_currentSnapEgg)
 		return false;
 
-	const MainActor *a = getMainActor();
+	const Actor *a = getControlledActor();
 	Item *currentegg = getItem(_currentSnapEgg);
 
 	if (!a || !currentegg)

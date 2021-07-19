@@ -290,11 +290,21 @@ void Surface::drawLine(int16 x1, int16 y1, int16 x2, int16 y2, uint32 color) {
 }
 
 void Surface::drawBox(int16 x1, int16 y1, int16 x2, int16 y2, uint32 color) {
+	if (x1 > x2)
+		SWAP(x1, x2);
+	if (y1 > y2)
+		SWAP(y1, y2);
+
 	Common::Rect r(x1, y1, x2 + 1, y2 + 1);
 	frameRect(r, color);
 }
 
 void Surface::drawFilledBox(int16 x1, int16 y1, int16 x2, int16 y2, uint32 color) {
+	if (x1 > x2)
+		SWAP(x1, x2);
+	if (y1 > y2)
+		SWAP(y1, y2);
+
 	Common::Rect r(x1, y1, x2 + 1, y2 + 1);
 	fillRect(r, color);
 }
@@ -381,13 +391,11 @@ bool FloodFillSurface::isPixelWhite(int16 x, int16 y) const {
 	}
 }
 
-#define SCALE 4
-
 void FloodFillSurface::dumpToScreen() {
-	Graphics::ManagedSurface s(w * SCALE, h * SCALE, format);
-	s.transBlitFrom(*this, Common::Rect(0, 0, w, h), Common::Rect(0, 0, w * SCALE,h * SCALE), 0x888888);
-	g_system->copyRectToScreen(s.getPixels(), s.pitch, 0, 0,
-		MIN(s.w, (uint16)g_system->getWidth()), MIN(s.h, (uint16)g_system->getHeight()));
+	Graphics::ManagedSurface s(w * 2, h * 2, g_system->getScreenFormat());
+	s.transBlitFrom(*this, Common::Rect(0, 0, w, h), Common::Rect(0, 0, w * 2, h * 2), 0x888888);
+
+	g_system->copyRectToScreen(s.getPixels(), s.pitch, 0, 0, w * 2, h * 2);
 	g_system->updateScreen();
 }
 

@@ -41,7 +41,7 @@ GameDescriptor GlulxMetaEngine::findGame(const char *gameId) {
 	for (const PlainGameDescriptor *pd = GLULXE_GAME_LIST; pd->gameId; ++pd) {
 		if (!strcmp(gameId, pd->gameId)) {
 			GameDescriptor gd = *pd;
-			gd._supportLevel = kUnstableGame;
+			gd._supportLevel = kTestingGame;
 			return gd;
 		}
 	}
@@ -87,7 +87,10 @@ bool GlulxMetaEngine::detectGames(const Common::FSList &fslist, DetectedGames &g
 			gameList.push_back(GlkDetectedGame(desc.gameId, desc.description, filename, md5, filesize));
 		} else {
 			PlainGameDescriptor gameDesc = findGame(p->_gameId);
-			gameList.push_back(GlkDetectedGame(p->_gameId, gameDesc.description, filename));
+			DetectedGame gd = DetectedGame("glk", p->_gameId, gameDesc.description, p->_language, Common::kPlatformUnknown, p->_extra);
+
+			gd.addExtraEntry("filename", filename);
+			gameList.push_back(gd);
 		}
 	}
 

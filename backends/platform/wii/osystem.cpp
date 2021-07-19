@@ -238,27 +238,23 @@ void OSystem_Wii::lockMutex(MutexRef mutex) {
 	s32 res = LWP_MutexLock(*(mutex_t *)mutex);
 
 	if (res)
-		printf("ERROR locking mutex %p (%ld)\n", mutex, res);
+		printf("ERROR locking mutex %p (%d)\n", mutex, res);
 }
 
 void OSystem_Wii::unlockMutex(MutexRef mutex) {
 	s32 res = LWP_MutexUnlock(*(mutex_t *)mutex);
 
 	if (res)
-		printf("ERROR unlocking mutex %p (%ld)\n", mutex, res);
+		printf("ERROR unlocking mutex %p (%d)\n", mutex, res);
 }
 
 void OSystem_Wii::deleteMutex(MutexRef mutex) {
 	s32 res = LWP_MutexDestroy(*(mutex_t *)mutex);
 
 	if (res)
-		printf("ERROR destroying mutex %p (%ld)\n", mutex, res);
+		printf("ERROR destroying mutex %p (%d)\n", mutex, res);
 
 	free(mutex);
-}
-
-void OSystem_Wii::setWindowCaption(const char *caption) {
-	printf("window caption: %s\n", caption);
 }
 
 Audio::Mixer *OSystem_Wii::getMixer() {
@@ -270,7 +266,7 @@ FilesystemFactory *OSystem_Wii::getFilesystemFactory() {
 	return &WiiFilesystemFactory::instance();
 }
 
-void OSystem_Wii::getTimeAndDate(TimeDate &td) const {
+void OSystem_Wii::getTimeAndDate(TimeDate &td, bool skipRecord) const {
 	time_t curTime = time(0);
 	struct tm t = *localtime(&curTime);
 	td.tm_sec = t.tm_sec;

@@ -60,8 +60,8 @@ void CmdText::displayTemp(InkColor color, Verb v) {
 }
 
 void CmdText::displayTemp(InkColor color, const char *name, bool outlined) {
-	char temp[MAX_COMMAND_LEN];
-	snprintf(temp, MAX_COMMAND_LEN, "%s %s", _command, name);
+	char temp[MAX_COMMAND_LEN + 2];
+	snprintf(temp, MAX_COMMAND_LEN + 1, "%s %s", _command, name);
 	display(color, temp, outlined);
 }
 
@@ -85,9 +85,9 @@ public:
 	CmdTextHebrew(uint8 y, QueenEngine *vm) : CmdText(y, vm) {}
 
 	void displayTemp(InkColor color, const char *name, bool outlined) override {
-		char temp[MAX_COMMAND_LEN];
+		char temp[MAX_COMMAND_LEN + 2];
 
-		snprintf(temp, MAX_COMMAND_LEN, "%s %s", name, _command);
+		snprintf(temp, MAX_COMMAND_LEN + 1, "%s %s", name, _command);
 		display(color, temp, outlined);
 	}
 
@@ -116,12 +116,12 @@ public:
 	CmdTextGreek(uint8 y, QueenEngine *vm) : CmdText(y, vm) {}
 
 	void displayTemp(InkColor color, const char *name, bool outlined) override {
-		char temp[MAX_COMMAND_LEN];
+		char temp[MAX_COMMAND_LEN + 2];
 		// don't show a space after the goto and give commands in the Greek version
 		if (_command[1] != (char)-34 && !(_command[1] == (char)-2 && strlen(_command) > 5))
-			snprintf(temp, MAX_COMMAND_LEN, "%s %s", _command, name);
+			snprintf(temp, MAX_COMMAND_LEN + 1, "%s %s", _command, name);
 		else
-			snprintf(temp, MAX_COMMAND_LEN, "%s%s", _command, name);
+			snprintf(temp, MAX_COMMAND_LEN + 1, "%s%s", _command, name);
 		display(color, temp, outlined);
 	}
 
@@ -236,7 +236,7 @@ void Command::executeCurrentAction() {
 
 		comId = matchingCmds[i - 1];
 
-		// WORKAROUND bug #1497280: This command is triggered in room 56 (the
+		// WORKAROUND bug #2636: This command is triggered in room 56 (the
 		// room with two waterfalls in the maze part of the game) if the user
 		// tries to walk through the left waterfall (object 423).
 		//
@@ -363,7 +363,7 @@ void Command::readCommandsFrom(byte *&ptr) {
 		for (i = 1; i <= _numCmdObject; i++) {
 			_cmdObject[i].readFromBE(ptr);
 
-			// WORKAROUND bug #1858081: Fix an off by one error in the object
+			// WORKAROUND bug #3536: Fix an off by one error in the object
 			// command 175. Object 309 should be copied to 308 (disabled).
 			//
 			// _objectData[307].name = -195

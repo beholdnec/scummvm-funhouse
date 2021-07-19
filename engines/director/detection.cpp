@@ -25,224 +25,62 @@
 #include "engines/advancedDetector.h"
 
 #include "common/file.h"
-#include "common/config-manager.h"
+#include "common/winexe.h"
 
+#include "director/detection.h"
 #include "director/director.h"
 
-namespace Director {
-
-struct DirectorGameDescription {
-	ADGameDescription desc;
-
-	DirectorGameGID gameGID;
-	uint16 version;
-};
-
-DirectorGameGID DirectorEngine::getGameGID() const {
-	return _gameDescription->gameGID;
-}
-
-const char *DirectorEngine::getGameId() const {
-	return _gameDescription->desc.gameId;
-}
-
-Common::Platform DirectorEngine::getPlatform() const {
-	return _gameDescription->desc.platform;
-}
-
-uint16 DirectorEngine::getDescriptionVersion() const {
-	return _gameDescription->version;
-}
-
-Common::Language DirectorEngine::getLanguage() const {
-	return _gameDescription->desc.language;
-}
-
-const char *DirectorEngine::getExtra() {
-	return _gameDescription->desc.extra;
-}
-
-Common::String DirectorEngine::getEXEName() const {
-	StartMovie startMovie = getStartMovie();
-	if (startMovie.startMovie.size() > 0)
-		return startMovie.startMovie;
-
-	return _gameDescription->desc.filesDescriptions[0].fileName;
-}
-
-StartMovie DirectorEngine::getStartMovie() const {
-	StartMovie startMovie;
-	startMovie.startFrame = -1;
-
-	if (ConfMan.hasKey("start_movie")) {
-		Common::String option = ConfMan.get("start_movie");
-		int atPos = option.findLastOf("@");
-		startMovie.startMovie = option.substr(0, atPos);
-		Common::String tail = option.substr(atPos + 1, option.size());
-		if (tail.size() > 0)
-			startMovie.startFrame = atoi(tail.c_str());
-	}
-	return startMovie;
-}
-
-bool DirectorEngine::hasFeature(EngineFeature f) const {
-	return false;
-		//(f == kSupportsReturnToLauncher);
-}
-
-} // End of Namespace Director
-
-static const PlainGameDescriptor directorGames[] = {
-	{ "director",			"Macromedia Director Game" },
-	{ "directortest",		"Macromedia Director Test Target" },
-	{ "directortest-all",	"Macromedia Director All Movies Test Target" },
-	{ "theapartment",		"The Apartment, Interactive demo" },
-
-	{ "9worlds",			"Nine Worlds hosted by Patrick Stewart"},
-	{ "alexworld",			"ALeX-WORLD"},
-	{ "alice",				"Alice: An Interactive Museum"},
-	{ "amandastories",		"AmandaStories"},
-	{ "amber",				"AMBER: Journeys Beyond"},
-	{ "ankh1",				"Ankh: Mystery of the Pyramids"},
-	{ "ankh2",				"Ankh 2: Mystery of Tutankhamen"},
-	{ "ankh3",				"Ankh 3"},
-	{ "arcofdoom",			"Arc of Doom"},
-	{ "artrageous",			"ArtRageous!"},
-	{ "ataripack",			"Activision's Atari 2600 Action Pack"},
-	{ "badday",				"Bad Day on the Midway"},
-	{ "beyondthewall",		"Beyond the Wall of Stars"},
-	{ "bookshelf94",		"Microsoft Bookshelf '94"},
-	{ "bowie",				"JUMP: The David Bowie Interactive CD-ROM"},
-	{ "chaos",				"The C.H.A.O.S. Continuum"},
-	{ "chopsuey",   		"Chop Suey" },
-	{ "chuteng",   			"Chu-Teng" },
-	{ "daedalus",			"The Daedalus Encounter"},
-	{ "darkeye",			"The Dark Eye"},
-	{ "derratsorcerum",		"Derrat Sorcerum"},
-	{ "devo",				"DEVO Presents: Adventures of the Smart Patrol"},
-	{ "earthtia",			"Earthtia Saga: Larthur's Legend"},
-	{ "easternmind",		"Eastern Mind: The Lost Souls of Tong Nou"},
-	{ "earthwormjim",		"Earthworm Jim"},
-	{ "encarta94",			"Microsoft Encarta '94"},
-	{ "encarta95",			"Microsoft Encarta '95"},
-	{ "ernie",				"Ernie"},
-	{ "frankenstein",		"Frankenstein: Through the Eyes of the Monster"},
-	{ "freakshow",			"Freak Show"},
-	{ "gadget",				"Gadget: Invention, Travel, & Adventure"},
-	{ "gundam0079",			"Gundam 0079: The War for Earth" },
-	{ "hamsterland1",		"Busy People of Hamsterland" },
-	{ "hamsterland2",		"Hamsterland: The Time Machine" },
-	{ "horrortour1",		"Zeddas: Servant of Sheol"},
-	{ "horrortour2",		"Zeddas: Horror Tour 2"},
-	{ "horrortour3",		"Labyrinthe"},
-	{ "hyperblade",			"HyperBlade" },
-	{ "id4p1",     			"iD4 Mission Disk 1 - Alien Supreme Commander" },
-	{ "id4p2",      		"iD4 Mission Disk 2 - Alien Science Officer" },
-	{ "id4p3",      		"iD4 Mission Disk 3 - Warrior Alien" },
-	{ "id4p4",      		"iD4 Mission Disk 4 - Alien Navigator" },
-	{ "id4p5",      		"iD4 Mission Disk 5 - Captain Steve Hiller" },
-	{ "id4p6",      		"iD4 Mission Disk 6 - Dave's Computer" },
-	{ "id4p7",      		"iD4 Mission Disk 7 - President Whitmore" },
-	{ "id4p8",      		"iD4 Mission Disk 8 - Alien Attack Fighter" },
-	{ "id4p9",      		"iD4 Mission Disk 9 - FA-18 Fighter Jet" },
-	{ "id4p10",     		"iD4 Mission Disk 10 - Alien Bomber" },
-	{ "id4p11",     		"iD4 Mission Disk 11 - Area 51" },
-	{ "improv",     		"Don't Quit Your Day Job" },
-	{ "ironhelix",			"Iron Helix" },
-	{ "isis",				"Isis"},
-	{ "jewels",				"Jewels of the Oracle" },
-	{ "jman",				"The Journeyman Project" },
-	{ "jman2",				"The Journeyman Project 2: Buried in Time" },
-	{ "jmmd",       "Just Me & My Dad" },
-	{ "karma",				"Karma: Curse of the 12 Caves" },
-	{ "kyoto",				"Cosmology of Kyoto" },
-	{ "lion",				"Lion" },
-	{ "louiscatorze",		"Louis Cat Orze: The Mystery of the Queen's Necklace" },
-	{ "lzone",				"L-ZONE"},
-	{ "madmac",				"Mad Mac Cartoons"},
-	{ "majestic",			"Majestic Part I: Alien Encounter" },
-	{ "martian",			"Ray Bradbury's The Martian Chronicles Adventure Game" },
-	{ "maze",				"The Riddle of the Maze"},
-	{ "mechwarrior2",		"MechWarrior 2" },
-	{ "mediaband",			"Meet Mediaband" },
-	{ "melements",			"Masters of the Elements" },
-	{ "mirage",				"Mirage" },
-	{ "mummy",				"Mummy: Tomb of the Pharaoh"},
-	{ "muppets",			"Muppet Treasure Island" },
-	{ "murderbrett",		"Who Killed Brett Penance?"},
-	{ "murdermagic",		"The Magic Death"},
-	{ "murdersam",			"Who Killed Sam Rupert?"},
-	{ "murdertaylor",		"Who Killed Taylor French? The Case of the Undressed Reporter"},
-	{ "mylk",				"Mylk"},
-	{ "mysteriousegypt",	"Mysterious Egypt"},
-	{ "necrobius",			"Necrobius"},
-	{ "nile",				"Nile: Passage to Egypt"},
-	{ "noir",				"Noir: A Shadowy Thriller"},
-	{ "operafatal",			"Opera Fatal"},
-	{ "phantasplanet",		"Phantasmagoria Amusement Planet"},
-	{ "pitfall",			"Pitfall: The Mayan Adventure" },
-	{ "planetarizona",		"Escape from Planet Arizona" },
-	{ "prescue",			"Paradise Rescue" },
-	{ "refixion1",			"Refixion"},
-	{ "refixion2",			"Refixion II: Museum or Hospital"},
-	{ "refixion3",			"Refixion III: The Reindeer Story"},
-	{ "rodney",				"Rodney's Funscreen"},
-	{ "sakin2",				"Sakin II"},
-	{ "santafe1",			"Santa Fe Mysteries: The Elk Moon Murder"},
-	{ "sciencesmart",		"Science Smart"},
-	{ "screamingmetal",		"Screaming Metal"},
-	{ "shanghai",			"Shanghai: Great Moments"},
-	{ "skyborg",			"SkyBorg: Into the Vortex"},
-	{ "snh",				"A Silly Noisy House"},
-	{ "spyclub",			"Spy Club" },
-	{ "spycraft",			"Spycraft: The Great Game" },
-	{ "staytooned",			"Stay Tooned!" },
-	{ "superspy",			"SuperSpy 1" },
-	{ "teamxtreme1",		"Operation: Weather Disaster" },
-	{ "teamxtreme2",		"Operation: Eco-Nightmare" },
-	{ "teddybear",			"Operation Teddy Bear" },
-	{ "the7colors",			"The Seven Colors: Legend of PSY-S City"},
-	{ "totaldistortion",	"Total Distortion"},
-	{ "trekborg",			"Star Trek: Borg"},
-	{ "trekguideds9",		"Star Trek: Deep Space Nine Episode Guide"},
-	{ "trekguidetng",		"Star Trek: The Next Generation Episode Guide"},
-	{ "trekklingon",		"Star Trek: Klingon"},
-	{ "trekomni",			"Star Trek Omnipedia"},
-	{ "trekpedia98",		"Star Trek Encyclopedia 1998"},
-	{ "trektech",			"Star Trek: The Next Generation Interactive Technical Manual"},
-	{ "tri3dtrial",			"Tri-3D-Trial"},
-	{ "twistynight1",		"Twisty Night #1"},
-	{ "twistynight2",		"Twisty Night #2"},
-	{ "twistynight3",		"Twisty Night #3"},
-	{ "vvcyber",			"Victor Vector & Yondo: The Cyberplasm Formula"},
-	{ "vvdinosaur",			"Victor Vector & Yondo: The Last Dinosaur Egg"},
-	{ "vvharp",				"Victor Vector & Yondo: The Hypnotic Harp"},
-	{ "vvvampire",			"Victor Vector & Yondo: The Vampire's Coffin"},
-	{ "warlock", 			"Spaceship Warlock"},
-	{ "wishbone", 			"Wishbone and the Amazing Odyssey"},
-	{ "wrath",				"Wrath of the Gods"},
-	{ "xanthus",			"Xanthus"},
-	{ "ybr1",				"Yellow Brick Road"},
-	{ "ybr2",				"Yellow Brick Road II"},
-	{ "ybr3",				"Yellow Brick Road III"},
-	{ "znemesis",			"Zork Nemesis: The Forbidden Lands"},
-	{ 0, 0 }
-};
-
 #include "director/detection_tables.h"
+#include "director/detection_paths.h"
 
-static const char *directoryGlobs[] = {
-	"install",
-	"l_zone",
-	"win_data",	// L-ZONE
-	0
+static struct CustomTarget {
+	const char *name;
+	const char *platform;
+	const char *version;
+} customTargetList[] = {
+	{"d2-mac", "mac", "200" },
+	{"d3-mac", "mac", "300" },
+	{"d4-mac", "mac", "400" },
+	{"d3-win", "win", "300" },
+	{"d4-win", "win", "400" },
+	{"director-movie", "win", "400" },
+	{ NULL, 0, 0 }
 };
 
-class DirectorMetaEngine : public AdvancedMetaEngine {
+static const DebugChannelDef debugFlagList[] = {
+	{Director::kDebug32bpp, "32bpp", "Work in 32bpp mode"},
+	{Director::kDebugCompile, "compile", "Lingo Compilation"},
+	{Director::kDebugCompileOnly, "compileonly", "Skip Lingo code execution"},
+	{Director::kDebugDesktop, "desktop", "Show the Classic Mac desktop"},
+	{Director::kDebugEndVideo, "endvideo", "Fake that the end of video is reached setting"},
+	{Director::kDebugEvents, "events", "Event processing"},
+	{Director::kDebugFast, "fast", "Fast (no delay) playback"},
+	{Director::kDebugFewFramesOnly, "fewframesonly", "Only run the first 10 frames"},
+	{Director::kDebugImages, "images", "Image drawing"},
+	{Director::kDebugLingoExec, "lingoexec", "Lingo Execution"},
+	{Director::kDebugLoading, "loading", "Loading"},
+	{Director::kDebugNoBytecode, "nobytecode", "Do not execute Lscr bytecode"},
+	{Director::kDebugNoLoop, "noloop", "Do not loop the playback"},
+	{Director::kDebugParse, "parse", "Lingo code parsing"},
+	{Director::kDebugPreprocess, "preprocess", "Lingo preprocessing"},
+	{Director::kDebugScreenshot, "screenshot", "screenshot each frame"},
+	{Director::kDebugSlow, "slow", "Slow playback"},
+	{Director::kDebugText, "text", "Text rendering"},
+	DEBUG_CHANNEL_END
+};
+
+class DirectorMetaEngineDetection : public AdvancedMetaEngineDetection {
+private:
+	Common::HashMap<Common::String, bool, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> _customTarget;
+
 public:
-	DirectorMetaEngine() : AdvancedMetaEngine(Director::gameDescriptions, sizeof(Director::DirectorGameDescription), directorGames) {
-		_maxScanDepth = 2;
-		_directoryGlobs = directoryGlobs;
+	DirectorMetaEngineDetection() : AdvancedMetaEngineDetection(Director::gameDescriptions, sizeof(Director::DirectorGameDescription), directorGames) {
+		_maxScanDepth = 5;
+		_directoryGlobs = Director::directoryGlobs;
+
+		// initialize customTarget hashmap here
+		for (int i = 0; customTargetList[i].name != NULL; i++)
+			_customTarget[customTargetList[i].name] = true;
 	}
 
 	const char *getEngineId() const override {
@@ -257,18 +95,12 @@ public:
 		return "Macromedia Director (C) 1990-1995 Macromedia";
 	}
 
-	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const override;
-	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	const DebugChannelDef *getDebugChannels() const override {
+		return debugFlagList;
+	}
+
+	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist, ADDetectedGameExtraInfo **extraInfo) const override;
 };
-
-bool DirectorMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
-	const Director::DirectorGameDescription *gd = (const Director::DirectorGameDescription *)desc;
-
-	if (gd)
-		*engine = new Director::DirectorEngine(syst, gd);
-
-	return (gd != 0);
-}
 
 static Director::DirectorGameDescription s_fallbackDesc = {
 	{
@@ -285,8 +117,9 @@ static Director::DirectorGameDescription s_fallbackDesc = {
 };
 
 static char s_fallbackFileNameBuffer[51];
+static char s_fallbackExtraBuf[256];
 
-ADDetectedGame DirectorMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
+ADDetectedGame DirectorMetaEngineDetection::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist, ADDetectedGameExtraInfo **extraInfo) const {
 	// TODO: Handle Mac fallback
 
 	// reset fallback description
@@ -307,6 +140,53 @@ ADDetectedGame DirectorMetaEngine::fallbackDetect(const FileMap &allFiles, const
 
 		Common::String fileName = file->getName();
 		fileName.toLowercase();
+
+		// first we check the custom target, check whether the filename is in the list of custom target
+		// then we read 4 string from it, targetID, gameName, platform and version
+		if (_customTarget.contains(fileName)) {
+			Common::File f;
+			if (!f.open(*file))
+				continue;
+
+			Common::String targetID, gameName, platform, version, tmp;
+
+			// First, fill the info based on the filename
+			for (int i = 0; customTargetList[i].name != NULL; i++) {
+				if (fileName.equalsIgnoreCase(customTargetList[i].name)) {
+					targetID = "director-fallback";
+					platform = customTargetList[i].platform;
+					version = customTargetList[i].version;
+					gameName = Common::String::format("Director Movie %s/v%s", platform.c_str(), version.c_str());
+				}
+			}
+
+			// Now try to read info from the file
+			if (!(tmp = f.readString('\n')).empty())
+				targetID = tmp;
+
+			if (!(tmp = f.readString('\n')).empty())
+				gameName = tmp;
+
+			if (!(tmp = f.readString('\n')).empty())
+				platform = tmp;
+
+			if (!(tmp = f.readString('\n')).empty())
+				version = tmp;
+
+			desc->version = atoi(version.c_str());
+			desc->desc.platform = Common::parsePlatform(platform);
+
+			// if we have extra info slots
+			if (extraInfo != nullptr) {
+				*extraInfo = new ADDetectedGameExtraInfo;
+				(*extraInfo)->targetID = targetID;
+				(*extraInfo)->gameName = gameName;
+			}
+
+			ADDetectedGame game(&desc->desc);
+			return game;
+		}
+
 		if (!fileName.hasSuffix(".exe"))
 			continue;
 
@@ -335,6 +215,9 @@ ADDetectedGame DirectorMetaEngine::fallbackDetect(const FileMap &allFiles, const
 			break;
 		case MKTAG('P', 'J', '0', '0'):
 			desc->version = 700;
+			break;
+		case MKTAG('P', 'J', '0', '1'):
+			desc->version = 800;
 			break;
 		default:
 			// Prior to version 4, there was no tag here. So we'll use a bit of a
@@ -374,16 +257,36 @@ ADDetectedGame DirectorMetaEngine::fallbackDetect(const FileMap &allFiles, const
 		s_fallbackFileNameBuffer[50] = '\0';
 		desc->desc.filesDescriptions[0].fileName = s_fallbackFileNameBuffer;
 
-		warning("Director fallback detection D%d", desc->version);
+		Common::String extra;
+		Common::WinResources *exe = Common::WinResources::createFromEXE(&f);
+		if (exe) {
+			Common::WinResources::VersionInfo *versionInfo = exe->getVersionResource(1);
+			if (versionInfo) {
+				extra = Common::String::format("v%d.%d.%dr%d", versionInfo->fileVersion[0], versionInfo->fileVersion[1], versionInfo->fileVersion[2], versionInfo->fileVersion[3]);
+				delete versionInfo;
+			}
+			delete exe;
+		}
+		if (extra.empty()) {
+			extra = Common::String::format("v%d.%02d", desc->version / 100, desc->version % 100);
+		}
+		Common::strlcpy(s_fallbackExtraBuf, extra.c_str(), sizeof(s_fallbackExtraBuf) - 1);
+		desc->desc.extra = s_fallbackExtraBuf;
 
-		return ADDetectedGame(&desc->desc);
+		warning("Director fallback detection %s", extra.c_str());
+
+		ADDetectedGame game(&desc->desc);
+
+		FileProperties tmp;
+		if (getFileProperties(allFiles, desc->desc, file->getName(), tmp)) {
+			game.hasUnknownFiles = true;
+			game.matchedFiles[file->getName()] = tmp;
+		}
+
+		return game;
 	}
 
 	return ADDetectedGame();
 }
 
-#if PLUGIN_ENABLED_DYNAMIC(DIRECTOR)
-	REGISTER_PLUGIN_DYNAMIC(DIRECTOR, PLUGIN_TYPE_ENGINE, DirectorMetaEngine);
-#else
-	REGISTER_PLUGIN_STATIC(DIRECTOR, PLUGIN_TYPE_ENGINE, DirectorMetaEngine);
-#endif
+REGISTER_PLUGIN_STATIC(DIRECTOR_DETECTION, PLUGIN_TYPE_ENGINE_DETECTION, DirectorMetaEngineDetection);

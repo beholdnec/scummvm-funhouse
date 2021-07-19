@@ -139,13 +139,6 @@ Scene::Scene(SagaEngine *vm) : _vm(vm) {
 	uint32 resourceId;
 	uint i;
 
-	// Do nothing for SAGA2 games for now
-	if (_vm->isSaga2()) {
-		_inGame = false;
-		_sceneLoaded = false;
-		return;
-	}
-
 	// Load scene module resource context
 	_sceneContext = _vm->_resource->getContext(GAME_RESOURCEFILE);
 	if (_sceneContext == NULL) {
@@ -214,11 +207,6 @@ Scene::Scene(SagaEngine *vm) : _vm(vm) {
 }
 
 Scene::~Scene() {
-	// Do nothing for SAGA2 games for now
-	if (_vm->isSaga2()) {
-		return;
-	}
-
 	delete _actionMap;
 	delete _objectMap;
 }
@@ -274,14 +262,6 @@ void Scene::startScene() {
 #ifdef ENABLE_IHNM
 	case GID_IHNM:
 		IHNMStartProc();
-		break;
-#endif
-#ifdef ENABLE_SAGA2
-	case GID_DINO:
-		DinoStartProc();
-		break;
-	case GID_FTA2:
-		FTA2StartProc();
 		break;
 #endif
 	default:
@@ -1094,11 +1074,6 @@ void Scene::processSceneResources(SceneResourceDataArray &resourceList) {
 }
 
 void Scene::draw() {
-	// Do nothing for SAGA2 games for now
-	if (_vm->isSaga2()) {
-		return;
-	}
-
 	if (_sceneDescription.flags & kSceneFlagISO) {
 		_vm->_isoMap->adjustScroll(false);
 		_vm->_isoMap->draw();
@@ -1131,7 +1106,7 @@ void Scene::endScene() {
 	_vm->_script->abortAllThreads();
 	_vm->_script->_skipSpeeches = false;
 
-	// WORKAROUND: Bug #2886151: "ITE: Mouse stops responding at Boar Castle"
+	// WORKAROUND: Bug #4689: "ITE: Mouse stops responding at Boar Castle"
 	// This is bug in original engine
 	if (_sceneNumber == 50) {
 		_vm->_interface->activate();

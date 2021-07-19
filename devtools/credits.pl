@@ -6,9 +6,8 @@
 # - The AUTHORS file
 # - The gui/credits.h header file
 # - The Credits.rtf file used by the Mac OS X port
-# - The credits.xml file, part of the DocBook manual
-# - The credits.xml, for use on the website (different format than the DocBook one)
 # - The credits.yaml, alternative version for use on the website
+# - The credits.rst file used by the manual
 #
 # Initial version written by Fingolfin in December 2004.
 #
@@ -40,17 +39,16 @@ my @section_count = ( 0, 0, 0 );
 
 if ($#ARGV >= 0) {
 	$mode = "TEXT" if ($ARGV[0] eq "--text");	# AUTHORS file
-	$mode = "XML-WEB" if ($ARGV[0] eq "--xml-website");	# credits.xml (for use on the website)
 	$mode = "CPP" if ($ARGV[0] eq "--cpp");		# credits.h (for use by about.cpp)
-	$mode = "XML-DOC" if ($ARGV[0] eq "--xml-docbook");		# credits.xml (DocBook)
 	$mode = "RTF" if ($ARGV[0] eq "--rtf");		# Credits.rtf (Mac OS X About box)
 	$mode = "STRONGHELP" if ($ARGV[0] eq "--stronghelp");	# AUTHORS (RISC OS StrongHelp manual)
-	$mode = "YAML" if ($ARGV[0] eq "--yaml");	# YAML (Simple format)
+	$mode = "YAML" if ($ARGV[0] eq "--yaml");	# YAML (Simple format, used in the Website)
+	$mode = "RST" if ($ARGV[0] eq "--rst");		# Restructured text (used in the manual)
 }
 
 if ($mode eq "") {
-	print STDERR "Usage: $0 [--text | --xml-website | --cpp | --xml-docbook | --rtf | --stronghelp | --yaml]\n";
-	print STDERR " Just pass --text / --xml-website / --cpp / --xml-docbook / --rtf / --stronghelp / --yaml as parameter, and credits.pl\n";
+	print STDERR "Usage: $0 [--text | --cpp | --rtf | --stronghelp | --yaml | --rst]\n";
+	print STDERR " Just pass --text / --cpp / --rtf / --stronghelp / --yaml / --rst as parameter, and credits.pl\n";
 	print STDERR " will print out the corresponding version of the credits to stdout.\n";
 	exit 1;
 }
@@ -68,27 +66,6 @@ sub html_entities_to_ascii {
 	my $text = shift;
 
 	# For now we hardcode these mappings
-	# &Aacute;  -> A
-	# &aacute;  -> a
-	# &eacute;  -> e
-	# &iacute;  -> i
-	# &igrave;  -> i
-	# &oacute;  -> o
-	# &oslash;  -> o
-	# &uacute;  -> u
-	# &ouml;    -> o / oe
-	# &auml;    -> a
-	# &euml;    -> e
-	# &uuml;    -> ue
-	# &aring;   -> aa
-	# &amp;     -> &
-	# &#261;    -> a
-	# &#321;    -> L
-	# &#322;    -> l
-	# &#347;    -> s
-	# &Scaron;  -> S
-	# &Lcaron;  -> L
-	# &ntilde;  -> n
 	$text =~ s/&Aacute;/A/g;
 	$text =~ s/&aacute;/a/g;
 	$text =~ s/&eacute;/e/g;
@@ -112,6 +89,37 @@ sub html_entities_to_ascii {
 	# HACK: Torbj*o*rn but G*oe*ffringmann and R*oe*ver and J*oe*rg
 	$text =~ s/Torbj&ouml;rn/Torbjorn/g;
 	$text =~ s/&ouml;/oe/g;
+
+	$text =~ s/&amp;/&/g;
+
+	return $text;
+}
+
+# Convert HTML entities to UTF-8 for Restructured Text output
+sub html_entities_to_utf8 {
+	my $text = shift;
+
+	$text =~ s/&Aacute;/\xC3\x81/g;
+	$text =~ s/&aacute;/\xC3\xA1/g;
+	$text =~ s/&eacute;/\xC3\xA9/g;
+	$text =~ s/&iacute;/\xC3\xAD/g;
+	$text =~ s/&igrave;/\xC3\xAC/g;
+	$text =~ s/&oacute;/\xC3\xB3/g;
+	$text =~ s/&oslash;/\xC3\xB8/g;
+	$text =~ s/&uacute;/\xC3\xBA/g;
+	$text =~ s/&#261;/\xC4\x85/g;
+	$text =~ s/&#321;/\xC5\x81/g;
+	$text =~ s/&#322;/\xC5\x82/g;
+	$text =~ s/&#347;/\xC5\x9B/g;
+	$text =~ s/&Lcaron;/\xC4\xBD/g;
+	$text =~ s/&Scaron;/\xC5\xA0/g;
+	$text =~ s/&aring;/\xC3\xA5/g;
+	$text =~ s/&ntilde;/\xC3\xB1/g;
+
+	$text =~ s/&auml;/\xC3\xA4/g;
+	$text =~ s/&euml;/\xC3\xAB/g;
+	$text =~ s/&uuml;/\xC3\xBC/g;
+	$text =~ s/&ouml;/\xC3\xB6/g;
 
 	$text =~ s/&amp;/&/g;
 
@@ -153,28 +161,27 @@ sub html_entities_to_iso8859_1 {
 sub html_entities_to_cpp {
 	my $text = shift;
 
-	# The numerical values are octal!
-	$text =~ s/&Aacute;/\\301/g;
-	$text =~ s/&aacute;/\\341/g;
-	$text =~ s/&eacute;/\\351/g;
-	$text =~ s/&iacute;/\\355/g;
-	$text =~ s/&igrave;/\\354/g;
-	$text =~ s/&oacute;/\\363/g;
-	$text =~ s/&oslash;/\\370/g;
-	$text =~ s/&uacute;/\\372/g;
-	$text =~ s/&#261;/a/g;
-	$text =~ s/&#321;/L/g;
-	$text =~ s/&#322;/l/g;
-	$text =~ s/&#347;/s/g;
-	$text =~ s/&Lcaron;/L/g;
-	$text =~ s/&Scaron;/S/g;
-	$text =~ s/&aring;/\\345/g;
-	$text =~ s/&ntilde;/\\361/g;
+	$text =~ s/&Aacute;/\\303\\201/g;
+	$text =~ s/&aacute;/\\303\\241/g;
+	$text =~ s/&eacute;/\\303\\251/g;
+	$text =~ s/&iacute;/\\303\\255/g;
+	$text =~ s/&igrave;/\\303\\254/g;
+	$text =~ s/&oacute;/\\303\\263/g;
+	$text =~ s/&oslash;/\\303\\270/g;
+	$text =~ s/&uacute;/\\303\\272/g;
+	$text =~ s/&#261;/\\304\\205/g;
+	$text =~ s/&#321;/\\305\\201/g;
+	$text =~ s/&#322;/\\305\\202/g;
+	$text =~ s/&#347;/\\305\\233/g;
+	$text =~ s/&Lcaron;/\\304\\275/g;
+	$text =~ s/&Scaron;/\\305\\240/g;
+	$text =~ s/&aring;/\\303\\245/g;
+	$text =~ s/&ntilde;/\\303\\261/g;
 
-	$text =~ s/&auml;/\\344/g;
-	$text =~ s/&euml;/\\353/g;
-	$text =~ s/&ouml;/\\366/g;
-	$text =~ s/&uuml;/\\374/g;
+	$text =~ s/&auml;/\\303\\244/g;
+	$text =~ s/&euml;/\\303\\253/g;
+	$text =~ s/&uuml;/\\303\\274/g;
+	$text =~ s/&ouml;/\\303\\266/g;
 
 	$text =~ s/&amp;/&/g;
 
@@ -236,9 +243,7 @@ sub html_entities_to_rtf {
 sub begin_credits {
 	my $title = shift;
 
-	if ($mode eq "TEXT") {
-		#print html_entities_to_ascii($title)."\n";
-	} elsif ($mode eq "RTF") {
+	if ($mode eq "RTF") {
 		print '{\rtf1\mac\ansicpg10000' . "\n";
 		print '{\fonttbl\f0\fswiss\fcharset77 Helvetica-Bold;\f1\fswiss\fcharset77 Helvetica;}' . "\n";
 		print '{\colortbl;\red255\green255\blue255;\red0\green128\blue0;\red128\green128\blue128;}' . "\n";
@@ -247,29 +252,19 @@ sub begin_credits {
 	} elsif ($mode eq "CPP") {
 		print "// This file was generated by credits.pl. Do not edit by hand!\n";
 		print "static const char *credits[] = {\n";
-	} elsif ($mode eq "XML-DOC") {
-		print "<?xml version='1.0'?>\n";
-		print "<!-- This file was generated by credits.pl. Do not edit by hand! -->\n";
-		print "<!DOCTYPE appendix PUBLIC '-//OASIS//DTD DocBook XML V4.2//EN'\n";
-		print "       'http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd'>\n";
-		print "<appendix id='credits'>\n";
-		print "  <title>" . $title . "</title>\n";
-		print "  <informaltable frame='none'>\n";
-		print "  <tgroup cols='3' align='left' colsep='0' rowsep='0'>\n";
-		print "  <colspec colname='start' colwidth='0.5cm'/>\n";
-		print "  <colspec colname='name' colwidth='4cm'/>\n";
-		print "  <colspec colname='job'/>\n";
-		print "  <tbody>\n";
-	} elsif ($mode eq "XML-WEB") {
-		print "<?xml version='1.0'?>\n";
-		print "<!-- This file was generated by credits.pl. Do not edit by hand! -->\n";
-		print "<credits>\n";
 	} elsif ($mode eq "YAML") {
 		print "# This file was generated by credits.pl. Do not edit by hand!\n";
-		print "credits:\n";
 	} elsif ($mode eq "STRONGHELP") {
 		print "ScummVM - AUTHORS\n";
 		print "# This file was generated by credits.pl. Do not edit by hand!\n";
+	} elsif ($mode eq "RST") {
+		print "..\n";
+		print "   This file was generated by credits.pl. Do not edit by hand!\n";
+		print "\n";
+		print "=========\n";
+		print "Credits\n";
+		print "=========\n";
+		print "\n";
 	}
 }
 
@@ -279,13 +274,6 @@ sub end_credits {
 		print "}\n";
 	} elsif ($mode eq "CPP") {
 		print "};\n";
-	} elsif ($mode eq "XML-DOC") {
-		print "  </tbody>\n";
-		print "  </tgroup>\n";
-		print "  </informaltable>\n";
-		print "</appendix>\n";
-	} elsif ($mode eq "XML-WEB") {
-		print "</credits>\n";
 	}
 }
 
@@ -329,45 +317,16 @@ sub begin_section {
 		if ($section_level eq 0) {
 			# TODO: Would be nice to have a 'fat' or 'large' mode for
 			# headlines...
-			my $ascii_title = html_entities_to_ascii($title);
 			$title = html_entities_to_cpp($title);
-			if ($ascii_title ne $title) {
-				print '"A1""'.$ascii_title.'",' . "\n";
-			}
 			print '"C1""'.$title.'",' . "\n";
 			print '"",' . "\n";
 		} else {
-			my $ascii_title = html_entities_to_ascii($title);
 			$title = html_entities_to_cpp($title);
-			if ($ascii_title ne $title) {
-				print '"A1""'.$ascii_title.'",' . "\n";
-			}
 			print '"C1""'.$title.'",' . "\n";
 		}
-	} elsif ($mode eq "XML-DOC") {
-		print "  <row><entry namest='start' nameend='job'>";
-		print "<emphasis role='bold'>" . $title . ":</emphasis>";
-		print "</entry></row>\n";
-	} elsif ($mode eq "XML-WEB") {
-		if ($section_level eq 0) {
-			print "\t<section>\n";
-			print "\t\t<title>" . $title . "</title>\n";
-			if ($anchor) {
-				print "\t\t<anchor>" . $anchor . "</anchor>\n";
-			}
-		} elsif ($section_level eq 1) {
-			print "\t\t<subsection>\n";
-			print "\t\t\t<title>" . $title . "</title>\n";
-			if ($anchor) {
-				print "\t\t\t<anchor>" . $anchor . "</anchor>\n";
-			}
-		} else {
-			#print "\t\t\t<group>" . $title . "</group>\n";
-			#print "\t\t\t\t<name>" . $title . "</name>\n";
-		}
 	} elsif ($mode eq "YAML") {
-		my $key = "section:\n";
-		$indent = "  " . ("  " x $section_level);
+		my $key = "";
+		$indent = ("  " x ($section_level));
 		if ($section_level eq 1) {
 			$key = "subsection:\n";
 		}
@@ -386,6 +345,18 @@ sub begin_section {
 	} elsif ($mode eq "STRONGHELP") {
 		$title = html_entities_to_iso8859_1($title);
 		print "#fH" . ($section_level + 1) . ":" . $title."\n";
+	} elsif ($mode eq "RST") {
+		$title = html_entities_to_utf8($title);
+		print $title."\n";
+
+		my $rst_header = "";
+		if ($section_level eq 0) {
+			print "=" x (length $title)."\n\n";
+		} elsif ($section_level eq 1) {
+			print "*" x (length $title)."\n\n";
+		} elsif ($section_level eq 2) {
+			print "^" x (length $title)."\n\n";
+		}
 	}
 	# Implicit start of person list on section level 2
 	if ($section_level >= 2) {
@@ -413,16 +384,6 @@ sub end_section {
 		# nothing
 	} elsif ($mode eq "CPP") {
 		print '"",' . "\n";
-	} elsif ($mode eq "XML-DOC") {
-		print "  <row><entry namest='start' nameend='job'> </entry></row>\n\n";
-	} elsif ($mode eq "XML-WEB") {
-		if ($section_level eq 0) {
-			print "\t</section>\n";
-		} elsif ($section_level eq 1) {
-			print "\t\t</subsection>\n";
-		} else {
-			#print "\t\t\t</group>\n";
-		}
 	}
 }
 
@@ -430,12 +391,8 @@ sub begin_persons {
 	my $title = shift;
 	my $level = shift;
 
-	if ($mode eq "XML-WEB") {
-		print "\t\t\t<group>\n";
-		print "\t\t\t\t<name>" . $title . "</name>\n";
-		#print "\t\t\t\t<persons>\n";
-	} elsif ($mode eq "YAML") {
-		$group_indent = $level eq 1 ? "      " : "  " . ("  " x $section_level);
+	if ($mode eq "YAML") {
+		$group_indent = $level eq 1 ? "    " : ("  " x $section_level);
 		if ($group_started == 0) {
 			print $group_indent . "group:\n";
 			$group_started = 1;
@@ -443,6 +400,10 @@ sub begin_persons {
 		print $group_indent . "-\n";
 		print $group_indent . "  name: \"" . $title . "\"\n";
 
+	} elsif ($mode eq "RST") {
+		print ".. list-table::\n";
+		print "   :widths: 35 65\n";
+		print "\n";
 	}
 }
 
@@ -451,13 +412,12 @@ sub end_persons {
 		print "\n";
 	} elsif ($mode eq "RTF") {
 		# nothing
-	} elsif ($mode eq "XML-WEB") {
-		#print "\t\t\t\t</persons>\n";
-		print "\t\t\t</group>\n";
 	} elsif ($mode eq "STRONGHELP") {
 		print "\n";
 	} elsif ($mode eq "YAML") {
 		$person_started = 0;
+	} elsif ($mode eq "RST") {
+		print "\n";
 	}
 }
 
@@ -504,34 +464,14 @@ sub add_person {
 		}
 	} elsif ($mode eq "CPP") {
 		$name = $nick if $name eq "";
-		my $ascii_name = html_entities_to_ascii($name);
 		$name = html_entities_to_cpp($name);
-
-		if ($ascii_name ne $name) {
-			print '"A0""'.$ascii_name.'",' . "\n";
-		}
 		print '"C0""'.$name.'",' . "\n";
 
 		# Print desc wrapped
 		if (length $desc > 0) {
-			my $ascii_desc = html_entities_to_ascii($desc);
 			$desc = html_entities_to_cpp($desc);
-			if ($ascii_desc ne $desc) {
-				print '"A2""'.$ascii_desc.'",' . "\n";
-			}
 			print '"C2""'.$desc.'",' . "\n";
 		}
-	} elsif ($mode eq "XML-DOC") {
-		$name = $nick if $name eq "";
-		print "  <row><entry namest='name'>" . $name . "</entry>";
-		print "<entry>" . $desc . "</entry></row>\n";
-	} elsif ($mode eq "XML-WEB") {
-		$name = "???" if $name eq "";
-		print "\t\t\t\t<person>\n";
-		print "\t\t\t\t\t<name>" . $name . "</name>\n";
-		print "\t\t\t\t\t<alias>" . $nick . "</alias>\n";
-		print "\t\t\t\t\t<description>" . $desc . "</description>\n";
-		print "\t\t\t\t</person>\n";
 	} elsif ($mode eq "YAML") {
 		$indent = $group_indent . "  ";
 
@@ -553,6 +493,18 @@ sub add_person {
 		$tab = " " x ($section_level * 2 + 1);
 		print $tab . "{*}" . $name . "{*}";
 		print "\t" . $desc . "\n";
+	} elsif ($mode eq "RST") {
+		my $min_name_width = length $desc > 0 ? $max_name_width : 0;
+		$name = $nick if $name eq "";
+		$name = html_entities_to_utf8($name);
+		$desc = html_entities_to_utf8($desc);
+
+		print "   * - " . $name . "\n";
+		if (length $desc > 0) {
+			print "     - " . $desc . "\n";
+		} else {
+			print "     -\n";
+		}
 	}
 }
 
@@ -571,18 +523,13 @@ sub add_paragraph {
 		print "\\\n";
 		print $text . "\\\n";
 	} elsif ($mode eq "CPP") {
-		$text = html_entities_to_ascii($text);
+		$text = html_entities_to_cpp($text);
 		my $line_start = '"C0""';
 		my $line_end = '",';
 		print $line_start . $text . $line_end . "\n";
 		print $line_start . $line_end . "\n";
-	} elsif ($mode eq "XML-DOC") {
-		print "  <row><entry namest='start' nameend='job'>" . $text . "</entry></row>\n";
-		print "  <row><entry namest='start' nameend='job'> </entry></row>\n\n";
-	} elsif ($mode eq "XML-WEB") {
-		print "\t\t<paragraph>" . $text . "</paragraph>\n";
 	} elsif ($mode eq "YAML") {
-		$indent = "  " . ("  " x $section_level);
+		$indent = ("  " x $section_level);
 		if ($paragraph_started eq 0) {
 			print $indent . "paragraph:\n";
 			$paragraph_started = 1;
@@ -594,6 +541,9 @@ sub add_paragraph {
 		$tab = " " x ($section_level * 2 + 1);
 		print $text . "\n";
 		print "#Wrap\n\n";
+	} elsif ($mode eq "RST") {
+		$text = html_entities_to_utf8($text);
+		print $text . "\n\n";
 	}
 }
 
@@ -605,9 +555,11 @@ sub add_paragraph {
 
 begin_credits("Credits");
 	begin_section("ScummVM Team", "scummvm_team");
-		begin_section("Project Leader", "project_leader");
+		begin_section("Project Leaders", "project_leader");
 			begin_persons();
+				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "");
 				add_person("Eugene Sandulenko", "sev", "");
+				add_person("Einar Johan T. S&oslash;m&aring;en", "somaen", "");
 			end_persons();
 		end_section();
 
@@ -660,7 +612,7 @@ begin_credits("Credits");
 			begin_section("AGI");
 				add_person("Stuart George", "darkfiber", "");
 				add_person("Matthew Hoops", "clone2727", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Martin Kiewitz", "m_kiewitz", "");
 				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "");
 				add_person("Walter van Niftrik", "waltervn", "");
@@ -675,6 +627,59 @@ begin_credits("Credits");
 				add_person("Travis Howell", "Kirben", "");
 				add_person("Oliver Kiehl", "olki", "(retired)");
 				add_person("Ludvig Strigeus", "ludde", "(retired)");
+			end_section();
+
+			begin_section("AGS");
+				add_person("Paul Gilbert", "dreammaster", "");
+				add_person("Thierry Crozat", "criezy", "");
+				add_person("Chris Jones", "Pumaman", "Creator");
+				add_person("Alan Van Drake", "", "AGS");
+				add_person("Benjamin Penney", "", "AGS");
+				add_person("Benoit Pierre", "", "AGS");
+				add_person("Bernhard Rosenkraenzer", "", "AGS");
+				add_person("Cristian Morales Vega", "", "AGS");
+				add_person("Edward Rudd", "", "AGS");
+				add_person("Erico Vieira Porto", "", "AGS");
+				add_person("Ferdinand Thiessen", "", "AGS");
+				add_person("Francesco Ariis", "", "AGS");
+				add_person("Gilad Shaham", "", "AGS");
+				add_person("Ivan Mogilko", "", "AGS");
+				add_person("Janet Gilbert", "", "AGS");
+				add_person("Jochen Schleu", "", "AGS");
+				add_person("Joe Lee", "", "AGS");
+				add_person("John Steele Scott", "", "AGS");
+				add_person("Martin Sedlak", "", "AGS");
+				add_person("Matthew Gambrell", "", "AGS");
+				add_person("Michael Rittenhouse", "", "AGS");
+				add_person("Morgan Willcock", "", "AGS");
+				add_person("Nick Sonneveld", "", "AGS");
+				add_person("Ori Avtalion", "", "AGS");
+				add_person("Paul Wilkinson", "", "AGS");
+				add_person("Per Olav Flaten", "", "AGS");
+				add_person("Piotr Wieczorek", "", "AGS");
+				add_person("Ryan O'Connor", "", "AGS");
+				add_person("Scott Baker", "", "AGS");
+				add_person("Shane Stevens", "", "AGS");
+				add_person("Shawn R. Walker", "", "AGS");
+				add_person("Stefano Collavini", "", "AGS");
+				add_person("Steve McCrea", "", "AGS");
+				add_person("Steven Poulton", "", "AGS");
+				add_person("Sunit Das", "", "AGS");
+				add_person("Tobias Hansen", "", "AGS");
+				add_person("Tom Vandepoele", "", "AGS");
+				add_person("Tzach Shabtay", "", "AGS");
+				add_person("", "rofl0r", "AGS");
+				add_person("Berian Williams", "AGA", "AgsCreditz");
+			end_section();
+
+			begin_section("Asylum");
+				add_person("Alex Bevilacqua", "alexbevi", "");
+				add_person("Alex Fontoura", "xesf", "");
+				add_person("Alexander Panov", "alxpnv", "");
+				add_person("Benjamin Haisch", "john_doe", "");
+				add_person("Filippos Karapetis", "bluegr", "");
+				add_person("Joseph Davies", "Deledrius", "");
+				add_person("Julien Templier", "littleboy", "");
 			end_section();
 
 			begin_section("Avalanche");
@@ -693,6 +698,10 @@ begin_credits("Credits");
 				add_person("Eugene Sandulenko", "sev", "");
 			end_section();
 
+			begin_section("Buried");
+				add_person("Matthew Hoops", "clone2727", "");
+			end_section();
+
 			begin_section("CGE");
 				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
 				add_person("Paul Gilbert", "dreammaster", "");
@@ -705,7 +714,7 @@ begin_credits("Credits");
 			end_section();
 
 			begin_section("Chewy");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("Cine");
@@ -757,7 +766,7 @@ begin_credits("Credits");
 			end_section();
 
 			begin_section("Drascula");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "");
 				add_person("Thierry Crozat", "criezy", "");
 			end_section();
@@ -765,7 +774,7 @@ begin_credits("Credits");
 			begin_section("DreamWeb");
 				add_person("Torbj&ouml;rn Andersson", "eriktorbjorn", "");
 				add_person("Bertrand Augereau", "Tramb", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Vladimir Menshakov", "whoozle", "");
 				add_person("Willem Jan Palenstijn", "wjp", "");
 			end_section();
@@ -799,10 +808,25 @@ begin_credits("Credits");
 				add_person("Eugene Sandulenko", "sev", "");
 			end_section();
 
+			begin_section("Grim");
+				add_person("James Brown", "ender", "Grim (retired)");
+				add_person("Giulio Camuffo", "giucam", "Grim (retired)");
+				add_person("Dries Harnie", "Botje", "EMI");
+				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "Grim");
+				add_person("Christian Krause", "chkr", "EMI (retired)");
+				add_person("Einar Johan T. S&oslash;m&aring;en", "somaen", "Grim, EMI");
+				add_person("Joel Teichroeb", "klusark", "EMI");
+				add_person("Joni V&auml;h&auml;m&auml;ki", "Akz", "EMI (retired)");
+			end_section();
+
 			begin_section("Groovie");
 				add_person("Henry Bush", "spookypeanut", "");
 				add_person("Scott Thomas", "ST", "");
 				add_person("Jordi Vilalta Prat", "jvprat", "");
+			end_section();
+
+			begin_section("Hades' Challenge");
+				add_person("Vladimir Serbinenko/Google", "phcoder", "");
 			end_section();
 
 			begin_section("HDB");
@@ -819,6 +843,12 @@ begin_credits("Credits");
 				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
 				add_person("Oystein Eftevaag", "vinterstum", "");
 				add_person("Eugene Sandulenko", "sev", "");
+			end_section();
+
+			begin_section("ICB");
+				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "");
+				add_person("Joost Peters", "joostp", "");
+				add_person("Einar Johan T. S&oslash;m&aring;en", "somaen", "");
 			end_section();
 
 			begin_section("Illusions");
@@ -842,7 +872,7 @@ begin_credits("Credits");
 
 			begin_section("Lab");
 				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Willem Jan Palenstijn", "wjp", "");
 				add_person("Eugene Sandulenko", "sev", "");
 			end_section();
@@ -867,19 +897,19 @@ begin_credits("Credits");
 
 			begin_section("MADE");
 				add_person("Benjamin Haisch", "john_doe", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("MADS");
 				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
 				add_person("Paul Gilbert", "dreammaster", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("Mohawk");
 				add_person("Bastien Bouclet", "bgk", "");
 				add_person("Matthew Hoops", "clone2727", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Alyssa Milburn", "fuzzie", "");
 				add_person("Eugene Sandulenko", "sev", "");
 				add_person("David Turner", "digitall", "");
@@ -896,9 +926,13 @@ begin_credits("Credits");
 				add_person("Miroslav Rem&aacute;k", "MiroslavR", "");
 			end_section();
 
+			begin_section("Myst 3");
+				add_person("Bastien Bouclet", "bgK", "");
+			end_section();
+
 			begin_section("Neverhood");
 				add_person("Benjamin Haisch", "john_doe", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("Parallaction");
@@ -929,6 +963,10 @@ begin_credits("Credits");
 				add_person("Kamil Zbr&oacute;g", "", "");
 			end_section();
 
+			begin_section("Private");
+				add_person("Gustavo Grieco", "neuromancer", "");
+			end_section();
+
 			begin_section("Queen");
 				add_person("David Eriksson", "twogood", "(retired)");
 				add_person("Gregory Montoir", "cyx", "(retired)");
@@ -938,7 +976,7 @@ begin_credits("Credits");
 			begin_section("SAGA");
 				add_person("Torbj&ouml;rn Andersson", "eriktorbjorn", "");
 				add_person("Daniel Balsom", "DanielFox", "Original engine reimplementation author (retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Andrew Kurushin", "ajax16384", "");
 				add_person("Eugene Sandulenko", "sev", "");
 			end_section();
@@ -948,7 +986,7 @@ begin_credits("Credits");
 				add_person("Greg Frieger", "_FRG_", "");
 				add_person("Paul Gilbert", "dreammaster", "");
 				add_person("Max Horn", "Fingolfin", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Martin Kiewitz", "m_kiewitz", "");
 				add_person("Walter van Niftrik", "waltervn", "");
 				add_person("Willem Jan Palenstijn", "wjp", "");
@@ -966,6 +1004,12 @@ begin_credits("Credits");
 				add_person("Robert G&ouml;ffringmann", "lavosspawn", "(retired)");
 				add_person("Oliver Kiehl", "olki", "(retired)");
 				add_person("Joost Peters", "joostp", "");
+			end_section();
+
+			begin_section("Stark");
+				add_person("Bastien Bouclet", "bgK", "");
+				add_person("Einar Johan T. S&oslash;m&aring;en", "somaen", "");
+				add_person("Liu Zhaosong", "Douglas", "");
 			end_section();
 
 			begin_section("Supernova");
@@ -990,7 +1034,7 @@ begin_credits("Credits");
 				add_person("Torbj&ouml;rn Andersson", "eriktorbjorn", "");
 				add_person("Paul Gilbert", "dreammaster", "");
 				add_person("Max Horn", "Fingolfin", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Eugene Sandulenko", "sev", "");
 			end_section();
 
@@ -1005,7 +1049,7 @@ begin_credits("Credits");
 				add_person("Paul Gilbert", "dreammaster", "");
 				add_person("Sven Hesse", "DrMcCoy", "");
 				add_person("Max Horn", "Fingolfin", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Joost Peters", "joostp", "");
 			end_section();
 
@@ -1017,7 +1061,7 @@ begin_credits("Credits");
 
 			begin_section("Toltecs");
 				add_person("Benjamin Haisch", "john_doe", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("Tony");
@@ -1034,6 +1078,13 @@ begin_credits("Credits");
 				add_person("Gregory Montoir", "cyx", "(retired)");
 			end_section();
 
+			begin_section("Trecision");
+				add_person("Daniel Albano", "SupSuper", "");
+				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
+				add_person("Thomas Fach-Pedersen", "madmoose", "Smacker video support");
+				add_person("Filippos Karapetis", "bluegr", "");
+			end_section();
+
 			begin_section("TsAGE");
 				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
 				add_person("Paul Gilbert", "dreammaster", "");
@@ -1041,6 +1092,19 @@ begin_credits("Credits");
 
 			begin_section("Tucker");
 				add_person("Gregory Montoir", "cyx", "(retired)");
+			end_section();
+
+			begin_section("TwinE");
+				add_person("Alexandre Fontoura", "xesf", "(retired)");
+				add_person("Vincent Hamm", "yaz0r", "(retired)");
+				add_person("Felipe Sanches", "jucablues", "(retired)");
+				add_person("Nikita Tereshin", "rumkex", "(retired)");
+				add_person("Patrik Dahlstr&ouml;m", "risca", "(retired)");
+				add_person("Arthur Blot", "arthur.blot78", "(retired)");
+				add_person("Kyuubu", "wett", "(retired)");
+				add_person("To&euml;l Hartmann", "toel__", "(retired)");
+				add_person("Seb&aacute;stien Viannay", "", "(retired)");
+				add_person("Martin Gerhardy", "mgerhardy", "");
 			end_section();
 
 			begin_section("Ultima");
@@ -1079,6 +1143,7 @@ begin_credits("Credits");
 			end_section();
 
 			begin_section("Wintermute");
+				add_person("Gunnar Birke", "Fury", "Wintermute 3D");
 				add_person("Einar Johan T. S&oslash;m&aring;en", "somaen", "");
 				add_person("Tobia Tesan", "t0by", "");
 			end_section();
@@ -1091,7 +1156,7 @@ begin_credits("Credits");
 
 			begin_section("Z-Vision");
 				add_person("Adrian Astley", "RichieSams", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Anton Yarcev", "Zidane", "");
 			end_section();
 
@@ -1196,6 +1261,7 @@ begin_credits("Credits");
 
 			begin_section("Wii");
 				add_person("Andre Heider", "dhewg", "");
+				add_person("Alexander Reim", "AReim1982", "");
 			end_section();
 
 			begin_section("Raspberry Pi");
@@ -1257,6 +1323,7 @@ begin_credits("Credits");
 				add_person("Thierry Crozat", "criezy", "Numerous contributions to documentation");
 				add_person("Joachim Eberhard", "joachimeberhard", "Numerous contributions to documentation (retired)");
 				add_person("Matthew Hoops", "clone2727", "Numerous contributions to documentation (retired)");
+				add_person("Cadi Howley", "cadih", "User documentation (GSOD 2020)");
 			end_persons();
 		end_section();
 
@@ -1345,11 +1412,13 @@ begin_credits("Credits");
 
 			begin_section("Win32");
 				add_person("Travis Howell", "Kirben", "");
+				add_person("Lothar Serra Mari", "lotharsm", "");
 			end_section();
 
 			begin_section("Win64");
 				add_person("Chris Gray", "Psychoid", "(retired)");
 				add_person("Johannes Schickel", "LordHoto", "(retired)");
+				add_person("Lothar Serra Mari", "lotharsm", "");
 			end_section();
 		end_section();
 
@@ -1393,6 +1462,7 @@ begin_credits("Credits");
 				end_section();
 				begin_section("Greek");
 					add_person("Thanasis Antoniou", "Praetorian", "");
+					add_person("Filippos Karapetis", "bluegr", "");
 				end_section();
 				begin_section("Hungarian");
 					add_person("Alex Bevilacqua", "", "");
@@ -1417,7 +1487,7 @@ begin_credits("Credits");
 					add_person("Marcel Souza Lemes", "marcosoutsider", "");
 				end_section();
 				begin_section("Portuguese");
-					add_person("Daniel", "SupSuper", "");
+					add_person("Daniel Albano", "SupSuper", "");
 				end_section();
 				begin_section("Russian");
 					add_person("Eugene Sandulenko", "sev", "");
@@ -1458,6 +1528,7 @@ begin_credits("Credits");
 				begin_section("Supernova");
 					add_person("Joseph-Eugene Winzer", "Joefish", "English translation");
 					add_person("Thierry Crozat", "criezy", "English translation");
+					add_person("Walter Agazzi", "", "Italian translation");
 				end_section();
 		end_section();
 
@@ -1480,10 +1551,11 @@ begin_credits("Credits");
 				add_person("Martin Doucha", "next_ghost", "CinE engine objectification");
 				add_person("Thomas Fach-Pedersen", "madmoose", "ProTracker module player, Smacker video decoder");
 				add_person("Tobias Gunkel", "hennymcc", "Sound support for C64 version of MM/Zak, Loom PCE support");
+				add_person("Dries Harnie", "Botje", "Android port for ResidualVM");
 				add_person("Janne Huttunen", "", "V3 actor mask support, Dig/FT SMUSH audio");
 				add_person("Kov&aacute;cs Endre J&aacute;nos", "", "Several fixes for Simon1");
 				add_person("Jeroen Janssen", "japj", "Numerous readability and bugfix patches");
-				add_person("Keith Kaisershot", "blitter", "Several Pegasus Prime patches");
+				add_person("Keith Kaisershot", "blitter", "Several Pegasus Prime patches and DVD additions");
 				add_person("Andreas Karlsson", "Sprawl", "Initial port for SymbianOS");
 				add_person("Stefan Kristiansson", "skristiansson", "Initial work on SDL2 support");
 				add_person("Claudio Matsuoka", "", "Daily Linux builds");
@@ -1499,6 +1571,7 @@ begin_credits("Credits");
 				add_person("Edward Rudd", "urkle", "Fixes for playing MP3 versions of MI1/Loom audio");
 				add_person("Daniel Schepler", "dschepler", "Final MI1 CD music support, initial Ogg Vorbis support");
 				add_person("Andr&eacute; Souza", "luke_br", "SDL-based OpenGL renderer");
+				add_person("Joel Teichroeb", "klusark", "Android port for ResidualVM");
 				add_person("Tom Frost", "TomFrost", "WebOS port contributions");
 			end_persons();
 		end_section();
@@ -1546,6 +1619,72 @@ begin_credits("Credits");
 										"for allowing the FreeSCI VM extension as a ".
 										"course project in his Advanced OS course.");
 			add_paragraph("Special thanks to Bob Heitman and Corey Cole for their support of FreeSCI.");
+		end_section();
+
+		begin_section("ResidualVM Contributors", "residualvm_contrib");
+			begin_section("Grim");
+				add_person("Thomas Allen", "olldray", "Various engine code fixes and improvements");
+				add_person("Torbj&ouml;rn Andersson", "eriktorbjorn", "Various code fixes");
+				add_person("Ori Avtalion", "salty-horse", "Lipsync, LAF support, various code fixes");
+				add_person("Robert Biro", "DarthJDG", "Antialiasing support");
+				add_person("Bastien Bouclet", "bgK", "Various fixes to engine");
+				add_person("David Cardwell", "d356", "Few fixes to EMI");
+				add_person("Marcus Comstedt", "marcus_c", "Initial Dreamcast port");
+				add_person("Andrea Corna", "Yak Bizzarro", "Patcher module, various engine improvements");
+				add_person("Jonathan Gray", "khalek", "Various code fixes");
+				add_person("Tobias Gunkel", "tobigun", "Initial Android port, few engines fixes");
+				add_person("Azamat H. Hackimov", "winterheart", "Configure fix");
+				add_person("Vincent Hamm", "yazoo", "Various engine code fixes and improvements");
+				add_person("Sven Hesse", "DrMcCoy", "Various compilation fixes");
+				add_person("Matthew Hoops", "clone2727", "Smush codec48, Grim and EMI engine improvements");
+				add_person("Erich Hoover", "Compholio", "x86-64 fixes, various code fixes and improvements");
+				add_person("Max Horn", "fingolfin", "Few code fixes");
+				add_person("Travis Howell", "Kirben", "Various code fixes, Windows port");
+				add_person("Joseph Jezak", "JoseJX", "A lot of engine improvements and fixes");
+				add_person("Guillem Jover", "guillemj", "Few code improvements");
+				add_person("Filippos Karapetis", "bluegr", "Compilation fixes");
+				add_person("Ingo van Lil", "inguin", "Various fixes and improvements for EMI");
+				add_person("Vincent Pelletier", "vpelletier", "Various engine and TinyGL improvements");
+				add_person("Joost Peters", "joostp", "Various code fixes");
+				add_person("George Macon", "gmacon", "Few fixes");
+				add_person("Josh Matthews", "jdm", "Few fixes to engine");
+				add_person("Matthieu Milan", "usineur", "Various engine improvements");
+				add_person("Gregory Montoir", "cyx", "Few fixes to engine");
+				add_person("Stefano Musumeci", "subr3v", "TinyGL backend and engine driver improvements");
+				add_person("Christian Neumair", "mannythegnome", "Various optimisation patches");
+				add_person("Daniel Schepler", "", "Initial grim engine contributor, LUA support");
+				add_person("Dmitry Smirnov", "onlyjob", "Minor spelling corrections");
+				add_person("Yaron Tausky", "yaront", "Fixes to subtitles");
+				add_person("Julien Templier", "Littleboy", "create_project tool");
+				add_person("Pino Toscano", "pinotree", "Debian GNU/Linux package files");
+				add_person("Lionel Ulmer", "bbrox", "OpenGL optimisations");
+				add_person("", "cmayer0087", "Various engine code fixes");
+				add_person("", "JenniBee", "Compilation fixes");
+				add_person("", "karjonas", "Various engine code fixes");
+				add_person("", "mparnaudeau", "Various grim engine code fixes");
+				add_person("", "PoulpiFr", "Few fixes to Android port");
+				add_person("", "sietschie", "Few fixes to engine");
+			end_section();
+
+			begin_section("Myst 3");
+				add_person("David Fioramonti", "dafioram", "Autosave support and few fixes");
+				add_person("Matthew Hoops", "clone2727", "Various engine improvements and code fixes");
+				add_person("Stefano Musumeci", "subr3v", "TinyGL engine support");
+			end_section();
+
+			begin_section("Stark");
+				add_person("Bartosz Dudziak", "Snejp", "Various engine improvements and code fixes");
+				add_person("Matthew Hoops", "clone2727", "ADPCM decoder");
+				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "Various engine code fixes");
+				add_person("Awad Mackie", "firesock", "Few fixes to engine");
+				add_person("Marius Ioan Orban", "mj0331", "Code fix");
+				add_person("Vincent Pelletier", "vpelletier", "Raw sound support");
+				add_person("Jordi Vilalta Prat", "jvprat", "Initial engine contributor");
+				add_person("Scott Thomas", "ST", "Initial engine author");
+				add_person("Will Thomson", "wlthomson", "Few fixes to engine");
+				add_person("", "Faalagorn", "Few code improvements");
+				add_person("", "orangeforest11", "Few engine improvements");
+			end_section();
 		end_section();
 
 		add_paragraph("And to all the contributors, users, and beta testers we've missed. Thanks!");
@@ -1635,8 +1774,9 @@ begin_credits("Credits");
 			"support while porting the engine to ScummVM.");
 
 		add_paragraph(
-			"Bob Bell, Michel Kripalani, Tommy Yune, from Presto Studios for ".
-			"providing the source code of The Journeyman Project: Pegasus Prime.");
+			"Bob Bell, David Black, Michel Kripalani, and Tommy Yune from Presto Studios ".
+			"for providing the source code of The Journeyman Project: Pegasus Prime ".
+			"and The Journeyman Project 2: Buried in Time.");
 
 		add_paragraph(
 			"Electronic Arts IP Preservation Team, particularly Stefan Serbicki, and Vasyl Tsvirkunov of ".
@@ -1649,6 +1789,24 @@ begin_credits("Credits");
 		add_paragraph(
 			"Steffen Dingel for sharing the source code of the Mission Supernova game with us.");
 
+		add_paragraph(
+			"The LUA developers, for creating a nice compact script interpreter.");
+
+		add_paragraph(
+			"Tim Schafer, for obvious reasons, and everybody else who helped make ".
+			"Grim Fandango a brilliant game; and the EMI team for giving it their ".
+			"best try.");
+
+		add_paragraph(
+			"Bret Mogilefsky, for managing to create a SPUTM-style 3D LUA engine, ".
+			"and avoiding the horrible hack it could have been.");
+
+		add_paragraph(
+			"Benjamin Haisch, for emimeshviewer, which our EMI code borrows heavily from.");
+
+		add_paragraph(
+			"Fabrizio Lagorio from Trecision S.p.A., for finding and providing the source code ".
+			"of many of their games.");
 	end_section();
 
 end_credits();

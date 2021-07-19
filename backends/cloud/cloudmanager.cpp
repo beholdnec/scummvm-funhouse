@@ -124,7 +124,7 @@ void CloudManager::save() {
 		Common::String name = getStorageConfigName(i);
 		ConfMan.set(kStoragePrefix + name + "_username", _storages[i].username, ConfMan.kCloudDomain);
 		ConfMan.set(kStoragePrefix + name + "_lastSync", _storages[i].lastSyncDate, ConfMan.kCloudDomain);
-		ConfMan.set(kStoragePrefix + name + "_usedBytes", Common::String::format("%lu", _storages[i].usedBytes), ConfMan.kCloudDomain);
+		ConfMan.set(kStoragePrefix + name + "_usedBytes", Common::String::format("%llu", (unsigned long long)_storages[i].usedBytes), ConfMan.kCloudDomain);
 	}
 
 	ConfMan.set("current_storage", Common::String::format("%u", _currentStorageIndex), ConfMan.kCloudDomain);
@@ -153,8 +153,8 @@ void CloudManager::replaceStorage(Storage *storage, uint32 index) {
 	_currentStorageIndex = index;
 	if (_storages[index].username == "") {
 		// options' Cloud tab believes Storage is connected once it has non-empty username
-		_storages[index].username = _("<syncing...>");
-		_storages[index].lastSyncDate = _("<right now>");
+		_storages[index].username = Common::convertFromU32String(_("<syncing...>"));
+		_storages[index].lastSyncDate = Common::convertFromU32String(_("<right now>"));
 		_storages[index].usedBytes = 0;
 	}
 	save();

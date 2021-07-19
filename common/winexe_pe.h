@@ -30,6 +30,15 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_winexe_ne Windows Portable Executable resources
+ * @ingroup common_winexe
+ *
+ * @brief API for managing Windows Portable Executable resources.
+ *
+ * @{
+ */
+
 template<class T> class Array;
 class SeekableReadStream;
 
@@ -49,7 +58,7 @@ public:
 	using WinResources::loadFromEXE;
 
 	/** Load from a stream. */
-	bool loadFromEXE(SeekableReadStream *stream);
+	bool loadFromEXE(SeekableReadStream *stream, DisposeAfterUse::Flag disposeFileHandle = DisposeAfterUse::YES);
 
 	/** Return a list of resource types. */
 	const Array<WinResourceID> getTypeList() const;
@@ -66,6 +75,12 @@ public:
 	/** Return a stream to the specified resource (or 0 if non-existent). */
 	SeekableReadStream *getResource(const WinResourceID &type, const WinResourceID &id, const WinResourceID &lang);
 
+	/** Get a string from a string resource. */
+	String loadString(uint32 stringID);
+
+protected:
+	VersionInfo *parseVersionInfo(SeekableReadStream *stream);
+
 private:
 	struct Section {
 		uint32 virtualAddress;
@@ -76,6 +91,7 @@ private:
 	HashMap<String, Section, IgnoreCase_Hash, IgnoreCase_EqualTo> _sections;
 
 	SeekableReadStream *_exe;
+	DisposeAfterUse::Flag _disposeFileHandle;
 
 	void parseResourceLevel(Section &section, uint32 offset, int level);
 	WinResourceID _curType, _curID, _curLang;
@@ -91,6 +107,8 @@ private:
 
 	TypeMap _resources;
 };
+
+/** @} */
 
 } // End of namespace Common
 

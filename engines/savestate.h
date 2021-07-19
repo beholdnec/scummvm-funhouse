@@ -25,11 +25,21 @@
 
 #include "common/array.h"
 #include "common/str.h"
+#include "common/ustr.h"
 #include "common/ptr.h"
 
 namespace Graphics {
 struct Surface;
 }
+
+/**
+ * @defgroup engines_savestate Save states
+ * @ingroup engines
+ *
+ * @brief API for managing save states.
+ *
+ * @{
+ */
 
 /**
  * Object describing a save state.
@@ -51,6 +61,7 @@ private:
 	};
 public:
 	SaveStateDescriptor();
+	SaveStateDescriptor(int s, const Common::U32String &d);
 	SaveStateDescriptor(int s, const Common::String &d);
 
 	/**
@@ -66,12 +77,13 @@ public:
 	/**
 	 * @param desc A human readable description of the save state.
 	 */
-	void setDescription(const Common::String &desc) { _description = desc; }
+	void setDescription(const Common::String &desc) { _description = desc.decode(); }
+	void setDescription(const Common::U32String &desc) { _description = desc; }
 
 	/**
 	 * @return A human readable description of the save state.
 	 */
-	const Common::String &getDescription() const { return _description; }
+	const Common::U32String &getDescription() const { return _description; }
 
 	/** Optional entries only included when querying via MetaEngine::querySaveMetaInfo */
 
@@ -209,7 +221,7 @@ private:
 	/**
 	 * A human readable description of the save state.
 	 */
-	Common::String _description;
+	Common::U32String _description;
 
 	/**
 	 * Whether the save state can be deleted.
@@ -270,5 +282,5 @@ struct SaveStateDescriptorSlotComparator {
 		return x.getSaveSlot() < y.getSaveSlot();
 	}
 };
-
+/** @} */
 #endif

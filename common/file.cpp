@@ -51,7 +51,7 @@ bool File::open(const String &filename, Archive &archive) {
 	if ((stream = archive.createReadStreamForMember(filename))) {
 		debug(8, "Opening hashed: %s", filename.c_str());
 	} else if ((stream = archive.createReadStreamForMember(filename + "."))) {
-		// WORKAROUND: Bug #1458388: "SIMON1: Game Detection fails"
+		// WORKAROUND: Bug #2548: "SIMON1: Game Detection fails"
 		// sometimes instead of "GAMEPC" we get "GAMEPC." (note trailing dot)
 		debug(8, "Opening hashed: %s.", filename.c_str());
 	}
@@ -91,7 +91,7 @@ bool File::exists(const String &filename) {
 	if (SearchMan.hasFile(filename)) {
 		return true;
 	} else if (SearchMan.hasFile(filename + ".")) {
-		// WORKAROUND: Bug #1458388: "SIMON1: Game Detection fails"
+		// WORKAROUND: Bug #2548: "SIMON1: Game Detection fails"
 		// sometimes instead of "GAMEPC" we get "GAMEPC." (note trailing dot)
 		return true;
 	}
@@ -123,17 +123,17 @@ bool File::eos() const {
 	return _handle->eos();
 }
 
-int32 File::pos() const {
+int64 File::pos() const {
 	assert(_handle);
 	return _handle->pos();
 }
 
-int32 File::size() const {
+int64 File::size() const {
 	assert(_handle);
 	return _handle->size();
 }
 
-bool File::seek(int32 offs, int whence) {
+bool File::seek(int64 offs, int whence) {
 	assert(_handle);
 	return _handle->seek(offs, whence);
 }
@@ -221,14 +221,14 @@ bool DumpFile::flush() {
 	return _handle->flush();
 }
 
-int32 DumpFile::pos() const { return _handle->pos(); }
+int64 DumpFile::pos() const { return _handle->pos(); }
 
-bool DumpFile::seek(int32 offset, int whence) {
+bool DumpFile::seek(int64 offset, int whence) {
 	SeekableWriteStream *ws = dynamic_cast<SeekableWriteStream *>(_handle);
 	return ws ? ws->seek(offset, whence) : false;
 }
 
-int32 DumpFile::size() const {
+int64 DumpFile::size() const {
 	SeekableWriteStream *ws = dynamic_cast<SeekableWriteStream *>(_handle);
 	return ws ? ws->size() : -1;
 }

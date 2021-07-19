@@ -23,22 +23,17 @@
 #include "common/debug.h"
 #include "common/textconsole.h"
 #include "common/stream.h"
+#include "common/substream.h"
 
 #include "audio/audiostream.h"
+#include "audio/decoders/wave_types.h"
 #include "audio/decoders/wave.h"
 #include "audio/decoders/adpcm.h"
 #include "audio/decoders/mp3.h"
 #include "audio/decoders/raw.h"
+#include "audio/decoders/g711.h"
 
 namespace Audio {
-
-// Audio Codecs
-enum {
-	kWaveFormatPCM = 1,
-	kWaveFormatMSADPCM = 2,
-	kWaveFormatMSIMAADPCM = 17,
-	kWaveFormatMP3 = 85
-};
 
 bool loadWAVFromStream(Common::SeekableReadStream &stream, int &size, int &rate, byte &flags, uint16 *wavType, int *blockAlign_) {
 	const int32 initialPos = stream.pos();
@@ -84,8 +79,8 @@ bool loadWAVFromStream(Common::SeekableReadStream &stream, int &size, int &rate,
 	// values for it:
 	// 1  -> uncompressed PCM
 	// 17 -> IMA ADPCM compressed WAVE
-	// See <http://www.saettler.com/RIFFNEW/RIFFNEW.htm> for a more complete
-	// list of common WAVE compression formats...
+	// See <http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html>
+	// for a more complete list of common WAVE compression formats...
 	uint16 type = stream.readUint16LE();	// == 1 for PCM data
 	uint16 numChannels = stream.readUint16LE();	// 1 for mono, 2 for stereo
 	uint32 samplesPerSec = stream.readUint32LE();	// in Hz
@@ -113,31 +108,32 @@ bool loadWAVFromStream(Common::SeekableReadStream &stream, int &size, int &rate,
 	debug("  bitsPerSample: %d", bitsPerSample);
 #endif
 
+	switch (type) {
+	case kWaveFormatPCM:
+	case kWaveFormatMSADPCM:
+	case kWaveFormatALawPCM:
+	case kWaveFormatMuLawPCM:
+	case kWaveFormatMSIMAADPCM:
 	#ifdef USE_MAD
+	case kWaveFormatMP3:
+	#endif
+		break;
+	default:
+		warning("getWavInfo: unsupported format (type %d)", type);
+		return false;
+	}
+
 	if (type == kWaveFormatMP3) {
 		bitsPerSample = 8;
-	} else {
-	#endif
-		if (type != kWaveFormatPCM && type != kWaveFormatMSADPCM && type != kWaveFormatMSIMAADPCM) {
-			#ifdef USE_MAD
-			warning("getWavInfo: only PCM, MS ADPCM, MP3, or IMA ADPCM data is supported (type %d)", type);
-			#else
-			warning("getWavInfo: only PCM, MS ADPCM, or IMA ADPCM data is supported (type %d)", type);
-			#endif
-
-			return false;
-		}
-
-		if (blockAlign != numChannels * bitsPerSample / 8 && type != kWaveFormatMSADPCM) {
+	} else if (type != kWaveFormatMSADPCM) {
+		if (blockAlign != numChannels * bitsPerSample / 8) {
 			debug(0, "getWavInfo: blockAlign is invalid");
 		}
 
-		if (avgBytesPerSec != samplesPerSec * blockAlign && type != kWaveFormatMSADPCM) {
+		if (avgBytesPerSec != samplesPerSec * blockAlign) {
 			debug(0, "getWavInfo: avgBytesPerSec is invalid");
 		}
-	#ifdef USE_MAD
 	}
-	#endif
 
 	// Prepare the return values.
 	rate = samplesPerSec;
@@ -147,6 +143,8 @@ bool loadWAVFromStream(Common::SeekableReadStream &stream, int &size, int &rate,
 		flags |= Audio::FLAG_UNSIGNED;
 	else if (bitsPerSample == 16)	// 16 bit data is signed little endian
 		flags |= (Audio::FLAG_16BITS | Audio::FLAG_LITTLE_ENDIAN);
+	else if (bitsPerSample == 24)	// 24 bit data is signed little endian
+		flags |= (Audio::FLAG_24BITS | Audio::FLAG_LITTLE_ENDIAN);
 	else if (bitsPerSample == 4 && (type == kWaveFormatMSADPCM || type == kWaveFormatMSIMAADPCM))
 		flags |= Audio::FLAG_16BITS;
 	else {
@@ -198,33 +196,39 @@ SeekableAudioStream *makeWAVStream(Common::SeekableReadStream *stream, DisposeAf
 			delete stream;
 		return 0;
 	}
-
-	if (type == kWaveFormatMSIMAADPCM) // MS IMA ADPCM
-		return makeADPCMStream(stream, disposeAfterUse, size, Audio::kADPCMMSIma, rate, (flags & Audio::FLAG_STEREO) ? 2 : 1, blockAlign);
-	else if (type == kWaveFormatMSADPCM) // MS ADPCM
-		return makeADPCMStream(stream, disposeAfterUse, size, Audio::kADPCMMS, rate, (flags & Audio::FLAG_STEREO) ? 2 : 1, blockAlign);
-	#ifdef USE_MAD
-	else if (type == kWaveFormatMP3)
-		return makeMP3Stream(stream, disposeAfterUse);
-	#endif
+	int channels = (flags & Audio::FLAG_STEREO) ? 2 : 1;
+	int bytesPerSample = (flags & Audio::FLAG_24BITS) ? 3 : ((flags & Audio::FLAG_16BITS) ? 2 : 1);
 
 	// Raw PCM, make sure the last packet is complete
-	uint sampleSize = (flags & Audio::FLAG_16BITS ? 2 : 1) * (flags & Audio::FLAG_STEREO ? 2 : 1);
-	if (size % sampleSize != 0) {
-		warning("makeWAVStream: Trying to play a WAVE file with an incomplete PCM packet");
-		size &= ~(sampleSize - 1);
+	if (type == kWaveFormatPCM) {
+		uint sampleSize = bytesPerSample * channels;
+		if (size % sampleSize != 0) {
+			warning("makeWAVStream: Trying to play a WAVE file with an incomplete PCM packet");
+			size &= ~(sampleSize - 1);
+		}
+	}
+	Common::SeekableReadStream *dataStream = new Common::SeekableSubReadStream(stream, stream->pos(), stream->pos() + size, disposeAfterUse);
+
+	switch (type) {
+	case kWaveFormatMSIMAADPCM:
+		return makeADPCMStream(dataStream, DisposeAfterUse::YES, 0, Audio::kADPCMMSIma, rate, channels, blockAlign);
+	case kWaveFormatMSADPCM:
+		return makeADPCMStream(dataStream, DisposeAfterUse::YES, 0, Audio::kADPCMMS, rate, channels, blockAlign);
+	#ifdef USE_MAD
+	case kWaveFormatMP3:
+		return makeMP3Stream(dataStream, DisposeAfterUse::YES);
+	#endif
+	case kWaveFormatALawPCM:
+		return makeALawStream(dataStream, DisposeAfterUse::YES, rate, channels);
+	case kWaveFormatMuLawPCM:
+		return makeMuLawStream(dataStream, DisposeAfterUse::YES, rate, channels);
+	case kWaveFormatPCM:
+		return makeRawStream(dataStream, rate, flags);
 	}
 
-	// Raw PCM. Just read everything at once.
-	// TODO: More elegant would be to wrap the stream.
-	byte *data = (byte *)malloc(size);
-	assert(data);
-	stream->read(data, size);
-
-	if (disposeAfterUse == DisposeAfterUse::YES)
-		delete stream;
-
-	return makeRawStream(data, size, rate, flags);
+	// If the format is unsupported, we already returned earlier, but just in case
+	delete dataStream;
+	return 0;
 }
 
 } // End of namespace Audio

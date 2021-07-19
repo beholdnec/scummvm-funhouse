@@ -81,63 +81,60 @@
 
 namespace Sci {
 
-SciEngine *g_sci = 0;
+SciEngine *g_sci = nullptr;
 
-SciEngine::SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gameId)
-		: Engine(syst), _gameDescription(desc), _gameId(gameId), _rng("sci") {
-
-	assert(g_sci == 0);
-	g_sci = this;
-
-	_gfxMacIconBar = 0;
-
-	_audio = 0;
-	_sync = nullptr;
+SciEngine::SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gameId) :
+	Engine(syst),
+	_gfxAnimate(nullptr),
+	_gfxCache(nullptr),
+	_gfxCompare(nullptr),
+	_gfxControls16(nullptr),
+	_gfxCoordAdjuster(nullptr),
+	_gfxCursor(nullptr),
+	_gfxMenu(nullptr),
+	_gfxPalette16(nullptr),
+	_gfxRemap16(nullptr),
+	_gfxPaint16(nullptr),
+	_gfxPorts(nullptr),
+	_gfxScreen(nullptr),
+	_gfxText16(nullptr),
+	_gfxTransitions(nullptr),
+	_gfxMacIconBar(nullptr),
 #ifdef ENABLE_SCI32
-	_audio32 = nullptr;
-	_video32 = nullptr;
-	_gfxCursor32 = nullptr;
+	_gfxControls32(nullptr),
+	_gfxPalette32(nullptr),
+	_gfxRemap32(nullptr),
+	_gfxPaint32(nullptr),
+	_gfxText32(nullptr),
+	_audio32(nullptr),
+	_video32(nullptr),
+	_gfxFrameout(nullptr),
+	_gfxTransitions32(nullptr),
+	_gfxCursor32(nullptr),
 #endif
-	_guestAdditions = nullptr;
-	_features = 0;
-	_resMan = 0;
-	_gamestate = 0;
-	_kernel = 0;
-	_vocabulary = 0;
-	_vocabularyLanguage = 1; // we load english vocabulary on startup
-	_eventMan = 0;
-	_console = 0;
-	_opcode_formats = 0;
+	_audio(nullptr),
+	_sync(nullptr),
+	_soundCmd(nullptr),
+	_features(nullptr),
+	_guestAdditions(nullptr),
+	_opcode_formats(nullptr),
+	_debugState(),
+	_gameDescription(desc),
+	_gameId(gameId),
+	_resMan(nullptr),
+	_scriptPatcher(nullptr),
+	_gamestate(nullptr),
+	_kernel(nullptr),
+	_vocabulary(nullptr),
+	_vocabularyLanguage(1), // we load english vocabulary on startup
+	_eventMan(nullptr),
+	_gameObjectAddress(),
+	_console(nullptr),
+	_rng("sci"),
+	_forceHiresGraphics(false) {
 
-	_forceHiresGraphics = false;
-
-	// Set up the engine specific debug levels
-	DebugMan.addDebugChannel(kDebugLevelError, "Error", "Script error debugging");
-	DebugMan.addDebugChannel(kDebugLevelNodes, "Lists", "Lists and nodes debugging");
-	DebugMan.addDebugChannel(kDebugLevelGraphics, "Graphics", "Graphics debugging");
-	DebugMan.addDebugChannel(kDebugLevelStrings, "Strings", "Strings debugging");
-	DebugMan.addDebugChannel(kDebugLevelMemory, "Memory", "Memory debugging");
-	DebugMan.addDebugChannel(kDebugLevelFuncCheck, "Func", "Function parameter debugging");
-	DebugMan.addDebugChannel(kDebugLevelBresen, "Bresenham", "Bresenham algorithms debugging");
-	DebugMan.addDebugChannel(kDebugLevelSound, "Sound", "Sound debugging");
-	DebugMan.addDebugChannel(kDebugLevelBaseSetter, "Base", "Base Setter debugging");
-	DebugMan.addDebugChannel(kDebugLevelParser, "Parser", "Parser debugging");
-	DebugMan.addDebugChannel(kDebugLevelSaid, "Said", "Said specs debugging");
-	DebugMan.addDebugChannel(kDebugLevelFile, "File", "File I/O debugging");
-	DebugMan.addDebugChannel(kDebugLevelTime, "Time", "Time debugging");
-	DebugMan.addDebugChannel(kDebugLevelRoom, "Room", "Room number debugging");
-	DebugMan.addDebugChannel(kDebugLevelAvoidPath, "Pathfinding", "Pathfinding debugging");
-	DebugMan.addDebugChannel(kDebugLevelDclInflate, "DCL", "DCL inflate debugging");
-	DebugMan.addDebugChannel(kDebugLevelVM, "VM", "VM debugging");
-	DebugMan.addDebugChannel(kDebugLevelScripts, "Scripts", "Notifies when scripts are unloaded");
-	DebugMan.addDebugChannel(kDebugLevelPatcher, "Patcher", "Notifies when scripts or resources are patched");
-	DebugMan.addDebugChannel(kDebugLevelWorkarounds, "Workarounds", "Notifies when workarounds are triggered");
-	DebugMan.addDebugChannel(kDebugLevelVideo, "Video", "Video (SEQ, VMD, RBT) debugging");
-	DebugMan.addDebugChannel(kDebugLevelGame, "Game", "Debug calls from game scripts");
-	DebugMan.addDebugChannel(kDebugLevelGC, "GC", "Garbage Collector debugging");
-	DebugMan.addDebugChannel(kDebugLevelResMan, "ResMan", "Resource manager debugging");
-	DebugMan.addDebugChannel(kDebugLevelOnStartup, "OnStartup", "Enter debugger at start of game");
-	DebugMan.addDebugChannel(kDebugLevelDebugMode, "DebugMode", "Enable game debug mode at start of game");
+	assert(g_sci == nullptr);
+	g_sci = this;
 
 	const Common::FSNode gameDataDir(ConfMan.get("path"));
 
@@ -155,6 +152,7 @@ SciEngine::SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gam
 	SearchMan.addSubDirectoryMatching(gameDataDir, "movies");	// VMD movie files
 	SearchMan.addSubDirectoryMatching(gameDataDir, "music");	// LSL7 music files (GOG version)
 	SearchMan.addSubDirectoryMatching(gameDataDir, "music/22s16");	// LSL7 music files
+	SearchMan.addSubDirectoryMatching(gameDataDir, "data");	// LSL7 Polish patch files (Trac #10066)
 	SearchMan.addSubDirectoryMatching(gameDataDir, "vmd");	// VMD movie files
 	SearchMan.addSubDirectoryMatching(gameDataDir, "duk");	// Duck movie files in Phantasmagoria 2
 	SearchMan.addSubDirectoryMatching(gameDataDir, "Robot Folder"); // Mac robot files
@@ -202,9 +200,6 @@ SciEngine::SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gam
 }
 
 SciEngine::~SciEngine() {
-	// Remove all of our debug levels here
-	DebugMan.clearAllDebugChannels();
-
 #ifdef ENABLE_SCI32
 	delete _gfxControls32;
 	delete _gfxPaint32;
@@ -253,14 +248,13 @@ SciEngine::~SciEngine() {
 
 	delete _scriptPatcher;
 	delete _resMan;	// should be deleted last
-	g_sci = 0;
+	g_sci = nullptr;
 }
 
-extern int showScummVMDialog(const Common::String& message, const char* altButton = nullptr, bool alignCenter = true);
+extern int showScummVMDialog(const Common::U32String &message, const Common::U32String &altButton = Common::U32String(), bool alignCenter = true);
 
 Common::Error SciEngine::run() {
 	_resMan = new ResourceManager();
-	assert(_resMan);
 	_resMan->addAppropriateSources();
 	_resMan->init();
 
@@ -272,9 +266,6 @@ Common::Error SciEngine::run() {
 		return Common::kNoGameDataFoundError;
 	}
 */
-
-	// Reset, so that error()s before SoundCommandParser is initialized wont cause a crash
-	_soundCmd = NULL;
 
 	// Add the after market patches for the specified game, if they exist
 	_resMan->addNewGMPatch(_gameId);
@@ -290,7 +281,6 @@ Common::Error SciEngine::run() {
 	//  - King's Quest 6 CD demo
 	//  - Gabriel Knight 1 CD
 	//  - Police Quest 4 CD
-	// TODO: Check, if Gabriel Knight 1 floppy supports high resolution
 	//
 	// Gabriel Knight 1 on Mac is hi-res only, so it should NOT get this option.
 	// Confirmed by [md5] and originally by clone2727.
@@ -306,8 +296,6 @@ Common::Error SciEngine::run() {
 		// Initialize the game screen
 		_gfxScreen = new GfxScreen(_resMan);
 		_gfxScreen->enableUndithering(ConfMan.getBool("disable_dithering"));
-	} else {
-		_gfxScreen = nullptr;
 	}
 
 	_kernel = new Kernel(_resMan, segMan);
@@ -468,13 +456,15 @@ bool SciEngine::gameHasFanMadePatch() {
 		{ GID_LSL3,       380,   6148,    195,  0x35 },
 		{ GID_LSL5,       994,   4810,   1342,  0x78 },	// English
 		{ GID_LSL5,       994,   4942,   1392,  0x76 },	// German
-		{ GID_PQ1,        994,   4332,   1473,  0x78 },
+		// GOG includes PQ1 patches. Incompatibilities are resolved by our script patches
+		//{ GID_PQ1,        994,   4332,   1473,  0x78 },
 		{ GID_PQ2,        200,  10614,      0,  0x00 },
-		{ GID_PQ3,        994,   4686,   1291,  0x78 },	// English
-		{ GID_PQ3,        994,   4734,   1283,  0x78 },	// German
+		// GOG includes PQ3 patches. Incompatibilities are resolved by our script patches
+		//{ GID_PQ3,        994,   4686,   1291,  0x78 },	// English
+		//{ GID_PQ3,        994,   4734,   1283,  0x78 },	// German
 		{ GID_QFG1VGA,    994,   4388,      0,  0x00 },
 		{ GID_QFG3,       994,   4714,      2,  0x48 },
-		// TODO: Disabled, as it fixes a whole lot of bugs which can't be tested till SCI2.1 support is finished
+		// GOG includes QFG4 patches. Incompatibilities are resolved by our script patches
 		//{ GID_QFG4,       710,  11477,      0,  0x00 },
 		{ GID_SQ1,        994,   4740,      0,  0x00 },
 		{ GID_SQ5,        994,   4142,   1496,  0x78 },	// English/German/French
@@ -483,43 +473,34 @@ bool SciEngine::gameHasFanMadePatch() {
 		// TODO: The bugs in SQ6 can't be tested till SCI2.1 support is finished
 		//{ GID_SQ6,        380,  16308,  15042,  0x0C },	// English
 		//{ GID_SQ6,        380,  11652,      0,  0x00 },	// German - patched file is the same size as the original
-		// ** End marker ***************************
-		{ GID_FANMADE,      0,      0,      0,  0x00 }
 	};
 
-	int curEntry = 0;
+	for (int i = 0; i < ARRAYSIZE(patchInfo); ++i) {
+		if (patchInfo[i].gameID == getGameId()) {
+			Resource *targetScript = _resMan->findResource(ResourceId(kResourceTypeScript, patchInfo[i].targetScript), 0);
 
-	while (true) {
-		if (patchInfo[curEntry].targetSize == 0)
-			break;
-
-		if (patchInfo[curEntry].gameID == getGameId()) {
-			Resource *targetScript = _resMan->findResource(ResourceId(kResourceTypeScript, patchInfo[curEntry].targetScript), 0);
-
-			if (targetScript && targetScript->size() + 2 == patchInfo[curEntry].targetSize) {
-				if (patchInfo[curEntry].patchedByteOffset == 0)
+			if (targetScript && targetScript->size() + 2 == patchInfo[i].targetSize) {
+				if (patchInfo[i].patchedByteOffset == 0)
 					return true;
-				else if (targetScript->getUint8At(patchInfo[curEntry].patchedByteOffset - 2) == patchInfo[curEntry].patchedByte)
+				else if (targetScript->getUint8At(patchInfo[i].patchedByteOffset - 2) == patchInfo[i].patchedByte)
 					return true;
 			}
 		}
-
-		curEntry++;
 	}
 
 	return false;
 }
 
 void SciEngine::suggestDownloadGK2SubTitlesPatch() {
-	const char* altButton;
-	Common::String downloadMessage;
+	Common::U32String altButton;
+	Common::U32String downloadMessage;
 
 	if (g_system->hasFeature(OSystem::kFeatureOpenUrl)) {
 		altButton = _("Download patch");
 		downloadMessage = _("(or click 'Download patch' button. But note - it only downloads, you will have to continue from there)\n");
 	}
 	else {
-		altButton = nullptr;
+		altButton = "";
 		downloadMessage = "";
 	}
 
@@ -591,33 +572,6 @@ bool SciEngine::initGame() {
 }
 
 void SciEngine::initGraphics() {
-
-	// Reset all graphics objects
-	_gfxAnimate = 0;
-	_gfxCache = 0;
-	_gfxCompare = 0;
-	_gfxControls16 = 0;
-	_gfxCoordAdjuster = 0;
-	_gfxCursor = 0;
-	_gfxMacIconBar = 0;
-	_gfxMenu = 0;
-	_gfxPaint16 = 0;
-	_gfxPalette16 = 0;
-	_gfxRemap16 = 0;
-	_gfxPorts = 0;
-	_gfxText16 = 0;
-	_gfxTransitions = 0;
-#ifdef ENABLE_SCI32
-	_gfxControls32 = 0;
-	_gfxText32 = 0;
-	_gfxFrameout = 0;
-	_gfxPaint32 = 0;
-	_gfxPalette32 = 0;
-	_gfxRemap32 = 0;
-	_gfxTransitions32 = 0;
-	_gfxCursor32 = 0;
-#endif
-
 	if (hasMacIconBar())
 		_gfxMacIconBar = new GfxMacIconBar();
 
@@ -828,7 +782,7 @@ bool SciEngine::hasMacIconBar() const {
 }
 
 bool SciEngine::hasMacSaveRestoreDialogs() const {
-    return _gameDescription->platform == Common::kPlatformMacintosh &&
+	return _gameDescription->platform == Common::kPlatformMacintosh &&
 			(getSciVersion() <= SCI_VERSION_2_1_EARLY ||
 			 getGameId() == GID_GK2 ||
 			 getGameId() == GID_SQ6 ||

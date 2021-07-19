@@ -2,17 +2,17 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="supernova1">
-			<UniqueIdentifier>EEEE41BD-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CEB-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="supernova2">
-			<UniqueIdentifier>EEEE41BE-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CEC-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\supernova\console.cpp" />
-		<ClCompile Include="..\..\engines\supernova\detection.cpp" />
 		<ClCompile Include="..\..\engines\supernova\game-manager.cpp" />
 		<ClCompile Include="..\..\engines\supernova\graphics.cpp" />
+		<ClCompile Include="..\..\engines\supernova\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\supernova\resman.cpp" />
 		<ClCompile Include="..\..\engines\supernova\room.cpp" />
 		<ClCompile Include="..\..\engines\supernova\screen.cpp" />

@@ -2,68 +2,95 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="ad">
-			<UniqueIdentifier>EEEE4227-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D5E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base">
-			<UniqueIdentifier>EEEE4228-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D5F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base\file">
-			<UniqueIdentifier>EEEE4229-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D60-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base\font">
-			<UniqueIdentifier>EEEE422A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D61-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base\gfx">
-			<UniqueIdentifier>EEEE422B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D62-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="base\gfx\3ds">
+			<UniqueIdentifier>2C569D63-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="base\gfx\opengl">
+			<UniqueIdentifier>2C569D64-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base\gfx\osystem">
-			<UniqueIdentifier>EEEE422C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D65-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="base\gfx\x">
+			<UniqueIdentifier>2C569D66-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base\particles">
-			<UniqueIdentifier>EEEE422D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D67-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base\scriptables">
-			<UniqueIdentifier>EEEE422E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D68-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base\scriptables\debuggable">
-			<UniqueIdentifier>EEEE422F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D69-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="base\sound">
-			<UniqueIdentifier>EEEE4230-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D6A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="debugger">
-			<UniqueIdentifier>EEEE4231-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D6B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="debugger\listing_providers">
-			<UniqueIdentifier>EEEE4232-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D6C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ext">
-			<UniqueIdentifier>EEEE4233-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D6D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="math">
-			<UniqueIdentifier>EEEE4234-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D6E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="system">
-			<UniqueIdentifier>EEEE4235-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D6F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="ui">
-			<UniqueIdentifier>EEEE4236-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D70-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="utils">
-			<UniqueIdentifier>EEEE4237-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D71-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="video">
-			<UniqueIdentifier>EEEE4238-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569D72-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_actor.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_actor_3dx.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_attach_3dx.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_block.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_entity.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_game.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_generic.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_geom_ext.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_geom_ext_node.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_inventory.cpp">
@@ -84,10 +111,19 @@
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_object.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_object_3d.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_path.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_path3d.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_path_point.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_path_point3d.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_region.cpp">
@@ -111,6 +147,9 @@
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_scene.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_scene_geometry.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_scene_node.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
@@ -132,13 +171,22 @@
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_talk_node.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_walkplane.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ad\ad_waypoint_group.cpp">
+			<Filter>ad</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ad\ad_waypoint_group3d.cpp">
 			<Filter>ad</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\base.cpp">
 			<Filter>base</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\base_active_rect.cpp">
+			<Filter>base</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\base_animation_transition_time.cpp">
 			<Filter>base</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\base_dynamic_buffer.cpp">
@@ -243,14 +291,56 @@
 		<ClCompile Include="..\..\engines\wintermute\base\font\base_font_truetype.cpp">
 			<Filter>base\font</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\3ds\camera3d.cpp">
+			<Filter>base\gfx\3ds</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\3ds\light3d.cpp">
+			<Filter>base\gfx\3ds</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\3ds\loader3ds.cpp">
+			<Filter>base\gfx\3ds</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\3ds\mesh3ds.cpp">
+			<Filter>base\gfx\3ds</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\gfx\base_image.cpp">
 			<Filter>base\gfx</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\gfx\base_renderer.cpp">
 			<Filter>base\gfx</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\base_renderer3d.cpp">
+			<Filter>base\gfx</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\gfx\base_surface.cpp">
 			<Filter>base\gfx</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\base_render_opengl3d.cpp">
+			<Filter>base\gfx\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\base_render_opengl3d_shader.cpp">
+			<Filter>base\gfx\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\base_surface_opengl3d.cpp">
+			<Filter>base\gfx\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\mesh3ds_opengl.cpp">
+			<Filter>base\gfx\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\mesh3ds_opengl_shader.cpp">
+			<Filter>base\gfx\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\meshx_opengl.cpp">
+			<Filter>base\gfx\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\meshx_opengl_shader.cpp">
+			<Filter>base\gfx\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\shadow_volume_opengl.cpp">
+			<Filter>base\gfx\opengl</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\opengl\shadow_volume_opengl_shader.cpp">
+			<Filter>base\gfx\opengl</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\gfx\osystem\base_render_osystem.cpp">
 			<Filter>base\gfx\osystem</Filter>
@@ -260,6 +350,36 @@
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\gfx\osystem\render_ticket.cpp">
 			<Filter>base\gfx\osystem</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\shadow_volume.cpp">
+			<Filter>base\gfx</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\active_animation.cpp">
+			<Filter>base\gfx\x</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\animation.cpp">
+			<Filter>base\gfx\x</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\animation_channel.cpp">
+			<Filter>base\gfx\x</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\animation_set.cpp">
+			<Filter>base\gfx\x</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\frame_node.cpp">
+			<Filter>base\gfx\x</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\loader_x.cpp">
+			<Filter>base\gfx\x</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\material.cpp">
+			<Filter>base\gfx\x</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\meshx.cpp">
+			<Filter>base\gfx\x</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\base\gfx\x\modelx.cpp">
+			<Filter>base\gfx\x</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\base\particles\part_emitter.cpp">
 			<Filter>base\particles</Filter>
@@ -367,7 +487,6 @@
 		<ClCompile Include="..\..\engines\wintermute\debugger\watch_instance.cpp">
 			<Filter>debugger</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\wintermute\detection.cpp" />
 		<ClCompile Include="..\..\engines\wintermute\ext\dll_dlltest.cpp">
 			<Filter>ext</Filter>
 		</ClCompile>
@@ -392,7 +511,13 @@
 		<ClCompile Include="..\..\engines\wintermute\ext\dll_tools.cpp">
 			<Filter>ext</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ext\scene_achievements.cpp">
+			<Filter>ext</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ext\wme_3fstatistics.cpp">
+			<Filter>ext</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\ext\wme_commandlinehelper.cpp">
 			<Filter>ext</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\wintermute\ext\wme_galaxy.cpp">
@@ -410,6 +535,7 @@
 		<ClCompile Include="..\..\engines\wintermute\math\vector2.cpp">
 			<Filter>math</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\wintermute\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\wintermute\persistent.cpp" />
 		<ClCompile Include="..\..\engines\wintermute\platform_osystem.cpp" />
 		<ClCompile Include="..\..\engines\wintermute\system\sys_class.cpp">
@@ -476,10 +602,28 @@
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_actor.h">
 			<Filter>ad</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_actor_3dx.h">
+			<Filter>ad</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_attach_3dx.h">
+			<Filter>ad</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_block.h">
+			<Filter>ad</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_entity.h">
 			<Filter>ad</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_game.h">
+			<Filter>ad</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_generic.h">
+			<Filter>ad</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_geom_ext.h">
+			<Filter>ad</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_geom_ext_node.h">
 			<Filter>ad</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_inventory.h">
@@ -500,10 +644,19 @@
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_object.h">
 			<Filter>ad</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_object_3d.h">
+			<Filter>ad</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_path.h">
 			<Filter>ad</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_path3d.h">
+			<Filter>ad</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_path_point.h">
+			<Filter>ad</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_path_point3d.h">
 			<Filter>ad</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_region.h">
@@ -525,6 +678,9 @@
 			<Filter>ad</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_scene.h">
+			<Filter>ad</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_scene_geometry.h">
 			<Filter>ad</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_scene_node.h">
@@ -551,13 +707,22 @@
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_types.h">
 			<Filter>ad</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_walkplane.h">
+			<Filter>ad</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ad\ad_waypoint_group.h">
+			<Filter>ad</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ad\ad_waypoint_group3d.h">
 			<Filter>ad</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\base.h">
 			<Filter>base</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\base_active_rect.h">
+			<Filter>base</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\base_animation_transition_time.h">
 			<Filter>base</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\base_dynamic_buffer.h">
@@ -668,14 +833,56 @@
 		<ClInclude Include="..\..\engines\wintermute\base\font\base_font_truetype.h">
 			<Filter>base\font</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\3ds\camera3d.h">
+			<Filter>base\gfx\3ds</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\3ds\light3d.h">
+			<Filter>base\gfx\3ds</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\3ds\loader3ds.h">
+			<Filter>base\gfx\3ds</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\3ds\mesh3ds.h">
+			<Filter>base\gfx\3ds</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\gfx\base_image.h">
 			<Filter>base\gfx</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\gfx\base_renderer.h">
 			<Filter>base\gfx</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\base_renderer3d.h">
+			<Filter>base\gfx</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\gfx\base_surface.h">
 			<Filter>base\gfx</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\base_render_opengl3d.h">
+			<Filter>base\gfx\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\base_render_opengl3d_shader.h">
+			<Filter>base\gfx\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\base_surface_opengl3d.h">
+			<Filter>base\gfx\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\mesh3ds_opengl.h">
+			<Filter>base\gfx\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\mesh3ds_opengl_shader.h">
+			<Filter>base\gfx\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\meshx_opengl.h">
+			<Filter>base\gfx\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\meshx_opengl_shader.h">
+			<Filter>base\gfx\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\shadow_volume_opengl.h">
+			<Filter>base\gfx\opengl</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\opengl\shadow_volume_opengl_shader.h">
+			<Filter>base\gfx\opengl</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\gfx\osystem\base_render_osystem.h">
 			<Filter>base\gfx\osystem</Filter>
@@ -685,6 +892,36 @@
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\gfx\osystem\render_ticket.h">
 			<Filter>base\gfx\osystem</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\shadow_volume.h">
+			<Filter>base\gfx</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\active_animation.h">
+			<Filter>base\gfx\x</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\animation.h">
+			<Filter>base\gfx\x</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\animation_channel.h">
+			<Filter>base\gfx\x</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\animation_set.h">
+			<Filter>base\gfx\x</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\frame_node.h">
+			<Filter>base\gfx\x</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\loader_x.h">
+			<Filter>base\gfx\x</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\material.h">
+			<Filter>base\gfx\x</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\meshx.h">
+			<Filter>base\gfx\x</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\base\gfx\x\modelx.h">
+			<Filter>base\gfx\x</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\base\particles\part_emitter.h">
 			<Filter>base\particles</Filter>
@@ -807,6 +1044,7 @@
 		<ClInclude Include="..\..\engines\wintermute\debugger\watch_instance.h">
 			<Filter>debugger</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\detection.h" />
 		<ClInclude Include="..\..\engines\wintermute\detection_tables.h" />
 		<ClInclude Include="..\..\engines\wintermute\ext\externals.h">
 			<Filter>ext</Filter>
@@ -814,7 +1052,16 @@
 		<ClInclude Include="..\..\engines\wintermute\ext\plugins.h">
 			<Filter>ext</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ext\scene_achievements_tables.h">
+			<Filter>ext</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ext\scene_hooks.h">
+			<Filter>ext</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ext\wme_3fstatistics.h">
+			<Filter>ext</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\wintermute\ext\wme_commandlinehelper.h">
 			<Filter>ext</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\wintermute\ext\wme_galaxy.h">
@@ -823,7 +1070,6 @@
 		<ClInclude Include="..\..\engines\wintermute\ext\wme_steam.h">
 			<Filter>ext</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\wintermute\game_description.h" />
 		<ClInclude Include="..\..\engines\wintermute\keymapper_tables.h" />
 		<ClInclude Include="..\..\engines\wintermute\math\floatpoint.h">
 			<Filter>math</Filter>

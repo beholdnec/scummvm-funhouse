@@ -332,6 +332,144 @@ BinkDecoder::BinkVideoTrack::~BinkVideoTrack() {
 	_surface.free();
 }
 
+/**
+ * An AudioStream that just returns silent samples and runs infinitely.
+ */
+class SilentAudioStream : public Audio::AudioStream {
+public:
+	SilentAudioStream(int rate, bool stereo) : _rate(rate), _isStereo(stereo) {}
+
+	int readBuffer(int16 *buffer, const int numSamples) {
+		memset(buffer, 0, numSamples * 2);
+		return numSamples;
+	}
+
+	bool endOfData() const { return false; } // it never ends!
+	bool isStereo() const { return _isStereo; }
+	int getRate() const { return _rate; }
+
+private:
+	int _rate;
+	bool _isStereo;
+};
+
+Common::Rational BinkDecoder::getFrameRate() {
+	BinkVideoTrack *videoTrack = (BinkVideoTrack *)getTrack(0);
+
+	return videoTrack->getFrameRate();
+}
+
+bool BinkDecoder::seekIntern(const Audio::Timestamp &time) {
+	BinkVideoTrack *videoTrack = (BinkVideoTrack *)getTrack(0);
+
+	uint32 frame = videoTrack->getFrameAtTime(time);
+
+	// Track down the keyframe
+	uint32 keyFrame = findKeyFrame(frame);
+	videoTrack->setCurFrame(keyFrame - 1);
+
+	// Adjust the video track to use for seeking
+	findNextVideoTrack();
+
+	if (frame == keyFrame) {
+		// We're already good, no need to go further
+		return true;
+	}
+
+	// Seek the audio tracks
+	for (uint32 i = 0; i < _audioTracks.size(); i++) {
+		BinkAudioTrack *audioTrack = (BinkAudioTrack *)getTrack(i + 1);
+		audioTrack->seek(videoTrack->getFrameTime(keyFrame));
+	}
+
+	while (getCurFrame() < (int32)frame - 1)
+		decodeNextFrame();
+
+	// Skip decoded audio between the keyframe and the target frame
+	for (uint32 i = 0; i < _audioTracks.size(); i++) {
+		BinkAudioTrack *audioTrack = (BinkAudioTrack *)getTrack(i + 1);
+		int rate = audioTrack->getRate();
+
+		Audio::Timestamp delay = videoTrack->getFrameTime(frame - 1).convertToFramerate(rate)
+				- videoTrack->getFrameTime(keyFrame).convertToFramerate(rate);
+
+		audioTrack->skipSamples(delay);
+	}
+
+	return true;
+}
+
+uint32 BinkDecoder::findKeyFrame(uint32 frame) const {
+	assert(frame < _frames.size());
+
+	for (int i = frame; i >= 0; i--) {
+		if (_frames[i].keyFrame)
+			return i;
+	}
+
+	// If none found, we'll assume the requested frame is a key frame
+	return frame;
+}
+
+int BinkDecoder::BinkAudioTrack::getRate() {
+	return _audioStream->getRate();
+}
+
+void BinkDecoder::BinkAudioTrack::skipSamples(const Audio::Timestamp &length) {
+	int32 sampleCount = length.totalNumberOfFrames();
+
+	if (sampleCount <= 0)
+		return;
+
+	if (_audioStream->isStereo())
+		sampleCount *= 2;
+
+	int16 *tempBuffer = new int16[sampleCount];
+	_audioStream->readBuffer(tempBuffer, sampleCount);
+	delete[] tempBuffer;
+}
+
+bool BinkDecoder::BinkAudioTrack::seek(const Audio::Timestamp &time) {
+	// Don't window the output with the previous frame -- there is no output from the previous frame
+	_audioInfo->first = true;
+
+	if (time != Audio::Timestamp(0)) {
+		// The first frame of the file contains an audio prebuffer of about 750ms.
+		// When seeking to a later frame, the audio stream needs to be prefilled with some data
+		// amounting to 750ms, otherwise the audio stream will underrun and / or the audio and video
+		// streams will be out of sync.
+		// For now, we do as the official Bink decoder up to version 1.2j. The stream is prefilled
+		// with silence.
+		// The official bink decoder behavior is documented here:
+		// http://www.radgametools.com/bnkhist.htm#Changes from 1.2i to 1.2J (02-18-2002)
+		SilentAudioStream *silence = new SilentAudioStream(_audioInfo->outSampleRate, _audioInfo->outChannels == 2);
+		Audio::AudioStream *prebuffer = Audio::makeLimitingAudioStream(silence, Audio::Timestamp(750));
+		_audioStream->queueAudioStream(prebuffer);
+	}
+
+	return true;
+}
+
+bool BinkDecoder::BinkVideoTrack::rewind() {
+	if (!VideoTrack::rewind()) {
+		return false;
+	}
+
+	_curFrame = -1;
+
+	// Re-initialize the video with solid green
+	memset(_curPlanes[0],   0, _yBlockWidth  * 8 * _yBlockHeight  * 8);
+	memset(_curPlanes[1],   0, _uvBlockWidth * 8 * _uvBlockHeight * 8);
+	memset(_curPlanes[2],   0, _uvBlockWidth * 8 * _uvBlockHeight * 8);
+	memset(_curPlanes[3], 255, _yBlockWidth  * 8 * _yBlockHeight  * 8);
+	memset(_oldPlanes[0],   0, _yBlockWidth  * 8 * _yBlockHeight  * 8);
+	memset(_oldPlanes[1],   0, _uvBlockWidth * 8 * _uvBlockHeight * 8);
+	memset(_oldPlanes[2],   0, _uvBlockWidth * 8 * _uvBlockHeight * 8);
+	memset(_oldPlanes[3], 255, _yBlockWidth  * 8 * _yBlockHeight  * 8);
+
+	return true;
+}
+
 void BinkDecoder::BinkVideoTrack::decodePacket(VideoFrame &frame) {
 	assert(frame.bits);
 
@@ -355,12 +493,17 @@ void BinkDecoder::BinkVideoTrack::decodePacket(VideoFrame &frame) {
 	}
 
 	// Convert the YUV data we have to our format
-	// We're ignoring alpha for now
 	// The width used here is the surface-width, and not the video-width
 	// to allow for odd-sized videos.
-	assert(_curPlanes[0] && _curPlanes[1] && _curPlanes[2]);
-	YUVToRGBMan.convert420(&_surface, Graphics::YUVToRGBManager::kScaleITU, _curPlanes[0], _curPlanes[1], _curPlanes[2],
-			_surfaceWidth, _surfaceHeight, _yBlockWidth * 8, _uvBlockWidth * 8);
+	if (_hasAlpha) {
+		assert(_curPlanes[0] && _curPlanes[1] && _curPlanes[2] && _curPlanes[3]);
+		YUVToRGBMan.convert420Alpha(&_surface, Graphics::YUVToRGBManager::kScaleITU, _curPlanes[0], _curPlanes[1], _curPlanes[2], _curPlanes[3],
+				_surfaceWidth, _surfaceHeight, _yBlockWidth * 8, _uvBlockWidth * 8);
+	} else {
+		assert(_curPlanes[0] && _curPlanes[1] && _curPlanes[2]);
+		YUVToRGBMan.convert420(&_surface, Graphics::YUVToRGBManager::kScaleITU, _curPlanes[0], _curPlanes[1], _curPlanes[2],
+				_surfaceWidth, _surfaceHeight, _yBlockWidth * 8, _uvBlockWidth * 8);
+	}
 
 	// And swap the planes with the reference planes
 	for (int i = 0; i < 4; i++)
@@ -1286,27 +1429,27 @@ void BinkDecoder::BinkVideoTrack::readResidue(VideoFrame &video, int16 *block, i
 #define A4 -5352
 
 #define IDCT_TRANSFORM(dest,s0,s1,s2,s3,s4,s5,s6,s7,d0,d1,d2,d3,d4,d5,d6,d7,munge,src) {\
-    const int a0 = (src)[s0] + (src)[s4]; \
-    const int a1 = (src)[s0] - (src)[s4]; \
-    const int a2 = (src)[s2] + (src)[s6]; \
-    const int a3 = (A1*((src)[s2] - (src)[s6])) >> 11; \
-    const int a4 = (src)[s5] + (src)[s3]; \
-    const int a5 = (src)[s5] - (src)[s3]; \
-    const int a6 = (src)[s1] + (src)[s7]; \
-    const int a7 = (src)[s1] - (src)[s7]; \
-    const int b0 = a4 + a6; \
-    const int b1 = (A3*(a5 + a7)) >> 11; \
-    const int b2 = ((A4*a5) >> 11) - b0 + b1; \
-    const int b3 = (A1*(a6 - a4) >> 11) - b2; \
-    const int b4 = ((A2*a7) >> 11) + b3 - b1; \
-    (dest)[d0] = munge(a0+a2   +b0); \
-    (dest)[d1] = munge(a1+a3-a2+b2); \
-    (dest)[d2] = munge(a1-a3+a2+b3); \
-    (dest)[d3] = munge(a0-a2   -b4); \
-    (dest)[d4] = munge(a0-a2   +b4); \
-    (dest)[d5] = munge(a1-a3+a2-b3); \
-    (dest)[d6] = munge(a1+a3-a2-b2); \
-    (dest)[d7] = munge(a0+a2   -b0); \
+	const int a0 = (src)[s0] + (src)[s4]; \
+	const int a1 = (src)[s0] - (src)[s4]; \
+	const int a2 = (src)[s2] + (src)[s6]; \
+	const int a3 = (A1*((src)[s2] - (src)[s6])) >> 11; \
+	const int a4 = (src)[s5] + (src)[s3]; \
+	const int a5 = (src)[s5] - (src)[s3]; \
+	const int a6 = (src)[s1] + (src)[s7]; \
+	const int a7 = (src)[s1] - (src)[s7]; \
+	const int b0 = a4 + a6; \
+	const int b1 = (A3*(a5 + a7)) >> 11; \
+	const int b2 = ((A4*a5) >> 11) - b0 + b1; \
+	const int b3 = (A1*(a6 - a4) >> 11) - b2; \
+	const int b4 = ((A2*a7) >> 11) + b3 - b1; \
+	(dest)[d0] = munge(a0+a2   +b0); \
+	(dest)[d1] = munge(a1+a3-a2+b2); \
+	(dest)[d2] = munge(a1-a3+a2+b3); \
+	(dest)[d3] = munge(a0-a2   -b4); \
+	(dest)[d4] = munge(a0-a2   +b4); \
+	(dest)[d5] = munge(a1-a3+a2-b3); \
+	(dest)[d6] = munge(a1+a3-a2-b2); \
+	(dest)[d7] = munge(a0+a2   -b0); \
 }
 /* end IDCT_TRANSFORM macro */
 

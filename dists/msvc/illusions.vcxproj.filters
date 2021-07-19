@@ -2,16 +2,16 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="bbdou">
-			<UniqueIdentifier>EEEE4174-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C91-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="duckman">
-			<UniqueIdentifier>EEEE4175-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C92-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="resources">
-			<UniqueIdentifier>EEEE4176-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C93-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="threads">
-			<UniqueIdentifier>EEEE4177-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C94-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -60,7 +60,6 @@
 		</ClCompile>
 		<ClCompile Include="..\..\engines\illusions\camera.cpp" />
 		<ClCompile Include="..\..\engines\illusions\cursor.cpp" />
-		<ClCompile Include="..\..\engines\illusions\detection.cpp" />
 		<ClCompile Include="..\..\engines\illusions\dictionary.cpp" />
 		<ClCompile Include="..\..\engines\illusions\duckman\duckman_credits.cpp">
 			<Filter>duckman</Filter>
@@ -104,6 +103,7 @@
 		<ClCompile Include="..\..\engines\illusions\illusions.cpp" />
 		<ClCompile Include="..\..\engines\illusions\input.cpp" />
 		<ClCompile Include="..\..\engines\illusions\menusystem.cpp" />
+		<ClCompile Include="..\..\engines\illusions\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\illusions\pathfinder.cpp" />
 		<ClCompile Include="..\..\engines\illusions\resources\actorresource.cpp">
 			<Filter>resources</Filter>
@@ -204,6 +204,7 @@
 		</ClInclude>
 		<ClInclude Include="..\..\engines\illusions\camera.h" />
 		<ClInclude Include="..\..\engines\illusions\cursor.h" />
+		<ClInclude Include="..\..\engines\illusions\detection.h" />
 		<ClInclude Include="..\..\engines\illusions\dictionary.h" />
 		<ClInclude Include="..\..\engines\illusions\duckman\duckman_credits.h">
 			<Filter>duckman</Filter>

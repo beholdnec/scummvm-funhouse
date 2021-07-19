@@ -63,50 +63,65 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Analysis|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
+		<EnableASAN>true</EnableASAN>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LLVM|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>llvm</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'" Label="Configuration">
 		<ConfigurationType>StaticLibrary</ConfigurationType>
 		<PlatformToolset>v142</PlatformToolset>
+		<CharacterSet>Unicode</CharacterSet>
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 	<ImportGroup Label="ExtensionSettings">
@@ -163,17 +178,10 @@
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\cryomni3d\fonts\cryoextfont.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\fonts\cryofont.cpp" />
-		<ClCompile Include="..\..\engines\cryomni3d\image\codecs\hlz.cpp">
-			<ObjectFileName>$(IntDir)image_codecs_%(Filename).obj</ObjectFileName>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\cryomni3d\image\hlz.cpp">
-			<ObjectFileName>$(IntDir)image_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\cryomni3d\image\hlz.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\data.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\dialogs.cpp" />
-		<ClCompile Include="..\..\engines\cryomni3d\versailles\dialogs_manager.cpp">
-			<ObjectFileName>$(IntDir)versailles_%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\cryomni3d\versailles\dialogs_manager.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\documentation.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\engine.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\logic.cpp" />
@@ -181,15 +189,12 @@
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\music.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\saveload.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\toolbar.cpp" />
-		<ClCompile Include="..\..\engines\cryomni3d\video\hnm_decoder.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\cryomni3d.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\datstream.cpp" />
-		<ClCompile Include="..\..\engines\cryomni3d\detection.cpp" />
-		<ClCompile Include="..\..\engines\cryomni3d\dialogs_manager.cpp">
-			<ObjectFileName>$(IntDir)%(Filename).obj</ObjectFileName>
-		</ClCompile>
+		<ClCompile Include="..\..\engines\cryomni3d\dialogs_manager.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\fixed_image.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\font_manager.cpp" />
+		<ClCompile Include="..\..\engines\cryomni3d\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\mouse_boxes.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\objects.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\omni3d.cpp" />
@@ -199,15 +204,14 @@
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\cryomni3d\fonts\cryoextfont.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\fonts\cryofont.h" />
-		<ClInclude Include="..\..\engines\cryomni3d\image\codecs\hlz.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\image\hlz.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\versailles\dialogs_manager.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\versailles\documentation.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\versailles\engine.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\versailles\toolbar.h" />
-		<ClInclude Include="..\..\engines\cryomni3d\video\hnm_decoder.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\cryomni3d.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\datstream.h" />
+		<ClInclude Include="..\..\engines\cryomni3d\detection.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\detection_tables.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\dialogs_manager.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\fixed_image.h" />

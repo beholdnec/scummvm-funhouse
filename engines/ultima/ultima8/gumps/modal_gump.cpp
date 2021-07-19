@@ -20,7 +20,6 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/gumps/modal_gump.h"
 
 #include "ultima/ultima8/kernel/kernel.h"
@@ -38,7 +37,7 @@ ModalGump::ModalGump() : Gump() {
 
 
 ModalGump::ModalGump(int x, int y, int width, int height, uint16 owner,
-                     uint32 flags, int32 layer)
+					 uint32 flags, int32 layer)
 	: Gump(x, y, width, height, owner, flags, layer) {
 
 }
@@ -70,10 +69,10 @@ bool ModalGump::PointOnGump(int mx, int my) {
 }
 
 uint16 ModalGump::TraceObjId(int32 mx, int32 my) {
-	uint16 objId_ = Gump::TraceObjId(mx, my);
-	if (!objId_) objId_ = getObjId();
+	uint16 objId = Gump::TraceObjId(mx, my);
+	if (!objId) objId = getObjId();
 
-	return objId_;
+	return objId;
 }
 
 void ModalGump::Close(bool no_del) {

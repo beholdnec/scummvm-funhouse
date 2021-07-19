@@ -21,7 +21,6 @@
  */
 
 #include "common/scummsys.h"
-
 #include "common/config-manager.h"
 #include "common/debug.h"
 #include "common/debug-channels.h"
@@ -30,7 +29,6 @@
 #include "graphics/screen.h"
 #include "graphics/palette.h"
 #include "common/system.h"
-
 #include "engines/util.h"
 
 #include "cryo/cryo.h"
@@ -44,7 +42,6 @@ CryoEngine::CryoEngine(OSystem *syst, const ADGameDescription *gameDesc) : Engin
 	_rnd = new Common::RandomSource("cryo");
 
 	_game = nullptr;
-	_video = nullptr;
 	_screenView = nullptr;
 
 	_showHotspots = false;
@@ -56,15 +53,11 @@ CryoEngine::CryoEngine(OSystem *syst, const ADGameDescription *gameDesc) : Engin
 CryoEngine::~CryoEngine() {
 	delete _rnd;
 	delete _game;
-	delete _video;
 	delete _screenView;
-
-	DebugMan.clearAllDebugChannels();
 }
 
 Common::Error CryoEngine::run() {
 	_game = new EdenGame(this);
-	_video = new HnmPlayer(this);
 	_screenView = new View(320, 200);
 	setDebugger(new Debugger(this));
 

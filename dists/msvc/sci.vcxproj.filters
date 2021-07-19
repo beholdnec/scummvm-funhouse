@@ -2,31 +2,32 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="engine">
-			<UniqueIdentifier>EEEE41A6-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CC7-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="graphics">
-			<UniqueIdentifier>EEEE41A7-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CC8-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="parser">
-			<UniqueIdentifier>EEEE41A8-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CC9-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+		</Filter>
+		<Filter Include="resource">
+			<UniqueIdentifier>2C569CCA-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sound">
-			<UniqueIdentifier>EEEE41A9-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CCB-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sound\decoders">
-			<UniqueIdentifier>EEEE41AA-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CCC-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sound\drivers">
-			<UniqueIdentifier>EEEE41AB-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CCD-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="video">
-			<UniqueIdentifier>EEEE41AC-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CCE-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\sci\console.cpp" />
-		<ClCompile Include="..\..\engines\sci\decompressor.cpp" />
-		<ClCompile Include="..\..\engines\sci\detection.cpp" />
 		<ClCompile Include="..\..\engines\sci\engine\features.cpp">
 			<Filter>engine</Filter>
 		</ClCompile>
@@ -163,6 +164,9 @@
 		<ClCompile Include="..\..\engines\sci\graphics\cursor32.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\sci\graphics\fontkorean.cpp">
+			<Filter>graphics</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\sci\graphics\fontsjis.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
@@ -211,6 +215,9 @@
 		<ClCompile Include="..\..\engines\sci\graphics\scifont.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\sci\graphics\scifx.cpp">
+			<Filter>graphics</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\sci\graphics\screen.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
@@ -235,6 +242,7 @@
 		<ClCompile Include="..\..\engines\sci\graphics\view.cpp">
 			<Filter>graphics</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\sci\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\sci\parser\grammar.cpp">
 			<Filter>parser</Filter>
 		</ClCompile>
@@ -244,9 +252,18 @@
 		<ClCompile Include="..\..\engines\sci\parser\vocabulary.cpp">
 			<Filter>parser</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\sci\resource.cpp" />
-		<ClCompile Include="..\..\engines\sci\resource_audio.cpp" />
-		<ClCompile Include="..\..\engines\sci\resource_patcher.cpp" />
+		<ClCompile Include="..\..\engines\sci\resource\decompressor.cpp">
+			<Filter>resource</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sci\resource\resource.cpp">
+			<Filter>resource</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sci\resource\resource_audio.cpp">
+			<Filter>resource</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\sci\resource\resource_patcher.cpp">
+			<Filter>resource</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\sci\sci.cpp" />
 		<ClCompile Include="..\..\engines\sci\sound\audio.cpp">
 			<Filter>sound</Filter>
@@ -307,7 +324,7 @@
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\sci\console.h" />
 		<ClInclude Include="..\..\engines\sci\debug.h" />
-		<ClInclude Include="..\..\engines\sci\decompressor.h" />
+		<ClInclude Include="..\..\engines\sci\detection.h" />
 		<ClInclude Include="..\..\engines\sci\detection_tables.h" />
 		<ClInclude Include="..\..\engines\sci\engine\features.h">
 			<Filter>engine</Filter>
@@ -400,6 +417,9 @@
 		<ClInclude Include="..\..\engines\sci\graphics\cursor32.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\sci\graphics\fontkorean.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\sci\graphics\fontsjis.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
@@ -407,6 +427,9 @@
 			<Filter>graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\sci\graphics\helpers.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sci\graphics\helpers_detection_enums.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\sci\graphics\lists32.h">
@@ -454,6 +477,9 @@
 		<ClInclude Include="..\..\engines\sci\graphics\scifont.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\sci\graphics\scifx.h">
+			<Filter>graphics</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\sci\graphics\screen.h">
 			<Filter>graphics</Filter>
 		</ClInclude>
@@ -481,9 +507,18 @@
 		<ClInclude Include="..\..\engines\sci\parser\vocabulary.h">
 			<Filter>parser</Filter>
 		</ClInclude>
-		<ClInclude Include="..\..\engines\sci\resource.h" />
-		<ClInclude Include="..\..\engines\sci\resource_intern.h" />
-		<ClInclude Include="..\..\engines\sci\resource_patcher.h" />
+		<ClInclude Include="..\..\engines\sci\resource\decompressor.h">
+			<Filter>resource</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sci\resource\resource.h">
+			<Filter>resource</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sci\resource\resource_intern.h">
+			<Filter>resource</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\sci\resource\resource_patcher.h">
+			<Filter>resource</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\sci\sci.h" />
 		<ClInclude Include="..\..\engines\sci\sound\audio.h">
 			<Filter>sound</Filter>

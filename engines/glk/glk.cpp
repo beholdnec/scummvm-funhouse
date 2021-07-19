@@ -53,12 +53,6 @@ GlkEngine::GlkEngine(OSystem *syst, const GlkGameDescription &gameDesc) :
 		_copySelect(false), _terminated(false), _pcSpeaker(nullptr), _loadSaveSlot(-1),
 		gli_register_obj(nullptr), gli_unregister_obj(nullptr), gli_register_arr(nullptr),
 		gli_unregister_arr(nullptr) {
-	// Set up debug channels
-	DebugMan.addDebugChannel(kDebugCore, "core", "Core engine debug level");
-	DebugMan.addDebugChannel(kDebugScripts, "scripts", "Game scripts");
-	DebugMan.addDebugChannel(kDebugGraphics, "graphics", "Graphics handling");
-	DebugMan.addDebugChannel(kDebugSound, "sound", "Sound and Music handling");
-	DebugMan.addDebugChannel(kDebugSpeech, "speech", "Text to Speech handling");
 
 	g_vm = this;
 }
@@ -75,9 +69,6 @@ GlkEngine::~GlkEngine() {
 	delete _streams;
 	delete _windows;
 	delete _conf;
-
-	// Remove all of our debug levels here
-	DebugMan.clearAllDebugChannels();
 }
 
 void GlkEngine::initialize() {
@@ -297,6 +288,7 @@ void GlkEngine::switchToWhiteOnBlack() {
 	_conf->_wMarginY = 0;
 	_conf->_tMarginY = 4;
 	_conf->_propInfo._caretColor = WHITE;
+	_conf->_monoInfo._caretColor = WHITE;
 
 	_conf->_windowColor = _conf->_windowSave = 0;
 	WindowStyle &ws1 = _conf->_tStyles[style_Normal];
@@ -306,6 +298,10 @@ void GlkEngine::switchToWhiteOnBlack() {
 	WindowStyle &ws2 = _conf->_tStyles[style_Input];
 	ws2.bg = BLACK;
 	ws2.fg = WHITE;
+
+	WindowStyle &ws3 = _conf->_gStyles[style_Normal];
+	ws3.bg = BLACK;
+	ws3.fg = WHITE;
 }
 
 } // End of namespace Glk

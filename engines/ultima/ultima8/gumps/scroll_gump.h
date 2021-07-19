@@ -25,7 +25,7 @@
 
 #include "ultima/ultima8/gumps/modal_gump.h"
 #include "ultima/ultima8/usecode/intrinsics.h"
-#include "ultima/ultima8/misc/p_dynamic_cast.h"
+#include "ultima/ultima8/misc/classtype.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -40,7 +40,7 @@ public:
 	ENABLE_RUNTIME_CLASSTYPE()
 
 	ScrollGump();
-	ScrollGump(ObjId owner, Std::string msg);
+	ScrollGump(ObjId owner, const Std::string &msg);
 	~ScrollGump() override;
 
 	// Go to the next page on mouse click

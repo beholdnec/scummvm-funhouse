@@ -4,9 +4,9 @@ MODULE_OBJS = \
 	actors.o \
 	awaymission.o \
 	bitmap.o \
+	bridge.o \
 	common.o \
 	console.o \
-	detection.o \
 	events.o \
 	font.o \
 	graphics.o \
@@ -14,6 +14,8 @@ MODULE_OBJS = \
 	iwfile.o \
 	lzss.o \
 	menu.o \
+	resource.o \
+	metaengine.o \
 	room.o \
 	saveload.o \
 	sound.o \
@@ -77,7 +79,7 @@ MODULE_OBJS = \
 	rooms/veng7.o \
 	rooms/veng8.o \
 	rooms/venga.o
-	
+
 
 
 # This module can be built as a plugin
@@ -87,3 +89,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

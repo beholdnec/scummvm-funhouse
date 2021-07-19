@@ -23,6 +23,7 @@
 #include "bladerunner/debugger.h"
 
 #include "bladerunner/actor.h"
+#include "bladerunner/ambient_sounds.h"
 #include "bladerunner/bladerunner.h"
 #include "bladerunner/boundingbox.h"
 #include "bladerunner/combat.h"
@@ -33,6 +34,7 @@
 #include "bladerunner/game_info.h"
 #include "bladerunner/light.h"
 #include "bladerunner/lights.h"
+#include "bladerunner/music.h"
 #include "bladerunner/regions.h"
 #include "bladerunner/savefile.h"
 #include "bladerunner/scene.h"
@@ -117,6 +119,7 @@ Debugger::Debugger(BladeRunnerEngine *vm) : GUI::Debugger() {
 	registerCmd("goal", WRAP_METHOD(Debugger, cmdGoal));
 	registerCmd("loop", WRAP_METHOD(Debugger, cmdLoop));
 	registerCmd("pos", WRAP_METHOD(Debugger, cmdPosition));
+	registerCmd("music", WRAP_METHOD(Debugger, cmdMusic));
 	registerCmd("say", WRAP_METHOD(Debugger, cmdSay));
 	registerCmd("scene", WRAP_METHOD(Debugger, cmdScene));
 	registerCmd("var", WRAP_METHOD(Debugger, cmdVariable));
@@ -575,6 +578,90 @@ bool Debugger::cmdPosition(int argc, const char **argv) {
 	return true;
 }
 
+/**
+ * @brief Auxiliary function to determine if a String is comprised exclusively of "0"
+ *
+ * This is basically a very simplified (and smaller scope) version of
+ * checking the String with isdigit() (which is banned).
+ *
+ * @param valStr The String to examine
+ * @return true if String is all zeroes, false otherwise
+*/
+bool isAllZeroes(Common::String valStr) {
+	for (uint i = 0; i < valStr.size();  ++i) {
+		if (valStr.c_str()[i] != '0') {
+			return false;
+		}
+	}
+	return true;
+}
+
+// Tracks marked as (G) are only available in-game ie. not in the official OST by Frank Klepacki on his site.
+//
+// Note, that there are a few tracks that are not proper music tracks but rather SFX tracks.
+// For example, the re-used track "Iron Fist" from Command & Conquer - The Covert Operations (OST),
+// which is played at the NightClub Row (NR01), is "kSfxMUSBLEED" (looping).
+// TODO maybe support those too?
+const char* kMusicTracksArr[] = {"Animoid Row (G)",                 // kMusicArabLoop
+								 "Battle Theme",                    // kMusicBatl226M
+								 "Blade Runner Blues",              // kMusicBRBlues
+								 "Etsuko Theme",                    // kMusicKyoto
+								 "One More Time, Love (G)",         // kMusicOneTime
+								 "Gothic Club 2",                   // kMusicGothic3
+								 "Arcane Dragon Fly (G)",           // kMusicArkdFly1
+								 "Arcane Dance (G)",                // kMusicArkDnce1
+								 "Taffy's Club 2",                  // kMusicTaffy2
+								 "Enigma Drift",                    // kMusicTaffy3
+								 "Late Call",                       // kMusicTaffy4
+								 "Nexus (aka Beating 1)",           // kMusicBeating1
+								 "Awakenings (aka Crystal Dies 1)", // kMusicCrysDie1
+								 "Gothic Club",                     // kMusicGothic1
+								 "Transition",                      // kMusicGothic2
+								 "The Eyes Follow",                 // kMusicStrip1
+								 "Dektora's Dance (G)",             // kMusicDkoDnce1
+								 "End Credits",                     // kMusicCredits
+								 "Ending (aka Moraji)",             // kMusicMoraji
+								 "Remorse (aka Clovis Dies 1)",     // kMusicClovDie1
+								 "Solitude (aka Clovis Dies)",      // kMusicClovDies
+								 "Love Theme"};                     // kMusicLoveSong
+
+bool Debugger::cmdMusic(int argc, const char** argv) {
+	if (argc != 2) {
+		debugPrintf("Play the specified music track, list the available tracks\nor stop the current playing track.\n");
+		debugPrintf("Usage: %s (list|stop|<musicId>)\n", argv[0]);
+		debugPrintf("musicId can be in [0, %d]\n", (int)_vm->_gameInfo->getMusicTrackCount() - 1);
+		return true;
+	}
+
+	Common::String trackArgStr = argv[1];
+	if (trackArgStr == "list") {
+		for (int i = 0; i < (int)_vm->_gameInfo->getMusicTrackCount(); ++i) {
+			debugPrintf("%2d %s\n", i, kMusicTracksArr[i]);
+		}
+		return true;
+	} else if (trackArgStr == "stop") {
+		_vm->_music->stop(0u);
+		//_vm->_ambientSounds->removeLoopingSound(kSfxMUSBLEED, 0);
+	} else {
+		int musicId = atoi(argv[1]);
+
+		if ((musicId == 0 && !isAllZeroes(trackArgStr))
+		    || musicId < 0
+		    || musicId >= (int)_vm->_gameInfo->getMusicTrackCount()) {
+			debugPrintf("Invalid music track id specified.\nPlease choose an integer between 0 and %d.\n", (int)_vm->_gameInfo->getMusicTrackCount() - 1);
+			return true;
+		} else {
+			_vm->_music->stop(0u);
+			_vm->_music->play(_vm->_gameInfo->getMusicTrack(musicId), 100, 0, 0, -1, kMusicLoopPlayOnce, 0);
+			//debugPrintf("Now playing track %2d - \"%s\" (%s)\n", musicId, kMusicTracksArr[musicId], _vm->_gameInfo->getMusicTrack(musicId).c_str());
+			debugPrintf("Now playing track %2d - \"%s\"\n", musicId, kMusicTracksArr[musicId]);
+		}
+		//_vm->_ambientSounds->removeLoopingSound(kSfxMUSBLEED, 0);
+		//_vm->_ambientSounds->addLoopingSound(kSfxMUSBLEED, 100, 0, 0);
+	}
+	return false;
+}
+
 bool Debugger::cmdSay(int argc, const char **argv) {
 	if (argc != 3) {
 		debugPrintf("Actor will say specified line.\n");
@@ -799,7 +886,7 @@ bool Debugger::cmdVariable(int argc, const char **argv) {
 
 bool Debugger::cmdClue(int argc, const char **argv) {
 	if (argc != 3 && argc != 4) {
-		debugPrintf("Get or changes clue for an actor.\n");
+		debugPrintf("Gets or changes clue for an actor.\n");
 		debugPrintf("Usage: %s <actorId> <clueId> [<value>]\n", argv[0]);
 		return true;
 	}
@@ -835,7 +922,7 @@ bool Debugger::cmdClue(int argc, const char **argv) {
 
 bool Debugger::cmdTimer(int argc, const char **argv) {
 	if (argc != 2 && argc != 4) {
-		debugPrintf("Get or changes timers for an actor.\n");
+		debugPrintf("Gets or changes timers for an actor.\n");
 		debugPrintf("Usage: %s <actorId> [<timer> <value>]\n", argv[0]);
 		return true;
 	}
@@ -877,7 +964,7 @@ bool Debugger::cmdTimer(int argc, const char **argv) {
 
 bool Debugger::cmdFriend(int argc, const char **argv) {
 	if (argc != 3 && argc != 4) {
-		debugPrintf("Get or changes friendliness for an actor towards another actor.\n");
+		debugPrintf("Gets or changes friendliness for an actor towards another actor.\n");
 		debugPrintf("Usage: %s <actorId> <otherActorId> [<value>]\n", argv[0]);
 		return true;
 	}
@@ -930,9 +1017,14 @@ bool Debugger::cmdLoad(int argc, const char **argv) {
 		return true;
 	}
 
+	if (fs.isDirectory()) {
+		debugPrintf("Warning: Given path %s is a folder. Please provide a path to a file!\n", argv[1]);
+		return true;
+	}
+
 	Common::SeekableReadStream *saveFile = fs.createReadStream();
 
-	_vm->loadGame(*saveFile);
+	_vm->loadGame(*saveFile, 3);
 
 	delete saveFile;
 
@@ -953,12 +1045,17 @@ bool Debugger::cmdSave(int argc, const char **argv) {
 		return true;
 	}
 
+	if (fs.isDirectory()) {
+		debugPrintf("Warning: Given path %s is a folder. Please provide a path to a file!\n", argv[1]);
+		return true;
+	}
+
 	Common::WriteStream *saveFile = fs.createWriteStream();
 
 	Graphics::Surface thumbnail = _vm->generateThumbnail();
 
 	_vm->_time->pause();
-	_vm->saveGame(*saveFile, thumbnail);
+	_vm->saveGame(*saveFile, &thumbnail, true);
 	_vm->_time->resume();
 
 	saveFile->finalize();
@@ -1959,11 +2056,12 @@ bool Debugger::cmdList(int argc, const char **argv) {
 						             sceneObject->isPresent?   "T" : "F",
 						             sceneObject->isObstacle?  "T" : "F",
 						             sceneObject->isMoving?    "T" : "F");
-						debugPrintf("    Goal: %d, Set: %d, Anim mode: %d id:%d showDmg: %s inCombat: %s\n",
+						debugPrintf("    Goal: %d, Set: %d, Anim mode: %d id:%d fps: %d showDmg: %s inCombat: %s\n",
 						             actor->getGoal(),
 						             actor->getSetId(),
 						             actor->getAnimationMode(),
 						             actor->getAnimationId(),
+						             actor->getFPS(),
 						             actor->getFlagDamageAnimIfMoving()? "T" : "F",
 						             actor->inCombat()? "T" : "F");
 						debugPrintf("    Pos(%02.2f,%02.2f,%02.2f)\n",
@@ -2519,12 +2617,11 @@ void Debugger::drawScreenEffects() {
 					Common::Rect r((entry.x + x) * 2, (entry.y + y) * 2, (entry.x + x) * 2 + 2, (entry.y + y) * 2 + 2);
 
 					int ec = entry.data[j++];
-					const int bladeToScummVmConstant = 256 / 16;
-
+					// We need to convert from 5 bits per channel (r,g,b) to 8 bits
 					int color = _vm->_surfaceFront.format.RGBToColor(
-						CLIP(entry.palette[ec].r * bladeToScummVmConstant, 0, 255),
-						CLIP(entry.palette[ec].g * bladeToScummVmConstant, 0, 255),
-						CLIP(entry.palette[ec].b * bladeToScummVmConstant, 0, 255));
+						Color::get8BitColorFrom5Bit(entry.palette[ec].r),
+						Color::get8BitColorFrom5Bit(entry.palette[ec].g),
+						Color::get8BitColorFrom5Bit(entry.palette[ec].b));
 					_vm->_surfaceFront.fillRect(r, color);
 				}
 			}

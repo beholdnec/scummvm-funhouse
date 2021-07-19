@@ -91,7 +91,7 @@
 #include "engines/util.h"
 #include "engines/advancedDetector.h"
 
-#include "graphics/pixelformat.h"
+#include "graphics/thumbnail.h"
 #include "audio/mididrv.h"
 
 namespace BladeRunner {
@@ -99,8 +99,6 @@ namespace BladeRunner {
 BladeRunnerEngine::BladeRunnerEngine(OSystem *syst, const ADGameDescription *desc)
 	: Engine(syst),
 	  _rnd("bladerunner") {
-
-	DebugMan.addDebugChannel(kDebugScript, "Script", "Debug the scripts");
 
 	_windowIsActive     = true;
 	_gameIsRunning      = true;
@@ -277,7 +275,7 @@ Common::Error BladeRunnerEngine::loadGameState(int slot) {
 	// reseting and updating Blade Runner's _pauseStart and offset before starting a loaded game
 	_time->resetPauseStart();
 
-	loadGame(*saveFile);
+	loadGame(*saveFile, header._version);
 
 	delete saveFile;
 
@@ -302,20 +300,16 @@ Common::Error BladeRunnerEngine::saveGameState(int slot, const Common::String &d
 		return Common::kReadingFailed;
 	}
 
-	Graphics::Surface thumbnail = generateThumbnail();
-
 	BladeRunner::SaveFileHeader header;
 	header._name = desc;
 	header._playTime = getTotalPlayTime();
 
 	BladeRunner::SaveFileManager::writeHeader(*saveFile, header);
 	_time->pause();
-	saveGame(*saveFile, thumbnail);
+	saveGame(*saveFile);
 	_time->resume();
 
 	saveFile->finalize();
-
-	thumbnail.free();
 
 	delete saveFile;
 
@@ -784,8 +778,6 @@ void BladeRunnerEngine::initChapterAndScene() {
 }
 
 void BladeRunnerEngine::shutdown() {
-	DebugMan.clearAllDebugChannels();
-
 	_mixer->stopAll();
 
 	// BLADE.INI as updated here
@@ -1055,7 +1047,6 @@ void BladeRunnerEngine::gameLoop() {
 }
 
 void BladeRunnerEngine::gameTick() {
-
 	handleEvents();
 
 	if (!_gameIsRunning || !_windowIsActive) {
@@ -1134,6 +1125,7 @@ void BladeRunnerEngine::gameTick() {
 	bool backgroundChanged = false;
 	int frame = _scene->advanceFrame();
 	if (frame >= 0) {
+//		debug("_sceneScript->sceneFrameAdvanced(%d)", frame);
 		_sceneScript->sceneFrameAdvanced(frame);
 		backgroundChanged = true;
 	}
@@ -1279,16 +1271,15 @@ void BladeRunnerEngine::handleEvents() {
 	// This flag check is to skip the first call of handleEvents() in gameTick().
 	// This prevents a "hack" whereby the player could press Esc quickly and enter the KIA screen,
 	// even in the case when no save games for the game exist. In such case the game is supposed
-	// to immediately play the intro video and subsequently start a new game of medium difficulty. 
-	// It does not expect the player to enter KIA beforehand, which causes side-effects and unforeseen behavior. 
-	// Note: eventually we will support the option to launch into KIA in any case, 
+	// to immediately play the intro video and subsequently start a new game of medium difficulty.
+	// It does not expect the player to enter KIA beforehand, which causes side-effects and unforeseen behavior.
+	// Note: eventually we will support the option to launch into KIA in any case,
 	// but not via the "hack" way that is fixed here.
 	if (_gameJustLaunched) {
 		_gameJustLaunched = false;
 		return;
 	}
 
-	uint32 timeNow = _time->currentSystem();
 	Common::Event event;
 	Common::EventManager *eventMan = _system->getEventManager();
 	while (eventMan->pollEvent(event)) {
@@ -1304,7 +1295,7 @@ void BladeRunnerEngine::handleEvents() {
 				// First hit (fire) has a bigger delay (kKeyRepeatInitialDelay) before repeated events are fired from the same key
 				if (event.kbd.keycode == Common::KEYCODE_ESCAPE || event.kbd.keycode == Common::KEYCODE_RETURN) {
 					_currentKeyDown = event.kbd.keycode;
-					_keyRepeatTimeLast = timeNow;
+					_keyRepeatTimeLast =  _time->currentSystem();
 					_keyRepeatTimeDelay = kKeyRepeatInitialDelay;
 				}
 				handleKeyDown(event);
@@ -1344,7 +1335,12 @@ void BladeRunnerEngine::handleEvents() {
 		}
 	}
 
-	if ((_currentKeyDown == Common::KEYCODE_ESCAPE || _currentKeyDown == Common::KEYCODE_RETURN) && (timeNow - _keyRepeatTimeLast >= _keyRepeatTimeDelay)) {
+	// The switch clause above handles multiple events.
+	// Some of those may lead to their own internal gameTick() loops (which will call handleEvents()).
+	// Thus, we need to get a new timeNow value here to ensure we're not comparing with a stale version.
+	uint32 timeNow = _time->currentSystem();
+	if ((_currentKeyDown == Common::KEYCODE_ESCAPE || _currentKeyDown == Common::KEYCODE_RETURN)
+	    && (timeNow - _keyRepeatTimeLast >= _keyRepeatTimeDelay)) {
 		// create a "new" keydown event
 		event.type = Common::EVENT_KEYDOWN;
 		// kbdRepeat field will be unused here since we emulate the kbd repeat behavior anyway, but it's good to set it for consistency
@@ -1373,18 +1369,32 @@ void BladeRunnerEngine::handleKeyUp(Common::Event &event) {
 }
 
 void BladeRunnerEngine::handleKeyDown(Common::Event &event) {
-	if (_vqaIsPlaying && (event.kbd.keycode == Common::KEYCODE_ESCAPE || event.kbd.keycode == Common::KEYCODE_RETURN)) {
+	if (_vqaIsPlaying
+	    && (event.kbd.keycode == Common::KEYCODE_RETURN || event.kbd.keycode == Common::KEYCODE_ESCAPE)) {
+		// Note: Original only uses the Esc key here
 		_vqaStopIsRequested = true;
 		_vqaIsPlaying = false;
 
 		return;
 	}
 
-	if (_actorIsSpeaking && (event.kbd.keycode == Common::KEYCODE_ESCAPE || event.kbd.keycode == Common::KEYCODE_RETURN)) {
+	if (_vqaStopIsRequested
+	    && (event.kbd.keycode == Common::KEYCODE_RETURN || event.kbd.keycode == Common::KEYCODE_ESCAPE)) {
+		 return;
+	}
+
+	if (_actorIsSpeaking
+	    && (event.kbd.keycode == Common::KEYCODE_RETURN || event.kbd.keycode == Common::KEYCODE_ESCAPE)) {
+		// Note: Original only uses the Return key here
 		_actorSpeakStopIsRequested = true;
 		_actorIsSpeaking = false;
 
 		return;
+	}
+
+	if (_actorSpeakStopIsRequested
+	    && (event.kbd.keycode == Common::KEYCODE_RETURN || event.kbd.keycode == Common::KEYCODE_ESCAPE)) {
+		 return;
 	}
 
 	if (!playerHasControl() || _isWalkingInterruptible || _actorIsSpeaking || _vqaIsPlaying) {
@@ -2019,6 +2029,14 @@ void BladeRunnerEngine::syncSoundSettings() {
 	_mixer->setVolumeForSoundType(_mixer->kMusicSoundType, ConfMan.getInt("music_volume"));
 	_mixer->setVolumeForSoundType(_mixer->kSFXSoundType, ConfMan.getInt("sfx_volume"));
 	_mixer->setVolumeForSoundType(_mixer->kSpeechSoundType, ConfMan.getInt("speech_volume"));
+	// By default, if no ambient_volume is found in configuration manager, set ambient volume from sfx volume
+	int configAmbientVolume = _mixer->getVolumeForSoundType(_mixer->kSFXSoundType);
+	if (ConfMan.hasKey("ambient_volume")) {
+		configAmbientVolume = ConfMan.getInt("ambient_volume");
+	} else {
+		ConfMan.setInt("ambient_volume", configAmbientVolume);
+	}
+	_mixer->setVolumeForSoundType(_mixer->kPlainSoundType, configAmbientVolume);
 	// debug("syncSoundSettings: Volumes synced as Music: %d, Sfx: %d, Speech: %d", ConfMan.getInt("music_volume"), ConfMan.getInt("sfx_volume"), ConfMan.getInt("speech_volume"));
 
 	if (_noMusicDriver) {
@@ -2034,6 +2052,7 @@ void BladeRunnerEngine::syncSoundSettings() {
 		}
 		_mixer->muteSoundType(_mixer->kSFXSoundType, allSoundIsMuted);
 		_mixer->muteSoundType(_mixer->kSpeechSoundType, allSoundIsMuted);
+		_mixer->muteSoundType(_mixer->kPlainSoundType, allSoundIsMuted);
 	}
 
 	if (ConfMan.hasKey("speech_mute") && !allSoundIsMuted) {
@@ -2123,8 +2142,8 @@ void BladeRunnerEngine::playerDied() {
 	_gameFlags->reset(kFlagKIAPrivacyAddon);
 
 	_ambientSounds->removeAllNonLoopingSounds(true);
-	_ambientSounds->removeAllLoopingSounds(4);
-	_music->stop(4);
+	_ambientSounds->removeAllLoopingSounds(4u);
+	_music->stop(4u);
 	_audioSpeech->stopSpeech();
 #endif // BLADERUNNER_ORIGINAL_BUGS
 
@@ -2144,7 +2163,7 @@ void BladeRunnerEngine::playerDied() {
 	_kia->open(kKIASectionLoad);
 }
 
-bool BladeRunnerEngine::saveGame(Common::WriteStream &stream, Graphics::Surface &thumbnail) {
+bool BladeRunnerEngine::saveGame(Common::WriteStream &stream, Graphics::Surface *thumb, bool origformat) {
 	if ( !_gameIsAutoSaving
 	     && ( !playerHasControl() || _sceneScript->isInsideScript() || _aiScripts->isInsideScript())
 	) {
@@ -2154,11 +2173,18 @@ bool BladeRunnerEngine::saveGame(Common::WriteStream &stream, Graphics::Surface 
 	Common::MemoryWriteStreamDynamic memoryStream(DisposeAfterUse::YES);
 	SaveFileWriteStream s(memoryStream);
 
-	thumbnail.convertToInPlace(gameDataPixelFormat());
+	if (!origformat) {
+		if (thumb)
+			Graphics::saveThumbnail(s, *thumb);
+		else
+			Graphics::saveThumbnail(s);
+	} else {
+		thumb->convertToInPlace(gameDataPixelFormat());
 
-	uint16* thumbnailData = (uint16*)thumbnail.getPixels();
-	for (uint i = 0; i < SaveFileManager::kThumbnailSize / 2; ++i) {
-		s.writeUint16LE(thumbnailData[i]);
+		uint16 *thumbnailData = (uint16*)thumb->getPixels();
+		for (uint i = 0; i < SaveFileManager::kThumbnailSize / 2; ++i) {
+			s.writeUint16LE(thumbnailData[i]);
+		}
 	}
 
 	s.writeFloat(1.0f);
@@ -2209,7 +2235,7 @@ bool BladeRunnerEngine::saveGame(Common::WriteStream &stream, Graphics::Surface 
 	return true;
 }
 
-bool BladeRunnerEngine::loadGame(Common::SeekableReadStream &stream) {
+bool BladeRunnerEngine::loadGame(Common::SeekableReadStream &stream, int version) {
 	if (!playerHasControl() || _sceneScript->isInsideScript() || _aiScripts->isInsideScript()) {
 		return false;
 	}
@@ -2222,9 +2248,9 @@ bool BladeRunnerEngine::loadGame(Common::SeekableReadStream &stream) {
 	_music->stop(2);
 #else
 	// loading into another game that also has music would
-	// two music tracks to overlap and none was stopped
-	_ambientSounds->removeAllLoopingSounds(0);
-	_music->stop(0);
+	// cause two music tracks to overlap and none was stopped
+	_ambientSounds->removeAllLoopingSounds(0u);
+	_music->stop(0u);
 #endif // BLADERUNNER_ORIGINAL_BUGS
 	_audioSpeech->stopSpeech();
 	_actorDialogueQueue->flush(true, false);
@@ -2244,7 +2270,11 @@ bool BladeRunnerEngine::loadGame(Common::SeekableReadStream &stream) {
 	_gameIsLoading = true;
 	_settings->setLoadingGame();
 
-	s.skip(SaveFileManager::kThumbnailSize); // skip the thumbnail
+	if (version >= 4)
+		Graphics::skipThumbnail(s);
+	else
+		s.skip(SaveFileManager::kThumbnailSize); // skip the thumbnail
+
 	s.skip(4);// always float 1.0, but never used, assuming it's the game version
 	_settings->load(s);
 	_scene->load(s);
@@ -2266,13 +2296,13 @@ bool BladeRunnerEngine::loadGame(Common::SeekableReadStream &stream) {
 	if ((_gameFlags->query(kFlagGamePlayedInRestoredContentMode) && !_cutContent)
 	    || (!_gameFlags->query(kFlagGamePlayedInRestoredContentMode) && _cutContent)
 	) {
-		Common::String warningMsg;
+		Common::U32String warningMsg;
 		if (!_cutContent) {
 			warningMsg = _("WARNING: This game was saved in Restored Cut Content mode, but you are playing in Original Content mode. The mode will be adjusted to Restored Cut Content for this session until you completely Quit the game.");
 		} else {
 			warningMsg = _("WARNING: This game was saved in Original Content mode, but you are playing in Restored Cut Content mode. The mode will be adjusted to Original Content mode for this session until you completely Quit the game.");
 		}
-		GUI::MessageDialog dialog(warningMsg, _("Continue"), 0);
+		GUI::MessageDialog dialog(warningMsg, _("Continue"));
 		dialog.runModal();
 		_cutContent = !_cutContent;
 		// force a Key Down event, since we need it to remove the KIA

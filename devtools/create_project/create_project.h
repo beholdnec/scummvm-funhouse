@@ -27,9 +27,15 @@
 #define __has_feature(x) 0 // Compatibility with non-clang compilers.
 #endif
 
+#if __cplusplus < 201103L && (!defined(_MSC_VER) || _MSC_VER < 1700)
+#define override           // Compatibility with non-C++11 compilers.
+#endif
+
 #include <list>
 #include <map>
+#include <map>
 #include <string>
+#include <vector>
 
 #include <cassert>
 
@@ -209,7 +215,7 @@ bool setFeatureBuildState(const std::string &name, FeatureList &features, bool e
  * @param features List of features to operate on.
  * @return "true", when the feature is enabled, "false" otherwise.
  */
-bool getFeatureBuildState(const std::string &name, FeatureList &features);
+bool getFeatureBuildState(const std::string &name, const FeatureList &features);
 
 /**
  * Structure to describe a build setup.
@@ -238,6 +244,8 @@ struct BuildSetup {
 	bool createInstaller;      ///< Create installer after the build
 	bool useSDL2;              ///< Whether to use SDL2 or not.
 	bool useCanonicalLibNames; ///< Whether to use canonical libraries names or default ones
+	bool useStaticDetection;   ///< Whether to link detection features inside the executable or not.
+	bool useWindowsUnicode;    ///< Whether to use Windows Unicode APIs or ANSI APIs.
 
 	BuildSetup() {
 		devTools = false;
@@ -246,7 +254,12 @@ struct BuildSetup {
 		createInstaller = false;
 		useSDL2 = true;
 		useCanonicalLibNames = false;
+		useStaticDetection = true;
+		useWindowsUnicode = true;
 	}
+
+	bool featureEnabled(std::string feature) const;
+	Feature getFeature(std::string feature) const;
 };
 
 /**
@@ -381,6 +394,17 @@ std::string convertPathToWin(const std::string &path);
 void splitFilename(const std::string &fileName, std::string &name, std::string &ext);
 
 /**
+ * Splits a full path into directory and filename.
+ * This assumes the last part is the filename, even if it
+ * has no extension.
+ *
+ * @param path Path to split
+ * @param name Reference to a string, where to store the directory part.
+ * @param ext Reference to a string, where to store the filename part.
+ */
+void splitPath(const std::string &path, std::string &dir, std::string &file);
+
+/**
  * Returns the basename of a path.
  * examples:
  *   a/b/c/d.ext -> d.ext
@@ -478,7 +502,8 @@ protected:
 	StringList &_globalWarnings;                         ///< Global warnings
 	std::map<std::string, StringList> &_projectWarnings; ///< Per-project warnings
 
-	UUIDMap _uuidMap; ///< List of (project name, UUID) pairs
+	UUIDMap _engineUuidMap; ///< List of (project name, UUID) pairs
+	UUIDMap _allProjUuidMap;
 
 	/**
 	 *  Create workspace/solution file
@@ -516,18 +541,16 @@ protected:
 
 	/**
 	 * Writes file entries for the specified directory node into
-	 * the given project file. It will also take care of duplicate
-	 * object files.
+	 * the given project file.
 	 *
 	 * @param dir Directory node.
 	 * @param projectFile File stream to write to.
 	 * @param indentation Indentation level to use.
-	 * @param duplicate List of duplicate object file names.
 	 * @param objPrefix Prefix to use for object files, which would name clash.
 	 * @param filePrefix Generic prefix to all files of the node.
 	 */
 	virtual void writeFileListToProject(const FileNode &dir, std::ofstream &projectFile, const int indentation,
-	                                    const StringList &duplicate, const std::string &objPrefix, const std::string &filePrefix) = 0;
+	                                    const std::string &objPrefix, const std::string &filePrefix) = 0;
 
 	/**
 	 * Output a list of project references to the file stream
@@ -565,7 +588,7 @@ protected:
 	 * @param includeList Reference to a list, where included files should be added.
 	 * @param excludeList Reference to a list, where excluded files should be added.
 	 */
-	void createModuleList(const std::string &moduleDir, const StringList &defines, StringList &testDirs, StringList &includeList, StringList &excludeList) const;
+	void createModuleList(const std::string &moduleDir, const StringList &defines, StringList &testDirs, StringList &includeList, StringList &excludeList, bool forDetection = false) const;
 
 	/**
 	 * Creates an UUID for every enabled engine of the

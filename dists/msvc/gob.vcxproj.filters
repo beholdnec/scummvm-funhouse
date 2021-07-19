@@ -2,28 +2,25 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="demos">
-			<UniqueIdentifier>EEEE416C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
-		</Filter>
-		<Filter Include="detection">
-			<UniqueIdentifier>EEEE416D-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C7A-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="minigames">
-			<UniqueIdentifier>EEEE416E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C7B-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="minigames\geisha">
-			<UniqueIdentifier>EEEE416F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C7C-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="pregob">
-			<UniqueIdentifier>EEEE4170-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C7D-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="pregob\onceupon">
-			<UniqueIdentifier>EEEE4171-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C7E-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="save">
-			<UniqueIdentifier>EEEE4172-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C7F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="sound">
-			<UniqueIdentifier>EEEE4173-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C80-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -46,9 +43,6 @@
 		</ClCompile>
 		<ClCompile Include="..\..\engines\gob\demos\scnplayer.cpp">
 			<Filter>demos</Filter>
-		</ClCompile>
-		<ClCompile Include="..\..\engines\gob\detection\detection.cpp">
-			<Filter>detection</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\gob\draw.cpp" />
 		<ClCompile Include="..\..\engines\gob\draw_bargon.cpp" />
@@ -93,6 +87,7 @@
 		<ClCompile Include="..\..\engines\gob\map.cpp" />
 		<ClCompile Include="..\..\engines\gob\map_v1.cpp" />
 		<ClCompile Include="..\..\engines\gob\map_v2.cpp" />
+		<ClCompile Include="..\..\engines\gob\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\gob\minigames\geisha\diving.cpp">
 			<Filter>minigames\geisha</Filter>
 		</ClCompile>
@@ -273,72 +268,6 @@
 		</ClInclude>
 		<ClInclude Include="..\..\engines\gob\demos\scnplayer.h">
 			<Filter>demos</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_adi2.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_adi4.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_adibou.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_ajworld.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_bargon.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_crousti.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_dynasty.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_fallback.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_fascin.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_geisha.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_gob1.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_gob2.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_gob3.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_inca2.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_lit.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_littlered.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_onceupon.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_playtoons.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_urban.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_ween.h">
-			<Filter>detection</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\gob\detection\tables_woodruff.h">
-			<Filter>detection</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\gob\draw.h" />
 		<ClInclude Include="..\..\engines\gob\expression.h" />

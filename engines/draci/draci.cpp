@@ -71,13 +71,6 @@ const uint kDubbingFrequency = 22050;
 
 DraciEngine::DraciEngine(OSystem *syst, const ADGameDescription *gameDesc)
  : Engine(syst), _rnd("draci") {
-	DebugMan.addDebugChannel(kDraciGeneralDebugLevel, "general", "Draci general debug info");
-	DebugMan.addDebugChannel(kDraciBytecodeDebugLevel, "bytecode", "GPL bytecode instructions");
-	DebugMan.addDebugChannel(kDraciArchiverDebugLevel, "archiver", "BAR archiver debug info");
-	DebugMan.addDebugChannel(kDraciLogicDebugLevel, "logic", "Game logic debug info");
-	DebugMan.addDebugChannel(kDraciAnimationDebugLevel, "animation", "Animation debug info");
-	DebugMan.addDebugChannel(kDraciSoundDebugLevel, "sound", "Sound debug info");
-	DebugMan.addDebugChannel(kDraciWalkingDebugLevel, "walking", "Walking debug info");
 
 	setDebugger(new DraciConsole(this));
 
@@ -398,9 +391,6 @@ DraciEngine::~DraciEngine() {
 	delete _music;
 	delete _soundsArchive;
 	delete _dubbingArchive;
-
-	// Remove all of our debug levels here
-	DebugMan.clearAllDebugChannels();
 }
 
 Common::Error DraciEngine::run() {

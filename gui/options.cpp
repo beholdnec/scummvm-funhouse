@@ -63,6 +63,9 @@
 #endif
 #endif
 
+#include "graphics/renderer.h"
+#include "graphics/scalerplugin.h"
+
 namespace GUI {
 
 enum {
@@ -87,7 +90,9 @@ enum {
 	kUpdatesCheckCmd		= 'updc',
 	kKbdMouseSpeedChanged	= 'kmsc',
 	kJoystickDeadzoneChanged= 'jodc',
-	kGraphicsTabContainerReflowCmd = 'gtcr'
+	kGraphicsTabContainerReflowCmd = 'gtcr',
+	kScalerPopUpCmd			= 'scPU',
+	kFullscreenToggled		= 'oful'
 };
 
 enum {
@@ -96,20 +101,15 @@ enum {
 	kSubtitlesBoth
 };
 
-#ifdef GUI_ENABLE_KEYSDIALOG
-enum {
-	kChooseKeyMappingCmd    = 'chma'
-};
-#endif
-
 #ifdef USE_FLUIDSYNTH
 enum {
-	kFluidSynthSettingsCmd		= 'flst'
+	kFluidSynthSettingsCmd  = 'flst'
 };
 #endif
 
 #ifdef USE_CLOUD
 enum {
+	kStoragePopUpCmd = 'sPup',
 	kSyncSavesStorageCmd = 'ssst',
 	kDownloadStorageCmd = 'dlst',
 	kRunServerCmd = 'rnsv',
@@ -131,6 +131,20 @@ enum {
 
 static const char *savePeriodLabels[] = { _s("Never"), _s("Every 5 mins"), _s("Every 10 mins"), _s("Every 15 mins"), _s("Every 30 mins"), nullptr };
 static const int savePeriodValues[] = { 0, 5 * 60, 10 * 60, 15 * 60, 30 * 60, -1 };
+
+static const char *guiBaseLabels[] = {
+	// I18N: Automatic GUI scaling
+	_s("Auto"),
+	// I18N: Large GUI scale
+	_s("Large"),
+	// I18N: Medium GUI scale
+	_s("Medium"),
+	// I18N: Small GUI scale
+	_s("Small"),
+	nullptr
+};
+static const int guiBaseValues[] = { 0, 240, 480, 720, -1 };
+
 // The keyboard mouse speed values range from 0 to 7 and correspond to speeds shown in the label
 // "10" (value 3) is the default speed corresponding to the speed before introduction of this control
 static const char *kbdMouseSpeedLabels[] = { "3", "5", "8", "10", "13", "15", "18", "20", nullptr };
@@ -165,6 +179,7 @@ void OptionsDialog::init() {
 	_joystickDeadzoneSlider = nullptr;
 	_joystickDeadzoneLabel = nullptr;
 	_keymapperWidget = nullptr;
+	_backendOptions = nullptr;
 	_enableGraphicSettings = false;
 	_gfxPopUp = nullptr;
 	_gfxPopUpDesc = nullptr;
@@ -172,12 +187,20 @@ void OptionsDialog::init() {
 	_renderModePopUpDesc = nullptr;
 	_stretchPopUp = nullptr;
 	_stretchPopUpDesc = nullptr;
+	_scalerPopUp = nullptr;
+	_scalerPopUpDesc = nullptr;
+	_scaleFactorPopUp = nullptr;
 	_fullscreenCheckbox = nullptr;
 	_filteringCheckbox = nullptr;
 	_aspectCheckbox = nullptr;
 	_enableShaderSettings = false;
 	_shaderPopUpDesc = nullptr;
 	_shaderPopUp = nullptr;
+	_vsyncCheckbox = nullptr;
+	_rendererTypePopUpDesc = nullptr;
+	_rendererTypePopUp = nullptr;
+	_antiAliasPopUpDesc = nullptr;
+	_antiAliasPopUp = nullptr;
 	_enableAudioSettings = false;
 	_midiPopUp = nullptr;
 	_midiPopUpDesc = nullptr;
@@ -277,6 +300,11 @@ void OptionsDialog::build() {
 		_keymapperWidget->load();
 	}
 
+	// Backend options
+	if (_backendOptions) {
+		_backendOptions->load();
+	}
+
 	// Graphic options
 	if (_fullscreenCheckbox) {
 		_gfxPopUp->setSelected(0);
@@ -327,6 +355,37 @@ void OptionsDialog::build() {
 			_stretchPopUp->setVisible(false);
 		}
 
+		_scalerPopUp->setSelected(0);
+		_scaleFactorPopUp->setSelected(0);
+
+		if (g_system->hasFeature(OSystem::kFeatureScalers)) {
+			if (ConfMan.hasKey("scaler", _domain)) {
+				const PluginList &scalerPlugins = ScalerMan.getPlugins();
+				Common::String scaler(ConfMan.get("scaler", _domain));
+
+				for (uint scalerIndex = 0; scalerIndex < scalerPlugins.size(); scalerIndex++) {
+					if (scumm_stricmp(scalerPlugins[scalerIndex]->get<ScalerPluginObject>().getName(), scaler.c_str()) != 0)
+						continue;
+
+					_scalerPopUp->setSelectedTag(scalerIndex);
+					updateScaleFactors(scalerIndex);
+
+					if (ConfMan.hasKey("scale_factor", _domain)) {
+						int scaleFactor = ConfMan.getInt("scale_factor", _domain);
+						if (scalerPlugins[scalerIndex]->get<ScalerPluginObject>().hasFactor(scaleFactor))
+							_scaleFactorPopUp->setSelectedTag(scaleFactor);
+					}
+
+					break;
+				}
+
+			}
+		} else {
+			_scalerPopUpDesc->setVisible(false);
+			_scalerPopUp->setVisible(false);
+			_scaleFactorPopUp->setVisible(false);
+		}
+
 		// Fullscreen setting
 		if (g_system->hasFeature(OSystem::kFeatureFullscreenMode)) {
 			_fullscreenCheckbox->setState(ConfMan.getBool("fullscreen", _domain));
@@ -350,6 +409,17 @@ void OptionsDialog::build() {
 			_aspectCheckbox->setState(ConfMan.getBool("aspect_ratio", _domain));
 		}
 
+		_vsyncCheckbox->setState(ConfMan.getBool("vsync", _domain));
+
+		_rendererTypePopUp->setEnabled(true);
+		_rendererTypePopUp->setSelectedTag(Graphics::parseRendererTypeCode(ConfMan.get("renderer", _domain)));
+
+		_antiAliasPopUp->setEnabled(true);
+		if (ConfMan.hasKey("antialiasing", _domain)) {
+			_antiAliasPopUp->setSelectedTag(ConfMan.getInt("antialiasing", _domain));
+		} else {
+			_antiAliasPopUp->setSelectedTag(-1);
+		}
 	}
 
 	// Shader options
@@ -500,10 +570,13 @@ void OptionsDialog::apply() {
 				graphicsModeChanged = true;
 			if (ConfMan.getBool("aspect_ratio", _domain) != _aspectCheckbox->getState())
 				graphicsModeChanged = true;
+			if (ConfMan.getBool("vsync", _domain) != _vsyncCheckbox->getState())
+				graphicsModeChanged = true;
 
 			ConfMan.setBool("filtering", _filteringCheckbox->getState(), _domain);
 			ConfMan.setBool("fullscreen", _fullscreenCheckbox->getState(), _domain);
 			ConfMan.setBool("aspect_ratio", _aspectCheckbox->getState(), _domain);
+			ConfMan.setBool("vsync", _vsyncCheckbox->getState(), _domain);
 
 			bool isSet = false;
 
@@ -521,8 +594,11 @@ void OptionsDialog::apply() {
 					gm++;
 				}
 			}
-			if (!isSet)
+			if (!isSet) {
 				ConfMan.removeKey("gfx_mode", _domain);
+				if (g_system->getGraphicsMode() != g_system->getDefaultGraphicsMode())
+					graphicsModeChanged = true;
+			}
 
 			if ((int32)_renderModePopUp->getSelectedTag() >= 0)
 				ConfMan.set("render_mode", Common::getRenderModeCode((Common::RenderMode)_renderModePopUp->getSelectedTag()), _domain);
@@ -541,15 +617,63 @@ void OptionsDialog::apply() {
 					sm++;
 				}
 			}
-			if (!isSet)
+			if (!isSet) {
 				ConfMan.removeKey("stretch_mode", _domain);
+				if (g_system->getStretchMode() != g_system->getDefaultStretchMode())
+					graphicsModeChanged = true;
+			}
+
+			isSet = false;
+			const PluginList &scalerPlugins = ScalerMan.getPlugins();
+			if ((int32)_scalerPopUp->getSelectedTag() >= 0) {
+				const char *name = scalerPlugins[_scalerPopUp->getSelectedTag()]->get<ScalerPluginObject>().getName();
+				if (ConfMan.get("scaler", _domain) != name)
+					graphicsModeChanged = true;
+				ConfMan.set("scaler", name, _domain);
+
+				int factor = _scaleFactorPopUp->getSelectedTag();
+				if (ConfMan.getInt("scale_factor", _domain) != factor)
+					graphicsModeChanged = true;
+				ConfMan.setInt("scale_factor", factor, _domain);
+				isSet = true;
+			}
+			if (!isSet) {
+				ConfMan.removeKey("scaler", _domain);
+				ConfMan.removeKey("scale_factor", _domain);
+
+				uint defaultScaler = g_system->getDefaultScaler();
+				if (g_system->getScaler() != defaultScaler)
+					graphicsModeChanged = true;
+				else if (scalerPlugins[defaultScaler]->get<ScalerPluginObject>().getFactor() != g_system->getDefaultScaleFactor())
+					graphicsModeChanged = true;
+			}
+
+			if (_rendererTypePopUp->getSelectedTag() > 0) {
+				Graphics::RendererType selected = (Graphics::RendererType) _rendererTypePopUp->getSelectedTag();
+				ConfMan.set("renderer", Graphics::getRendererTypeCode(selected), _domain);
+			} else {
+				ConfMan.removeKey("renderer", _domain);
+			}
+
+			if (_antiAliasPopUp->getSelectedTag() != (uint32)-1) {
+				uint level = _antiAliasPopUp->getSelectedTag();
+				ConfMan.setInt("antialiasing", level, _domain);
+			} else {
+				ConfMan.removeKey("antialiasing", _domain);
+			}
+
 		} else {
 			ConfMan.removeKey("fullscreen", _domain);
 			ConfMan.removeKey("filtering", _domain);
 			ConfMan.removeKey("aspect_ratio", _domain);
 			ConfMan.removeKey("gfx_mode", _domain);
 			ConfMan.removeKey("stretch_mode", _domain);
+			ConfMan.removeKey("scaler", _domain);
+			ConfMan.removeKey("scale_factor", _domain);
 			ConfMan.removeKey("render_mode", _domain);
+			ConfMan.removeKey("renderer", _domain);
+			ConfMan.removeKey("antialiasing", _domain);
+			ConfMan.removeKey("vsync", _domain);
 		}
 	}
 
@@ -571,8 +695,11 @@ void OptionsDialog::apply() {
 					sm++;
 				}
 			}
-			if (!isSet)
+			if (!isSet) {
 				ConfMan.removeKey("shader", _domain);
+				if (g_system->getShader() != g_system->getDefaultShader())
+					graphicsModeChanged = true;
+			}
 		} else {
 			ConfMan.removeKey("shader", _domain);
 		}
@@ -582,17 +709,17 @@ void OptionsDialog::apply() {
 	if (_domain == Common::ConfigManager::kApplicationDomain && graphicsModeChanged) {
 		g_system->beginGFXTransaction();
 		g_system->setGraphicsMode(ConfMan.get("gfx_mode", _domain).c_str());
+		g_system->setStretchMode(ConfMan.get("stretch_mode", _domain).c_str());
+		g_system->setScaler(ConfMan.get("scaler", _domain).c_str(), ConfMan.getInt("scale_factor", _domain));
 
-		if (ConfMan.hasKey("stretch_mode"))
-			g_system->setStretchMode(ConfMan.get("stretch_mode", _domain).c_str());
 		if (ConfMan.hasKey("aspect_ratio"))
 			g_system->setFeatureState(OSystem::kFeatureAspectRatioCorrection, ConfMan.getBool("aspect_ratio", _domain));
 		if (ConfMan.hasKey("fullscreen"))
 			g_system->setFeatureState(OSystem::kFeatureFullscreenMode, ConfMan.getBool("fullscreen", _domain));
 		if (ConfMan.hasKey("filtering"))
 			g_system->setFeatureState(OSystem::kFeatureFilteringMode, ConfMan.getBool("filtering", _domain));
-		if (ConfMan.hasKey("shader"))
-			g_system->setShader(ConfMan.get("shader", _domain).c_str());
+
+		g_system->setShader(ConfMan.get("shader", _domain).c_str());
 
 		OSystem::TransactionError gfxError = g_system->endGFXTransaction();
 
@@ -600,7 +727,7 @@ void OptionsDialog::apply() {
 		// the GUI a chance to update it's internal state. Otherwise we might
 		// get a crash when the GUI tries to grab the overlay.
 		//
-		// This fixes bug #3303501 "Switching from HQ2x->HQ3x crashes ScummVM"
+		// This fixes bug #5703 "Switching from HQ2x->HQ3x crashes ScummVM"
 		//
 		// It is important that this is called *before* any of the current
 		// dialog's widgets are destroyed (for example before
@@ -610,7 +737,7 @@ void OptionsDialog::apply() {
 
 		if (gfxError != OSystem::kTransactionSuccess) {
 			// Revert ConfMan to what OSystem is using.
-			Common::String message = _("Failed to apply some of the graphic options changes:");
+			Common::U32String message = _("Failed to apply some of the graphic options changes:");
 
 			if (gfxError & OSystem::kTransactionModeSwitchFailed) {
 				const OSystem::GraphicsMode *gm = g_system->getSupportedGraphicsModes();
@@ -621,7 +748,7 @@ void OptionsDialog::apply() {
 					}
 					gm++;
 				}
-				message += "\n";
+				message += Common::U32String("\n");
 				message += _("the video mode could not be changed");
 			}
 
@@ -634,25 +761,25 @@ void OptionsDialog::apply() {
 					}
 					sm++;
 				}
-				message += "\n";
+				message += Common::U32String("\n");
 				message += _("the stretch mode could not be changed");
 			}
 
 			if (gfxError & OSystem::kTransactionAspectRatioFailed) {
 				ConfMan.setBool("aspect_ratio", g_system->getFeatureState(OSystem::kFeatureAspectRatioCorrection), _domain);
-				message += "\n";
+				message += Common::U32String("\n");
 				message += _("the aspect ratio setting could not be changed");
 			}
 
 			if (gfxError & OSystem::kTransactionFullscreenFailed) {
 				ConfMan.setBool("fullscreen", g_system->getFeatureState(OSystem::kFeatureFullscreenMode), _domain);
-				message += "\n";
+				message += Common::U32String("\n");
 				message += _("the fullscreen setting could not be changed");
 			}
 
 			if (gfxError & OSystem::kTransactionFilteringFailed) {
 				ConfMan.setBool("filtering", g_system->getFeatureState(OSystem::kFeatureFilteringMode), _domain);
-				message += "\n";
+				message += Common::U32String("\n");
 				message += _("the filtering setting could not be changed");
 			}
 
@@ -668,6 +795,12 @@ void OptionsDialog::apply() {
 			Common::Keymapper *keymapper = g_system->getEventManager()->getKeymapper();
 			keymapper->reloadAllMappings();
 		}
+	}
+
+	if (_backendOptions) {
+		bool changes = _backendOptions->save();
+		if (changes && _domain == Common::ConfigManager::kApplicationDomain)
+			g_system->applyBackendSettings();
 	}
 
 	// Control options
@@ -744,9 +877,9 @@ void OptionsDialog::apply() {
 			ConfMan.setBool("multi_midi", _multiMidiCheckbox->getState(), _domain);
 			ConfMan.setInt("midi_gain", _midiGainSlider->getValue(), _domain);
 
-			Common::String soundFont(_soundFont->getLabel());
+			Common::U32String soundFont(_soundFont->getLabel());
 			if (!soundFont.empty() && (soundFont != _c("None", "soundfont")))
-				ConfMan.set("soundfont", soundFont, _domain);
+				ConfMan.set("soundfont", soundFont.encode(), _domain);
 			else
 				ConfMan.removeKey("soundfont", _domain);
 		} else {
@@ -898,6 +1031,10 @@ void OptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data
 	case kGraphicsTabContainerReflowCmd:
 		setupGraphicsTab();
 		break;
+	case kScalerPopUpCmd:
+		updateScaleFactors(data);
+		g_gui.scheduleTopDialogRedraw();
+		break;
 	case kApplyCmd:
 		apply();
 		break;
@@ -938,7 +1075,15 @@ void OptionsDialog::setGraphicSettingsState(bool enabled) {
 	_renderModePopUp->setEnabled(enabled);
 	_stretchPopUpDesc->setEnabled(enabled);
 	_stretchPopUp->setEnabled(enabled);
+	_scalerPopUpDesc->setEnabled(enabled);
+	_scalerPopUp->setEnabled(enabled);
+	_scaleFactorPopUp->setEnabled(enabled);
+	_vsyncCheckbox->setEnabled(enabled);
 	_filteringCheckbox->setEnabled(enabled);
+	_rendererTypePopUpDesc->setEnabled(enabled);
+	_rendererTypePopUp->setEnabled(enabled);
+	_antiAliasPopUpDesc->setEnabled(enabled);
+	_antiAliasPopUp->setEnabled(enabled);
 
 	if (g_system->hasFeature(OSystem::kFeatureFullscreenMode))
 		_fullscreenCheckbox->setEnabled(enabled);
@@ -1085,7 +1230,7 @@ void OptionsDialog::addControlControls(GuiObject *boss, const Common::String &pr
 		else
 			_kbdMouseSpeedDesc = new StaticTextWidget(boss, prefix + "grKbdMouseSpeedDesc", _c("Pointer Speed:", "lowres"), _("Speed for keyboard/joystick mouse pointer control"));
 		_kbdMouseSpeedSlider = new SliderWidget(boss, prefix + "grKbdMouseSpeedSlider", _("Speed for keyboard/joystick mouse pointer control"), kKbdMouseSpeedChanged);
-		_kbdMouseSpeedLabel = new StaticTextWidget(boss, prefix + "grKbdMouseSpeedLabel", "  ");
+		_kbdMouseSpeedLabel = new StaticTextWidget(boss, prefix + "grKbdMouseSpeedLabel", Common::U32String("  "));
 		_kbdMouseSpeedSlider->setMinValue(0);
 		_kbdMouseSpeedSlider->setMaxValue(7);
 		_kbdMouseSpeedLabel->setFlags(WIDGET_CLEARBG);
@@ -1098,7 +1243,7 @@ void OptionsDialog::addControlControls(GuiObject *boss, const Common::String &pr
 		else
 			_joystickDeadzoneDesc = new StaticTextWidget(boss, prefix + "grJoystickDeadzoneDesc", _c("Joy Deadzone:", "lowres"), _("Analog joystick Deadzone"));
 		_joystickDeadzoneSlider = new SliderWidget(boss, prefix + "grJoystickDeadzoneSlider", _("Analog joystick Deadzone"), kJoystickDeadzoneChanged);
-		_joystickDeadzoneLabel = new StaticTextWidget(boss, prefix + "grJoystickDeadzoneLabel", "  ");
+		_joystickDeadzoneLabel = new StaticTextWidget(boss, prefix + "grJoystickDeadzoneLabel", Common::U32String("  "));
 		_joystickDeadzoneSlider->setMinValue(1);
 		_joystickDeadzoneSlider->setMaxValue(10);
 		_joystickDeadzoneLabel->setFlags(WIDGET_CLEARBG);
@@ -1115,31 +1260,29 @@ void OptionsDialog::addKeyMapperControls(GuiObject *boss, const Common::String &
 	_keymapperWidget = new Common::RemapWidget(boss, prefix + "Container", keymaps);
 }
 
-void OptionsDialog::addAchievementsControls(GuiObject *boss, const Common::String &prefix, const Common::AchievementsInfo &info) {
-	Common::String achDomainId = ConfMan.get("achievements", _domain);
-	AchMan.setActiveDomain(info.platform, info.appId);
-
+void OptionsDialog::addAchievementsControls(GuiObject *boss, const Common::String &prefix) {
 	GUI::ScrollContainerWidget *scrollContainer;
 	scrollContainer = new GUI::ScrollContainerWidget(boss, prefix + "Container", "");
 	scrollContainer->setBackgroundType(GUI::ThemeEngine::kWidgetBackgroundNo);
 
 	uint16 nAchieved = 0;
 	uint16 nHidden = 0;
-	uint16 nMax = info.descriptions.size();
+	uint16 nMax = AchMan.getAchievementCount();
 
 	uint16 lineHeight = g_gui.xmlEval()->getVar("Globals.Line.Height");
 	uint16 yStep = lineHeight;
-	uint16 ySmallStep = yStep/3;
-	uint16 yPos = lineHeight + yStep*3;
+	uint16 ySmallStep = yStep / 3;
+	uint16 yPos = lineHeight + yStep * 3;
 	uint16 progressBarWidth = 240;
 	uint16 width = g_system->getOverlayWidth() <= 320 ? 240 : 410;
-	uint16 descrDelta = g_system->getOverlayWidth() <= 320 ? 25 : 30;
+	uint16 commentDelta = g_system->getOverlayWidth() <= 320 ? 25 : 30;
 
 	for (int16 viewAchieved = 1; viewAchieved >= 0; viewAchieved--) {
 		// run this twice, first view all achieved, then view all non-hidden & non-achieved
 
 		for (uint16 idx = 0; idx < nMax ; idx++) {
-			int16 isAchieved = AchMan.isAchieved(info.descriptions[idx].id) ? 1 : 0;
+			const Common::AchievementDescription *descr = AchMan.getAchievementDescription(idx);
+			int16 isAchieved = AchMan.isAchieved(descr->id) ? 1 : 0;
 
 			if (isAchieved != viewAchieved) {
 				continue;
@@ -1149,19 +1292,19 @@ void OptionsDialog::addAchievementsControls(GuiObject *boss, const Common::Strin
 				nAchieved++;
 			}
 
-			if (!isAchieved && info.descriptions[idx].isHidden) {
+			if (!isAchieved && descr->isHidden) {
 				nHidden++;
 				continue;
 			}
 
 			CheckboxWidget *checkBox;
-			checkBox = new CheckboxWidget(scrollContainer, lineHeight, yPos, width, yStep, info.descriptions[idx].title);
+			checkBox = new CheckboxWidget(scrollContainer, lineHeight, yPos, width, yStep, Common::U32String(descr->title));
 			checkBox->setEnabled(false);
 			checkBox->setState(isAchieved);
 			yPos += yStep;
 
-	        if (info.descriptions[idx].comment && strlen(info.descriptions[idx].comment) > 0) {
-				new StaticTextWidget(scrollContainer, lineHeight + descrDelta, yPos, width - descrDelta, yStep, info.descriptions[idx].comment, Graphics::kTextAlignStart, "", ThemeEngine::kFontStyleNormal);
+	        if (!descr->comment.empty()) {
+				new StaticTextWidget(scrollContainer, lineHeight + commentDelta, yPos, width - commentDelta, yStep, Common::U32String(descr->comment), Graphics::kTextAlignStart, Common::U32String(), ThemeEngine::kFontStyleNormal);
 				yPos += yStep;
 			}
 
@@ -1170,13 +1313,13 @@ void OptionsDialog::addAchievementsControls(GuiObject *boss, const Common::Strin
 	}
 
 	if (nHidden) {
-		Common::String hiddenStr = Common::String::format(_("%d hidden achievements remaining"), nHidden);
-		new StaticTextWidget(scrollContainer, lineHeight, yPos, width, yStep, hiddenStr.c_str(), Graphics::kTextAlignStart);
+		Common::U32String hiddenStr = Common::U32String::format(_("%d hidden achievements remaining"), nHidden);
+		new StaticTextWidget(scrollContainer, lineHeight, yPos, width, yStep, hiddenStr, Graphics::kTextAlignStart);
 	}
 
 	if (nMax) {
-		Common::String totalStr = Common::String::format(_("Achievements unlocked: %d/%d"), nAchieved, nMax);
-		new StaticTextWidget(scrollContainer, lineHeight, lineHeight, width, yStep, totalStr.c_str(), Graphics::kTextAlignStart);
+		Common::U32String totalStr = Common::U32String::format(_("Achievements unlocked: %d/%d"), nAchieved, nMax);
+		new StaticTextWidget(scrollContainer, lineHeight, lineHeight, width, yStep, totalStr, Graphics::kTextAlignStart);
 
 		SliderWidget *progressBar;
 		progressBar = new SliderWidget(scrollContainer, lineHeight, lineHeight*2, progressBarWidth, lineHeight);
@@ -1184,6 +1327,33 @@ void OptionsDialog::addAchievementsControls(GuiObject *boss, const Common::Strin
 		progressBar->setValue(nAchieved);
 		progressBar->setMaxValue(nMax);
 		progressBar->setEnabled(false);
+	}
+}
+
+void OptionsDialog::addStatisticsControls(GuiObject *boss, const Common::String &prefix) {
+	GUI::ScrollContainerWidget *scrollContainer;
+	scrollContainer = new GUI::ScrollContainerWidget(boss, prefix + "Container", "");
+	scrollContainer->setBackgroundType(GUI::ThemeEngine::kWidgetBackgroundNo);
+
+	uint16 nMax = AchMan.getStatCount();
+
+	uint16 lineHeight = g_gui.xmlEval()->getVar("Globals.Line.Height");
+	uint16 yStep = lineHeight;
+	uint16 ySmallStep = yStep / 3;
+	uint16 yPos = lineHeight;
+	uint16 width = g_system->getOverlayWidth() <= 320 ? 240 : 410;
+
+	for (uint16 idx = 0; idx < nMax ; idx++) {
+		const Common::StatDescription *descr = AchMan.getStatDescription(idx);
+
+		const Common::String &key = descr->comment.empty() ? descr->id : descr->comment;
+		Common::String value = AchMan.getStatRaw(descr->id);
+
+		Common::U32String str = Common::U32String::format("%s: %s", key.c_str(), value.c_str());
+		new StaticTextWidget(scrollContainer, lineHeight, yPos, width, yStep, str, Graphics::kTextAlignStart);
+
+		yPos += yStep;
+		yPos += ySmallStep;
 	}
 }
 
@@ -1201,7 +1371,7 @@ void OptionsDialog::addShaderControls(GuiObject *boss, const Common::String &pre
 	const OSystem::GraphicsMode *p = g_system->getSupportedShaders();
 
 	_shaderPopUp->appendEntry(_("<default>"));
-	_shaderPopUp->appendEntry("");
+	_shaderPopUp->appendEntry(Common::U32String());
 	while (p->name) {
 		_shaderPopUp->appendEntry(_c(p->description, context), p->id);
 		p++;
@@ -1221,7 +1391,7 @@ void OptionsDialog::addGraphicControls(GuiObject *boss, const Common::String &pr
 	_gfxPopUp = new PopUpWidget(boss, prefix + "grModePopup");
 
 	_gfxPopUp->appendEntry(_("<default>"));
-	_gfxPopUp->appendEntry("");
+	_gfxPopUp->appendEntry(Common::U32String());
 	while (gm->name) {
 		_gfxPopUp->appendEntry(_c(gm->description, context), gm->id);
 		gm++;
@@ -1234,7 +1404,7 @@ void OptionsDialog::addGraphicControls(GuiObject *boss, const Common::String &pr
 	_renderModePopUpDesc = new StaticTextWidget(boss, prefix + "grRenderPopupDesc", _("Render mode:"), _("Special dithering modes supported by some games"));
 	_renderModePopUp = new PopUpWidget(boss, prefix + "grRenderPopup", _("Special dithering modes supported by some games"));
 	_renderModePopUp->appendEntry(_("<default>"), Common::kRenderDefault);
-	_renderModePopUp->appendEntry("");
+	_renderModePopUp->appendEntry(Common::U32String());
 	const Common::RenderModeDescription *rm = Common::g_renderModes;
 	for (; rm->code; ++rm) {
 		Common::String renderGuiOption = Common::renderMode2GUIO(rm->id);
@@ -1248,20 +1418,67 @@ void OptionsDialog::addGraphicControls(GuiObject *boss, const Common::String &pr
 	_stretchPopUp = new PopUpWidget(boss, prefix + "grStretchModePopup");
 
 	_stretchPopUp->appendEntry(_("<default>"));
-	_stretchPopUp->appendEntry("");
+	_stretchPopUp->appendEntry(Common::U32String());
 	while (sm->name) {
 		_stretchPopUp->appendEntry(_c(sm->description, context), sm->id);
 		sm++;
 	}
 
+	// The Scaler popup
+	const PluginList &scalerPlugins = ScalerMan.getPlugins();
+	_scalerPopUpDesc = new StaticTextWidget(boss, prefix + "grScalerPopupDesc", _("Scaler:"));
+	_scalerPopUp = new PopUpWidget(boss, prefix + "grScalerPopup", Common::U32String(), kScalerPopUpCmd);
+
+	_scalerPopUp->appendEntry(_("<default>"));
+	_scalerPopUp->appendEntry(Common::U32String());
+	for (uint scalerIndex = 0; scalerIndex < scalerPlugins.size(); scalerIndex++) {
+		_scalerPopUp->appendEntry(_c(scalerPlugins[scalerIndex]->get<ScalerPluginObject>().getPrettyName(), context), scalerIndex);
+	}
+
+	_scaleFactorPopUp = new PopUpWidget(boss, prefix + "grScaleFactorPopup");
+	updateScaleFactors(_scalerPopUp->getSelectedTag());
+
 	// Fullscreen checkbox
-	_fullscreenCheckbox = new CheckboxWidget(boss, prefix + "grFullscreenCheckbox", _("Fullscreen mode"));
+	_fullscreenCheckbox = new CheckboxWidget(boss, prefix + "grFullscreenCheckbox", _("Fullscreen mode"), Common::U32String(), kFullscreenToggled);
+
+	_vsyncCheckbox = new CheckboxWidget(boss, prefix + "grVSyncCheckbox", _("V-Sync in 3D Games"), _("Wait for the vertical sync to refresh the screen in 3D renderer"));
+
+	if (g_system->getOverlayWidth() > 320)
+		_rendererTypePopUpDesc = new StaticTextWidget(boss, prefix + "grRendererTypePopupDesc", _("Game 3D Renderer:"));
+	else
+		_rendererTypePopUpDesc = new StaticTextWidget(boss, prefix + "grRendererTypePopupDesc", _c("Game 3D Renderer:", "lowres"));
+
+	_rendererTypePopUp = new PopUpWidget(boss, prefix + "grRendererTypePopup");
+	_rendererTypePopUp->appendEntry(_("<default>"), Graphics::kRendererTypeDefault);
+	_rendererTypePopUp->appendEntry("");
+	const Graphics::RendererTypeDescription *rt = Graphics::listRendererTypes();
+	for (; rt->code; ++rt) {
+		if (g_system->getOverlayWidth() > 320)
+			_rendererTypePopUp->appendEntry(_(rt->description), rt->id);
+		else
+			_rendererTypePopUp->appendEntry(_c(rt->description, "lowres"), rt->id);
+	}
+
+	_antiAliasPopUpDesc = new StaticTextWidget(boss, prefix + "grAntiAliasPopupDesc", _("3D Anti-aliasing:"));
+	_antiAliasPopUp = new PopUpWidget(boss, prefix + "grAntiAliasPopup");
+	_antiAliasPopUp->appendEntry(_("<default>"), -1);
+	_antiAliasPopUp->appendEntry("");
+	_antiAliasPopUp->appendEntry(_("Disabled"), 0);
+	const Common::Array<uint> levels = g_system->getSupportedAntiAliasingLevels();
+	for (uint i = 0; i < levels.size(); i++) {
+		_antiAliasPopUp->appendEntry(Common::String::format("%dx", levels[i]), levels[i]);
+	}
+	if (levels.empty()) {
+		// Don't show the anti-aliasing selection menu when it is not supported
+		_antiAliasPopUpDesc->setVisible(false);
+		_antiAliasPopUp->setVisible(false);
+	}
 
 	// Filtering checkbox
 	_filteringCheckbox = new CheckboxWidget(boss, prefix + "grFilteringCheckbox", _("Filter graphics"), _("Use linear filtering when scaling graphics"));
 
 	// Aspect ratio checkbox
-	_aspectCheckbox = new CheckboxWidget(boss, prefix + "grAspectCheckbox", _("Aspect ratio correction"), _("Correct aspect ratio for 320x200 games"));
+	_aspectCheckbox = new CheckboxWidget(boss, prefix + "grAspectCheckbox", _("Aspect ratio correction"), _("Correct aspect ratio for games"));
 
 	_enableGraphicSettings = true;
 }
@@ -1293,7 +1510,7 @@ void OptionsDialog::addAudioControls(GuiObject *boss, const Common::String &pref
 				// marked as General MIDI device.
 				|| (deviceGuiOption.contains(GUIO_MIDIGM) && (_guioptions.contains(GUIO_MIDIMT32)))
 				|| d->getMusicDriverId() == "auto" || d->getMusicDriverId() == "null") // always add default and null device
-				_midiPopUp->appendEntry(d->getCompleteName(), d->getHandle());
+				_midiPopUp->appendEntry(_(d->getCompleteName()), d->getHandle());
 		}
 	}
 
@@ -1358,10 +1575,10 @@ void OptionsDialog::addMIDIControls(GuiObject *boss, const Common::String &prefi
 
 	// MIDI gain setting (FluidSynth uses this)
 	_midiGainDesc = new StaticTextWidget(boss, prefix + "mcMidiGainText", _("MIDI gain:"));
-	_midiGainSlider = new SliderWidget(boss, prefix + "mcMidiGainSlider", nullptr, kMidiGainChanged);
+	_midiGainSlider = new SliderWidget(boss, prefix + "mcMidiGainSlider", Common::U32String(), kMidiGainChanged);
 	_midiGainSlider->setMinValue(0);
 	_midiGainSlider->setMaxValue(1000);
-	_midiGainLabel = new StaticTextWidget(boss, prefix + "mcMidiGainLabel", "1.00");
+	_midiGainLabel = new StaticTextWidget(boss, prefix + "mcMidiGainLabel", Common::U32String("1.00"));
 
 	_enableMIDISettings = true;
 }
@@ -1435,8 +1652,8 @@ void OptionsDialog::addSubtitleControls(GuiObject *boss, const Common::String &p
 	}
 
 	// Subtitle speed
-	_subSpeedSlider = new SliderWidget(boss, prefix + "subSubtitleSpeedSlider", nullptr, kSubtitleSpeedChanged);
-	_subSpeedLabel = new StaticTextWidget(boss, prefix + "subSubtitleSpeedLabel", "100%");
+	_subSpeedSlider = new SliderWidget(boss, prefix + "subSubtitleSpeedSlider", Common::U32String(), kSubtitleSpeedChanged);
+	_subSpeedLabel = new StaticTextWidget(boss, prefix + "subSubtitleSpeedLabel", Common::U32String("100%"));
 	_subSpeedSlider->setMinValue(0); _subSpeedSlider->setMaxValue(maxSliderVal);
 	_subSpeedLabel->setFlags(WIDGET_CLEARBG);
 
@@ -1450,20 +1667,20 @@ void OptionsDialog::addVolumeControls(GuiObject *boss, const Common::String &pre
 		_musicVolumeDesc = new StaticTextWidget(boss, prefix + "vcMusicText", _("Music volume:"));
 	else
 		_musicVolumeDesc = new StaticTextWidget(boss, prefix + "vcMusicText", _c("Music volume:", "lowres"));
-	_musicVolumeSlider = new SliderWidget(boss, prefix + "vcMusicSlider", nullptr, kMusicVolumeChanged);
-	_musicVolumeLabel = new StaticTextWidget(boss, prefix + "vcMusicLabel", "100%");
+	_musicVolumeSlider = new SliderWidget(boss, prefix + "vcMusicSlider", Common::U32String(), kMusicVolumeChanged);
+	_musicVolumeLabel = new StaticTextWidget(boss, prefix + "vcMusicLabel", Common::U32String("100%"));
 	_musicVolumeSlider->setMinValue(0);
 	_musicVolumeSlider->setMaxValue(Audio::Mixer::kMaxMixerVolume);
 	_musicVolumeLabel->setFlags(WIDGET_CLEARBG);
 
-	_muteCheckbox = new CheckboxWidget(boss, prefix + "vcMuteCheckbox", _("Mute all"), nullptr, kMuteAllChanged);
+	_muteCheckbox = new CheckboxWidget(boss, prefix + "vcMuteCheckbox", _("Mute all"), Common::U32String(), kMuteAllChanged);
 
 	if (g_system->getOverlayWidth() > 320)
 		_sfxVolumeDesc = new StaticTextWidget(boss, prefix + "vcSfxText", _("SFX volume:"), _("Special sound effects volume"));
 	else
 		_sfxVolumeDesc = new StaticTextWidget(boss, prefix + "vcSfxText", _c("SFX volume:", "lowres"), _("Special sound effects volume"));
 	_sfxVolumeSlider = new SliderWidget(boss, prefix + "vcSfxSlider", _("Special sound effects volume"), kSfxVolumeChanged);
-	_sfxVolumeLabel = new StaticTextWidget(boss, prefix + "vcSfxLabel", "100%");
+	_sfxVolumeLabel = new StaticTextWidget(boss, prefix + "vcSfxLabel", Common::U32String("100%"));
 	_sfxVolumeSlider->setMinValue(0);
 	_sfxVolumeSlider->setMaxValue(Audio::Mixer::kMaxMixerVolume);
 	_sfxVolumeLabel->setFlags(WIDGET_CLEARBG);
@@ -1472,8 +1689,8 @@ void OptionsDialog::addVolumeControls(GuiObject *boss, const Common::String &pre
 		_speechVolumeDesc = new StaticTextWidget(boss, prefix + "vcSpeechText" , _("Speech volume:"));
 	else
 		_speechVolumeDesc = new StaticTextWidget(boss, prefix + "vcSpeechText" , _c("Speech volume:", "lowres"));
-	_speechVolumeSlider = new SliderWidget(boss, prefix + "vcSpeechSlider", nullptr, kSpeechVolumeChanged);
-	_speechVolumeLabel = new StaticTextWidget(boss, prefix + "vcSpeechLabel", "100%");
+	_speechVolumeSlider = new SliderWidget(boss, prefix + "vcSpeechSlider", Common::U32String(), kSpeechVolumeChanged);
+	_speechVolumeLabel = new StaticTextWidget(boss, prefix + "vcSpeechLabel", Common::U32String("100%"));
 	_speechVolumeSlider->setMinValue(0);
 	_speechVolumeSlider->setMaxValue(Audio::Mixer::kMaxMixerVolume);
 	_speechVolumeLabel->setFlags(WIDGET_CLEARBG);
@@ -1590,6 +1807,33 @@ void OptionsDialog::setupGraphicsTab() {
 	_aspectCheckbox->setVisible(true);
 	_renderModePopUpDesc->setVisible(true);
 	_renderModePopUp->setVisible(true);
+
+	if (g_system->hasFeature(OSystem::kFeatureScalers)) {
+		_scalerPopUpDesc->setVisible(true);
+		_scalerPopUp->setVisible(true);
+		_scaleFactorPopUp->setVisible(true);
+	} else {
+		_scalerPopUpDesc->setVisible(false);
+		_scalerPopUp->setVisible(false);
+		_scaleFactorPopUp->setVisible(false);
+	}
+}
+
+void OptionsDialog::updateScaleFactors(uint32 tag) {
+	if ((int32)tag >= 0) {
+		const PluginList &scalerPlugins = ScalerMan.getPlugins();
+		const Common::Array<uint> &factors = scalerPlugins[tag]->get<ScalerPluginObject>().getFactors();
+
+		_scaleFactorPopUp->clearEntries();
+		for (Common::Array<uint>::const_iterator it = factors.begin(); it != factors.end(); it++) {
+			_scaleFactorPopUp->appendEntry(Common::U32String::format("%dx", (*it)), (*it));
+		}
+		_scaleFactorPopUp->setSelectedTag(scalerPlugins[tag]->get<ScalerPluginObject>().getFactor());
+	} else {
+		_scaleFactorPopUp->clearEntries();
+		_scaleFactorPopUp->appendEntry(_("<default>"));
+		_scaleFactorPopUp->setSelected(0);
+	}
 }
 
 #pragma mark -
@@ -1597,9 +1841,6 @@ void OptionsDialog::setupGraphicsTab() {
 
 GlobalOptionsDialog::GlobalOptionsDialog(LauncherDialog *launcher)
 	: OptionsDialog(Common::ConfigManager::kApplicationDomain, "GlobalOptions"), CommandSender(nullptr), _launcher(launcher) {
-#ifdef GUI_ENABLE_KEYSDIALOG
-	_keysDialog = nullptr;
-#endif
 #ifdef USE_FLUIDSYNTH
 	_fluidSynthSettingsDialog = nullptr;
 #endif
@@ -1614,6 +1855,8 @@ GlobalOptionsDialog::GlobalOptionsDialog(LauncherDialog *launcher)
 	_pluginsPathClearButton = nullptr;
 #endif
 	_curTheme = nullptr;
+	_guiBasePopUpDesc = nullptr;
+	_guiBasePopUp = nullptr;
 	_rendererPopUpDesc = nullptr;
 	_rendererPopUp = nullptr;
 	_autosavePeriodPopUpDesc = nullptr;
@@ -1622,6 +1865,8 @@ GlobalOptionsDialog::GlobalOptionsDialog(LauncherDialog *launcher)
 	_guiLanguagePopUp = nullptr;
 	_guiLanguageUseGameLanguageCheckbox = nullptr;
 	_useSystemDialogsCheckbox = nullptr;
+	_guiReturnToLauncherAtExit = nullptr;
+	_guiConfirmExit = nullptr;
 #ifdef USE_UPDATES
 	_updatesPopUpDesc = nullptr;
 	_updatesPopUp = nullptr;
@@ -1679,10 +1924,6 @@ GlobalOptionsDialog::GlobalOptionsDialog(LauncherDialog *launcher)
 }
 
 GlobalOptionsDialog::~GlobalOptionsDialog() {
-#ifdef GUI_ENABLE_KEYSDIALOG
-	delete _keysDialog;
-#endif
-
 #ifdef USE_FLUIDSYNTH
 	delete _fluidSynthSettingsDialog;
 #endif
@@ -1742,6 +1983,20 @@ void GlobalOptionsDialog::build() {
 	if (!keymaps.empty()) {
 		tab->addTab(_("Keymaps"), "GlobalOptions_KeyMapper");
 		addKeyMapperControls(tab, "GlobalOptions_KeyMapper.", keymaps, Common::ConfigManager::kKeymapperDomain);
+	}
+
+	//
+	// The backend tab (shown only if the backend implements one)
+	//
+	int backendTabId = tab->addTab(_("Backend"), "GlobalOptions_Backend");
+
+	g_system->registerDefaultSettings(_domain);
+	_backendOptions = g_system->buildBackendOptionsWidget(tab, "GlobalOptions_Backend.Container", _domain);
+
+	if (_backendOptions) {
+		_backendOptions->setParentDialog(this);
+	} else {
+		tab->removeTab(backendTabId);
 	}
 
 	//
@@ -1835,13 +2090,9 @@ void GlobalOptionsDialog::build() {
 	_tabWidget = tab;
 
 	// Add OK & Cancel buttons
-	new ButtonWidget(this, "GlobalOptions.Cancel", _("Cancel"), nullptr, kCloseCmd);
-	new ButtonWidget(this, "GlobalOptions.Apply", _("Apply"), nullptr, kApplyCmd);
-	new ButtonWidget(this, "GlobalOptions.Ok", _("OK"), nullptr, kOKCmd);
-
-#ifdef GUI_ENABLE_KEYSDIALOG
-	_keysDialog = new KeysDialog();
-#endif
+	new ButtonWidget(this, "GlobalOptions.Cancel", _("Cancel"), _("Discard changes and close the dialog"), kCloseCmd);
+	new ButtonWidget(this, "GlobalOptions.Apply", _("Apply"), _("Apply changes without closing the dialog"), kApplyCmd);
+	new ButtonWidget(this, "GlobalOptions.Ok", _("OK"), _("Apply changes and close the dialog"), kOKCmd);
 
 #ifdef USE_FLUIDSYNTH
 	_fluidSynthSettingsDialog = new FluidSynthSettingsDialog();
@@ -1884,8 +2135,15 @@ void GlobalOptionsDialog::build() {
 #endif
 
 	// Misc Tab
+	_guiBasePopUp->setSelected(1);
+	int value = ConfMan.getInt("gui_base");
+	for (int i = 0; guiBaseLabels[i]; i++) {
+		if (value == guiBaseValues[i])
+			_guiBasePopUp->setSelected(i);
+	}
+
 	_autosavePeriodPopUp->setSelected(1);
-	int value = ConfMan.getInt("autosave_period");
+	value = ConfMan.getInt("autosave_period");
 	for (int i = 0; savePeriodLabels[i]; i++) {
 		if (value == savePeriodValues[i])
 			_autosavePeriodPopUp->setSelected(i);
@@ -1909,11 +2167,6 @@ void GlobalOptionsDialog::build() {
 }
 
 void GlobalOptionsDialog::clean() {
-#ifdef GUI_ENABLE_KEYSDIALOG
-	delete _keysDialog;
-	_keysDialog = nullptr;
-#endif
-
 #ifdef USE_FLUIDSYNTH
 	delete _fluidSynthSettingsDialog;
 	_fluidSynthSettingsDialog = nullptr;
@@ -1926,7 +2179,7 @@ void GlobalOptionsDialog::addMIDIControls(GuiObject *boss, const Common::String 
 	OptionsDialog::addMIDIControls(boss, prefix);
 
 #ifdef USE_FLUIDSYNTH
-	new ButtonWidget(boss, prefix + "mcFluidSynthSettings", _("FluidSynth Settings"), nullptr, kFluidSynthSettingsCmd);
+	new ButtonWidget(boss, prefix + "mcFluidSynthSettings", _("FluidSynth Settings"), Common::U32String(), kFluidSynthSettingsCmd);
 #endif
 }
 
@@ -1940,14 +2193,14 @@ void GlobalOptionsDialog::addPathsControls(GuiObject *boss, const Common::String
 		new ButtonWidget(boss, prefix + "SaveButton", _("Save Path:"), _("Specifies where your saved games are put"), kChooseSaveDirCmd);
 	else
 		new ButtonWidget(boss, prefix + "SaveButton", _c("Save Path:", "lowres"), _("Specifies where your saved games are put"), kChooseSaveDirCmd);
-	_savePath = new StaticTextWidget(boss, prefix + "SavePath", "/foo/bar", _("Specifies where your saved games are put"));
+	_savePath = new StaticTextWidget(boss, prefix + "SavePath", Common::U32String("/foo/bar"), _("Specifies where your saved games are put"));
 
 	_savePathClearButton = addClearButton(boss, prefix + "SavePathClearButton", kSavePathClearCmd);
 
 	if (!lowres)
-		new ButtonWidget(boss, prefix + "ThemeButton", _("Theme Path:"), nullptr, kChooseThemeDirCmd);
+		new ButtonWidget(boss, prefix + "ThemeButton", _("Theme Path:"), Common::U32String(), kChooseThemeDirCmd);
 	else
-		new ButtonWidget(boss, prefix + "ThemeButton", _c("Theme Path:", "lowres"), nullptr, kChooseThemeDirCmd);
+		new ButtonWidget(boss, prefix + "ThemeButton", _c("Theme Path:", "lowres"), Common::U32String(), kChooseThemeDirCmd);
 	_themePath = new StaticTextWidget(boss, prefix + "ThemePath", _c("None", "path"));
 
 	_themePathClearButton = addClearButton(boss, prefix + "ThemePathClearButton", kThemePathClearCmd);
@@ -1962,20 +2215,32 @@ void GlobalOptionsDialog::addPathsControls(GuiObject *boss, const Common::String
 
 #ifdef DYNAMIC_MODULES
 	if (!lowres)
-		new ButtonWidget(boss, prefix + "PluginsButton", _("Plugins Path:"), nullptr, kChoosePluginsDirCmd);
+		new ButtonWidget(boss, prefix + "PluginsButton", _("Plugins Path:"), Common::U32String(), kChoosePluginsDirCmd);
 	else
-		new ButtonWidget(boss, prefix + "PluginsButton", _c("Plugins Path:", "lowres"), nullptr, kChoosePluginsDirCmd);
+		new ButtonWidget(boss, prefix + "PluginsButton", _c("Plugins Path:", "lowres"), Common::U32String(), kChoosePluginsDirCmd);
 	_pluginsPath = new StaticTextWidget(boss, prefix + "PluginsPath", _c("None", "path"));
 
 	_pluginsPathClearButton = addClearButton(boss, "GlobalOptions_Paths.PluginsPathClearButton", kPluginsPathClearCmd);
-#endif
-#endif
+#endif // DYNAMIC_MODULES
+#endif // !defined(__DC__)
+
+	Common::U32String confPath = ConfMan.getCustomConfigFileName();
+	if (confPath.empty())
+		confPath = g_system->getDefaultConfigFileName();
+	new StaticTextWidget(boss, prefix + "ConfigPath", _("ScummVM config path: ") + confPath, confPath);
 }
 
 void GlobalOptionsDialog::addMiscControls(GuiObject *boss, const Common::String &prefix, bool lowres) {
-	new ButtonWidget(boss, prefix + "ThemeButton", _("Theme:"), nullptr, kChooseThemeCmd);
+	new ButtonWidget(boss, prefix + "ThemeButton", _("Theme:"), Common::U32String(), kChooseThemeCmd);
 	_curTheme = new StaticTextWidget(boss, prefix + "CurTheme", g_gui.theme()->getThemeName());
 
+
+	_guiBasePopUpDesc = new StaticTextWidget(boss, prefix + "GUIBasePopupDesc", _("GUI scale:"));
+	_guiBasePopUp = new PopUpWidget(boss, prefix + "GUIBasePopup");
+
+	for (int i = 0; guiBaseLabels[i]; i++) {
+		_guiBasePopUp->appendEntry(_(guiBaseLabels[i]), guiBaseValues[i]);
+	}
 
 	_rendererPopUpDesc = new StaticTextWidget(boss, prefix + "RendererPopupDesc", _("GUI renderer:"));
 	_rendererPopUp = new PopUpWidget(boss, prefix + "RendererPopup");
@@ -1998,12 +2263,23 @@ void GlobalOptionsDialog::addMiscControls(GuiObject *boss, const Common::String 
 		_autosavePeriodPopUp->appendEntry(_(savePeriodLabels[i]), savePeriodValues[i]);
 	}
 
-#ifdef GUI_ENABLE_KEYSDIALOG
-	new ButtonWidget(boss, prefix + "KeysButton", _("Keys"), nullptr, kChooseKeyMappingCmd);
-#endif
+	if (!g_system->hasFeature(OSystem::kFeatureNoQuit)) {
+		_guiReturnToLauncherAtExit = new CheckboxWidget(boss, prefix + "ReturnToLauncherAtExit",
+			_("Always return to the launcher when leaving a game"),
+			_("Always return to the launcher when leaving a game instead of closing ScummVM.")
+		);
+
+		_guiReturnToLauncherAtExit->setState(ConfMan.getBool("gui_return_to_launcher_at_exit", _domain));
+	}
+
+	_guiConfirmExit = new CheckboxWidget(boss, prefix + "ConfirmExit",
+		_("Ask for confirmation on exit"),
+		_("Ask for permission when closing ScummVM or leaving a game.")
+	);
+
+	_guiConfirmExit->setState(ConfMan.getBool("confirm_exit", _domain));
 
 	// TODO: joystick setting
-
 
 #ifdef USE_TRANSLATION
 	_guiLanguagePopUpDesc = new StaticTextWidget(boss, prefix + "GuiLanguagePopupDesc", _("GUI language:"), _("Language of ScummVM GUI"));
@@ -2041,7 +2317,6 @@ void GlobalOptionsDialog::addMiscControls(GuiObject *boss, const Common::String 
 	if (ConfMan.hasKey("gui_use_game_language")) {
 		_guiLanguageUseGameLanguageCheckbox->setState(ConfMan.getBool("gui_use_game_language", _domain));
 	}
-
 #endif // USE_TRANSLATION
 
 	if (g_system->hasFeature(OSystem::kFeatureSystemBrowserDialog)) {
@@ -2058,7 +2333,6 @@ void GlobalOptionsDialog::addMiscControls(GuiObject *boss, const Common::String 
 	_updatesPopUp = new PopUpWidget(boss, prefix + "UpdatesPopup");
 
 	const int *vals = Common::UpdateManager::getUpdateIntervals();
-
 	while (*vals != -1) {
 		_updatesPopUp->appendEntry(Common::UpdateManager::updateIntervalToString(*vals), *vals);
 		vals++;
@@ -2066,15 +2340,15 @@ void GlobalOptionsDialog::addMiscControls(GuiObject *boss, const Common::String 
 
 	_updatesPopUp->setSelectedTag(Common::UpdateManager::normalizeInterval(ConfMan.getInt("updates_check")));
 
-	new ButtonWidget(boss, prefix + "UpdatesCheckManuallyButton", _("Check now"), nullptr, kUpdatesCheckCmd);
-#endif
+	new ButtonWidget(boss, prefix + "UpdatesCheckManuallyButton", _("Check now"), Common::U32String(), kUpdatesCheckCmd);
+#endif // USE_UPDATES
 }
 
 #ifdef USE_CLOUD
 #ifdef USE_LIBCURL
 void GlobalOptionsDialog::addCloudControls(GuiObject *boss, const Common::String &prefix, bool lowres) {
 	_storagePopUpDesc = new StaticTextWidget(boss, prefix + "StoragePopupDesc", _("Active storage:"), _("Active cloud storage"));
-	_storagePopUp = new PopUpWidget(boss, prefix + "StoragePopup");
+	_storagePopUp = new PopUpWidget(boss, prefix + "StoragePopup", Common::U32String(), kStoragePopUpCmd);
 	Common::StringArray list = CloudMan.listStorages();
 	for (uint32 i = 0; i < list.size(); ++i) {
 		_storagePopUp->appendEntry(_(list[i]), i);
@@ -2088,17 +2362,17 @@ void GlobalOptionsDialog::addCloudControls(GuiObject *boss, const Common::String
 	_storageEnableButton = new ButtonWidget(boss, prefix + "StorageEnableButton", _("Enable storage"), _("Confirm you want to use this account for this storage"), kEnableStorageCmd);
 
 	_storageUsernameDesc = new StaticTextWidget(boss, prefix + "StorageUsernameDesc", _("Username:"), _("Username used by this storage"));
-	_storageUsername = new StaticTextWidget(boss, prefix + "StorageUsernameLabel", _("<none>"), "", ThemeEngine::kFontStyleNormal);
+	_storageUsername = new StaticTextWidget(boss, prefix + "StorageUsernameLabel", _("<none>"), Common::U32String(), ThemeEngine::kFontStyleNormal);
 
 	_storageUsedSpaceDesc = new StaticTextWidget(boss, prefix + "StorageUsedSpaceDesc", _("Used space:"), _("Space used by ScummVM's saved games on this storage"));
-	_storageUsedSpace = new StaticTextWidget(boss, prefix + "StorageUsedSpaceLabel", "0 bytes", "", ThemeEngine::kFontStyleNormal);
+	_storageUsedSpace = new StaticTextWidget(boss, prefix + "StorageUsedSpaceLabel", Common::U32String("0 bytes"), Common::U32String(), ThemeEngine::kFontStyleNormal);
 
 	_storageLastSyncDesc = new StaticTextWidget(boss, prefix + "StorageLastSyncDesc", _("Last sync:"), _("When was the last time saved games were synced with this storage"));
-	_storageLastSync = new StaticTextWidget(boss, prefix + "StorageLastSyncLabel", _("<never>"), "", ThemeEngine::kFontStyleNormal);
+	_storageLastSync = new StaticTextWidget(boss, prefix + "StorageLastSyncLabel", _("<never>"), Common::U32String(), ThemeEngine::kFontStyleNormal);
 	if (lowres)
-		_storageSyncHint = new StaticTextWidget(boss, prefix + "StorageSyncHint", _c("Saved games sync automatically on launch, after saving and on loading.", "lowres"), "", ThemeEngine::kFontStyleNormal);
+		_storageSyncHint = new StaticTextWidget(boss, prefix + "StorageSyncHint", _c("Saved games sync automatically on launch, after saving and on loading.", "lowres"), Common::U32String(), ThemeEngine::kFontStyleNormal);
 	else
-		_storageSyncHint = new StaticTextWidget(boss, prefix + "StorageSyncHint", _("Saved games sync automatically on launch, after saving and on loading."), "", ThemeEngine::kFontStyleNormal);
+		_storageSyncHint = new StaticTextWidget(boss, prefix + "StorageSyncHint", _("Saved games sync automatically on launch, after saving and on loading."), Common::U32String(), ThemeEngine::kFontStyleNormal);
 	_storageSyncSavesButton = new ButtonWidget(boss, prefix + "SyncSavesButton", _("Sync now"), _("Start saved games sync"), kSyncSavesStorageCmd);
 
 	if (lowres)
@@ -2118,15 +2392,15 @@ void GlobalOptionsDialog::addCloudControls(GuiObject *boss, const Common::String
 	else
 		_storageWizardNotConnectedHint = new StaticTextWidget(boss, prefix + "StorageWizardNotConnectedHint", _("This storage is not connected yet! To connect,"));
 	_storageWizardOpenLinkHint = new StaticTextWidget(boss, prefix + "StorageWizardOpenLinkHint", _("1. Open this link:"));
-	_storageWizardLink = new ButtonWidget(boss, prefix + "StorageWizardLink", "https://cloud.scummvm.org/", _("Open URL"), kOpenUrlStorageCmd);
+	_storageWizardLink = new ButtonWidget(boss, prefix + "StorageWizardLink", Common::U32String("https://cloud.scummvm.org/"), _("Open URL"), kOpenUrlStorageCmd);
 	if (lowres)
 		_storageWizardCodeHint = new StaticTextWidget(boss, prefix + "StorageWizardCodeHint", _c("2. Get the code and enter it here:", "lowres"));
 	else
 		_storageWizardCodeHint = new StaticTextWidget(boss, prefix + "StorageWizardCodeHint", _("2. Get the code and enter it here:"));
-	_storageWizardCodeBox = new EditTextWidget(boss, prefix + "StorageWizardCodeBox", "", nullptr, 0, 0, ThemeEngine::kFontStyleConsole);
+	_storageWizardCodeBox = new EditTextWidget(boss, prefix + "StorageWizardCodeBox", Common::U32String(), Common::U32String(), 0, 0, ThemeEngine::kFontStyleConsole);
 	_storageWizardPasteButton = new ButtonWidget(boss, prefix + "StorageWizardPasteButton", _("Paste"), _("Paste code from clipboard"), kPasteCodeStorageCmd);
 	_storageWizardConnectButton = new ButtonWidget(boss, prefix + "StorageWizardConnectButton", _("3. Connect"), _("Connect your cloud storage account"), kConnectStorageCmd);
-	_storageWizardConnectionStatusHint = new StaticTextWidget(boss, prefix + "StorageWizardConnectionStatusHint", "...");
+	_storageWizardConnectionStatusHint = new StaticTextWidget(boss, prefix + "StorageWizardConnectionStatusHint", Common::U32String("..."));
 
 	setupCloudTab();
 }
@@ -2142,21 +2416,21 @@ void GlobalOptionsDialog::addNetworkControls(GuiObject *boss, const Common::Stri
 		_rootPathButton = new ButtonWidget(boss, prefix + "RootPathButton", _c("/root/ Path:", "lowres"), _("Select which directory will be shown as /root/ in the Files Manager"), kChooseRootDirCmd);
 	else
 		_rootPathButton = new ButtonWidget(boss, prefix + "RootPathButton", _("/root/ Path:"), _("Select which directory will be shown as /root/ in the Files Manager"), kChooseRootDirCmd);
-	_rootPath = new StaticTextWidget(boss, prefix + "RootPath", "/foo/bar", _("Select which directory will be shown as /root/ in the Files Manager"));
+	_rootPath = new StaticTextWidget(boss, prefix + "RootPath", Common::U32String("/foo/bar"), _("Select which directory will be shown as /root/ in the Files Manager"));
 	_rootPathClearButton = addClearButton(boss, prefix + "RootPathClearButton", kRootPathClearCmd);
 
 	uint32 port = Networking::LocalWebserver::getPort();
 
 	_serverPortDesc = new StaticTextWidget(boss, prefix + "ServerPortDesc", _("Server's port:"), _("Port for server to use"));
-	_serverPort = new EditTextWidget(boss, prefix + "ServerPortEditText", Common::String::format("%u", port), nullptr);
+	_serverPort = new EditTextWidget(boss, prefix + "ServerPortEditText", Common::String::format("%u", port), Common::U32String());
 	_serverPortClearButton = addClearButton(boss, prefix + "ServerPortClearButton", kServerPortClearCmd);
 
 	if (lowres) {
-		_featureDescriptionLine1 = new StaticTextWidget(boss, prefix + "FeatureDescriptionLine1", _c("Run server to manage files with browser (in the same network).", "lowres"), "", ThemeEngine::kFontStyleNormal);
-		_featureDescriptionLine2 = new StaticTextWidget(boss, prefix + "FeatureDescriptionLine2", _c("Closing options dialog will stop the server.", "lowres"), "", ThemeEngine::kFontStyleNormal);
+		_featureDescriptionLine1 = new StaticTextWidget(boss, prefix + "FeatureDescriptionLine1", _c("Run server to manage files with browser (in the same network).", "lowres"), Common::U32String(), ThemeEngine::kFontStyleNormal);
+		_featureDescriptionLine2 = new StaticTextWidget(boss, prefix + "FeatureDescriptionLine2", _c("Closing options dialog will stop the server.", "lowres"), Common::U32String(), ThemeEngine::kFontStyleNormal);
 	} else {
-		_featureDescriptionLine1 = new StaticTextWidget(boss, prefix + "FeatureDescriptionLine1", _("Run server to manage files with browser (in the same network)."), "", ThemeEngine::kFontStyleNormal);
-		_featureDescriptionLine2 = new StaticTextWidget(boss, prefix + "FeatureDescriptionLine2", _("Closing options dialog will stop the server."), "", ThemeEngine::kFontStyleNormal);
+		_featureDescriptionLine1 = new StaticTextWidget(boss, prefix + "FeatureDescriptionLine1", _("Run server to manage files with browser (in the same network)."), Common::U32String(), ThemeEngine::kFontStyleNormal);
+		_featureDescriptionLine2 = new StaticTextWidget(boss, prefix + "FeatureDescriptionLine2", _("Closing options dialog will stop the server."), Common::U32String(), ThemeEngine::kFontStyleNormal);
 	}
 
 	reflowNetworkTabLayout();
@@ -2193,48 +2467,53 @@ void GlobalOptionsDialog::addAccessibilityControls(GuiObject *boss, const Common
 	else
 		_ttsVoiceSelectionPopUp->setSelected(0);
 }
-#endif
+#endif // USE_TTS
 
 void GlobalOptionsDialog::apply() {
 	OptionsDialog::apply();
 
 	bool isRebuildNeeded = false;
 
-	Common::String savePath(_savePath->getLabel());
+	Common::U32String savePath(_savePath->getLabel());
 	if (!savePath.empty() && (savePath != _("Default")))
-		ConfMan.set("savepath", savePath, _domain);
+		ConfMan.set("savepath", savePath.encode(), _domain);
 	else
 		ConfMan.removeKey("savepath", _domain);
 
-	Common::String themePath(_themePath->getLabel());
+	Common::U32String themePath(_themePath->getLabel());
 	if (!themePath.empty() && (themePath != _c("None", "path")))
-		ConfMan.set("themepath", themePath, _domain);
+		ConfMan.set("themepath", themePath.encode(), _domain);
 	else
 		ConfMan.removeKey("themepath", _domain);
 
-	Common::String extraPath(_extraPath->getLabel());
+	Common::U32String extraPath(_extraPath->getLabel());
 	if (!extraPath.empty() && (extraPath != _c("None", "path")))
-		ConfMan.set("extrapath", extraPath, _domain);
+		ConfMan.set("extrapath", extraPath.encode(), _domain);
 	else
 		ConfMan.removeKey("extrapath", _domain);
 
 #ifdef DYNAMIC_MODULES
-	Common::String pluginsPath(_pluginsPath->getLabel());
+	Common::U32String pluginsPath(_pluginsPath->getLabel());
 	if (!pluginsPath.empty() && (pluginsPath != _c("None", "path")))
-		ConfMan.set("pluginspath", pluginsPath, _domain);
+		ConfMan.set("pluginspath", pluginsPath.encode(), _domain);
 	else
 		ConfMan.removeKey("pluginspath", _domain);
-#endif
+#endif // DYNAMIC_MODULES
 
 #ifdef USE_CLOUD
 #ifdef USE_SDL_NET
-	Common::String rootPath(_rootPath->getLabel());
+	Common::U32String rootPath(_rootPath->getLabel());
 	if (!rootPath.empty() && (rootPath != _c("None", "path")))
-		ConfMan.set("rootpath", rootPath, "cloud");
+		ConfMan.set("rootpath", rootPath.encode(), "cloud");
 	else
 		ConfMan.removeKey("rootpath", "cloud");
-#endif
-#endif
+#endif // USE_SDL_NET
+#endif // USE_CLOUD
+
+	int oldGuiBase = ConfMan.getInt("gui_base");
+	ConfMan.setInt("gui_base", _guiBasePopUp->getSelectedTag(), _domain);
+	if (oldGuiBase != (int)_guiBasePopUp->getSelectedTag())
+		g_gui.computeScaleFactor();
 
 	ConfMan.setInt("autosave_period", _autosavePeriodPopUp->getSelectedTag(), _domain);
 
@@ -2249,16 +2528,16 @@ void GlobalOptionsDialog::apply() {
 			g_system->getUpdateManager()->setUpdateCheckInterval(_updatesPopUp->getSelectedTag());
 		}
 	}
-#endif
+#endif // USE_UPDATES
 
 #ifdef USE_CLOUD
 #ifdef USE_LIBCURL
 	if (CloudMan.getStorageIndex() != _selectedStorageIndex) {
 		if (!CloudMan.switchStorage(_selectedStorageIndex)) {
 			bool anotherStorageIsWorking = CloudMan.isWorking();
-			Common::String message = _("Failed to change cloud storage!");
+			Common::U32String message = _("Failed to change cloud storage!");
 			if (anotherStorageIsWorking) {
-				message += "\n";
+				message += Common::U32String("\n");
 				message += _("Another cloud storage is already active.");
 			}
 			MessageDialog dialog(message);
@@ -2297,15 +2576,22 @@ void GlobalOptionsDialog::apply() {
 		ConfMan.set("gui_language", newLang);
 		newCharset = TransMan.getCurrentCharset();
 		isRebuildNeeded = true;
-		g_gui.setLanguageRTL();
 	}
 
 	bool guiUseGameLanguage = _guiLanguageUseGameLanguageCheckbox->getState();
 	ConfMan.setBool("gui_use_game_language", guiUseGameLanguage, _domain);
-#endif
+#endif // USE_TRANSLATION
 
 	if (_useSystemDialogsCheckbox) {
 		ConfMan.setBool("gui_browser_native", _useSystemDialogsCheckbox->getState(), _domain);
+	}
+
+	if (_guiReturnToLauncherAtExit) {
+		ConfMan.setBool("gui_return_to_launcher_at_exit", _guiReturnToLauncherAtExit->getState(), _domain);
+	}
+
+	if (_guiConfirmExit) {
+		ConfMan.setBool("confirm_exit", _guiConfirmExit->getState(), _domain);
 	}
 
 	GUI::ThemeEngine::GraphicsMode gfxMode = (GUI::ThemeEngine::GraphicsMode)_rendererPopUp->getSelectedTag();
@@ -2319,7 +2605,7 @@ void GlobalOptionsDialog::apply() {
 		_newTheme = oldThemeId;
 
 	if (!g_gui.loadNewTheme(_newTheme, gfxMode, true)) {
-		Common::String errorMessage;
+		Common::U32String errorMessage;
 
 		_curTheme->setLabel(oldThemeName);
 		_newTheme = oldThemeId;
@@ -2337,7 +2623,7 @@ void GlobalOptionsDialog::apply() {
 		if (!isCharsetEqual)
 			errorMessage = _("Theme does not support selected language!");
 		else
-#endif
+#endif // USE_TRANSLATION
 			errorMessage = _("Theme cannot be loaded!");
 
 		g_gui.loadNewTheme(_newTheme, gfxMode, true);
@@ -2345,9 +2631,11 @@ void GlobalOptionsDialog::apply() {
 		MessageDialog error(errorMessage);
 		error.runModal();
 	}
+
 #ifdef USE_TTS
 	Common::TextToSpeechManager *ttsMan = g_system->getTextToSpeechManager();
 	if (ttsMan) {
+#ifdef USE_TRANSLATION
 		if (newLang != oldLang) {
 			if (newLang == "C")
 				ttsMan->setLanguage("en");
@@ -2356,6 +2644,10 @@ void GlobalOptionsDialog::apply() {
 			}
 			_ttsVoiceSelectionPopUp->setSelected(0);
 		}
+#else
+		ttsMan->setLanguage("en");
+#endif // USE_TRANSLATION
+
 		int volume = (ConfMan.getInt("speech_volume", "scummvm") * 100) / 256;
 		if (ConfMan.hasKey("mute", "scummvm") && ConfMan.getBool("mute", "scummvm"))
 			volume = 0;
@@ -2367,7 +2659,7 @@ void GlobalOptionsDialog::apply() {
 			selectedVoice = ttsMan->getDefaultVoice();
 		ttsMan->setVoice(selectedVoice);
 	}
-#endif
+#endif // USE_TTS
 
 	if (isRebuildNeeded) {
 		g_gui.setLanguageRTL();
@@ -2486,7 +2778,7 @@ void GlobalOptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint3
 			Common::FSNode file(browser.getResult());
 			_soundFont->setLabel(file.getPath());
 
-			if (!file.getPath().empty() && (file.getPath() != _c("None", "path")))
+			if (!file.getPath().empty() && (file.getPath().decode() != _c("None", "path")))
 				_soundFontClearButton->setEnabled(true);
 			else
 				_soundFontClearButton->setEnabled(false);
@@ -2511,9 +2803,9 @@ void GlobalOptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint3
 		setupCloudTab();
 		break;
 	}
-	case kPopUpItemSelectedCmd: {
+	case kStoragePopUpCmd: {
 		if (_storageWizardCodeBox)
-			_storageWizardCodeBox->setEditString("");
+			_storageWizardCodeBox->setEditString(Common::U32String());
 		// update container's scrollbar
 		reflowLayout();
 		break;
@@ -2540,7 +2832,7 @@ void GlobalOptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint3
 		Common::String url = "https://cloud.scummvm.org/";
 		switch (_selectedStorageIndex) {
 		case Cloud::kStorageDropboxId:
-			url += "dropbox";
+			url += "dropbox?refresh_token=true";
 			break;
 		case Cloud::kStorageOneDriveId:
 			url += "onedrive";
@@ -2563,7 +2855,7 @@ void GlobalOptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint3
 	}
 	case kPasteCodeStorageCmd: {
 		if (g_system->hasTextInClipboard()) {
-			Common::String message = g_system->getTextFromClipboard();
+			Common::U32String message = g_system->getTextFromClipboard();
 			if (!message.empty()) {
 				_storageWizardCodeBox->setEditString(message);
 				_redrawCloudTab = true;
@@ -2574,7 +2866,7 @@ void GlobalOptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint3
 	case kConnectStorageCmd: {
 		Common::String code = "";
 		if (_storageWizardCodeBox)
-			code = _storageWizardCodeBox->getEditString();
+			code = _storageWizardCodeBox->getEditString().encode();
 		if (code.size() == 0)
 			return;
 
@@ -2614,7 +2906,7 @@ void GlobalOptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint3
 	}
 	case kDisconnectStorageCmd: {
 		if (_storageWizardCodeBox)
-			_storageWizardCodeBox->setEditString("");
+			_storageWizardCodeBox->setEditString(Common::U32String());
 
 		if (_selectedStorageIndex == CloudMan.getStorageIndex() && CloudMan.isWorking()) {
 			bool cancel = true;
@@ -2676,11 +2968,6 @@ void GlobalOptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint3
 	}
 #endif // USE_SDL_NET
 #endif // USE_CLOUD
-#ifdef GUI_ENABLE_KEYSDIALOG
-	case kChooseKeyMappingCmd:
-		_keysDialog->runModal();
-		break;
-#endif
 #ifdef USE_FLUIDSYNTH
 	case kFluidSynthSettingsCmd:
 		_fluidSynthSettingsDialog->runModal();
@@ -2805,7 +3092,7 @@ void GlobalOptionsDialog::setupCloudTab() {
 		uint64 usedSpace = CloudMan.getStorageUsedSpace(_selectedStorageIndex);
 		Common::String usedSpaceNumber, usedSpaceUnits;
 		usedSpaceNumber = Common::getHumanReadableBytes(usedSpace, usedSpaceUnits);
-		_storageUsedSpace->setLabel(Common::String::format("%s %s", usedSpaceNumber.c_str(), _(usedSpaceUnits.c_str())));
+		_storageUsedSpace->setLabel(Common::U32String::format("%s %S", usedSpaceNumber.c_str(), _(usedSpaceUnits).c_str()));
 		_storageUsedSpace->setVisible(shownConnectedInfo);
 	}
 	if (_storageSyncHint) {
@@ -2814,7 +3101,7 @@ void GlobalOptionsDialog::setupCloudTab() {
 	}
 	if (_storageLastSyncDesc) _storageLastSyncDesc->setVisible(shownConnectedInfo);
 	if (_storageLastSync) {
-		Common::String sync = CloudMan.getStorageLastSync(_selectedStorageIndex);
+		Common::U32String sync = CloudMan.getStorageLastSync(_selectedStorageIndex);
 		if (sync == "") {
 			if (_selectedStorageIndex == CloudMan.getStorageIndex() && CloudMan.isSyncing())
 				sync = _("<right now>");
@@ -2976,14 +3263,14 @@ void GlobalOptionsDialog::reflowNetworkTabLayout() {
 
 #ifdef USE_LIBCURL
 void GlobalOptionsDialog::storageConnectionCallback(Networking::ErrorResponse response) {
-	Common::String message = "...";
+	Common::U32String message("...");
 	if (!response.failed && !response.interrupted) {
 		// success
 		g_system->displayMessageOnOSD(_("Storage connected."));
 	} else {
 		message = _("Failed to connect storage.");
 		if (response.failed) {
-			message = Common::String(_("Failed to connect storage: ")) + _(response.response.c_str());
+			message = _("Failed to connect storage: ") + _(response.response.c_str());
 		}
 	}
 

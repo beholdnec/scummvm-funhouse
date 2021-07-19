@@ -37,22 +37,11 @@
 #define GAMECONTROLLERDB_FILE "gamecontrollerdb.txt"
 
 static uint32 convUTF8ToUTF32(const char *src) {
-	uint32 utf32 = 0;
+	if (!src || src[0] == 0)
+		return 0;
 
-	char *dst = SDL_iconv_string(
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	                             "UTF-32BE",
-#else
-	                             "UTF-32LE",
-#endif
-                                 "UTF-8", src, SDL_strlen(src) + 1);
-
-	if (dst) {
-		utf32 = *((uint32 *)dst);
-		SDL_free(dst);
-	}
-
-	return utf32;
+	Common::U32String u32(src);
+	return u32[0];
 }
 
 void SdlEventSource::loadGameControllerMappingFile() {
@@ -83,12 +72,12 @@ void SdlEventSource::loadGameControllerMappingFile() {
 #endif
 
 SdlEventSource::SdlEventSource()
-    : EventSource(), _scrollLock(false), _joystick(0), _lastScreenID(0), _graphicsManager(0), _queuedFakeMouseMove(false),
-      _lastHatPosition(SDL_HAT_CENTERED), _mouseX(0), _mouseY(0), _engineRunning(false)
+	: EventSource(), _scrollLock(false), _joystick(0), _lastScreenID(0), _graphicsManager(0), _queuedFakeMouseMove(false),
+	  _lastHatPosition(SDL_HAT_CENTERED), _mouseX(0), _mouseY(0), _engineRunning(false)
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-      , _queuedFakeKeyUp(false), _fakeKeyUp(), _controller(nullptr)
+	  , _queuedFakeKeyUp(false), _fakeKeyUp(), _controller(nullptr)
 #endif
-      {
+	  {
 	int joystick_num = ConfMan.getInt("joystick_num");
 	if (joystick_num >= 0) {
 		// Initialize SDL joystick subsystem
@@ -156,7 +145,7 @@ int SdlEventSource::mapKey(SDL_Keycode sdlKey, SDL_Keymod mod, Uint16 unicode) {
 	if (key >= Common::KEYCODE_F1 && key <= Common::KEYCODE_F9) {
 		return key - Common::KEYCODE_F1 + Common::ASCII_F1;
 	} else if (key >= Common::KEYCODE_KP0 && key <= Common::KEYCODE_KP9) {
-		// WORKAROUND:  Disable this change for AmigaOS4 as it is breaking numpad usage ("fighting") on that platform.
+		// WORKAROUND:  Disable this change for AmigaOS as it's breaking numpad usage ("fighting") on that platform.
 		// This fixes bug #10558.
 		// The actual issue here is that the SCUMM engine uses ASCII codes instead of keycodes for input.
 		// See also the relevant FIXME in SCUMM's input.cpp.
@@ -179,12 +168,14 @@ int SdlEventSource::mapKey(SDL_Keycode sdlKey, SDL_Keymod mod, Uint16 unicode) {
 	}
 }
 
-bool SdlEventSource::processMouseEvent(Common::Event &event, int x, int y) {
+bool SdlEventSource::processMouseEvent(Common::Event &event, int x, int y, int relx, int rely) {
 	_mouseX = x;
 	_mouseY = y;
 
 	event.mouse.x = x;
 	event.mouse.y = y;
+	event.relMouse.x = relx;
+	event.relMouse.y = rely;
 
 	if (_graphicsManager) {
 		return _graphicsManager->notifyMousePosition(event.mouse);
@@ -506,10 +497,19 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		}
 
 	case SDL_WINDOWEVENT:
+		// We're only interested in events from the current display window
+		if (_graphicsManager) {
+			uint32 windowID = SDL_GetWindowID(_graphicsManager->getWindow()->getSDLWindow());
+			if (windowID != ev.window.windowID) {
+				return false;
+			}
+		}
+
 		switch (ev.window.event) {
 		case SDL_WINDOWEVENT_EXPOSED:
-			if (_graphicsManager)
+			if (_graphicsManager) {
 				_graphicsManager->notifyVideoExpose();
+			}
 			return false;
 
 		// SDL2 documentation indicate that SDL_WINDOWEVENT_SIZE_CHANGED is sent either as a result
@@ -566,8 +566,9 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		return true;
 #else
 	case SDL_VIDEOEXPOSE:
-		if (_graphicsManager)
+		if (_graphicsManager) {
 			_graphicsManager->notifyVideoExpose();
+		}
 		return false;
 
 	case SDL_VIDEORESIZE:
@@ -667,7 +668,7 @@ bool SdlEventSource::handleKeyUp(SDL_Event &ev, Common::Event &event) {
 bool SdlEventSource::handleMouseMotion(SDL_Event &ev, Common::Event &event) {
 	event.type = Common::EVENT_MOUSEMOVE;
 
-	return processMouseEvent(event, ev.motion.x, ev.motion.y);
+	return processMouseEvent(event, ev.motion.x, ev.motion.y, ev.motion.xrel, ev.motion.yrel);
 }
 
 bool SdlEventSource::handleMouseButtonDown(SDL_Event &ev, Common::Event &event) {
@@ -738,9 +739,9 @@ void SdlEventSource::openJoystick(int joystickIndex) {
 			_joystick = SDL_JoystickOpen(joystickIndex);
 			debug("Using joystick: %s",
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-                  SDL_JoystickName(_joystick)
+				  SDL_JoystickName(_joystick)
 #else
-                  SDL_JoystickName(joystickIndex)
+				  SDL_JoystickName(joystickIndex)
 #endif
 			);
 		}

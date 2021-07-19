@@ -357,7 +357,7 @@ void GUI_LoK::setGUILabels() {
 	int menuLabelGarbageOffset = 0;
 
 	if (_vm->gameFlags().isTalkie) {
-		if (_vm->gameFlags().lang == Common::EN_ANY)
+		if (_vm->gameFlags().lang == Common::EN_ANY || _vm->gameFlags().lang == Common::HE_ISR)
 			offset = 52;
 		else if (_vm->gameFlags().lang == Common::DE_DEU)
 			offset = 30;
@@ -579,7 +579,14 @@ void GUI_LoK::setupSavegames(Menu &menu, int num) {
 			}
 			_screen->_charSpacing = 0;
 
-			Util::convertISOToDOS(_savegameNames[i]);
+			Util::convertUTF8ToDOS(_savegameNames[i], 35);
+			if (_vm->gameFlags().lang == Common::JA_JPN) {
+				// Strip special characters from GMM save dialog which might get misinterpreted as SJIS
+				for (uint ii = 0; ii < strlen(_savegameNames[i]); ++ii) {
+					if (_savegameNames[i][ii] < 32) // due to the signed char type this will also clean up everything >= 0x80
+						_savegameNames[i][ii] = ' ';
+				}
+			}
 
 			menu.item[i].itemString = _savegameNames[i];
 			menu.item[i].enabled = 1;
@@ -745,7 +752,7 @@ int GUI_LoK::saveGame(Button *button) {
 	} else {
 		for (int i = 0; i < 5; i++) {
 			if (_menu[2].item[i].saveSlot == _vm->_gameToLoad) {
-				Common::strlcpy(_savegameName, _menu[2].item[i].itemString, 31);
+				Common::strlcpy(_savegameName, _menu[2].item[i].itemString.c_str(), 31);
 				break;
 			}
 		}
@@ -771,7 +778,7 @@ int GUI_LoK::saveGame(Button *button) {
 		if (_savegameOffset == 0 && _vm->_gameToLoad == 0)
 			_vm->_gameToLoad = getNextSavegameSlot();
 		if (_vm->_gameToLoad > 0) {
-			Util::convertDOSToISO(_savegameName);
+			Util::convertDOSToUTF8(_savegameName, 35);
 
 			Graphics::Surface thumb;
 			createScreenThumbnail(thumb);

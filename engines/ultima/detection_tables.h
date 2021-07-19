@@ -22,6 +22,10 @@
 
 namespace Ultima {
 
+#define GAMEOPTION_ORIGINAL_SAVELOAD GUIO_GAMEOPTIONS1
+
+#define GUI_OPTIONS_ULTIMA8	GUIO2(GUIO_NOMIDI, GAMEOPTION_ORIGINAL_SAVELOAD)
+
 static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 #ifndef RELEASE_BUILD
 	{
@@ -49,11 +53,8 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 		{
 			"ultima1",
 			0,
-			{
-				{"egctown.bin", 0, "4f7de68f6689cf9617aa1ea03240137e", 4896},
-				{"map.bin", 0, "f99633a0110ccf90837ab161be56cf1c", 13104},
-				AD_LISTEND
-			},
+			AD_ENTRY2s("egctown.bin",	"4f7de68f6689cf9617aa1ea03240137e", 4896,
+					   "map.bin",		"f99633a0110ccf90837ab161be56cf1c", 13104),
 			Common::JA_JPN,
 			Common::kPlatformPC98,
 			ADGF_UNSTABLE,
@@ -171,6 +172,22 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 		GF_VGA_ENHANCED
 	},
 
+	// Ultima VI - German Patch 1.6 https://sirjohn.de/ultima-6/
+	// Note: Not all user interface elements are translated in ScummVM
+	{
+		{
+			"ultima6",
+			0,
+			AD_ENTRY1s("converse.a", "5242f0228bbc9c3a60c7aa6071499688", 198797),
+			Common::DE_DEU,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO0()
+		},
+		GAME_ULTIMA6,
+		0
+	},
+
 	// PC98 Ultima 6
 	{
 		{
@@ -186,6 +203,77 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 		0
 	},
 
+	// Ultima VI - Nitpickers Delight older version
+	{
+		{
+			"ultima6",
+			0,
+			AD_ENTRY1s("converse.a", "5c15ba2a75fb921b715a1a0bf0152bac", 165874),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO0()
+		},
+		GAME_ULTIMA6,
+		0
+	},
+	{
+		{
+			"ultima6_enh",
+			0,
+			AD_ENTRY1s("converse.a","5c15ba2a75fb921b715a1a0bf0152bac", 165874),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO0()
+		},
+		GAME_ULTIMA6,
+		GF_VGA_ENHANCED
+	},
+
+	// Ultima VI - Nitpickers Delight newer version
+	{
+		{
+			"ultima6",
+			0,
+			AD_ENTRY1s("converse.a", "9f77c84a03efc77df2d53544d1275da8", 167604),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO0()
+		},
+		GAME_ULTIMA6,
+		0
+	},
+	{
+		{
+			"ultima6_enh",
+			0,
+			AD_ENTRY1s("converse.a", "9f77c84a03efc77df2d53544d1275da8", 167604),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO0()
+		},
+		GAME_ULTIMA6,
+		GF_VGA_ENHANCED
+	},
+
+	// Ultima VIII - CD (provided by ddeluca1com, bug #11944)
+	{
+		{
+			"ultima8",
+			"",
+			AD_ENTRY1s("eusecode.flx", "5494165cbf4b07be04a465e28350e086", 1209018),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUI_OPTIONS_ULTIMA8
+		},
+		GAME_ULTIMA8,
+		0
+	},
+
 	// Ultima VIII - Ultima Collection 1998
 	{
 		{
@@ -195,7 +283,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			Common::EN_ANY,
 			Common::kPlatformDOS,
 			ADGF_NO_FLAGS,
-			GUIO1(GUIO_NOMIDI)
+			GUI_OPTIONS_ULTIMA8
 		},
 		GAME_ULTIMA8,
 		0
@@ -210,7 +298,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			Common::EN_ANY,
 			Common::kPlatformDOS,
 			ADGF_NO_FLAGS,
-			GUIO1(GUIO_NOMIDI)
+			GUI_OPTIONS_ULTIMA8
 		},
 		GAME_ULTIMA8,
 		0
@@ -224,7 +312,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			Common::FR_FRA,
 			Common::kPlatformDOS,
 			ADGF_NO_FLAGS,
-			GUIO1(GUIO_NOMIDI)
+			GUI_OPTIONS_ULTIMA8
 		},
 		GAME_ULTIMA8,
 		0
@@ -238,7 +326,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			Common::DE_DEU,
 			Common::kPlatformDOS,
 			ADGF_NO_FLAGS,
-			GUIO1(GUIO_NOMIDI)
+			GUI_OPTIONS_ULTIMA8
 		},
 		GAME_ULTIMA8,
 		0
@@ -253,7 +341,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			Common::DE_DEU,
 			Common::kPlatformDOS,
 			ADGF_NO_FLAGS,
-			GUIO1(GUIO_NOMIDI)
+			GUI_OPTIONS_ULTIMA8
 		},
 		GAME_ULTIMA8,
 		0
@@ -267,7 +355,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			Common::ES_ESP,
 			Common::kPlatformDOS,
 			ADGF_NO_FLAGS,
-			GUIO1(GUIO_NOMIDI)
+			GUI_OPTIONS_ULTIMA8
 		},
 		GAME_ULTIMA8,
 		0
@@ -280,16 +368,15 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			AD_ENTRY1s("jusecode.flx", "1793bb252b805bf8d59300690987c605", 1208003),
 			Common::JA_JPN,
 			Common::kPlatformDOS,
-			ADGF_UNSTABLE,
-			GUIO1(GUIO_NOMIDI)
+			ADGF_NO_FLAGS,
+			GUI_OPTIONS_ULTIMA8
 		},
 		GAME_ULTIMA8,
 		0
 	},
 
-#ifndef RELEASE_BUILD
 	// Crusader games use basically the same engine as ultima8, but still
-	// need a lot of work.
+	// need a lot of work.  All are unstable, some simply crash on startup.
 
 	// GOG Crusader - No Remorse (V1.21)
 	{
@@ -299,7 +386,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			AD_ENTRY1s("eusecode.flx", "0a0f64507adc4f280129c735ee9cad42", 556613),
 			Common::EN_ANY,
 			Common::kPlatformDOS,
-			ADGF_UNSTABLE,
+			ADGF_TESTING,
 			GUIO1(GUIO_NOMIDI)
 		},
 		GAME_CRUSADER_REM,
@@ -329,6 +416,36 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			AD_ENTRY1s("eusecode.flx", "36a16d70c97d0379f1133cc743c31313", 558493),
 			Common::ES_ESP,
 			Common::kPlatformDOS,
+			ADGF_TESTING,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REM,
+		0
+	},
+
+	// Crusader - No Remorse (Spanish fan patch) provided by Wesker
+	{
+		{
+			"remorse",
+			"Fan Translation",
+			AD_ENTRY1s("eusecode.flx", "a8b5c421c5d74be8c69fcd4fecadd1dd", 559015),
+			Common::ES_ESP,
+			Common::kPlatformDOS,
+			ADGF_TESTING,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REM,
+		0
+	},
+
+	// Crusader - No Remorse (Japanese) provided by Dominus
+	{
+		{
+			"remorse",
+			"",
+			AD_ENTRY1s("jusecode.flx", "088105959be4f2de1cb9e796e71c5f2d", 554522),
+			Common::JA_JPN,
+			Common::kPlatformWindows,
 			ADGF_UNSTABLE,
 			GUIO1(GUIO_NOMIDI)
 		},
@@ -344,7 +461,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			AD_ENTRY1s("eusecode.flx", "41cdca35b62f4b2a7bb4c3b1ec782423", 556613),
 			Common::EN_ANY,
 			Common::kPlatformDOS,
-			ADGF_UNSTABLE | ADGF_DEMO,
+			ADGF_TESTING | ADGF_DEMO,
 			GUIO1(GUIO_NOMIDI)
 		},
 		GAME_CRUSADER_REM,
@@ -366,7 +483,22 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 		0
 	},
 
-	// Crusader - No Regret - Demo - V1.08
+	// Crusader - No Regret - German V1.07NV
+	{
+		{
+			"regret",
+			"",
+			AD_ENTRY1s("eusecode.flx", "1824d9725de45a8b49f058c12c6cf5c3", 484445),
+			Common::DE_DEU,
+			Common::kPlatformDOS,
+			ADGF_UNSTABLE,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REG,
+		0
+	},
+
+	// Crusader - No Regret - Demo V1.08
 	{
 		{
 			"regret",
@@ -395,7 +527,6 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 		GAME_CRUSADER_REG,
 		0
 	},
-#endif
 
 	// GOG Martian Dreams
 	{

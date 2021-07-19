@@ -102,7 +102,12 @@ bool SceneScriptDR05::ClickedOnItem(int itemId, bool a2) {
 		) {
 			if (!Actor_Query_Goal_Number(kActorMoraji)) {
 				Actor_Says_With_Pause(kActorMcCoy, 1015, 0.1f, 12);
+#if BLADERUNNER_ORIGINAL_BUGS
 				Actor_Says(kActorMoraji, 70, 13);
+#else
+				// Moraji speaks and the place blows up immediately after
+				Actor_Says_With_Pause(kActorMoraji, 70, 0.0f, 13);
+#endif // BLADERUNNER_ORIGINAL_BUGS
 			}
 			Actor_Set_Goal_Number(kActorMoraji, kGoalMorajiChooseFate);
 		}
@@ -117,7 +122,7 @@ bool SceneScriptDR05::ClickedOnItem(int itemId, bool a2) {
 		Item_Remove_From_World(kItemChain);
 		Game_Flag_Set(kFlagDR05ChainShot);
 		Actor_Set_Goal_Number(kActorMoraji, kGoalMorajiFreed);
-		Music_Play(kMusicMoraji, 71, 0, 0, -1, 0, 2);
+		Music_Play(kMusicMoraji, 71, 0, 0, -1, kMusicLoopPlayOnce, 2);
 		return true;
 	}
 	return false;
@@ -203,7 +208,7 @@ void SceneScriptDR05::PlayerWalkedIn() {
 
 void SceneScriptDR05::PlayerWalkedOut() {
 	Ambient_Sounds_Remove_All_Non_Looping_Sounds(true);
-	Ambient_Sounds_Remove_All_Looping_Sounds(1);
+	Ambient_Sounds_Remove_All_Looping_Sounds(1u);
 
 	if (Actor_Query_Goal_Number(kActorMoraji) == kGoalMorajiFreed
 	 || Actor_Query_Goal_Number(kActorMoraji) == kGoalMorajiGetUp

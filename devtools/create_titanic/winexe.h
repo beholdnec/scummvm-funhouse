@@ -25,7 +25,7 @@
 
 #include "file.h"
 #include "hash-str.h"
-#include "str.h"
+#include "common/str.h"
 
 namespace Common {
 
@@ -84,7 +84,7 @@ private:
 };
 
 struct WinResourceID_Hash {
-	uint operator()(const WinResourceID &id) const { return hashit(id.toString()); }
+	uint operator()(const WinResourceID &id) const { return hashit(id.toString().c_str()); }
 };
 
 struct WinResourceID_EqualTo {

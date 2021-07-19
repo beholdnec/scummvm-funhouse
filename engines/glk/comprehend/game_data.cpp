@@ -43,6 +43,7 @@ void FunctionState::clear() {
 	_and = false;
 	_inCommand = false;
 	_executed = false;
+	_notComparison = false;
 }
 
 /*-------------------------------------------------------*/
@@ -93,8 +94,12 @@ void Word::load(FileBuffer *fb) {
 
 	// Decode
 	for (int j = 0; j < 6; j++)
-		_word[j] ^= 0x8a;
+		_word[j] = tolower((char)(_word[j] ^ 0xaa));
+
+	// Strip off trailing spaces
 	_word[6] = '\0';
+	for (int j = 5; j > 0 && _word[j] == ' '; --j)
+		_word[j] = '\0';
 
 	_index = fb->readByte();
 	_type = fb->readByte();
@@ -117,6 +122,12 @@ void Action::clear() {
 }
 
 /*-------------------------------------------------------*/
+
+Instruction::Instruction(byte opcode, byte op1, byte op2, byte op3) : _opcode(opcode) {
+	_operand[0] = op1;
+	_operand[1] = op2;
+	_operand[2] = op3;
+}
 
 void Instruction::clear() {
 	_opcode = 0;
@@ -155,11 +166,12 @@ void GameData::clearGame() {
 	_comprehendVersion = 0;
 	_startRoom = 0;
 	_currentRoom = 0;
-	_words = nullptr;
-	_nr_words = 0;
 	_currentReplaceWord = 0;
+	_wordFlags = 0;
 	_updateFlags = 0;
 	_colorTable = 0;
+	_itemCount = 0;
+	_totalInventoryWeight = 0;
 
 	_strings.clear();
 	_strings2.clear();
@@ -180,7 +192,7 @@ void GameData::parse_header_le16(FileBuffer *fb, uint16 *val) {
 }
 
 uint8 GameData::parse_vm_instruction(FileBuffer *fb,
-                                  Instruction *instr) {
+								  Instruction *instr) {
 	uint i;
 
 	/* Get the opcode */
@@ -204,7 +216,7 @@ void GameData::parse_function(FileBuffer *fb, Function *func) {
 
 	p = (const uint8 *)memchr(fb->dataPtr(), 0x00, fb->size() - fb->pos());
 	if (!p)
-		error("bad function @ %.4x", fb->pos());
+		error("bad function @ %.4x", (int)fb->pos());
 
 	for (;;) {
 		Instruction instruction;
@@ -231,6 +243,10 @@ void GameData::parse_vm(FileBuffer *fb) {
 			break;
 
 		_functions.push_back(func);
+
+		// WORKAROUND: Parsing functions for Talisman
+		if (_functions.size() == 0x1d8 && g_vm->getGameID() == "talisman")
+			break;
 	}
 }
 
@@ -270,13 +286,9 @@ void GameData::parse_action_tables(FileBuffer *fb) {
 }
 
 void GameData::parse_dictionary(FileBuffer *fb) {
-	uint i;
-
-	// FIXME - fixed size 0xff array?
-	_words = (Word *)malloc(_nr_words * sizeof(Word));
-
 	fb->seek(_header.addr_dictionary);
-	for (i = 0; i < _nr_words; i++)
+
+	for (uint i = 0; i < _words.size(); i++)
 		_words[i].load(fb);
 }
 
@@ -469,12 +481,14 @@ done:
 }
 
 void GameData::parse_string_table(FileBuffer *fb, unsigned start_addr,
-                               uint32 end_addr, StringTable *table) {
-	fb->seek(start_addr);
-	while (1) {
-		table->push_back(parseString(fb));
-		if (fb->pos() >= (int32)end_addr)
-			break;
+							   uint32 end_addr, StringTable *table) {
+	if (start_addr < end_addr) {
+		fb->seek(start_addr);
+		while (1) {
+			table->push_back(parseString(fb));
+			if (fb->pos() >= (int32)end_addr)
+				break;
+		}
 	}
 }
 
@@ -528,6 +542,8 @@ void GameData::parse_header(FileBuffer *fb) {
 
 	fb->seek(0);
 	header->magic = fb->readUint16LE();
+	fb->skip(2);		// Unknown in earlier versions
+
 	switch (header->magic) {
 	case 0x2000: /* Transylvania, Crimson Crown disk one */
 	case 0x4800: /* Crimson Crown disk two */
@@ -535,14 +551,14 @@ void GameData::parse_header(FileBuffer *fb) {
 		_magicWord = (uint16)(-0x5a00 + 0x4);
 		break;
 
+	case 0x8bc3: /* Transylvania v2 */
 	case 0x93f0: /* OO-Topos */
-		_comprehendVersion = 2;
-		_magicWord = (uint16)-0x5a00;
-		break;
-
 	case 0xa429: /* Talisman */
 		_comprehendVersion = 2;
 		_magicWord = (uint16)-0x5a00;
+
+		// Actions table starts right at the start of the file
+		fb->seek(0);
 		break;
 
 	default:
@@ -550,15 +566,8 @@ void GameData::parse_header(FileBuffer *fb) {
 		break;
 	}
 
-	/* FIXME - Second word in header has unknown usage */
-	parse_header_le16(fb, &dummy);
-
-	/*
-	* Action tables.
-	*
-	* Layout depends on the comprehend version.
-	*/
-	for (int idx = 0; idx < (_comprehendVersion == 1 ? 7 : 5); ++idx)
+	/* Basic data */
+	for (int idx = 0; idx < 7; ++idx)
 		parse_header_le16(fb, &header->addr_actions[idx]);
 
 	parse_header_le16(fb, &header->addr_vm);
@@ -618,12 +627,13 @@ void GameData::parse_header(FileBuffer *fb) {
 	parse_variables(fb);
 	parse_flags(fb);
 
+	fb->skip(9);
+	_itemCount = fb->readByte();
+
 	_rooms.resize(header->room_direction_table[DIRECTION_SOUTH] -
 	                    header->room_direction_table[DIRECTION_NORTH] + 1);
 
-	_nr_words = (addr_dictionary_end -
-	                   header->addr_dictionary) /
-	                  8;
+	_words.resize((addr_dictionary_end - header->addr_dictionary) / 8);
 }
 
 void GameData::load_extra_string_file(const StringFile &stringFile) {
@@ -631,7 +641,7 @@ void GameData::load_extra_string_file(const StringFile &stringFile) {
 
 	if (stringFile._baseOffset > 0) {
 		// Explicit offset specified, so read the strings in sequentially
-		uint endOffset = stringFile._baseOffset;
+		uint endOffset = stringFile._endOffset;
 		if (!endOffset)
 			endOffset = fb.size();
 
@@ -668,10 +678,15 @@ void GameData::load_extra_string_file(const StringFile &stringFile) {
 
 void GameData::load_extra_string_files() {
 	_strings2.clear();
-	_strings2.reserve(STRING_FILE_COUNT * _stringFiles.size());
+	_strings2.reserve(STRING_FILE_COUNT * _stringFiles.size() + 1);
 
-	for (uint i = 0; i < _stringFiles.size(); i++)
+	for (uint i = 0; i < _stringFiles.size(); i++) {
+		// TODO: Is this needed for other than OO-Topos?
+		if (_comprehendVersion == 2 && (i == 0 || i == 4))
+			_strings2.push_back("");
+
 		load_extra_string_file(_stringFiles[i]);
+	}
 }
 
 void GameData::loadGameData() {
@@ -684,9 +699,8 @@ void GameData::loadGameData() {
 	parse_items(&fb);
 	parse_dictionary(&fb);
 	parse_word_map(&fb);
-	parse_string_table(&fb, _header.addr_strings,
-	                   _header.addr_strings_end,
-	                   &_strings);
+	if (g_comprehend->getGameID() != "talisman")
+		parse_string_table(&fb, _header.addr_strings, _header.addr_strings_end, &_strings);
 	load_extra_string_files();
 	parse_vm(&fb);
 	parse_action_tables(&fb);

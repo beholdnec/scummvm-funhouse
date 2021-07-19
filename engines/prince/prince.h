@@ -48,19 +48,13 @@
 #include "prince/mob.h"
 #include "prince/object.h"
 #include "prince/pscr.h"
+#include "prince/detection.h"
 
 namespace Prince {
-
-enum PrinceGameType {
-	kPrinceDataUNK,
-	kPrinceDataDE,
-	kPrinceDataPL
-};
 
 struct SavegameHeader;
 
 class PrinceEngine;
-struct PrinceGameDescription;
 class GraphicsMan;
 class Script;
 class Interpreter;
@@ -75,12 +69,6 @@ class Hero;
 class Animation;
 class Room;
 class Pscr;
-
-enum {
-	GF_TRANSLATED = 1 << 0,
-	GF_EXTRACTED  = 1 << 1,
-	GF_NOVOICES   = 1 << 2
-};
 
 struct SavegameHeader {
 	uint8 version;
@@ -100,7 +88,16 @@ struct Text {
 	uint16 _time;
 	uint32 _color;
 
-	Text() : _str(nullptr), _x(0), _y(0), _time(0), _color(255){
+	Text() {
+		clear();
+	}
+
+	void clear() {
+		_str = nullptr;
+		_x = 0;
+		_y = 0;
+		_time = 0;
+		_color = 255;
 	}
 };
 

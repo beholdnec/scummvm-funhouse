@@ -30,6 +30,42 @@
 
 namespace Mohawk {
 
+LBValue &LBValue::operator=(const LBValue &other)
+{
+	if (type != other.type) {
+		switch (type) {
+		case kLBValueString:
+			string.clear();
+			break;
+		case kLBValueInteger:
+			integer = 0;
+			break;
+		case kLBValueReal:
+			real = 0.0;
+			break;
+		case kLBValuePoint:
+			point = Common::Point();
+			break;
+		case kLBValueRect:
+			rect = Common::Rect();
+			break;
+		case kLBValueItemPtr:
+			item = nullptr;
+			break;
+		case kLBValueLBX:
+			lbx.reset();
+			break;
+		case kLBValueList:
+			list.reset();
+			break;
+		default:
+			break;
+		}
+	}
+	copy(other);
+	return *this;
+}
+
 bool LBValue::operator==(const LBValue &x) const {
 	if (type != x.type) {
 		if (isNumeric() && x.isNumeric())
@@ -149,7 +185,7 @@ LBCode::LBCode(MohawkEngine_LivingBooks *vm, uint16 baseId) : _vm(vm) {
 
 	uint32 totalSize = bcodStream->readUint32();
 	if (totalSize != (uint32)bcodStream->size())
-		error("BCOD had size %d, but claimed to be of size %d", bcodStream->size(), totalSize);
+		error("BCOD had size %d, but claimed to be of size %d", (int)bcodStream->size(), totalSize);
 	_size = bcodStream->readUint32();
 	if (_size + 8 > totalSize)
 		error("BCOD code was of size %d, beyond size %d", _size, totalSize);
@@ -219,6 +255,12 @@ void LBCode::nextToken() {
 			if (_currOffset + 2 > _size)
 				error("went off the end of code reading literal integer");
 			_currValue = READ_BE_UINT16(_data + _currOffset);
+			_currOffset += 2;
+			break;
+		case kLBCodeLiteralIntegerLE:
+			if (_currOffset + 2 > _size)
+				error("went off the end of code reading literal integer");
+			_currValue = READ_LE_UINT16(_data + _currOffset);
 			_currOffset += 2;
 			break;
 		default:
@@ -723,6 +765,11 @@ void LBCode::parseMain() {
 
 	case kTokenNotifyCommand:
 		runNotifyCommand();
+		break;
+
+	case 4:
+		nextToken();
+		_stack.push(0);
 		break;
 
 	default:

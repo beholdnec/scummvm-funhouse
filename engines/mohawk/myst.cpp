@@ -62,6 +62,9 @@
 #include "mohawk/myst_stacks/slides.h"
 #include "mohawk/myst_stacks/stoneship.h"
 
+// Common files for detection & engines
+#include "mohawk/myst_metaengine.h"
+
 namespace Mohawk {
 
 MohawkEngine_Myst::MohawkEngine_Myst(OSystem *syst, const MohawkGameDescription *gamedesc) :
@@ -99,11 +102,12 @@ MohawkEngine_Myst::MohawkEngine_Myst(OSystem *syst, const MohawkGameDescription 
 	// and to support the drop page and other actions in the options dialog.
 	assert(!_mainMenuDialog);
 	_mainMenuDialog = new MystMenuDialog(this);
+
+	// Enable CD-ROM delay simulation if necessary
+	addCdRomDelay = ConfMan.getBool("cdromdelay");
 }
 
 MohawkEngine_Myst::~MohawkEngine_Myst() {
-	DebugMan.clearAllDebugChannels();
-
 	delete _gfx;
 	delete _video;
 	delete _sound;
@@ -444,20 +448,8 @@ Common::Error MohawkEngine_Myst::run() {
 	return Common::kNoError;
 }
 
-const MystLanguage *MohawkEngine_Myst::listLanguages() {
-	static const MystLanguage languages[] = {
-	    { Common::EN_ANY,   "english"  },
-	    { Common::FR_FRA,   "french"   },
-	    { Common::DE_DEU,   "german"   },
-	    { Common::PL_POL,   "polish"   },
-	    { Common::ES_ESP,   "spanish"  },
-	    { Common::UNK_LANG, nullptr    }
-	};
-	return languages;
-}
-
 const MystLanguage *MohawkEngine_Myst::getLanguageDesc(Common::Language language) {
-	const MystLanguage *languages = listLanguages();
+	const MystLanguage *languages = MohawkMetaEngine_Myst::listLanguages();
 
 	while (languages->language != Common::UNK_LANG) {
 		if (languages->language == language) {
@@ -535,12 +527,6 @@ void MohawkEngine_Myst::loadArchive(const char *archiveName, const char *languag
 	_mhk.push_back(archive);
 }
 
-void MohawkEngine_Myst::registerDefaultSettings() {
-	ConfMan.registerDefault("playmystflyby", false);
-	ConfMan.registerDefault("zip_mode", false);
-	ConfMan.registerDefault("transition_mode", false);
-}
-
 void MohawkEngine_Myst::applyGameSettings() {
 	// Allow changing the language when in the main menu when the game has not yet been started.
 	// It's not possible to reliably change the language once the game is started as the current
@@ -550,6 +536,9 @@ void MohawkEngine_Myst::applyGameSettings() {
 		_gfx->loadMenuFont();
 		changeToStack(_stack->getStackId(), _card->getId(), 0, 0);
 	}
+
+	// Toggle CD-ROM simulation if necessary
+	addCdRomDelay = ConfMan.getBool("cdromdelay");
 }
 
 Common::KeymapArray MohawkEngine_Myst::initKeymaps(const char *target) {
@@ -934,6 +923,17 @@ void MohawkEngine_Myst::changeToStack(MystStack stackId, uint16 card, uint16 lin
 	_cache.clear();
 	_gfx->clearCache();
 
+	// Add artificial CD-ROM delay
+	if (addCdRomDelay) {
+		if (_stack->getStackId() != kIntroStack && _stack->getStackId() != kMenuStack) {
+			// Pretty arbitrary delays to mimic a period correct 4x drive
+			// TODO: Since the disc layout of the original CD-ROMs is known,
+			//       it should be possible to adapt the delay depending on the
+			//       target stack in order to replicate the original loading times.
+			g_system->delayMillis(_rnd->getRandomNumberRng(1000, 1200));
+		}
+	}
+
 	changeToCard(card, kTransitionCopy);
 
 	if (linkDstSound)
@@ -957,6 +957,21 @@ void MohawkEngine_Myst::changeToCard(uint16 card, TransitionType transition) {
 
 	if (_card) {
 		_card->leave();
+	}
+
+	// Add artificial CD-ROM delay
+	if (addCdRomDelay) {
+		if (_stack->getStackId() != kIntroStack && _stack->getStackId() != kMenuStack) {
+			// The original engine disables the mouse cursor when loading new cards.
+			_cursor->hideCursor();
+			_system->updateScreen();
+
+			// Pretty arbitrary delays to mimic a period correct 2x-4x drive
+			// Note: This is not only based on seeking times (only 80-120ms depending
+			//       on the source), but also accounts for loading the next chunk of data.
+			g_system->delayMillis(_rnd->getRandomNumberRng(300, 400));
+			_cursor->showCursor();
+		}
 	}
 
 	_card = MystCardPtr(new MystCard(this, card));

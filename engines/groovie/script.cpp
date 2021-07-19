@@ -159,7 +159,7 @@ bool Script::loadScript(Common::String filename) {
 
 	// Patch the loaded code for known script bugs
 	if (filename.equals("dr.grv")) {
-		// WORKAROUND for the cake puzzle glitch (bug #2458322): Lowering the
+		// WORKAROUND for the cake puzzle glitch (bug #4050): Lowering the
 		// piece on the first column and second row updates the wrong script
 		// variable
 		assert(_codeSize == 5546);
@@ -1494,7 +1494,7 @@ void Script::o_checkvalidsaves() {
 	while (it != list.end()) {
 		int8 slot = it->getSaveSlot();
 		if (SaveLoad::isSlotValid(slot)) {
-			debugC(2, kDebugScript, "  Found valid savegame: %s", it->getDescription().c_str());
+			debugC(2, kDebugScript, "  Found valid savegame: %s", it->getDescription().encode().c_str());
 
 			// Mark this slot as used
 			setVariable(slot, 1);

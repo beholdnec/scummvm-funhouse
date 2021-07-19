@@ -20,27 +20,38 @@
  *
  */
 
-#include "groovie/groovie.h"
-#include "groovie/detection.h"
-#include "groovie/saveload.h"
-
 #include "common/system.h"
 #include "common/translation.h"
+
+#include "engines/advancedDetector.h"
+#include "groovie/detection.h"
+#include "groovie/groovie.h"
 
 namespace Groovie {
 
 #define GAMEOPTION_T7G_FAST_MOVIE_SPEED  GUIO_GAMEOPTIONS1
 
+static const DebugChannelDef debugFlagList[] = {
+	{Groovie::kDebugVideo, "Video", "Debug video and audio playback"},
+	{Groovie::kDebugResource, "Resource", "Debug resource management"},
+	{Groovie::kDebugScript, "Script", "Debug the scripts"},
+	{Groovie::kDebugUnknown, "Unknown", "Report values of unknown data in files"},
+	{Groovie::kDebugHotspots, "Hotspots", "Show the hotspots"},
+	{Groovie::kDebugCursor, "Cursor", "Debug cursor decompression / switching"},
+	{Groovie::kDebugMIDI, "MIDI", "Debug MIDI / XMIDI files"},
+	{Groovie::kDebugScriptvars, "Scriptvars", "Print out any change to script variables"},
+	{Groovie::kDebugCell, "Cell", "Debug the cell game (in the microscope)"},
+	{Groovie::kDebugFast, "Fast", "Play videos quickly, with no sound (unstable)"},
+	DEBUG_CHANNEL_END
+};
+
 static const PlainGameDescriptor groovieGames[] = {
 	// Games
 	{"t7g", "The 7th Guest"},
-
-#ifdef ENABLE_GROOVIE2
 	{"11h", "The 11th Hour: The Sequel to The 7th Guest"},
 	{"clandestiny", "Clandestiny"},
 	{"unclehenry", "Uncle Henry's Playhouse"},
 	{"tlc", "Tender Loving Care"},
-#endif
 
 	{0, 0}
 };
@@ -126,7 +137,6 @@ static const GroovieGameDescription gameDescriptions[] = {
 		kGroovieT7G, 0
 	},
 
-#ifdef ENABLE_GROOVIE2
 	// The 11th Hour DOS English
 	{
 		{
@@ -153,11 +163,8 @@ static const GroovieGameDescription gameDescriptions[] = {
 	{
 		{
 			"11h", "",
-			{
-				{ "disk.1", 0, "5c0428cd3659fc7bbcd0aa16485ed5da", 227 },
-				{ "The 11th Hour Installer", 0, "bcdb4040b27f15b18f39fb9e496d384a", 1002987 },
-				{ 0, 0, 0, 0 }
-			},
+			AD_ENTRY2s("disk.1",					"5c0428cd3659fc7bbcd0aa16485ed5da", 227,
+					   "The 11th Hour Installer",	"bcdb4040b27f15b18f39fb9e496d384a", 1002987),
 			Common::EN_ANY, Common::kPlatformMacintosh, ADGF_UNSTABLE,
 			GUIO4(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT)
 		},
@@ -168,11 +175,8 @@ static const GroovieGameDescription gameDescriptions[] = {
 	{
 		{
 			"11h", "Installed",
-			{
-				{ "disk.1", 0, "5c0428cd3659fc7bbcd0aa16485ed5da", 227 },
-				{ "el01.mov", 0, "70f42dfc25b1488a08011dc45bb5145d", 6039 },
-				{ 0, 0, 0, 0 }
-			},
+			AD_ENTRY2s("disk.1",	"5c0428cd3659fc7bbcd0aa16485ed5da", 227,
+					   "el01.mov",	"70f42dfc25b1488a08011dc45bb5145d", 6039),
 			Common::EN_ANY, Common::kPlatformMacintosh, ADGF_UNSTABLE,
 			GUIO4(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT)
 		},
@@ -205,11 +209,8 @@ static const GroovieGameDescription gameDescriptions[] = {
 	{
 		{
 			"11h", "Making Of",
-			{
-				{ "disk.1", 0, "5c0428cd3659fc7bbcd0aa16485ed5da", 227 },
-				{ "The 11th Hour Installer", 0, "bcdb4040b27f15b18f39fb9e496d384a", 1002987 },
-				{ 0, 0, 0, 0 }
-			},
+			AD_ENTRY2s("disk.1",				  "5c0428cd3659fc7bbcd0aa16485ed5da", 227,
+					   "The 11th Hour Installer", "bcdb4040b27f15b18f39fb9e496d384a", 1002987),
 			Common::EN_ANY, Common::kPlatformMacintosh, ADGF_UNSTABLE,
 			GUIO4(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT)
 		},
@@ -220,11 +221,8 @@ static const GroovieGameDescription gameDescriptions[] = {
 	{
 		{
 			"11h", "Making Of (Installed)",
-			{
-				{ "disk.1", 0, "5c0428cd3659fc7bbcd0aa16485ed5da", 227 },
-				{ "el01.mov", 0, "70f42dfc25b1488a08011dc45bb5145d", 6039 },
-				{ 0, 0, 0, 0 }
-			},
+			AD_ENTRY2s("disk.1",	"5c0428cd3659fc7bbcd0aa16485ed5da", 227,
+					   "el01.mov",	"70f42dfc25b1488a08011dc45bb5145d", 6039),
 			Common::EN_ANY, Common::kPlatformMacintosh, ADGF_UNSTABLE,
 			GUIO4(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT)
 		},
@@ -246,11 +244,8 @@ static const GroovieGameDescription gameDescriptions[] = {
 	{
 		{
 			"clandestiny", "Trailer",
-			{
-				{ "disk.1", 0, "5c0428cd3659fc7bbcd0aa16485ed5da", 227 },
-				{ "The 11th Hour Installer", 0, "bcdb4040b27f15b18f39fb9e496d384a", 1002987 },
-				{ 0, 0, 0, 0 }
-			},
+			AD_ENTRY2s("disk.1",				  "5c0428cd3659fc7bbcd0aa16485ed5da", 227,
+					   "The 11th Hour Installer", "bcdb4040b27f15b18f39fb9e496d384a", 1002987),
 			Common::EN_ANY, Common::kPlatformMacintosh, ADGF_UNSTABLE,
 			GUIO4(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT)
 		},
@@ -261,11 +256,8 @@ static const GroovieGameDescription gameDescriptions[] = {
 	{
 		{
 			"clandestiny", "Trailer (Installed)",
-			{
-				{ "disk.1", 0, "5c0428cd3659fc7bbcd0aa16485ed5da", 227 },
-				{ "el01.mov", 0, "70f42dfc25b1488a08011dc45bb5145d", 6039 },
-				{ 0, 0, 0, 0 }
-			},
+			AD_ENTRY2s("disk.1",	"5c0428cd3659fc7bbcd0aa16485ed5da", 227,
+					   "el01.mov",	"70f42dfc25b1488a08011dc45bb5145d", 6039),
 			Common::EN_ANY, Common::kPlatformMacintosh, ADGF_UNSTABLE,
 			GUIO4(GUIO_MIDIADLIB, GUIO_MIDIMT32, GUIO_MIDIGM, GUIO_NOASPECT)
 		},
@@ -304,7 +296,6 @@ static const GroovieGameDescription gameDescriptions[] = {
 		},
 		kGroovieV2, 1
 	},
-#endif
 
 	{AD_TABLE_END_MARKER, kGroovieT7G, 0}
 };
@@ -328,9 +319,9 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 	AD_EXTRA_GUI_OPTIONS_TERMINATOR
 };
 
-class GroovieMetaEngine : public AdvancedMetaEngine {
+class GroovieMetaEngineDetection : public AdvancedMetaEngineDetection {
 public:
-	GroovieMetaEngine() : AdvancedMetaEngine(gameDescriptions, sizeof(GroovieGameDescription), groovieGames, optionsList) {
+	GroovieMetaEngineDetection() : AdvancedMetaEngineDetection(gameDescriptions, sizeof(GroovieGameDescription), groovieGames, optionsList) {
 		// Use kADFlagUseExtraAsHint in order to distinguish the 11th hour from
 		// its "Making of" as well as the Clandestiny Trailer; they all share
 		// the same MD5.
@@ -359,61 +350,11 @@ public:
 		return "Groovie Engine (C) 1990-1996 Trilobyte";
 	}
 
-	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const override;
-
-	bool hasFeature(MetaEngineFeature f) const override;
-	SaveStateList listSaves(const char *target) const override;
-	int getMaximumSaveSlot() const override;
-	void removeSaveState(const char *target, int slot) const override;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
+	const DebugChannelDef *getDebugChannels() const override {
+		return debugFlagList;
+	}
 };
-
-bool GroovieMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const {
-	if (gd) {
-		*engine = new GroovieEngine(syst, (const GroovieGameDescription *)gd);
-	}
-	return gd != 0;
-}
-
-bool GroovieMetaEngine::hasFeature(MetaEngineFeature f) const {
-	return
-		(f == kSupportsListSaves) ||
-		(f == kSupportsLoadingDuringStartup) ||
-		(f == kSupportsDeleteSave) ||
-		(f == kSavesSupportMetaInfo);
-}
-
-SaveStateList GroovieMetaEngine::listSaves(const char *target) const {
-	return SaveLoad::listValidSaves(target);
-}
-
-int GroovieMetaEngine::getMaximumSaveSlot() const {
-	return SaveLoad::getMaximumSlot();
-}
-
-void GroovieMetaEngine::removeSaveState(const char *target, int slot) const {
-	if (!SaveLoad::isSlotValid(slot)) {
-		// Invalid slot, do nothing
-		return;
-	}
-
-	Common::String filename = SaveLoad::getSlotSaveName(target, slot);
-	g_system->getSavefileManager()->removeSavefile(filename);
-}
-
-SaveStateDescriptor GroovieMetaEngine::querySaveMetaInfos(const char *target, int slot) const {
-	SaveStateDescriptor desc;
-
-	Common::InSaveFile *savefile = SaveLoad::openForLoading(target, slot, &desc);
-	delete savefile;
-
-	return desc;
-}
 
 } // End of namespace Groovie
 
-#if PLUGIN_ENABLED_DYNAMIC(GROOVIE)
-	REGISTER_PLUGIN_DYNAMIC(GROOVIE, PLUGIN_TYPE_ENGINE, Groovie::GroovieMetaEngine);
-#else
-	REGISTER_PLUGIN_STATIC(GROOVIE, PLUGIN_TYPE_ENGINE, Groovie::GroovieMetaEngine);
-#endif
+REGISTER_PLUGIN_STATIC(GROOVIE_DETECTION, PLUGIN_TYPE_ENGINE_DETECTION, Groovie::GroovieMetaEngineDetection);

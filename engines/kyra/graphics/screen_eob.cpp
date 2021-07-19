@@ -39,6 +39,9 @@
 #include "graphics/palette.h"
 #include "graphics/sjis.h"
 
+#define EXPLOSION_ANIM_DURATION 750
+#define VORTEX_ANIM_DURATION 750
+
 namespace Kyra {
 
 Screen_EoB::Screen_EoB(EoBCoreEngine *vm, OSystem *system) : Screen(vm, system, _screenDimTable, _screenDimTableCount), _cursorColorKey16Bit(0x8000) {
@@ -1115,6 +1118,7 @@ void Screen_EoB::drawExplosion(int scale, int radius, int numElements, int stepS
 	if (numElements > 150)
 		numElements = 150;
 
+
 	for (int i = 0; i < numElements; i++) {
 		ptr2[i] = ptr3[i] = 0;
 		ptr4[i] = _vm->_rnd.getRandomNumberRng(0, radius) - (radius >> 1);
@@ -1122,6 +1126,12 @@ void Screen_EoB::drawExplosion(int scale, int radius, int numElements, int stepS
 		ptr7[i] = _vm->_rnd.getRandomNumberRng(1024 / stepSize, 2048 / stepSize);
 		ptr8[i] = scale << 8;
 	}
+
+	uint32 playSpeedDelay = ((EXPLOSION_ANIM_DURATION << 15) / numElements) >> 7;
+	uint32 frameDelay = (1000 << 8) / 60;
+	uint32 playSpeedTimer = 0;
+	uint32 frameTimer = frameDelay;
+	uint32 start = _system->getMillis();
 
 	for (int l = 2; l;) {
 		if (l != 2) {
@@ -1136,13 +1146,20 @@ void Screen_EoB::drawExplosion(int scale, int radius, int numElements, int stepS
 					else
 						setPagePixel(0, px, py, ptr6[i]);
 				}
+
+				if (_system->getMillis() >= start + (frameTimer >> 8)) {
+					updateScreen();
+					frameTimer += frameDelay;
+				}
+				playSpeedTimer += playSpeedDelay;
+				if (_system->getMillis() < start + (playSpeedTimer >> 15))
+					_vm->delayUntil(start + (playSpeedTimer >> 15));
 			}
 		}
 
 		l = 0;
 
 		for (int i = 0; i < numElements; i++) {
-			uint32 end = _system->getMillis() + 1;
 			if (ptr4[i] <= 0)
 				ptr4[i]++;
 			else
@@ -1172,21 +1189,23 @@ void Screen_EoB::drawExplosion(int scale, int radius, int numElements, int stepS
 			int pxVal2 = colorTable[ptr8[i] >> 8];
 			if (pxVal2) {
 				l = 1;
-				if (pxVal1 == _gfxCol && posWithinRect(px, py, rX1, rY1, rX2, rY2)) {
+				if (pxVal1 == _gfxCol && posWithinRect(px, py, rX1, rY1, rX2, rY2))
 					setPagePixel(0, px, py, pxVal2);
-					if (i % 5 == 0)  {
-						updateScreen();
-						uint32 cur = _system->getMillis();
-						if (end > cur)
-							_system->delayMillis(end - cur);
-					}
-				}
 			} else {
 				ptr7[i] = 0;
 			}
+
+			if (_system->getMillis() >= start + (frameTimer >> 8)) {
+				updateScreen();
+				frameTimer += frameDelay;
+			}
+			playSpeedTimer += playSpeedDelay;
+			if (_system->getMillis() < start + (playSpeedTimer >> 15))
+				_vm->delayUntil(start + (playSpeedTimer >> 15));
 		}
 	}
 
+	updateScreen();
 	showMouse();
 }
 
@@ -1209,6 +1228,12 @@ void Screen_EoB::drawVortex(int numElements, int radius, int stepSize, int, int 
 	int cx = 88;
 	int cy = 48;
 	radius <<= 6;
+
+	uint32 playSpeedDelay = ((VORTEX_ANIM_DURATION << 16) / numElements) >> 8;
+	uint32 frameDelay = (1000 << 8) / 60;
+	uint32 playSpeedTimer = 0;
+	uint32 frameTimer = frameDelay;
+	uint32 start = _system->getMillis();
 
 	for (int i = 0; i < numElements; i++) {
 		int16 v38 = _vm->_rnd.getRandomNumberRng(radius >> 2, radius);
@@ -1269,12 +1294,19 @@ void Screen_EoB::drawVortex(int numElements, int radius, int stepSize, int, int 
 					setPagePixel16bit(0, px, py, pixBackup[ii]);
 				else
 					setPagePixel(0, px, py, pixBackup[ii]);
+
+				if (_system->getMillis() >= start + (frameTimer >> 8)) {
+					updateScreen();
+					frameTimer += frameDelay;
+				}
+				playSpeedTimer += playSpeedDelay;
+				if (_system->getMillis() < start + (playSpeedTimer >> 16))
+					_vm->delayUntil(start + (playSpeedTimer >> 16));
 			}
 		}
 
 		i = 0;
 		int r = (stepSize >> 1) + (stepSize >> 2) + (stepSize >> 3);
-		uint32 nextDelay = _system->getMillis() + 1;
 
 		for (int ii = 0; ii < numElements; ii++) {
 			if (pixDelay[ii] == 0) {
@@ -1308,24 +1340,25 @@ void Screen_EoB::drawVortex(int numElements, int radius, int stepSize, int, int 
 
 			if (tc2) {
 				i = 1;
-				if (tc1 == _gfxCol && !pixDelay[ii]) {
+				if (tc1 == _gfxCol && !pixDelay[ii])
 					setPagePixel(0, px, py, tc2);
-					if (ii % 15 == 0)  {
-						updateScreen();
-						uint32 cur = _system->getMillis();
-						if (nextDelay > cur)
-							_system->delayMillis(nextDelay - cur);
-						nextDelay += 1;
-					}
-				}
 			} else {
 				colTableStep[ii] = 0;
 			}
+
+			if (_system->getMillis() >= start + (frameTimer >> 8)) {
+				updateScreen();
+				frameTimer += frameDelay;
+			}
+			playSpeedTimer += playSpeedDelay;
+			if (_system->getMillis() < start + (playSpeedTimer >> 16))
+				_vm->delayUntil(start + (playSpeedTimer >> 16));
 		}
 		d++;
 	}
 
 	_curPage = cp;
+	updateScreen();
 	showMouse();
 }
 
@@ -1523,7 +1556,7 @@ bool Screen_EoB::loadFont(FontId fontId, const char *filename) {
 	} else if (_isAmiga) {
 		fnt = new AmigaDOSFont(_vm->resource(), _vm->game() == GI_EOB2 && _vm->gameFlags().lang == Common::DE_DEU);
 	} else if (_isSegaCD) {
-		fnt = new SegaCDFont(_vm->staticres()->loadRawDataBe16(kEoB1Ascii2SjisTable1, temp), _vm->staticres()->loadRawDataBe16(kEoB1Ascii2SjisTable2, temp),
+		fnt = new SegaCDFont(_vm->gameFlags().lang, _vm->staticres()->loadRawDataBe16(kEoB1Ascii2SjisTable1, temp), _vm->staticres()->loadRawDataBe16(kEoB1Ascii2SjisTable2, temp),
 			_vm->staticres()->loadRawData(kEoB1CharWidthTable1, temp), _vm->staticres()->loadRawData(kEoB1CharWidthTable2, temp), _vm->staticres()->loadRawData(kEoB1CharWidthTable3, temp));
 	} else {
 		// We use normal VGA rendering in EOB II, since we do the complete EGA dithering in updateScreen().
@@ -1764,6 +1797,9 @@ const uint8 Screen_EoB::_egaMatchTable[] = {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F, 0x3F, 0x3F
 };
 
+#undef EXPLOSION_ANIM_DURATION
+#undef VORTEX_ANIM_DURATION
+
 uint16 *OldDOSFont::_cgaDitheringTable = 0;
 int OldDOSFont::_numRef = 0;
 
@@ -1836,7 +1872,7 @@ void OldDOSFont::drawChar(uint16 c, byte *dst, int pitch, int bpp) const {
 	uint16 color1 = _colorMap8bit[1];
 	uint16 color2 = _colorMap8bit[0];
 
-    if (_style == kStyleLeftShadow) {
+	if (_style == kStyleLeftShadow) {
 		drawCharIntern(c, dst + pitch, pitch, 1, _shadowColor, 0);
 		drawCharIntern(c, dst - 1, pitch, 1, _shadowColor, 0);
 		drawCharIntern(c, dst - 1 + pitch, pitch, 1, _shadowColor, 0);

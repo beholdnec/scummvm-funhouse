@@ -2,25 +2,18 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="fonts">
-			<UniqueIdentifier>EEEE414E-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C5F-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="image">
-			<UniqueIdentifier>EEEE414F-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
-		</Filter>
-		<Filter Include="image\codecs">
-			<UniqueIdentifier>EEEE4150-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C60-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="versailles">
-			<UniqueIdentifier>EEEE4151-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
-		</Filter>
-		<Filter Include="video">
-			<UniqueIdentifier>EEEE4152-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569C61-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
 		<ClCompile Include="..\..\engines\cryomni3d\cryomni3d.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\datstream.cpp" />
-		<ClCompile Include="..\..\engines\cryomni3d\detection.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\dialogs_manager.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\fixed_image.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\font_manager.cpp" />
@@ -30,12 +23,10 @@
 		<ClCompile Include="..\..\engines\cryomni3d\fonts\cryofont.cpp">
 			<Filter>fonts</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\cryomni3d\image\codecs\hlz.cpp">
-			<Filter>image\codecs</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\cryomni3d\image\hlz.cpp">
 			<Filter>image</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\cryomni3d\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\mouse_boxes.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\objects.cpp" />
 		<ClCompile Include="..\..\engines\cryomni3d\omni3d.cpp" />
@@ -70,14 +61,12 @@
 		<ClCompile Include="..\..\engines\cryomni3d\versailles\toolbar.cpp">
 			<Filter>versailles</Filter>
 		</ClCompile>
-		<ClCompile Include="..\..\engines\cryomni3d\video\hnm_decoder.cpp">
-			<Filter>video</Filter>
-		</ClCompile>
 		<ClCompile Include="..\..\engines\cryomni3d\wam_parser.cpp" />
 	</ItemGroup>
 	<ItemGroup>
 		<ClInclude Include="..\..\engines\cryomni3d\cryomni3d.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\datstream.h" />
+		<ClInclude Include="..\..\engines\cryomni3d\detection.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\detection_tables.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\dialogs_manager.h" />
 		<ClInclude Include="..\..\engines\cryomni3d\fixed_image.h" />
@@ -87,9 +76,6 @@
 		</ClInclude>
 		<ClInclude Include="..\..\engines\cryomni3d\fonts\cryofont.h">
 			<Filter>fonts</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\cryomni3d\image\codecs\hlz.h">
-			<Filter>image\codecs</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\cryomni3d\image\hlz.h">
 			<Filter>image</Filter>
@@ -109,9 +95,6 @@
 		</ClInclude>
 		<ClInclude Include="..\..\engines\cryomni3d\versailles\toolbar.h">
 			<Filter>versailles</Filter>
-		</ClInclude>
-		<ClInclude Include="..\..\engines\cryomni3d\video\hnm_decoder.h">
-			<Filter>video</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\cryomni3d\wam_parser.h" />
 	</ItemGroup>

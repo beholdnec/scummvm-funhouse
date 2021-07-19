@@ -2,10 +2,10 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="myst_stacks">
-			<UniqueIdentifier>EEEE418A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CA7-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="riven_stacks">
-			<UniqueIdentifier>EEEE418B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CA8-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -18,7 +18,6 @@
 		<ClCompile Include="..\..\engines\mohawk\cstime_ui.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\cstime_view.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\cursors.cpp" />
-		<ClCompile Include="..\..\engines\mohawk\detection.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\dialogs.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\graphics.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\installer_archive.cpp" />
@@ -26,11 +25,13 @@
 		<ClCompile Include="..\..\engines\mohawk\livingbooks_code.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\livingbooks_graphics.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\livingbooks_lbx.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\mohawk.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_areas.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_card.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_graphics.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\myst_metaengine.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_scripts.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_sound.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\myst_stacks\channelwood.cpp">
@@ -79,6 +80,7 @@
 		<ClCompile Include="..\..\engines\mohawk\riven_card.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_graphics.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_inventory.cpp" />
+		<ClCompile Include="..\..\engines\mohawk\riven_metaengine.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_saveload.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_scripts.cpp" />
 		<ClCompile Include="..\..\engines\mohawk\riven_sound.cpp" />
@@ -126,6 +128,7 @@
 		<ClInclude Include="..\..\engines\mohawk\cstime_ui.h" />
 		<ClInclude Include="..\..\engines\mohawk\cstime_view.h" />
 		<ClInclude Include="..\..\engines\mohawk\cursors.h" />
+		<ClInclude Include="..\..\engines\mohawk\detection.h" />
 		<ClInclude Include="..\..\engines\mohawk\detection_tables.h" />
 		<ClInclude Include="..\..\engines\mohawk\dialogs.h" />
 		<ClInclude Include="..\..\engines\mohawk\graphics.h" />
@@ -140,6 +143,7 @@
 		<ClInclude Include="..\..\engines\mohawk\myst_areas.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_card.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_graphics.h" />
+		<ClInclude Include="..\..\engines\mohawk\myst_metaengine.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_scripts.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_sound.h" />
 		<ClInclude Include="..\..\engines\mohawk\myst_stacks\channelwood.h">
@@ -188,7 +192,9 @@
 		<ClInclude Include="..\..\engines\mohawk\riven_actions.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_card.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_graphics.h" />
+		<ClInclude Include="..\..\engines\mohawk\riven_graphics_detection_enums.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_inventory.h" />
+		<ClInclude Include="..\..\engines\mohawk\riven_metaengine.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_saveload.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_scripts.h" />
 		<ClInclude Include="..\..\engines\mohawk\riven_sound.h" />

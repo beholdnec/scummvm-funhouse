@@ -23,11 +23,7 @@
 #ifndef ULTIMA8_CONVERT_U8_CONVERTUSECODECRUSADER_H
 #define ULTIMA8_CONVERT_U8_CONVERTUSECODECRUSADER_H
 
-#ifndef INCLUDE_CONVERTUSECODEU8_WITHOUT_BRINGING_IN_FOLD
-#include "ultima/ultima8/convert/convert.h"
-#else
-#include "ultima/ultima8/convert/u8/convert_usecode_u8.h"
-#endif
+#include "ultima/ultima8/convert/convert_usecode.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -36,32 +32,10 @@ class ConvertUsecodeCrusader : public ConvertUsecode {
 public:
 	const char* const *intrinsics() override  { return _intrinsics;  };
 	const char* const *event_names() override { return _event_names; };
-	void readheader(Common::SeekableReadStream *ucfile, UsecodeHeader &uch, uint32 &curOffset) override;
-	void readevents(Common::SeekableReadStream *ucfile, const UsecodeHeader &/*uch*/) override
-	{
-#ifndef INCLUDE_CONVERTUSECODEU8_WITHOUT_BRINGING_IN_FOLD
-		EventMap.clear();
-		uint32 num_crusader_routines = uch.offset / 6;
-		for (uint32 i=0; i<32; ++i)
-		{
-			/*uint32 size =*/ ucfile->readUint16LE();
-			uint32 offset = ucfile->readUint32LE();
-			EventMap[offset] = i;
-#ifdef DISASM_DEBUG
-			pout << "Crusader Routine: " << i << ": " << Std::hex << Std::setw(4) << offset << Std::dec << endl;
-#endif
-		}
-#endif
-	}
 
-	void readOp(TempOp &op, Common::SeekableReadStream *ucfile, uint32 &dbg_symbol_offset, Std::vector<DebugSymbol> &debugSymbols, bool &done) override
-	{ readOpGeneric(op, ucfile, dbg_symbol_offset, debugSymbols, done, true); };
-	Node *readOp(Common::SeekableReadStream *ucfile, uint32 &dbg_symbol_offset, Std::vector<DebugSymbol> &debugSymbols, bool &done) override
-	{ return readOpGeneric(ucfile, dbg_symbol_offset, debugSymbols, done, true); };
-
+	static const char* const _event_names[];
 private:
 	static const char* const _intrinsics[512];
-	static const char* const _event_names[];
 };
 
 // By convention, last pushed argument goes first on the list.
@@ -73,7 +47,7 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"int16 Item::I_getMapArray(Item *)", // See TRIGGER::ordinal21 - stored in a variable 'mapNum'
 	"int16 Item::I_getStatus(Item *)",
 	"void Item::I_orStatus(Item *, uint16 flags)",
-	"int16 Item::I_equip(6 bytes)", // same coff as 0B5 - TODO: confirm this
+	"int16 Item::I_equip(6 bytes)", // same coff as 0B5
 	"byte Item::I_isOnScreen(Item *)", // called for gattling guns and camera
 	"byte Actor::I_isNPC(Item *)", // proably - actually checks is itemno < 256?
 	"byte Item::I_getZ(Item *)",
@@ -81,7 +55,7 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"int16 Actor::I_GetNPCDataField0x63_00B(Actor *)", // Some unknown value set for NPCs based on Q of egg.
 	"void Ultima8Engine::I_setAvatarInStasis(int)",
 	"byte Item::I_getDirToItem(Item *, itemno)", // based on disasm
-	"int16 Actor::I_turnToward(Actor *, direction, unk)", // TODO: work out what unk is
+	"int16 Actor::I_turnToward(Actor *, direction, dir_16)",
 	"void I_playFlic(void), int16 I_playFlic(Item *, char *name, int16 sizex, int16 sizey)",
 	// 0010
 	"int16 Item::I_getQLo(Item *)", // same as 02B based on same coff as 02B, 066, 084, 0A1, 0AE, 0D9, 0EA
@@ -121,9 +95,9 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"void Item::I_pop(Item *)", // same code as U8
 	"void Item::I_andStatus(Item *, uint16 status)", // part of same coff set 01A, 031, 069, 06E, 099, 0B2, 0BF, 0C1, 0C3, 0E9, 0FC, 101, 104, 106, 108, 10A, 10C, 10E, 110, 114, 117, 11A, 128, 132
 	"void Item::I_receiveHit(Item *, other, dir, damage, damagetype)", // based on disasm
-	"byte Actor::I_isBusy(4 bytes)", // same code as U8
+	"byte Actor::I_isBusy(Actor *)", // same code as U8
 	"int16 Item::I_getDirFromTo16(x1, y1, x2, y2)",
-	"byte Actor::I_getSomeFlagProbablyCrouch(Item *)",
+	"byte Actor::I_isKneeling(Actor *)",
 	"int16 Actor::I_doAnim(12 bytes)", // v. similar code to U8
 	"byte MainActor::I_addItemCru(4 bytes)", // same coff as 0B8
 	"void AudioProcess::I_stopSFXCru(Item *, int16 sndno)",
@@ -196,7 +170,7 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"int16 PaletteFaderProcess::I_fadeToBlack(void)", // fade to black, no args (40 frames)
 	"void MainActor::I_clrKeycards(void)",
 	"int16 MainActor::I_teleportToEgg(int, int, int)",
-	"int16 PaletteFaderProcess::I_fadeFromBlack(void)", // from black, no arg (40 frames)
+	"int16 PaletteFaderProcess::I_fadeToGamePal(void)", // from black, no arg (40 frames)
 	"void Actor::I_clrImmortal(Actor *)", // same coff as 130
 	"int16 Actor::I_getHp(Actor *)",
 	"void Actor::I_setActivity(Actor *, int)", // part of same coff set 055, 07D, 0CD, 0DB, 0F2, 131
@@ -213,29 +187,29 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"int16 CameraProcess::I_getCameraY(void)",
 	"void Item::I_setMapArray(Item *, uint16 maparray)", // based on decompile - sets same value as read by getmaparray .. see VALUEBOX:ordinal20
 	"int16 Item::I_getNpcNum(Item *)", // part of same coff set 067, 06D, 089, 08E, 0AD, 0F8, 100, 102, 105, 107, 109, 10B, 10D, 10F, 111, 115, 11C, 123, 129
-	"void Intrinsic08A(12 bytes)", // TODO: No idea here.. something about hurling? look at the usecode.
+	"void Item::I_shoot(Item *, Point3 *, int speed, int gravity)",
 	"int16 Item::I_enterFastArea(Item *)", // based on disasm, v similar to U8
 	"void Item::I_setIsBroken(Item *)", // same coff as 119, 12A
 	"int16 Item::I_hurl(Item *,8 bytes)", // part of same coff set 028, 08D, 0BD, 0C0, 0C2, 0C8, 0F7, 0F9, 118, 11D
 	"int16 Item::I_getNPCNum(Item *)", // part of same coff set 067, 06D, 089, 08E, 0AD, 0F8, 100, 102, 105, 107, 109, 10B, 10D, 10F, 111, 115, 11C, 123, 129
 	"void PaletteFaderProcess::I_jumpToAllBlack(void)",
 	// 0090
-	"void MusicProcess::I_musicStop(void)",
-	"void I_setSomeMovieGlobal(void)", // sets some global (cleared by 93)
-	"void I_playFlic092(char *)", // same coff as 0A9
-	"void I_clearSomeMovieGlobal(void)", // clears some global (set by 91)
+	"void MusicProcess::I_stopMusic(void)",
+	"void I_setSomeMovieGlobal(void)", // sets global (cleared by 93) to control palette cycling
+	"void I_playMovieCutsceneFullscreen(char *)", // same coff as 0A9
+	"void I_clearSomeMovieGlobal(void)", // clears global (set by 91) to control palette cycling
 	"void Game::I_playCredits(void)",
 	"byte Kernel::I_getCurrentKeyDown(void)", // get global - something about keyboard (by disasm)
 	"int16 MainActor::I_teleportToEgg(int, int)", // a bit different to the U8 one - uses main actor map by default.
 	"void PaletteFaderProcess:I_jumpToGreyScale(void)",
-	"void I_resetVargasHealthTo500(void)", // TODO: look how this is used in disasm and usecode .. seems weird.
+	"void I_resetVargasShieldTo500(void)",
 	"void Item::I_andStatus(Item *, uint16 status)", // part of same coff set 01A, 031, 069, 06E, 099, 0B2, 0BF, 0C1, 0C3, 0E9, 0FC, 101, 104, 106, 108, 10A, 10C, 10E, 110, 114, 117, 11A, 128, 132
-	"void PaletteFaderProcess::I_stopFadesAndResetToGamePal(void)", // TODO: Implement this.
-	"int16 PaletteFaderProcess::I_fadeFromBlack(nsteps)",
-	"int16 PaletteFaderProcess::I_fadeFromBlackWithParam(nsteps, unk)", // TODO: what's the param?
+	"void PaletteFaderProcess::I_jumpToNormalPalette(void)",
+	"int16 PaletteFaderProcess::I_fadeToGamePal(nsteps)",
+	"int16 PaletteFaderProcess::I_fadeToGamePalWithParam(nsteps, unk)",
 	"int16 PaletteFaderProcess::I_fadeToBlack(nsteps)",
-	"int16 PaletteFaderProcess::I_fadeToBlackWithParam(nsteps, unk)", // TODO: what's the param?
-	"int16 PaletteFaderProcess::I_fadeToColor(r, g, b, nsteps, unk)", // TODO: what's the other param?
+	"int16 PaletteFaderProcess::I_fadeToBlackWithParam(nsteps, unk)",
+	"int16 PaletteFaderProcess::I_fadeToColor(r, g, b, nsteps, unk)",
 	// 00A0
 	"void Actor::I_setDead(Actor *)", // part of same coff set 021, 060, 073, 0A0, 0A8, 0D8, 0E7, 135
 	"int16 Item::I_getQLo(Item *)", // same as 02B based on same coff set 010, 02B, 066, 084, 0A1, 0AE, 0D9, 0EA
@@ -243,12 +217,12 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"void Egg::I_setEggXRange(Egg *, int)", // based on disasm
 	"byte Item::I_overlaps(Item *, uint16 unk)", // same disasm as U8
 	"byte Item::I_isOn(Item *, itemno)", // part of same coff set 044, 046, 048, 04A, 04C, 04E, 0A5, 0BC, 0C5, 0DC, 0F1, 0FA, 12C
-	"int16 I_getAnimationsDisabled(void)", // From disasm. Not implemented, that's ok..
+	"int16 I_getAnimationsEnabled(void)",
 	"int16 Egg::I_getEggXRange(Egg *)", // based on disasm
 	"void Actor::I_setDead(Actor *)", // part of same coff set 021, 060, 073, 0A0, 0A8, 0D8, 0E7, 135
-	"void I_playFlic0A9(char *)", // same coff as 092
+	"void I_playMovieCutsceneFullscreen(char *)", // same coff as 092
 	"void AudioProcess::I_playSFX(2 bytes)", // same coff as 0D4
-	"byte Actor::I_NPCGetField0x59Flag1_0AB(Actor *)",
+	"byte Actor::I_isFalling(Actor *)",
 	"int16 Item::I_getFamilyOfType(Item *)", // per pentagram notes, matches disasm.
 	"int16 Item::I_getNPCNum(Item *)", // part of same coff set 067, 06D, 089, 08E, 0AD, 0F8, 100, 102, 105, 107, 109, 10B, 10D, 10F, 111, 115, 11C, 123, 129
 	"int16 Item::I_getQLo(Item *)", // same as 02B based on same coff set 010, 02B, 066, 084, 0A1, 0AE, 0D9, 0EA
@@ -282,7 +256,7 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"int16 Item::I_hurl(Item *,8 bytes)", // part of same coff set 028, 08D, 0BD, 0C0, 0C2, 0C8, 0F7, 0F9, 118, 11D
 	"int16 Item::I_getQHi(Item *)", // same as 026 based on same coff set 026, 045, 047, 049, 04B, 04D, 04F, 0AF, 0BE, 0C9, 0F0, 0F3, 0FB, 133
 	"byte Actor::I_addHp(Actor *, int)",
-	"void I_createMapJumpProcess(int16 mapnum)", // TODO: Implement me
+	"void MainActor::I_switchMap(int16 mapnum)",
 	"byte Actor::I_getInCombat(Actor *)",
 	"void Actor::I_setActivity(Actor *, int)", // part of same coff set 055, 07D, 0CD, 0DB, 0F2, 131
 	"int16 Game::I_isReleaseBuild(void)", // whether the string "GAME COMPILE=1" has the 1.  Might be interesting to see what this does..
@@ -290,8 +264,8 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	// 00D0
 	"int16 Item::I_use(Item *)", // same coff as 080, 0D5
 	"void AudioProcess:I_stopAllSFX(void)", // based on disasm.
-	"void I_playFlic0D2(int *item,char *flicname,word sizex,word sizey)", // play flic
-	"void Intrinsic0D3(void)", // clears some globals and calls a kernel function.. TODO: work out what those globals do?
+	"void I_playMovieCutscene(int *item,char *flicname,word sizex,word sizey)", // play flic
+	"void I_clearKeyboardState(void)", // clears some globals and calls a keyboard reset function.. TODO: work out what those globals do?
 	"void I_playSFX(2 bytes)", // same coff as 0AA.  Based on disasm.
 	"int16 Item::I_use(Item *)", // same coff as 080, 0D0
 	"byte CameraProcess::I_getCameraZ(void)",
@@ -310,7 +284,7 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"int16 Actor::I_getDefaultActivity1(Actor *)",
 	"int16 Actor::I_getDefaultActivity2(Actor *)",
 	"int16 Actor::I_getLastAnimSet(4 bytes)", // part of same coff set 01D, 05A, 0B9, 0D7, 0E4, 124
-	"void Actor::I_attack(Actor *, uint16 target)",
+	"void Actor::I_setTarget(Actor *, uint16 target)",
 	"void Actor::I_SetNPCDataField0x63_0E6(Actor *, int)",
 	"void Actor::I_setDead(4 bytes)", // part of same coff set 021, 060, 073, 0A0, 0A8, 0D8, 0E7, 135
 	"int16 Item::I_cast(6 bytes)",
@@ -362,7 +336,7 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"int16 UCMachine::I_numToStr(int16 num)", // based on VMAIL::func0A example usage
 	"void Item::I_andStatus(Item *, uint16 status)", // part of same coff set 01A, 031, 069, 06E, 099, 0B2, 0BF, 0C1, 0C3, 0E9, 0FC, 101, 104, 106, 108, 10A, 10C, 10E, 110, 114, 117, 11A, 128, 132
 	"int16 Item::I_getNPCNum(Item *)", // part of same coff set 067, 06D, 089, 08E, 0AD, 0F8, 100, 102, 105, 107, 109, 10B, 10D, 10F, 111, 115, 11C, 123, 129
-	"byte Intrinsic116(14 bytes)", // something like distance-to?
+	"byte Item::I_fireDistance(14 bytes)",
 	"void Item::I_andStatus(Item *, uint16 status)", // part of same coff set 01A, 031, 069, 06E, 099, 0B2, 0BF, 0C1, 0C3, 0E9, 0FC, 101, 104, 106, 108, 10A, 10C, 10E, 110, 114, 117, 11A, 128, 132
 	"int16 Item::I_hurl(Item *,8 bytes)", // part of same coff set 028, 08D, 0BD, 0C0, 0C2, 0C8, 0F7, 0F9, 118, 11D
 	"void Item::I_setIsBroken(Item *)", // same coff as 08C, 12A
@@ -394,7 +368,7 @@ const char* const ConvertUsecodeCrusader::_intrinsics[] = {
 	"void Actor::I_setActivity(Actor *, int)", // part of same coff set 055, 07D, 0CD, 0DB, 0F2, 131
 	"void Item::I_andStatus(Item *, int16 status)", // part of same coff set 01A, 031, 069, 06E, 099, 0B2, 0BF, 0C1, 0C3, 0E9, 0FC, 101, 104, 106, 108, 10A, 10C, 10E, 110, 114, 117, 11A, 128, 132
 	"int16 Item::I_getQHi(Item *)", // same as 026 based on same coff set 026, 045, 047, 049, 04B, 04D, 04F, 0AF, 0BE, 0C9, 0F0, 0F3, 0FB, 133
-	"void Intrinsic134(2 bytes)", // something to do with Wezzy/Weasel? Only called from WEA_BOOT::func0A
+	"void WeaselGump::I_showGump(uint16 param)",
 	"void Actor::I_setDead(Actor *)", // part of same coff set 021, 060, 073, 0A0, 0A8, 0D8, 0E7, 135
 	"void UNUSEDInt136()",
 	"void UNUSEDInt137()"
@@ -423,7 +397,7 @@ const char * const ConvertUsecodeCrusader::_event_names[] = {
 	"justMoved()",					// 0x12
 	"avatarStoleSomething(uword)",	// 0x13
 	"animGetHit()",					// 0x14
-	"guardianBark(word)",			// 0x15
+	"unhatch(word)",				// 0x15
 	"func16",						// 0x16
 	"func17",						// 0x17
 	"func18",						// 0x18
@@ -436,22 +410,6 @@ const char * const ConvertUsecodeCrusader::_event_names[] = {
 	"func1F",						// 0x1F
 	0
 };
-
-void ConvertUsecodeCrusader::readheader(Common::SeekableReadStream *ucfile, UsecodeHeader &uch, uint32 &curOffset) {
-	#ifdef DISASM_DEBUG
-	perr << Std::setfill('0') << Std::hex;
-	perr << "unknown1: " << Std::setw(4) << ucfile->readUint32LE() << endl; // unknown
-	uch.maxOffset = ucfile->readUint32LE() - 0x0C; // file size
-	perr << "maxoffset: " << Std::setw(4) << maxOffset << endl;
-	perr << "unknown2: " << Std::setw(4) << ucfile->readUint32LE() << endl; // unknown
-	curOffset = 0;
-	#else
-	ucfile->readUint32LE(); // unknown
-	uch._maxOffset = ucfile->readUint32LE() - 0x0C; // file size
-	ucfile->readUint32LE(); // unknown
-	curOffset = 0;
-	#endif
-}
 
 } // End of namespace Ultima8
 } // End of namespace Ultima

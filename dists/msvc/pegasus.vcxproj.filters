@@ -2,43 +2,43 @@
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		<Filter Include="ai">
-			<UniqueIdentifier>EEEE4190-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB1-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="items">
-			<UniqueIdentifier>EEEE4191-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB2-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="items\biochips">
-			<UniqueIdentifier>EEEE4192-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB3-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="items\inventory">
-			<UniqueIdentifier>EEEE4193-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB4-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood">
-			<UniqueIdentifier>EEEE4194-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB5-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood\caldoria">
-			<UniqueIdentifier>EEEE4195-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB6-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood\mars">
-			<UniqueIdentifier>EEEE4196-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB7-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood\norad">
-			<UniqueIdentifier>EEEE4197-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB8-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood\norad\alpha">
-			<UniqueIdentifier>EEEE4198-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CB9-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood\norad\delta">
-			<UniqueIdentifier>EEEE4199-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CBA-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood\prehistoric">
-			<UniqueIdentifier>EEEE419A-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CBB-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood\tsa">
-			<UniqueIdentifier>EEEE419B-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CBC-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 		<Filter Include="neighborhood\wsc">
-			<UniqueIdentifier>EEEE419C-E81D-11EB-BAD6-AC12039C8758</UniqueIdentifier>
+			<UniqueIdentifier>2C569CBD-E83B-11EB-BAD6-AC12039C8758</UniqueIdentifier>
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
@@ -54,10 +54,10 @@
 		<ClCompile Include="..\..\engines\pegasus\ai\ai_rule.cpp">
 			<Filter>ai</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\pegasus\chase.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\compass.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\console.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\cursor.cpp" />
-		<ClCompile Include="..\..\engines\pegasus\detection.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\elements.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\energymonitor.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\fader.cpp" />
@@ -71,6 +71,9 @@
 			<Filter>items</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\pegasus\items\biochips\aichip.cpp">
+			<Filter>items\biochips</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\pegasus\items\biochips\arthurchip.cpp">
 			<Filter>items\biochips</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\pegasus\items\biochips\biochipitem.cpp">
@@ -122,6 +125,7 @@
 			<Filter>items</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\pegasus\menu.cpp" />
+		<ClCompile Include="..\..\engines\pegasus\metaengine.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\movie.cpp" />
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\caldoria\caldoria.cpp">
 			<Filter>neighborhood\caldoria</Filter>
@@ -149,6 +153,9 @@
 		</ClCompile>
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\hotspotinfo.cpp">
 			<Filter>neighborhood</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\canyonchase.cpp">
+			<Filter>neighborhood\mars</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\energybeam.cpp">
 			<Filter>neighborhood\mars</Filter>
@@ -189,6 +196,9 @@
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\tractorbeam.cpp">
 			<Filter>neighborhood\mars</Filter>
 		</ClCompile>
+		<ClCompile Include="..\..\engines\pegasus\neighborhood\mars\tunnelpod.cpp">
+			<Filter>neighborhood\mars</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\neighborhood.cpp">
 			<Filter>neighborhood</Filter>
 		</ClCompile>
@@ -205,6 +215,9 @@
 			<Filter>neighborhood\norad\alpha</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\alpha\panoramascroll.cpp">
+			<Filter>neighborhood\norad\alpha</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\alpha\subchase.cpp">
 			<Filter>neighborhood\norad\alpha</Filter>
 		</ClCompile>
 		<ClCompile Include="..\..\engines\pegasus\neighborhood\norad\delta\globegame.cpp">
@@ -279,10 +292,12 @@
 		<ClInclude Include="..\..\engines\pegasus\ai\ai_rule.h">
 			<Filter>ai</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\pegasus\chase.h" />
 		<ClInclude Include="..\..\engines\pegasus\compass.h" />
 		<ClInclude Include="..\..\engines\pegasus\console.h" />
 		<ClInclude Include="..\..\engines\pegasus\constants.h" />
 		<ClInclude Include="..\..\engines\pegasus\cursor.h" />
+		<ClInclude Include="..\..\engines\pegasus\detection.h" />
 		<ClInclude Include="..\..\engines\pegasus\elements.h" />
 		<ClInclude Include="..\..\engines\pegasus\energymonitor.h" />
 		<ClInclude Include="..\..\engines\pegasus\fader.h" />
@@ -296,6 +311,9 @@
 			<Filter>items</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\pegasus\items\biochips\aichip.h">
+			<Filter>items\biochips</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\pegasus\items\biochips\arthurchip.h">
 			<Filter>items\biochips</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\pegasus\items\biochips\biochipitem.h">
@@ -375,6 +393,9 @@
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\hotspotinfo.h">
 			<Filter>neighborhood</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\canyonchase.h">
+			<Filter>neighborhood\mars</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\constants.h">
 			<Filter>neighborhood\mars</Filter>
 		</ClInclude>
@@ -417,6 +438,9 @@
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\tractorbeam.h">
 			<Filter>neighborhood\mars</Filter>
 		</ClInclude>
+		<ClInclude Include="..\..\engines\pegasus\neighborhood\mars\tunnelpod.h">
+			<Filter>neighborhood\mars</Filter>
+		</ClInclude>
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\neighborhood.h">
 			<Filter>neighborhood</Filter>
 		</ClInclude>
@@ -433,6 +457,9 @@
 			<Filter>neighborhood\norad\alpha</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\alpha\panoramascroll.h">
+			<Filter>neighborhood\norad\alpha</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\alpha\subchase.h">
 			<Filter>neighborhood\norad\alpha</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\engines\pegasus\neighborhood\norad\constants.h">

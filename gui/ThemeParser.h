@@ -36,6 +36,12 @@ public:
 
 	~ThemeParser() override;
 
+	void setBaseResolution(int w, int h, float s) {
+		_baseWidth = w;
+		_baseHeight = h;
+		_scaleFactor = s;
+	}
+
 	bool getPaletteColor(const Common::String &name, int &r, int &g, int &b) {
 		if (!_palette.contains(name))
 			return false;
@@ -63,10 +69,16 @@ protected:
 			XML_KEY(fonts)
 				XML_KEY(font)
 					XML_PROP(id, true)
-					XML_PROP(file, true)
+					XML_PROP(file, false)
 					XML_PROP(resolution, false)
 					XML_PROP(scalable_file, false)
 					XML_PROP(point_size, false)
+					XML_KEY(language)
+						XML_PROP(id, true)
+						XML_PROP(file, false)
+						XML_PROP(scalable_file, false)
+						XML_PROP(point_size, false)
+					KEY_END()
 				KEY_END()
 
 				XML_KEY(text_color)
@@ -79,10 +91,9 @@ protected:
 				XML_KEY(bitmap)
 					XML_PROP(filename, true)
 					XML_PROP(resolution, false)
-				KEY_END()
-				XML_KEY(alphabitmap)
-					XML_PROP(filename, true)
-					XML_PROP(resolution, false)
+					XML_PROP(scalable_file, false)
+					XML_PROP(width, false)
+					XML_PROP(height, false)
 				KEY_END()
 			KEY_END()
 
@@ -168,6 +179,7 @@ protected:
 					XML_PROP(var, true)
 					XML_PROP(value, true)
 					XML_PROP(resolution, false)
+					XML_PROP(scalable, false)
 				KEY_END()
 
 				XML_KEY(widget)
@@ -224,6 +236,7 @@ protected:
 	bool parserCallback_font(ParserNode *node);
 	bool parserCallback_text_color(ParserNode *node);
 	bool parserCallback_fonts(ParserNode *node);
+	bool parserCallback_language(ParserNode *node);
 	bool parserCallback_text(ParserNode *node);
 	bool parserCallback_palette(ParserNode *node);
 	bool parserCallback_color(ParserNode *node);
@@ -231,7 +244,6 @@ protected:
 	bool parserCallback_drawdata(ParserNode *node);
 	bool parserCallback_bitmaps(ParserNode *node) { return true; }
 	bool parserCallback_bitmap(ParserNode *node);
-	bool parserCallback_alphabitmap(ParserNode *node);
 	bool parserCallback_cursor(ParserNode *node);
 
 
@@ -258,6 +270,9 @@ protected:
 
 	Graphics::DrawStep *_defaultStepGlobal;
 	Graphics::DrawStep *_defaultStepLocal;
+
+	int16 _baseWidth, _baseHeight;
+	float _scaleFactor;
 
 	struct PaletteColor {
 		uint8 r, g, b;

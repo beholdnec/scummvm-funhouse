@@ -20,11 +20,9 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/world/actors/pathfinder_process.h"
 
 #include "ultima/ultima8/world/actors/actor.h"
-#include "ultima/ultima8/world/actors/pathfinder.h"
 #include "ultima/ultima8/world/get_object.h"
 #include "ultima/ultima8/misc/direction_util.h"
 
@@ -36,7 +34,6 @@ static const unsigned int PATH_FAILED = 0;
 
 const uint16 PathfinderProcess::PATHFINDER_PROC_TYPE = 0x204;
 
-// p_dynamic_cast stuff
 DEFINE_RUNTIME_CLASSTYPE_CODE(PathfinderProcess)
 
 PathfinderProcess::PathfinderProcess() : Process(),
@@ -44,14 +41,14 @@ PathfinderProcess::PathfinderProcess() : Process(),
 		_targetX(0), _targetY(0), _targetZ(0) {
 }
 
-PathfinderProcess::PathfinderProcess(Actor *actor, ObjId item_, bool hit) :
-		_currentStep(0), _targetItem(item_), _hitMode(hit),
+PathfinderProcess::PathfinderProcess(Actor *actor, ObjId itemid, bool hit) :
+		_currentStep(0), _targetItem(itemid), _hitMode(hit),
 		_targetX(0), _targetY(0), _targetZ(0) {
 	assert(actor);
 	_itemNum = actor->getObjId();
 	_type = PATHFINDER_PROC_TYPE; // CONSTANT !
 
-	Item *item = getItem(item_);
+	Item *item = getItem(itemid);
 	if (!item) {
 		perr << "PathfinderProcess: non-existent target" << Std::endl;
 		// can't get there...
@@ -82,14 +79,14 @@ PathfinderProcess::PathfinderProcess(Actor *actor, ObjId item_, bool hit) :
 	actor->setActorFlag(Actor::ACT_PATHFINDING);
 }
 
-PathfinderProcess::PathfinderProcess(Actor *actor_, int32 x, int32 y, int32 z) :
+PathfinderProcess::PathfinderProcess(Actor *actor, int32 x, int32 y, int32 z) :
 		_targetX(x), _targetY(y), _targetZ(z), _targetItem(0), _currentStep(0),
 		_hitMode(false) {
-	assert(actor_);
-	_itemNum = actor_->getObjId();
+	assert(actor);
+	_itemNum = actor->getObjId();
 
 	Pathfinder pf;
-	pf.init(actor_);
+	pf.init(actor);
 	pf.setTarget(_targetX, _targetY, _targetZ);
 
 	bool ok = pf.pathfind(_path);
@@ -103,7 +100,7 @@ PathfinderProcess::PathfinderProcess(Actor *actor_, int32 x, int32 y, int32 z) :
 	}
 
 	// TODO: check if flag already set? kill other pathfinders?
-	actor_->setActorFlag(Actor::ACT_PATHFINDING);
+	actor->setActorFlag(Actor::ACT_PATHFINDING);
 }
 
 PathfinderProcess::~PathfinderProcess() {

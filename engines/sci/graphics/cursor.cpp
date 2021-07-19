@@ -64,6 +64,11 @@ GfxCursor::GfxCursor(ResourceManager *resMan, GfxPalette *palette, GfxScreen *sc
 	else
 		_useOriginalKQ6WinCursors = false;
 
+	if (g_sci && g_sci->getGameId() == GID_SQ4 && g_sci->getPlatform() == Common::kPlatformWindows)
+		_useOriginalSQ4WinCursors = ConfMan.getBool("windows_cursors");
+	else
+		_useOriginalSQ4WinCursors = false;
+
 	if (g_sci && g_sci->getGameId() == GID_SQ4 && getSciVersion() == SCI_VERSION_1_1)
 		_useSilverSQ4CDCursors = ConfMan.getBool("silver_cursors");
 	else
@@ -138,10 +143,10 @@ void GfxCursor::kernelSetShape(GuiResourceId resourceId) {
 	colorMapping[2] = SCI_CURSOR_SCI0_TRANSPARENCYCOLOR;
 	colorMapping[3] = _palette->matchColor(170, 170, 170) & SCI_PALETTE_MATCH_COLORMASK; // Grey
 	// TODO: Figure out if the grey color is hardcoded
-	// HACK for the magnifier cursor in LB1, fixes its color (bug #3487092)
+	// HACK for the magnifier cursor in LB1, fixes its color (bug #5971)
 	if (g_sci->getGameId() == GID_LAURABOW && resourceId == 1)
 		colorMapping[3] = _screen->getColorWhite();
-	// HACK for Longbow cursors, fixes the shade of grey they're using (bug #3489101)
+	// HACK for Longbow cursors, fixes the shade of grey they're using (bug #5983)
 	if (g_sci->getGameId() == GID_LONGBOW)
 		colorMapping[3] = _palette->matchColor(223, 223, 223) & SCI_PALETTE_MATCH_COLORMASK; // Light Grey
 
@@ -161,7 +166,7 @@ void GfxCursor::kernelSetShape(GuiResourceId resourceId) {
 
 	heightWidth = SCI_CURSOR_SCI0_HEIGHTWIDTH;
 
-	if (_upscaledHires) {
+	if (_upscaledHires != GFX_SCREEN_UPSCALED_DISABLED && _upscaledHires != GFX_SCREEN_UPSCALED_480x300) {
 		// Scale cursor by 2x - note: sierra didn't do this, but it looks much better
 		heightWidth *= 2;
 		hotspot.x *= 2;
@@ -179,6 +184,12 @@ void GfxCursor::kernelSetShape(GuiResourceId resourceId) {
 	}
 
 	CursorMan.replaceCursor(rawBitmap->getUnsafeDataAt(0, heightWidth * heightWidth), heightWidth, heightWidth, hotspot.x, hotspot.y, SCI_CURSOR_SCI0_TRANSPARENCYCOLOR);
+	if (g_system->getScreenFormat().bytesPerPixel != 1) {
+		byte buf[3*256];
+		g_sci->_gfxScreen->grabPalette(buf, 0, 256);
+		CursorMan.replaceCursorPalette(buf, 0, 256);
+	}
+
 	kernelShow();
 }
 
@@ -208,6 +219,9 @@ void GfxCursor::kernelSetView(GuiResourceId viewNum, int loopNum, int celNum, Co
 		default:
 			break;
 		}
+	} else if (_useOriginalSQ4WinCursors) {
+		// Use the Windows black and white cursors
+		celNum += 1;
 	}
 
 	if (!_cachedCursors.contains(viewNum))
@@ -234,7 +248,7 @@ void GfxCursor::kernelSetView(GuiResourceId viewNum, int loopNum, int celNum, Co
 	}
 
 	const SciSpan<const byte> &rawBitmap = cursorView->getBitmap(loopNum, celNum);
-	if (_upscaledHires && !_useOriginalKQ6WinCursors) {
+	if (_upscaledHires != GFX_SCREEN_UPSCALED_DISABLED && _upscaledHires != GFX_SCREEN_UPSCALED_480x300 && !_useOriginalKQ6WinCursors) {
 		// Scale cursor by 2x - note: sierra didn't do this, but it looks much better
 		width *= 2;
 		height *= 2;
@@ -246,6 +260,11 @@ void GfxCursor::kernelSetView(GuiResourceId viewNum, int loopNum, int celNum, Co
 		CursorMan.replaceCursor(cursorBitmap->getUnsafeDataAt(0, width * height), width, height, cursorHotspot->x, cursorHotspot->y, clearKey);
 	} else {
 		CursorMan.replaceCursor(rawBitmap.getUnsafeDataAt(0, width * height), width, height, cursorHotspot->x, cursorHotspot->y, clearKey);
+	}
+	if (g_system->getScreenFormat().bytesPerPixel != 1) {
+		byte buf[3*256];
+		g_sci->_gfxScreen->grabPalette(buf, 0, 256);
+		CursorMan.replaceCursorPalette(buf, 0, 256);
 	}
 
 	kernelShow();
@@ -399,6 +418,11 @@ void GfxCursor::refreshPosition() {
 		}
 
 		CursorMan.replaceCursor(_cursorSurface->getUnsafeDataAt(0, cursorCelInfo->width * cursorCelInfo->height), cursorCelInfo->width, cursorCelInfo->height, cursorHotspot.x, cursorHotspot.y, cursorCelInfo->clearKey);
+		if (g_system->getScreenFormat().bytesPerPixel != 1) {
+			byte buf[3*256];
+			g_sci->_gfxScreen->grabPalette(buf, 0, 256);
+			CursorMan.replaceCursorPalette(buf, 0, 256);
+		}
 	}
 }
 
@@ -502,8 +526,6 @@ void GfxCursor::kernelSetMacCursor(GuiResourceId viewNum, int loopNum, int celNu
 	}
 
 	CursorMan.disableCursorPalette(false);
-
-	assert(resource);
 
 	Common::MemoryReadStream resStream(resource->toStream());
 	Graphics::MacCursor *macCursor = new Graphics::MacCursor();

@@ -34,6 +34,15 @@
 #include "director/sound.h"
 #include "director/window.h"
 #include "director/lingo/lingo.h"
+#include "director/detection.h"
+
+/**
+ * When detection is compiled dynamically, directory globs end up in detection plugin and
+ * engine cannot link to them so duplicate them in the engine in this case
+ */
+#ifndef DETECTION_STATIC
+#include "director/detection_paths.h"
+#endif
 
 namespace Director {
 
@@ -45,25 +54,6 @@ uint32 wmMode = 0;
 DirectorEngine *g_director;
 
 DirectorEngine::DirectorEngine(OSystem *syst, const DirectorGameDescription *gameDesc) : Engine(syst), _gameDescription(gameDesc) {
-	DebugMan.addDebugChannel(kDebug32bpp, "32bpp", "Work in 32bpp mode");
-	DebugMan.addDebugChannel(kDebugCompile, "compile", "Lingo Compilation");
-	DebugMan.addDebugChannel(kDebugCompileOnly, "compileonly", "Skip Lingo code execution");
-	DebugMan.addDebugChannel(kDebugDesktop, "desktop", "Show the Classic Mac desktop");
-	DebugMan.addDebugChannel(kDebugEndVideo, "endvideo", "Fake that the end of video is reached setting");
-	DebugMan.addDebugChannel(kDebugEvents, "events", "Event processing");
-	DebugMan.addDebugChannel(kDebugFast, "fast", "Fast (no delay) playback");
-	DebugMan.addDebugChannel(kDebugFewFramesOnly, "fewframesonly", "Only run the first 10 frames");
-	DebugMan.addDebugChannel(kDebugImages, "images", "Image drawing");
-	DebugMan.addDebugChannel(kDebugLingoExec, "lingoexec", "Lingo Execution");
-	DebugMan.addDebugChannel(kDebugLoading, "loading", "Loading");
-	DebugMan.addDebugChannel(kDebugNoBytecode, "nobytecode", "Do not execute Lscr bytecode");
-	DebugMan.addDebugChannel(kDebugNoLoop, "noloop", "Do not loop the playback");
-	DebugMan.addDebugChannel(kDebugParse, "parse", "Lingo code parsing");
-	DebugMan.addDebugChannel(kDebugPreprocess, "preprocess", "Lingo preprocessing");
-	DebugMan.addDebugChannel(kDebugScreenshot, "screenshot", "screenshot each frame");
-	DebugMan.addDebugChannel(kDebugSlow, "slow", "Slow playback");
-	DebugMan.addDebugChannel(kDebugText, "text", "Text rendering");
-
 	g_director = this;
 
 	// Setup mixer
@@ -96,17 +86,20 @@ DirectorEngine::DirectorEngine(OSystem *syst, const DirectorGameDescription *gam
 	// Meet Mediaband could have up to 5 levels of directories
 	SearchMan.addDirectory(_gameDataDir.getPath(), _gameDataDir, 0, 5);
 
-	SearchMan.addSubDirectoryMatching(_gameDataDir, "data");
-	SearchMan.addSubDirectoryMatching(_gameDataDir, "install");
-	SearchMan.addSubDirectoryMatching(_gameDataDir, "main");		// Meet Mediaband
-	SearchMan.addSubDirectoryMatching(_gameDataDir, "l_zone");
-	SearchMan.addSubDirectoryMatching(_gameDataDir, "win_data", 0, 2);	// L-ZONE
+	SearchMan.addSubDirectoryMatching(_gameDataDir, "win_data", 0, 2);
+
+	for (uint i = 0; Director::directoryGlobs[i]; i++) {
+		Common::String directoryGlob = directoryGlobs[i];
+		SearchMan.addSubDirectoryMatching(_gameDataDir, directoryGlob);
+	}
 
 	_colorDepth = 8;	// 256-color
-	_machineType = 9; // Macintosh IIci
+	_machineType = 9;	// Macintosh IIci
 	_playbackPaused = false;
 	_skipFrameAdvance = false;
 	_centerStage = true;
+
+	_surface = nullptr;
 }
 
 DirectorEngine::~DirectorEngine() {
@@ -114,6 +107,7 @@ DirectorEngine::~DirectorEngine() {
 	delete _soundManager;
 	delete _lingo;
 	delete _wm;
+	delete _surface;
 
 	for (Common::HashMap<Common::String, Archive *, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo>::iterator it = _openResFiles.begin(); it != _openResFiles.end(); ++it) {
 		delete it->_value;
@@ -161,7 +155,7 @@ Common::Error DirectorEngine::run() {
 	if (debugChannelSet(-1, kDebug32bpp))
 		wmMode |= Graphics::kWMMode32bpp;
 
-	_wm = new Graphics::MacWindowManager(wmMode, &_director3QuickDrawPatterns);
+	_wm = new Graphics::MacWindowManager(wmMode, &_director3QuickDrawPatterns, getLanguage());
 	_wm->setEngine(this);
 
 	_pixelformat = _wm->_pixelformat;
@@ -172,7 +166,8 @@ Common::Error DirectorEngine::run() {
 	if (!debugChannelSet(-1, kDebugDesktop))
 		_stage->disableBorder();
 
-	_wm->setScreen(1, 1);
+	_surface = new Graphics::ManagedSurface(1, 1);
+	_wm->setScreen(_surface);
 	_wm->addWindowInitialized(_stage);
 	_wm->setActiveWindow(_stage->getId());
 	setPalette(-1);
@@ -191,20 +186,6 @@ Common::Error DirectorEngine::run() {
 
 	if (getPlatform() == Common::kPlatformWindows)
 		_machineType = 256; // IBM PC-type machine
-
-	if (getVersion() < 400) {
-		if (getPlatform() == Common::kPlatformWindows) {
-			_sharedCastFile = "SHARDCST.MMM";
-		} else {
-			_sharedCastFile = "Shared Cast";
-		}
-	} else if (getVersion() == 500) {
-		if (getPlatform() == Common::kPlatformWindows) {
-			_sharedCastFile = "SHARED.Cxt";
-		}
-	} else {
-		_sharedCastFile = "Shared.dir";
-	}
 
 	Common::Error err = _currentWindow->loadInitialMovie();
 	if (err.getCode() != Common::kNoError)
@@ -234,6 +215,10 @@ Common::Error DirectorEngine::run() {
 	}
 
 	return Common::kNoError;
+}
+
+Common::CodePage DirectorEngine::getPlatformEncoding() {
+	return getEncoding(getPlatform(), getLanguage());
 }
 
 } // End of namespace Director

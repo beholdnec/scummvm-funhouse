@@ -37,18 +37,17 @@ class UCProcess : public Process {
 	friend class Kernel;
 public:
 	UCProcess();
-	UCProcess(uint16 classid_, uint16 offset_, uint32 this_ptr = 0,
+	UCProcess(uint16 classid, uint16 offset, uint32 this_ptr = 0,
 	          int thissize = 0, const uint8 *args = 0, int argsize = 0);
 	~UCProcess() override;
 
-	// p_dynamic_cast stuff
 	ENABLE_RUNTIME_CLASSTYPE()
 
 	void run() override;
 
 	void terminate() override;
 
-	void freeOnTerminate(uint16 index, int type_);
+	void freeOnTerminate(uint16 index, int type);
 
 	void setReturnValue(uint32 retval) {
 		_temp32 = retval;
@@ -61,9 +60,9 @@ public:
 	void saveData(Common::WriteStream *ws) override;
 
 protected:
-	void load(uint16 classid_, uint16 offset_, uint32 this_ptr = 0,
+	void load(uint16 classid, uint16 offset, uint32 this_ptr = 0,
 	          int thissize = 0, const uint8 *args = 0, int argsize = 0);
-	void call(uint16 classid_, uint16 offset_);
+	void call(uint16 classid, uint16 offset);
 	bool ret();
 
 	// stack base pointer
