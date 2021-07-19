@@ -60,8 +60,6 @@ private:
 
 	MerlinGame *_game;
 
-	PopupMenu _popup;
-
 	// Main resources
 	BltImage _bgImage;
 	BltPalette _palette;

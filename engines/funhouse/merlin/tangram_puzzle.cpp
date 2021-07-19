@@ -169,7 +169,7 @@ bool TangramPuzzle::pieceIsPlaceableAt(int pieceNum, int px, int py) {
 
 BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 	// FIXME: Is popup allowed while a piece is held?
-	BoltRsp cmd = _popup.handleMsg(msg);
+	BoltRsp cmd = _game->handlePopup(msg);
 	if (cmd != BoltRsp::kPass) {
 		return cmd;
 	}
