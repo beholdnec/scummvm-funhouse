@@ -43,7 +43,7 @@ BltSound::~BltSound() {
 }
 
 void BltSound::load(Boltlib &boltlib, BltId id) {
-	_resource.reset(boltlib.loadResource(id, kBltSound));
+	_resource = boltlib.loadResource(id, kBltSound);
 	_audioStream = Audio::makeRawStream(&_resource[0], _resource.size(), 22050, Audio::FLAG_UNSIGNED, DisposeAfterUse::NO);
 }
 

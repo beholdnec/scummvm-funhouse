@@ -90,7 +90,7 @@ struct BltPaletteModElement { // type 29
 		first = src.getUint8At(0);
 		num = src.getUint8At(1);
 		BltId colorsId(src.getUint32BEAt(2));
-		colors.reset(boltlib.loadResource(colorsId, kBltColors));
+		colors = boltlib.loadResource(colorsId, kBltColors);
 	}
 
 	byte first;

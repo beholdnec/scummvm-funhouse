@@ -102,7 +102,7 @@ class Boltlib {
 public:
 	bool load(const Common::String &filename);
 
-	BltResource::Movable loadResource(BltId id, uint32 expectedType);
+	BltResource loadResource(BltId id, uint32 expectedType);
 
 private:
 	// Warning: may clobber file cursor

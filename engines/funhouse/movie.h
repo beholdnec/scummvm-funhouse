@@ -83,9 +83,9 @@ private:
 
 	void readNextPacket();
 
-	ScopedBuffer::Movable fetchBuffer(ScopedBufferQueue &queue);
+	ScopedBuffer fetchBuffer(ScopedBufferQueue &queue);
 
-	void enqueueVideoBuffer(ScopedBuffer::Movable buf);
+	void enqueueVideoBuffer(ScopedBuffer buf);
 
 	struct BufferAssembler {
 		ScopedBuffer buf;
@@ -122,7 +122,7 @@ private:
 
 	// TIMELINE
 
-	void startTimeline(ScopedBuffer::Movable buf);
+	void startTimeline(ScopedBuffer buf);
 
 	void stepTimeline();
 	int getTimelineCmdParamSize(uint16 opcode);
@@ -146,7 +146,7 @@ private:
 
 	// QUEUE 4 CEL SEQUENCES
 
-	void loadCels(ScopedBuffer::Movable buf);
+	void loadCels(ScopedBuffer buf);
 	void stepCels();
 
 	void stepCelCommands();

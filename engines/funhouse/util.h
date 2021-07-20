@@ -33,97 +33,88 @@ namespace Funhouse {
 template<class T>
 class ScopedArray {
 public:
-	struct Movable
-	{
-		friend class ScopedArray;
-	public:
-		Movable() : data(nullptr), size(0) { }
-	private:
-		T* data;
-		uint size;
-	};
+	ScopedArray() = default;
 
-	explicit ScopedArray(Movable o = Movable())
-		: _internal(o)
-	{ }
+	ScopedArray(std::nullptr_t) {
+	}
+
+	ScopedArray(const ScopedArray &) = delete;
+	ScopedArray &operator=(const ScopedArray &) = delete;
+
+	ScopedArray(ScopedArray&& other) {
+		*this = std::move(other); // Use move assignment operator
+	}
+
+	ScopedArray& operator=(ScopedArray&& other) {
+		std::swap(_data, other._data);
+		std::swap(_size, other._size);
+		return *this;
+	}
 
 	~ScopedArray() {
-		delete[] _internal.data;
-		_internal.data = nullptr;
+		reset();
 	}
 
 	operator bool() const {
-		return _internal.data;
+		return _data;
 	}
 
 	uint size() const {
-		return _internal.size;
+		return _size;
 	}
 
-	void reset(Movable o = Movable()) {
-		if (o.data != _internal.data) {
-			delete[] _internal.data;
-			_internal = o;
-		}
+	void reset() {
+		delete[] _data;
+		_data = nullptr;
+		_size = 0;
 	}
 
 	void alloc(uint arraySize) {
-		delete[] _internal.data;
-		_internal.data = nullptr;
-		_internal.size = arraySize;
+		delete[] _data;
+		_data = nullptr;
+		_size = arraySize;
 		if (arraySize > 0) {
-			_internal.data = new T[arraySize];
+			_data = new T[arraySize];
 		}
 	}
 
 	T& operator[](uint idx) {
-		assert(idx < _internal.size);
-		return _internal.data[idx];
+		assert(idx < _size);
+		return _data[idx];
 	}
 
 	const T& operator[](uint idx) const {
-		assert(idx < _internal.size);
-		return _internal.data[idx];
+		assert(idx < _size);
+		return _data[idx];
 	}
 
-	Movable release() {
-		Movable result = _internal;
-		_internal = Movable();
-		return result;
-	}
-
-	Movable clone() const {
-		Movable result;
-		result.data = new T[_internal.size];
-		result.size = _internal.size;
-
-		for (uint i = 0; i < _internal.size; ++i) {
-			result.data[i] = _internal.data[i];
+	ScopedArray clone() const {
+		ScopedArray result;
+		result.alloc(_size);
+		for (uint i = 0; i < _size; ++i) {
+			result._data[i] = _data[i];
 		}
-
 		return result;
 	}
 
 	Common::Span<const byte> span() const {
-		return Common::Span<const byte>(_internal.data, _internal.size);
+		return Common::Span<const byte>(_data, _size);
 	}
 
 private:
-	// Prevent accidentally copying a ScopedArray. To clone a ScopedArray, use
-	// the clone method.
-	// XXX: Class is made noncopyable here (instead of inheriting from
-	// Common::NonCopyable) because VS2015 emits very unhelpful error messages.
-	ScopedArray(const ScopedArray&);
-	ScopedArray& operator=(const ScopedArray&);
-
-	Movable _internal;
+	T *_data = nullptr;
+	uint _size = 0;
 };
 
 template<class T>
 class ScopedArrayQueue
 {
 public:
-	ScopedArrayQueue() { }
+	ScopedArrayQueue() {}
+
+	ScopedArrayQueue(const ScopedArrayQueue &) = delete;
+	ScopedArrayQueue &operator=(const ScopedArrayQueue &) = delete;
+
 	~ScopedArrayQueue() {
 		// Correctly delete all contents
 		while (!_queue.empty()) {
@@ -140,19 +131,16 @@ public:
 		_queue.clear();
 	}
 
-	void push(typename ScopedArray<T>::Movable item) {
-		_queue.push(item);
+	void push(ScopedArray<T> item) {
+		_queue.push(std::move(item));
 	}
 
-	typename ScopedArray<T>::Movable pop() {
+	ScopedArray<T> pop() {
 		return _queue.pop();
 	}
 
 private:
-	ScopedArrayQueue(const ScopedArrayQueue&);
-	ScopedArrayQueue& operator=(const ScopedArrayQueue&);
-
-	Common::Queue<typename ScopedArray<T>::Movable> _queue;
+	Common::Queue<ScopedArray<T>> _queue;
 };
 
 } // End of namespace Funhouse

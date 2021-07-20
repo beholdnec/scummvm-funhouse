@@ -82,6 +82,15 @@ public:
 		insert(pos._node, element);
 	}
 
+#ifdef USE_CXX11
+	/**
+	 * Insert an @p element before @p pos.
+	 */
+	void insert(iterator pos, t_T &&element) {
+		insert(pos._node, std::move(element));
+	}
+#endif
+
 	/**
 	 * Insert elements from @p first to @p last before @p pos.
 	 */
@@ -139,10 +148,24 @@ public:
 		insert(_anchor._next, element);
 	}
 
+#ifdef USE_CXX11
+	/** Insert an @p element at the start of the list. */
+	void push_front(t_T &&element) {
+		insert(_anchor._next, std::move(element));
+	}
+#endif
+
 	/** Append an @p element to the end of the list. */
 	void push_back(const t_T &element) {
 		insert(&_anchor, element);
 	}
+
+#ifdef USE_CXX11
+	/** Append an @p element to the end of the list. */
+	void push_back(t_T &&element) {
+		insert(&_anchor, std::move(element));
+	}
+#endif
 
 	/** Remove the first element of the list. */
 	void pop_front() {
@@ -290,6 +313,21 @@ protected:
 		newNode->_prev->_next = newNode;
 		newNode->_next->_prev = newNode;
 	}
+
+#ifdef USE_CXX11
+	/**
+	 * Insert an @p element before @p pos.
+	 */
+	void insert(NodeBase *pos, t_T &&element) {
+		ListInternal::NodeBase *newNode = new Node(std::move(element));
+		assert(newNode);
+
+		newNode->_next = pos;
+		newNode->_prev = pos->_prev;
+		newNode->_prev->_next = newNode;
+		newNode->_next->_prev = newNode;
+	}
+#endif
 };
 
 /** @} */

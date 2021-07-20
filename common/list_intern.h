@@ -41,6 +41,10 @@ namespace ListInternal {
 		T _data;
 
 		Node(const T &x) : _data(x) {}
+
+#ifdef USE_CXX11
+		Node(T &&x) : _data(std::move(x)) {}
+#endif
 	};
 
 	template<typename T> struct ConstIterator;

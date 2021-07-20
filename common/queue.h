@@ -57,6 +57,12 @@ public:
 		_impl.push_back(x);
 	}
 
+#ifdef USE_CXX11
+	void push(T&& x) {
+		_impl.push_back(std::move(x));
+	}
+#endif
+
 	T &front() {
 		return _impl.front();
 	}
@@ -74,7 +80,11 @@ public:
 	}
 
 	T pop() {
+#ifdef USE_CXX11
+		T tmp = std::move(front());
+#else
 		T tmp = front();
+#endif
 		_impl.pop_front();
 		return tmp;
 	}

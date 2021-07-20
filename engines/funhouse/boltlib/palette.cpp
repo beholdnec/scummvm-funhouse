@@ -59,7 +59,7 @@ struct BltPaletteHeader {
 };
 
 void BltPalette::load(Boltlib &boltlib, BltId id) {
-	data.reset(boltlib.loadResource(id, kBltPalette));
+	data = boltlib.loadResource(id, kBltPalette);
 }
 
 void applyPalette(Graphics *graphics, int plane, const BltPalette &palette) {

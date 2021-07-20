@@ -220,8 +220,8 @@ struct TimelineHeader {
 	uint16 framePeriod;
 };
 
-void Movie::startTimeline(ScopedBuffer::Movable buf) {
-	_timeline.reset(buf);
+void Movie::startTimeline(ScopedBuffer buf) {
+	_timeline = std::move(buf);
 
 	_curFrameNum = 0;
 
@@ -433,8 +433,8 @@ struct CelsHeader {
 	uint32 controlDataOffset;
 };
 
-void Movie::loadCels(ScopedBuffer::Movable buf) {
-	_cels.reset(buf);
+void Movie::loadCels(ScopedBuffer buf) {
+	_cels = std::move(buf);
 
 	CelsHeader header(_cels.span());
 	assert(header.queueNum == 4);
@@ -523,7 +523,7 @@ void Movie::stepCelCommands() {
 				debug(3, "cel command: load background");
 				Common::Span<const byte> params = _cels.span().subspan(paramsOffset);
 
-				_celsBackground.reset(fetchBuffer(_videoQueues[1]));
+				_celsBackground = fetchBuffer(_videoQueues[1]);
 
 				_celCurCameraX = params.getInt16BEAt(0);
 				_celCurCameraY = params.getInt16BEAt(2);
@@ -689,7 +689,7 @@ void Movie::readNextPacket() {
 	switch (header.type) {
 	case kPfTimeline:
 		if (readIntoBuffer(_timelineBufAssembler, header)) {
-			_timelineQueue.push(_timelineBufAssembler.buf.release());
+			_timelineQueue.push(std::move(_timelineBufAssembler.buf));
 			_timelineBufAssembler.buf.reset();
 		}
 		break;
@@ -711,7 +711,7 @@ void Movie::readNextPacket() {
 		break;
 	case kPfVideo:
 		if (readIntoBuffer(_videoBufAssembler, header)) {
-			enqueueVideoBuffer(_videoBufAssembler.buf.release());
+			enqueueVideoBuffer(std::move(_videoBufAssembler.buf));
 			_videoBufAssembler.buf.reset();
 		}
 		break;
@@ -721,7 +721,7 @@ void Movie::readNextPacket() {
 			// believe auxiliary video is nothing more than a second video
 			// stream, allowing large video buffers (like background images)
 			// to be loaded alongside regular video.
-			enqueueVideoBuffer(_auxVideoBufAssembler.buf.release());
+			enqueueVideoBuffer(std::move(_auxVideoBufAssembler.buf));
 			_auxVideoBufAssembler.buf.reset();
 		}
 		break;
@@ -767,14 +767,14 @@ bool Movie::readIntoBuffer(BufferAssembler &assembler, const PacketHeader &heade
 	return assembler.cursor >= assembler.totalSize;
 }
 
-Movie::ScopedBuffer::Movable Movie::fetchBuffer(ScopedBufferQueue &queue) {
+Movie::ScopedBuffer Movie::fetchBuffer(ScopedBufferQueue &queue) {
 	while (_parserActive && queue.empty()) {
 		readNextPacket();
 	}
 
 	if (queue.empty()) {
 		warning("Failed to fetch movie data buffer");
-		return Movie::ScopedBuffer::Movable();
+		return nullptr;
 	}
 
 	return queue.pop();
@@ -870,11 +870,10 @@ void Movie::drawQueue0or1(int plane, const ScopedBuffer &src, int x, int y) {
 	}
 }
 
-void Movie::enqueueVideoBuffer(ScopedBuffer::Movable buf) {
-	ScopedBuffer myBuf(buf);
-	uint16 queueNum = myBuf.span().getUint16BEAt(0);
+void Movie::enqueueVideoBuffer(ScopedBuffer buf) {
+	uint16 queueNum = buf.span().getUint16BEAt(0);
 	if (queueNum < 5) {
-		_videoQueues[queueNum].push(myBuf.release());
+		_videoQueues[queueNum].push(std::move(buf));
 	}
 	else {
 		warning("Unknown PF image stream queue num %u", queueNum);

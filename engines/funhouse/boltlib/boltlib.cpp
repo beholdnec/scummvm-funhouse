@@ -149,9 +149,9 @@ static void decompressBoltLZ(ScopedArray<byte> &dst,
 	}
 }
 
-BltResource::Movable Boltlib::loadResource(BltId id, uint32 expectedType) {
+BltResource Boltlib::loadResource(BltId id, uint32 expectedType) {
 	if (!id.isValid()) {
-		return BltResource::Movable();
+		return nullptr;
 	}
 
 	BltShortId shortId = BltShortId(id.value >> 16);
@@ -160,7 +160,7 @@ BltResource::Movable Boltlib::loadResource(BltId id, uint32 expectedType) {
 	if (offset != 0) {
 		// XXX: offset is not handled. It is always zero.
 		error("offset part of long resource id is not 0 (it is 0x%.04X)", (int)offset);
-		return BltResource::Movable();
+		return nullptr;
 	}
 
 	byte dirNum = shortId.value >> 8;
@@ -168,7 +168,7 @@ BltResource::Movable Boltlib::loadResource(BltId id, uint32 expectedType) {
 
 	if (dirNum >= _dirs.size()) {
 		error("Tried to load non-existent resource 0x%.04X", (int)id.value);
-		return BltResource::Movable();
+		return nullptr;
 	}
 
 	ensureDirLoaded(dirNum);
@@ -176,7 +176,7 @@ BltResource::Movable Boltlib::loadResource(BltId id, uint32 expectedType) {
 
 	if (resNum >= dir.resEntries.size()) {
 		error("Tried to load non-existent resource 0x%.04X", (int)id.value);
-		return BltResource::Movable();
+		return nullptr;
 	}
 
 	ResourceEntry &res = dir.resEntries[resNum];
@@ -184,7 +184,7 @@ BltResource::Movable Boltlib::loadResource(BltId id, uint32 expectedType) {
 	if (res.type != expectedType) {
 		error("Tried to load wrong resource type %d instead of %d",
 			(int)res.type, (int)expectedType);
-		return BltResource::Movable();
+		return nullptr;
 	}
 
 	// Load and decompress resource
@@ -205,10 +205,10 @@ BltResource::Movable Boltlib::loadResource(BltId id, uint32 expectedType) {
 	}
 	else {
 		error("Unknown compression type %d", (int)res.compression);
-		return BltResource::Movable();
+		return nullptr;
 	}
 
-	return resourceData.release();
+	return resourceData;
 }
 
 void Boltlib::ensureDirLoaded(byte dirNum) {

@@ -617,7 +617,7 @@ struct BltImageHeader {
 };
 
 void BltImage::load(Boltlib &bltFile, BltId id) {
-	_res.reset(bltFile.loadResource(id, kBltImage));
+	_res = bltFile.loadResource(id, kBltImage);
 }
 
 void BltImage::draw(::Graphics::Surface &surface, bool transparency) const {
