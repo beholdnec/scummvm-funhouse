@@ -106,43 +106,6 @@ private:
 	uint _size = 0;
 };
 
-template<class T>
-class ScopedArrayQueue
-{
-public:
-	ScopedArrayQueue() {}
-
-	ScopedArrayQueue(const ScopedArrayQueue &) = delete;
-	ScopedArrayQueue &operator=(const ScopedArrayQueue &) = delete;
-
-	~ScopedArrayQueue() {
-		// Correctly delete all contents
-		while (!_queue.empty()) {
-			ScopedArray<T> item(_queue.pop());
-			item.reset();
-		}
-	}
-
-	bool empty() const {
-		return _queue.empty();
-	}
-
-	void clear() {
-		_queue.clear();
-	}
-
-	void push(ScopedArray<T> item) {
-		_queue.push(std::move(item));
-	}
-
-	ScopedArray<T> pop() {
-		return _queue.pop();
-	}
-
-private:
-	Common::Queue<ScopedArray<T>> _queue;
-};
-
 } // End of namespace Funhouse
 
 #endif

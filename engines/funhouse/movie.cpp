@@ -696,8 +696,6 @@ void Movie::readNextPacket() {
 	case kPfAudio:
 		if (readIntoBuffer(_audioBufAssembler, header)) {
 			if (_audioStream) {
-				// FIXME: Make this more efficient by reading directly into a
-				// malloc'ed buffer.
 				byte *sound = (byte*)malloc(_audioBufAssembler.totalSize);
 				memcpy(sound, &_audioBufAssembler.buf[0], _audioBufAssembler.totalSize);
 

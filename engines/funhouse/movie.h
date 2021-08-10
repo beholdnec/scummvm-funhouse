@@ -71,7 +71,7 @@ private:
 	Common::File *_file;
 
 	typedef ScopedArray<byte> ScopedBuffer;
-	typedef ScopedArrayQueue<byte> ScopedBufferQueue;
+	typedef Common::Queue<ScopedBuffer> ScopedBufferQueue;
 
 	bool _parserActive = false; // Set to false when final packet is found
 	bool _timelineActive = false; // Set to false when timeline is finished
