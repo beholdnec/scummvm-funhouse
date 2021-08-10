@@ -52,7 +52,6 @@ protected:
 	typedef Common::List<Particle> ParticleList;
 
 	void playMode();
-	BoltRsp handlePopupButtonClick(int num);
 	const BltImage& getParticleImage(const Particle &particle);
 	Common::Point getParticlePos(const Particle &particle);
 	BoltRsp handleClick(const Common::Point &pt);

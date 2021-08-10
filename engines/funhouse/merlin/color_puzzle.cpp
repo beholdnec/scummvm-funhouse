@@ -113,17 +113,6 @@ BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
 	return kDone;
 }
 
-BoltRsp ColorPuzzle::handlePopupButtonClick(int num) {
-	switch (num) {
-	case 0: // Return
-		_game->branchReturn();
-		return BoltRsp::kDone;
-	default:
-		warning("Unhandled popup button %d", num);
-		return BoltRsp::kDone;
-	}
-}
-
 BoltRsp ColorPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 
@@ -148,8 +137,6 @@ void ColorPuzzle::idleMode() {
 		}
 
 		switch (msg.type) {
-		case BoltMsg::kPopupButtonClick:
-			return handlePopupButtonClick(msg.num);
 		case Scene::kClickButton:
 			return handleButtonClick(msg.num);
 		default:

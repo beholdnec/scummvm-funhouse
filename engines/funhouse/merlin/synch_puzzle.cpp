@@ -124,17 +124,6 @@ BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
 	return kDone;
 }
 
-BoltRsp SynchPuzzle::handlePopupButtonClick(int num) {
-	switch (num) {
-	case 0: // Return
-		_game->branchReturn();
-		return BoltRsp::kDone;
-	default:
-		warning("Unhandled popup button %d", num);
-		return BoltRsp::kDone;
-	}
-}
-
 BoltRsp SynchPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 	return BoltRsp::kDone;
@@ -160,10 +149,6 @@ void SynchPuzzle::idle() {
 		BoltRsp cmd = _game->handlePopup(msg);
 		if (cmd != BoltRsp::kPass) {
 			return cmd;
-		}
-
-		if (msg.type == BoltMsg::kPopupButtonClick) {
-			return handlePopupButtonClick(msg.num);
 		}
 
 		if (msg.type == Scene::kClickButton) {

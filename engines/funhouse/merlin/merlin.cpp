@@ -115,7 +115,11 @@ BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	BoltRsp rsp = kDone;
 
 	if (_activeCard) {
-		rsp = _activeCard->handleMsg(msg);
+		if (msg.type == BoltMsg::kPopupButtonClick) {
+			rsp = handlePopupButtonClick(msg);
+		} else {
+			rsp = _activeCard->handleMsg(msg);
+		}
 	}
 
 	if (rsp == kDone) {
@@ -130,7 +134,53 @@ BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	return rsp;
 }
 
+BoltRsp MerlinGame::handlePopupButtonClick(const BoltMsg& msg) {
+	switch (_popupType) {
+	case kHubPopup:
+		return handleHubPopupButtonClick(msg);
+	case kPuzzlePopup:
+		return handlePuzzlePopupButtonClick(msg);
+	case kPotionPuzzlePopup:
+		return handlePotionPuzzlePopupButtonClick(msg);
+	default:
+		assert(false && "Invalid popup type");
+		return kDone;
+	}
+}
+
+BoltRsp MerlinGame::handleHubPopupButtonClick(const BoltMsg &msg) {
+	switch (msg.num) {
+	default:
+		warning("Hub popup button %d not implemented", msg.num);
+		return kDone;
+	}
+}
+
+BoltRsp MerlinGame::handlePuzzlePopupButtonClick(const BoltMsg &msg) {
+	switch (msg.num) {
+	case 0: // Return
+		branchReturn();
+		return BoltRsp::kDone;
+	case 1: // Difficulty
+		branchDifficultyMenu();
+		return kDone;
+	default:
+		warning("Puzzle popup button %d not implemented", msg.num);
+		return kDone;
+	}
+}
+
+BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(const BoltMsg &msg) {
+	switch (msg.num) {
+	default:
+		warning("Potion puzzle popup button %d not implemented", msg.num);
+		return kDone;
+	}
+}
+
 void MerlinGame::runScript() {
+	_popupType = kNoPopup;
+
 	const ScriptEntry& entry = kScript[_scriptCursor];
 	CALL_MEMBER_FN(*this, entry.func)(&entry);
 }
@@ -182,6 +232,7 @@ void MerlinGame::selectProfile(int idx) {
 }
 
 void MerlinGame::setPopup(PopupType type) {
+	_popupType = type;
 	_popup.init(this, _boltlib, _popupResIds[type]);
 }
 

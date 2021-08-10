@@ -113,8 +113,6 @@ BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 	}
 
 	switch (msg.type) {
-	case BoltMsg::kPopupButtonClick:
-		return handlePopupButtonClick(msg.num);
 	case Scene::kClickButton:
 		return handleButtonClick(msg.num);
 	default:
@@ -129,20 +127,6 @@ void SlidingPuzzle::setSprites() {
 
 	_scene.redraw();
 	_game->getGraphics()->markDirty();
-}
-
-BoltRsp SlidingPuzzle::handlePopupButtonClick(int num) {
-	switch (num) {
-	case 0: // Return
-		_game->branchReturn();
-		return BoltRsp::kDone;
-	case 1: // Difficulties
-		_game->branchDifficultyMenu();
-		return BoltRsp::kDone;
-	default:
-		warning("Unhandled popup button %d", num);
-		return BoltRsp::kDone;
-	}
 }
 
 BoltRsp SlidingPuzzle::handleButtonClick(int num) {

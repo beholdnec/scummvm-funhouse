@@ -121,25 +121,10 @@ BoltRsp WordPuzzle::handleMsg(const BoltMsg &msg) {
 	}
 
 	switch (msg.type) {
-	case BoltMsg::kPopupButtonClick:
-		return handlePopupButtonClick(msg.num);
 	case Scene::kClickButton:
 		return handleButtonClick(msg.num);
 	default:
 		return _scene.handleMsg(msg);
-	}
-}
-
-BoltRsp WordPuzzle::handlePopupButtonClick(int num) {
-	switch (num) {
-	case 0: // Return
-		_game->branchReturn();
-		return BoltRsp::kDone;
-	case 3: // Reset
-		return handleReset();
-	default:
-		warning("Unhandled popup button %d", num);
-		return BoltRsp::kDone;
 	}
 }
 

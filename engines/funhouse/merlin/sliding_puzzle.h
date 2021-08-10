@@ -37,7 +37,6 @@ public:
 	void setSprites();
 
 private:
-	BoltRsp handlePopupButtonClick(int num);
 	BoltRsp handleButtonClick(int num);
 
 	MerlinGame *_game;

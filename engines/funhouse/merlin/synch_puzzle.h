@@ -67,7 +67,6 @@ private:
 
 	typedef ScopedArray<Item> ItemArray;
 
-	BoltRsp handlePopupButtonClick(int num);
 	BoltRsp handleButtonClick(int num);
 	void redraw();
 	void idle();

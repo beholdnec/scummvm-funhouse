@@ -39,7 +39,6 @@ public:
 private:
 	static const int kNumLetters = 26;
 
-	BoltRsp handlePopupButtonClick(int num);
 	BoltRsp handleReset();
 	BoltRsp handleButtonClick(int num);
 

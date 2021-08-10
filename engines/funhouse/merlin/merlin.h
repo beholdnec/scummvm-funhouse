@@ -54,6 +54,7 @@ public:
 	static const int kNumPotionMovies;
 
 	enum PopupType {
+		kNoPopup = -1,
 		kHubPopup = 0,
 		kPuzzlePopup = 1,
 		kPotionPuzzlePopup = 2,
@@ -138,11 +139,16 @@ private:
 
 	BoltRsp handleMsgInMovie(const BoltMsg &msg);
 	BoltRsp handleMsgInCard(const BoltMsg &msg);
+	BoltRsp handlePopupButtonClick(const BoltMsg &msg);
+	BoltRsp handleHubPopupButtonClick(const BoltMsg &msg);
+	BoltRsp handlePuzzlePopupButtonClick(const BoltMsg &msg);
+	BoltRsp handlePotionPuzzlePopupButtonClick(const BoltMsg &msg);
 	void branchLoadProfile();
 
 	OSystem *_system;
 	FunhouseEngine *_engine;
 	SaveManager _saveMan;
+	PopupType _popupType = kNoPopup;
 	PopupMenu _popup;
 
 	Boltlib _boltlib;

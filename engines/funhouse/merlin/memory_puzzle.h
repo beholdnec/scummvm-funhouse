@@ -62,7 +62,6 @@ private:
 
 	typedef ScopedArray<Item> ItemList;
 
-	BoltRsp handlePopupButtonClick(int num);
 	BoltRsp handleButtonClick(int num);
 	void startPlayback();
 	void startAnimation(int itemNum, BltSound& sound);

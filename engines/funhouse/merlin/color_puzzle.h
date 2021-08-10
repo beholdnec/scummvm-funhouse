@@ -67,7 +67,6 @@ private:
 		BltColorPuzzleTransition transition;
 	};
 
-	BoltRsp handlePopupButtonClick(int num);
 	BoltRsp handleButtonClick(int num);
 
 	void idleMode();

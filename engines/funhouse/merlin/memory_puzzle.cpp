@@ -158,17 +158,6 @@ BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
 	return kDone;
 }
 
-BoltRsp MemoryPuzzle::handlePopupButtonClick(int num) {
-	switch (num) {
-	case 0: // Return
-		_game->branchReturn();
-		return BoltRsp::kDone;
-	default:
-		warning("Unhandled popup button %d", num);
-		return BoltRsp::kDone;
-	}
-}
-
 BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 
@@ -271,8 +260,6 @@ void MemoryPuzzle::idle() {
 		}
 
 		switch (msg.type) {
-		case BoltMsg::kPopupButtonClick:
-			return handlePopupButtonClick(msg.num);
 		case Scene::kClickButton:
 			return handleButtonClick(msg.num);
 		}
