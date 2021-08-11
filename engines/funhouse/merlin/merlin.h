@@ -76,6 +76,7 @@ public:
 	void branchScript(int idx, bool absolute = false);
 	void branchReturn();
 	void branchWin();
+	void branchMainMenu();
 	void branchGamePieces();
 	void branchDifficultyMenu();
 
@@ -101,6 +102,7 @@ public:
 	void setCheatMode(bool enable);
 
 	static const int kInitialScriptCursor;
+	static const int kMainMenuScriptCursor;
 	static const int kNewGameScriptCursor;
 	static const int kGamePiecesScriptCursor;
 	static const int kDifficultyScriptCursor;
@@ -129,6 +131,7 @@ private:
 	static const int kNumPopupTypes = 3;
 
 	static const ScriptEntry kScript[];
+	static const uint32 kPlotMovies[];
 	static const uint32 kWinMovies[];
 	static const uint32 kHelpMovies[];
 	static const uint32 kPotionMovies[];

@@ -59,7 +59,7 @@ Common::Error FunhouseEngine::run() {
 	_graphics.init(_system, this);
 	_game->init(_system, this, _mixer);
 	
-	while (!shouldQuit()) {
+	while (!shouldQuit() && !_quitRequested) {
 		BoltMsg msg = getNextMsg();
 		_graphics.handleMsg(msg);
 		if (msg.type == BoltMsg::kYield) {
@@ -182,6 +182,10 @@ void FunhouseEngine::requestHover() {
 
 void FunhouseEngine::requestWakeup(int32 ticks) {
 	// TODO: implement wakeup time; for now, the game wakes up on every frame
+}
+
+void FunhouseEngine::requestQuit() {
+	_quitRequested = true;
 }
 
 void FunhouseEngine::startTimer(int id, int32 elapse) {

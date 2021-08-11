@@ -70,13 +70,16 @@ BoltRsp MainMenu::handleButtonClick(int num) {
 		_game->branchScript(0);
 		return BoltRsp::kDone;
 	case 1: // Credits
-		_game->startMAMovie(MKTAG('C', 'R', 'D', 'T'));
+		_game->branchScript(1);
 		return BoltRsp::kDone;
 	case 2: // Help
 		_game->playHelpMovie();
 		return BoltRsp::kDone;
+	case 3: // Exit
+		_game->branchScript(2);
+		return BoltRsp::kDone;
 	case 4: // Tour
-		_game->startMAMovie(MKTAG('T', 'O', 'U', 'R'));
+		_game->branchScript(3);
 		return BoltRsp::kDone;
 	case 5: // Flower
 		// XXX: go to freeplay mode. TODO: original game shows colorbars when cheat mode is active.

@@ -202,6 +202,7 @@ public:
 	void requestSmoothAnimation();
 	void requestHover();
 	void requestWakeup(int32 ticks);
+	void requestQuit();
 	void startTimer(int id, int32 elapse);
 	void armTimer(int id, int32 elapse);
 	void addTicks(int id, int32 ticks);
@@ -247,6 +248,7 @@ private:
 	// True if a kHover message has been requested this frame.
 	// This forces a kHover message to be sent even if the mouse has not moved.
 	bool _hoverRequested = false;
+	bool _quitRequested = false;
 };
 
 } // End of namespace Funhouse

@@ -478,6 +478,7 @@ void PotionPuzzle::setTimeout(int32 delay, std::function<void()> then) {
 		_timer.start(delay, true);
 	});
 	_mode.onTimer(&_timer, [=]() {
+		_timer.active = false;
 		then();
 	});
 }

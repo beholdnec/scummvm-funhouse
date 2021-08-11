@@ -150,6 +150,15 @@ BoltRsp MerlinGame::handlePopupButtonClick(const BoltMsg& msg) {
 
 BoltRsp MerlinGame::handleHubPopupButtonClick(const BoltMsg &msg) {
 	switch (msg.num) {
+	case 0: // Exit
+		branchMainMenu();
+		return kDone;
+	case 1: // Game Pieces
+		branchGamePieces();
+		return kDone;
+	case 2: // Difficulty
+		branchDifficultyMenu();
+		return kDone;
 	case 3: // How to Play
 		playHelpMovie();
 		return kDone;
@@ -170,6 +179,10 @@ BoltRsp MerlinGame::handlePuzzlePopupButtonClick(const BoltMsg &msg) {
 	case 2: // How to Play
 		playHelpMovie();
 		return kDone;
+	case 3: // Reset
+		// TODO
+	case 4: // Undo
+		// TODO
 	default:
 		warning("Puzzle popup button %d not implemented", msg.num);
 		return kDone;
@@ -178,9 +191,19 @@ BoltRsp MerlinGame::handlePuzzlePopupButtonClick(const BoltMsg &msg) {
 
 BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(const BoltMsg &msg) {
 	switch (msg.num) {
+	case 0: // Exit
+		branchMainMenu();
+		return kDone;
+	case 1: // Difficulty
+		branchDifficultyMenu();
+		return kDone;
 	case 2: // How to Play
 		playHelpMovie();
 		return kDone;
+	case 3: // Reset
+		// TODO
+	case 4: // Undo
+		// TODO
 	default:
 		warning("Potion puzzle popup button %d not implemented", msg.num);
 		return kDone;
@@ -191,7 +214,11 @@ void MerlinGame::runScript() {
 	_popupType = kNoPopup;
 
 	const ScriptEntry& entry = kScript[_scriptCursor];
-	CALL_MEMBER_FN(*this, entry.func)(&entry);
+	if (entry.func == nullptr) {
+		_engine->requestQuit();
+	} else {
+		CALL_MEMBER_FN(*this, entry.func)(&entry);
+	}
 }
 
 void MerlinGame::win() {
@@ -439,6 +466,11 @@ void MerlinGame::branchLoadProfile() {
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
+void MerlinGame::branchMainMenu() {
+	_nextScriptCursor = kMainMenuScriptCursor;
+	_engine->setNextMsg(BoltMsg::kDrive);
+}
+
 void MerlinGame::branchGamePieces() {
 	_nextScriptCursor = kGamePiecesScriptCursor;
 	_engine->setNextMsg(BoltMsg::kDrive);
@@ -473,7 +505,8 @@ void MerlinGame::scriptPlotMovie(const ScriptEntry* entry) {
 	MovieCard* card = new MovieCard(this);
 	setActiveCard(card);
 
-	uint32 movie = entry->param;
+	uint32 movie = kPlotMovies[entry->param];
+	// FIXME: Movies BMPR and INTR have special-case logic
 	startMAMovie(movie);
 }
 
@@ -604,50 +637,37 @@ void MerlinGame::scriptPuzzle(const ScriptEntry* entry) {
 //
 // TODO: there are more: cursor, menus, etc.
 
-static const uint32 kPlotMovieBMPR = MKTAG('B', 'M', 'P', 'R');
-static const uint32 kPlotMovieINTR = MKTAG('I', 'N', 'T', 'R');
-static const uint32 kPlotMoviePLOG = MKTAG('P', 'L', 'O', 'G');
-static const uint32 kPlotMovieLABT = MKTAG('L', 'A', 'B', 'T');
-static const uint32 kPlotMovieCAV1 = MKTAG('C', 'A', 'V', '1');
-static const uint32 kPlotMovieFNLE = MKTAG('F', 'N', 'L', 'E');
-
-static const uint16 kFreeplayScenes = 0x0600; // TODO: 0600 contains ID's for freeplay hubs
-static const uint16 kFreeplayScene1 = 0x0337; // so stop hardcoding these
-static const uint16 kFreeplayScene2 = 0x0446;
-static const uint16 kFreeplayScene3 = 0x0555;
-
-static const uint16 kPotionPuzzle1 = 0x940C;
-static const uint16 kPotionPuzzle2 = 0x980C;
-static const uint16 kPotionPuzzle3 = 0x9C0E;
+static const uint16 kFreeplayScenes = 0x0600; // TODO: this resource contains freeplay hub ID's. Use this instead of hardcoding them.
 
 const int MerlinGame::kInitialScriptCursor = 0;
+const int MerlinGame::kMainMenuScriptCursor = 3;
 const int MerlinGame::kGamePiecesScriptCursor = 6;
 const int MerlinGame::kDifficultyScriptCursor = 7;
 const int MerlinGame::kNewGameScriptCursor = 11;
 
 const MerlinGame::ScriptEntry
 MerlinGame::kScript[] = {
-	/* 0 */  { &MerlinGame::scriptPlotMovie,  MKTAG('B','M','P','R'), 0, {1, 1} }, // branch index 0
-	/* 1 */  { &MerlinGame::scriptPostBumper, 0, 0, {2} }, // branch index 2
-	/* 2 */  { &MerlinGame::scriptPlotMovie,  MKTAG('I','N','T','R'), 0, {3, 3} }, // branch index 3
+	/* 0 */  { &MerlinGame::scriptPlotMovie,  12, 0, {1, 1} }, // branch index 0
+	/* 1 */  { &MerlinGame::scriptPostBumper, 0,  0, {2} }, // branch index 2
+	/* 2 */  { &MerlinGame::scriptPlotMovie,  7,  0, {3, 3} }, // branch index 3
 	/* 3 */  { &MerlinGame::scriptMenu,       0, 1, {6, 4, 83, 5} }, // branch index 5
-	/* 4 */  { &MerlinGame::scriptPlotMovie,  0, 0, {3, 3} }, // branch index 9
-	/* 5 */  { &MerlinGame::scriptPlotMovie,  0, 0, {3, 3} }, // branch index 11
-	/* 6 */  { &MerlinGame::scriptMenu,       1, 2, {3, -1, 7} }, // branch index 13
-	/* 7 */  { &MerlinGame::scriptMenu,       2, 3, {3, 6, -1} }, // branch index 16
+	/* 4 */  { &MerlinGame::scriptPlotMovie,  1,  0, {3, 3} }, // branch index 9
+	/* 5 */  { &MerlinGame::scriptPlotMovie,  14,  0, {3, 3} }, // branch index 11
+	/* 6 */  { &MerlinGame::scriptMenu,       1,  2, {3, -1, 7} }, // branch index 13
+	/* 7 */  { &MerlinGame::scriptMenu,       2,  3, {3, 6, -1} }, // branch index 16
 	/* 8 */  { &MerlinGame::scriptFreeplay,   0x0337, 4, {53, 54, 55, 56, 57, 58, 59, 10, 9 } }, // branch index 19
 	/* 9 */  { &MerlinGame::scriptFreeplay,   0x0446, 5, {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 8, 10} }, // branch index 28
 	/* 10 */ { &MerlinGame::scriptFreeplay,   0x0555, 6, {70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 9, 8}  }, // branch index 40
 
-	/* 11 */ { &MerlinGame::scriptPlotMovie, MKTAG('P','L','O','G'), 0, {20, 20} }, // branch index 55
-	/* 12 */ { &MerlinGame::scriptPlotMovie, MKTAG('L','A','B','T'), 0, {21, 21} }, // branch index 57
-	/* 13 */ { &MerlinGame::scriptPlotMovie, 0, 0, {8, 8} }, // branch index 59 
-	/* 14 */ { &MerlinGame::scriptPlotMovie, MKTAG('C','A','V','1'), 0, {22, 22} }, // branch index 61 (FIXME: CAV2 is played under some conditions)
-	/* 15 */ { &MerlinGame::scriptPlotMovie, 0, 0, {22, 22} }, // branch index 63
-	/* 16 */ { &MerlinGame::scriptPlotMovie, 0, 0, {9, 9} }, // branch index 65
-	/* 17 */ { &MerlinGame::scriptPlotMovie, 0, 0, {9, 9} }, // branch index 67
-	/* 18 */ { &MerlinGame::scriptPlotMovie, /*MKTAG('F','N','L','E')*/ 0, 0, {4, 4} }, // branch index 69 (XXX: Finale movie is hidden until the game is fully implemented)
-	/* 19 */ { &MerlinGame::scriptPlotMovie, 0, 0, {10, 10} }, // branch index 71
+	/* 11 */ { &MerlinGame::scriptPlotMovie, 13, 0, {20, 20} }, // branch index 55
+	/* 12 */ { &MerlinGame::scriptPlotMovie, 5,  0, {21, 21} }, // branch index 57
+	/* 13 */ { &MerlinGame::scriptPlotMovie, 6,  0, {8, 8} }, // branch index 59 
+	/* 14 */ { &MerlinGame::scriptPlotMovie, 10, 0, {22, 22} }, // branch index 61 (FIXME: CAV2 is played under some conditions)
+	/* 15 */ { &MerlinGame::scriptPlotMovie, 11, 0, {22, 22} }, // branch index 63
+	/* 16 */ { &MerlinGame::scriptPlotMovie, 8,  0, {9, 9} }, // branch index 65
+	/* 17 */ { &MerlinGame::scriptPlotMovie, 9,  0, {9, 9} }, // branch index 67
+	/* 18 */ { &MerlinGame::scriptPlotMovie, /*4*/ 12, 0, {4, 4} }, // branch index 69 (XXX: Finale movie is hidden until the game is fully implemented)
+	/* 19 */ { &MerlinGame::scriptPlotMovie, 0,  0, {10, 10} }, // branch index 71
 	/* 20 */ { &MerlinGame::scriptHub,       0x0C0B, 7, {23, 24, 25, 26, 27, 28, 29} }, // branch index 73
 	/* 21 */ { &MerlinGame::scriptHub,       0x0D34, 8, {30, 31, 32, 33, 34, 35, 36, 37, 38, 39} }, // branch index 80
 	/* 22 */ { &MerlinGame::scriptHub,       0x0E4F, 9, {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52} }, // branch index 90
@@ -724,8 +744,8 @@ MerlinGame::kScript[] = {
 	/* 81 */ { &MerlinGame::scriptPuzzle<MemoryPuzzle>,  23, 37, {10} }, // branch index 163
 	/* 82 */ { &MerlinGame::scriptPuzzle<PotionPuzzle>,  29, 42, {19} }, // branch index 164
 
-	/* 83 */ { &MerlinGame::scriptPlotMovie, 0, 0, {85, 84} }, // branch index 165
-	/* 84 */ { &MerlinGame::scriptPlotMovie, 0, 0, {85, 85} }, // branch index 167
+	/* 83 */ { &MerlinGame::scriptPlotMovie, 2, 0, {85, 84} }, // branch index 165
+	/* 84 */ { &MerlinGame::scriptPlotMovie, 3, 0, {85, 85} }, // branch index 167
 	/* 85 */ { nullptr, 0, 0, {} },
 };
 
@@ -780,6 +800,24 @@ MerlinGame::kScript[] = {
 		   00013830 [168]                   55h
 
 */
+
+const uint32 MerlinGame::kPlotMovies[] = {
+	MKTAG('A', 'P', 'C', 'V'),
+	MKTAG('C', 'R', 'D', 'T'),
+	MKTAG('E', 'X', 'T', '1'),
+	MKTAG('E', 'X', 'T', '2'),
+	MKTAG('F', 'N', 'L', 'E'),
+	MKTAG('L', 'A', 'B', 'T'),
+	MKTAG('A', 'P', 'F', 'R'),
+	MKTAG('I', 'N', 'T', 'R'),
+	MKTAG('A', 'P', 'L', '1'),
+	MKTAG('A', 'P', 'L', '2'),
+	MKTAG('C', 'A', 'V', '1'),
+	MKTAG('C', 'A', 'V', '2'),
+	MKTAG('B', 'M', 'P', 'R'),
+	MKTAG('P', 'L', 'O', 'G'),
+	MKTAG('T', 'O', 'U', 'R'),
+};
 
 const uint32 MerlinGame::kWinMovies[] = {
 	0,
