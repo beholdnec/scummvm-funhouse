@@ -94,6 +94,7 @@ public:
 	ChallengeStatus getChallengeStatus(int idx) const;
 	void setChallengeStatus(int idx, ChallengeStatus status);
 
+	void playHelpMovie();
 	void playWinMovie(int idx);
 
 	bool getCheatMode() const;
@@ -113,7 +114,7 @@ private:
 	struct ScriptEntry {
 		ScriptFunc func;
 		int param;
-		uint32 helpId;
+		int helpIdx;
 		int branchTable[16];
 	};
 
@@ -129,6 +130,7 @@ private:
 
 	static const ScriptEntry kScript[];
 	static const uint32 kWinMovies[];
+	static const uint32 kHelpMovies[];
 	static const uint32 kPotionMovies[];
 
 	void initCursor();

@@ -57,6 +57,8 @@ BoltRsp MainMenu::handleMsg(const BoltMsg &msg) {
 		return handleButtonClick(msg.num);
 	}
 
+	// TODO: original game plays tour when main menu is left idle for about 1 minute.
+
 	return _scene.handleMsg(msg);
 }
 
@@ -69,6 +71,9 @@ BoltRsp MainMenu::handleButtonClick(int num) {
 		return BoltRsp::kDone;
 	case 1: // Credits
 		_game->startMAMovie(MKTAG('C', 'R', 'D', 'T'));
+		return BoltRsp::kDone;
+	case 2: // Help
+		_game->playHelpMovie();
 		return BoltRsp::kDone;
 	case 4: // Tour
 		_game->startMAMovie(MKTAG('T', 'O', 'U', 'R'));

@@ -107,6 +107,9 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 				}
 			}
 			return BoltRsp::kDone;
+		case 3: // Help
+			_game->playHelpMovie();
+			return BoltRsp::kDone;
 		default:
 			warning("unknown main menu button %d", num);
 			return BoltRsp::kDone;
