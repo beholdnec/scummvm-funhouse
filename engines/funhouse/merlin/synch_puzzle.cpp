@@ -37,7 +37,7 @@ struct BltSynchPuzzleInfo { // type 52
 
 void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_mode.init(_game->getEngine());
+	_modeCtx.init(_game->getEngine());
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -120,7 +120,7 @@ void SynchPuzzle::enter() {
 }
 
 BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
-	_mode.react(msg);
+	_modeCtx.react(msg);
 	return kDone;
 }
 
@@ -142,10 +142,10 @@ void SynchPuzzle::redraw() {
 }
 
 void SynchPuzzle::idle() {
-	_mode.transition();
-	_mode.onEnter([]() {
+	_idleMode = {};
+	_idleMode.onEnter([]() {
 	});
-	_mode.onMsg([this](const BoltMsg& msg) {
+	_idleMode.onMsg([this](const BoltMsg &msg) {
 		BoltRsp cmd = _game->handlePopup(msg);
 		if (cmd != BoltRsp::kPass) {
 			return cmd;
@@ -176,17 +176,21 @@ void SynchPuzzle::idle() {
 
 		return _scene.handleMsg(msg);
 	});
+
+	_modeCtx.setNextMode(&_idleMode);
 }
 
 void SynchPuzzle::setTimeout(int32 delay, std::function<void()> then) {
-	_mode.transition();
-	_mode.onEnter([this, delay]() {
+	_timeoutMode = {};
+	_timeoutMode.onEnter([this, delay]() {
 		_timer.start(delay, true);
 	});
-	_mode.onTimer(&_timer, [this]() {
+	_timeoutMode.onTimer(&_timer, [this]() {
 		_timeoutThen();
 	});
 	_timeoutThen = then;
+
+	_modeCtx.setNextMode(&_timeoutMode);
 }
 
 BoltRsp SynchPuzzle::driveTransition() {

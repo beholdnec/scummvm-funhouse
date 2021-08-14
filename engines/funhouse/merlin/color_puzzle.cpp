@@ -27,7 +27,7 @@ namespace Funhouse {
 
 void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_mode.init(_game->getEngine());
+	_modeCtx.init(_game->getEngine());
 	_morphPaletteMods = nullptr;
 
 	uint16 resId = 0;
@@ -109,7 +109,7 @@ void ColorPuzzle::enter() {
 }
 
 BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
-	_mode.react(msg);
+	_modeCtx.react(msg);
 	return kDone;
 }
 
@@ -129,8 +129,8 @@ BoltRsp ColorPuzzle::handleButtonClick(int num) {
 }
 
 void ColorPuzzle::idleMode() {
-	_mode.transition();
-	_mode.onMsg([this](const BoltMsg& msg) {
+	_idleMode = {};
+	_idleMode.onMsg([this](const BoltMsg &msg) {
 		BoltRsp cmd = _game->handlePopup(msg);
 		if (cmd != BoltRsp::kPass) {
 			return cmd;
@@ -143,6 +143,8 @@ void ColorPuzzle::idleMode() {
 			return _scene.handleMsg(msg);
 		}
 	});
+
+	_modeCtx.setNextMode(&_idleMode);
 }
 
 BoltRsp ColorPuzzle::driveTransition() {
@@ -214,12 +216,12 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 	_morphStartState = startState;
 	_morphEndState = endState;
 
-	_mode.transition();
-	_mode.onEnter([this]() {
+	_morphMode = {};
+	_morphMode.onEnter([this]() {
 		_morphTimer.start(0, false);
 		_game->getEngine()->requestSmoothAnimation();
 	});
-	_mode.onMsg([this](const BoltMsg& msg) {
+	_morphMode.onMsg([this](const BoltMsg &msg) {
 		switch (msg.type) {
 		case BoltMsg::kSmoothAnimation:
 			driveMorph();
@@ -227,7 +229,9 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 			break;
 		}
 	});
-	_mode.onTimer(&_morphTimer, nullptr);
+	_morphMode.onTimer(&_morphTimer, nullptr);
+
+	_modeCtx.setNextMode(&_morphMode);
 }
 
 bool ColorPuzzle::isSolved() const {

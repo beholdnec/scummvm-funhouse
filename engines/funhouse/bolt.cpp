@@ -218,11 +218,11 @@ Graphics* FunhouseEngine::getGraphics() {
 	return &_graphics;
 }
 
-void DynamicMode::init(FunhouseEngine* engine) {
+void ModeContext::init(FunhouseEngine* engine) {
 	_engine = engine;
 }
 
-void DynamicMode::react(const BoltMsg& msg) {
+void ModeContext::react(const BoltMsg& msg) {
 	bool done = false;
 	bool ticksAdded = false;
 	bool msgSent = false;
@@ -230,23 +230,30 @@ void DynamicMode::react(const BoltMsg& msg) {
 	while (!done) {
 		done = true;
 
-		if (!_entered) {
+		if (_nextMode) {
 			done = false;
-			if (_enterFn) {
-				_enterFn();
+
+			if (_mode) {
+				_mode->leave();
 			}
-			_entered = true;
+
+			_mode = _nextMode;
+			_nextMode = nullptr;
+
+			if (_mode) {
+				_mode->enter();
+			}
 		}
-		else if (msg.type == BoltMsg::kAddTicks && _msgFn && !msgSent) {
-			// Before processing timers, send kAddTicks to the card's message handler
+		else if (msg.type == BoltMsg::kAddTicks && !msgSent) {
+			// Before processing timers, send kAddTicks to the mode's message handler
 			done = false;
-			_msgFn(msg);
+			_mode->react(msg);
 			msgSent = true;
 		}
 		else if (msg.type == BoltMsg::kAddTicks) {
 			if (!ticksAdded) {
 				// Update all timers
-				for (auto& timer : _timers) {
+				for (auto& timer : _mode->getTimers()) {
 					if (timer.timer->active) {
 						timer.timer->ticks += msg.num;
 					}
@@ -255,7 +262,7 @@ void DynamicMode::react(const BoltMsg& msg) {
 			}
 
 			// Continue processing timer handlers until no more timers are tripped
-			for (const auto& timer : _timers) {
+			for (const auto& timer : _mode->getTimers()) {
 				if (timer.timer->active && timer.timer->armed && timer.timer->ticks >= timer.timer->elapse && timer.fn) {
 					done = false;
 					timer.fn();
@@ -263,26 +270,23 @@ void DynamicMode::react(const BoltMsg& msg) {
 				}
 			}
 		}
-		else if (_msgFn && !msgSent) {
+		else if (!msgSent) {
 			done = false;
-			_msgFn(msg);
+			_mode->react(msg);
 			msgSent = true;
 		}
 	}
 
 	// Request engine to wake up at the next timer
-	for (const auto& timer : _timers) {
+	for (const auto& timer : _mode->getTimers()) {
 		if (timer.timer->active && timer.timer->armed && timer.timer->ticks < timer.timer->elapse) {
 			_engine->requestWakeup(timer.timer->elapse - timer.timer->ticks);
 		}
 	}
 }
 
-void DynamicMode::transition() {
-	_entered = false;
-	_enterFn = {};
-	_msgFn = {};
-	_timers = {};
+void ModeContext::setNextMode(Mode* nextMode) {
+	_nextMode = nextMode;
 }
 
 void DynamicMode::onEnter(std::function<void()> fn) {
@@ -295,6 +299,27 @@ void DynamicMode::onMsg(std::function<void(const BoltMsg& msg)> fn) {
 
 void DynamicMode::onTimer(Timer *timer, std::function<void()> fn) {
 	_timers.push_back({timer, fn});
+}
+
+void DynamicMode::enter() {
+	if (_enterFn) {
+		_enterFn();
+	}
+}
+
+void DynamicMode::leave() {
+	// Unused
+}
+
+const Common::Array<ModeTimer>&
+DynamicMode::getTimers() {
+	return _timers;
+}
+
+void DynamicMode::react(const BoltMsg& msg) {
+	if (_msgFn) {
+		_msgFn(msg);
+	}
 }
 
 void Timer::start(int32 elapse_, bool arm) {

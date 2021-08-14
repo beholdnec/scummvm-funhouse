@@ -85,7 +85,11 @@ private:
 	int _matches;
 	ScopedArray<int> _solution;
 
-	DynamicMode _animMode;
+	ModeContext _modeCtx;
+	DynamicMode _idleMode;
+	DynamicMode _animPlayingMode;
+	DynamicMode _animWindingDownMode;
+	DynamicMode _animStoppingMode;
 	Timer _frameTimer;
 	Timer _animTimer;
 	std::function<void()> _animThen; // Function to call when anim is finished

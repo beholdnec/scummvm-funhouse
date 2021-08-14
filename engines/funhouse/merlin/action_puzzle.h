@@ -63,7 +63,8 @@ protected:
 	BoltRsp win();
 
 	MerlinGame *_game;
-	DynamicMode _mode;
+	ModeContext _modeCtx;
+	DynamicMode _playMode;
 	Timer _timer;
 	BltImage _bgImage;
 	BltPalette _backPalette;

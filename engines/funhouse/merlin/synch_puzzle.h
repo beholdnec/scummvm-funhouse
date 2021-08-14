@@ -77,7 +77,9 @@ private:
 
 	MerlinGame *_game;
 	Scene _scene;
-	DynamicMode _mode;
+	ModeContext _modeCtx;
+	DynamicMode _idleMode;
+	DynamicMode _timeoutMode;
 	Timer _timer;
 	std::function<void()> _timeoutThen;
 

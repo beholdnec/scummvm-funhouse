@@ -91,7 +91,7 @@ typedef ScopedArray<BltPotionPuzzleComboTableListElement> BltPotionPuzzleComboTa
 
 void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_mode.init(_game->getEngine());
+	_modeCtx.init(_game->getEngine());
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -163,15 +163,17 @@ void PotionPuzzle::enter() {
 }
 
 BoltRsp PotionPuzzle::handleMsg(const BoltMsg &msg) {
-	_mode.react(msg);
+	_modeCtx.react(msg);
 	return kDone;
 }
 
 void PotionPuzzle::idle() {
-	_mode.transition();
-	_mode.onMsg([this](const BoltMsg& msg) {
+	_idleMode = {};
+	_idleMode.onMsg([this](const BoltMsg &msg) {
 		handleIdle(msg);
 	});
+
+	_modeCtx.setNextMode(&_idleMode);
 }
 
 BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
@@ -473,14 +475,16 @@ int PotionPuzzle::getNumRemainingIngredients() const {
 }
 
 void PotionPuzzle::setTimeout(int32 delay, std::function<void()> then) {
-	_mode.transition();
-	_mode.onEnter([this, delay]() {
+	_timeoutMode = {};
+	_timeoutMode.onEnter([this, delay]() {
 		_timer.start(delay, true);
 	});
-	_mode.onTimer(&_timer, [=]() {
+	_timeoutMode.onTimer(&_timer, [=]() {
 		_timer.active = false;
 		then();
 	});
+
+	_modeCtx.setNextMode(&_timeoutMode);
 }
 
 } // End of namespace Funhouse

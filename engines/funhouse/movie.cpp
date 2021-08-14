@@ -53,7 +53,7 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 		(name >> 24) & 0xff, (name >> 16) & 0xff, (name >> 8) & 0xff, name & 0xff);
 
 	_engine = engine;
-	_mode.init(_engine);
+	_modeCtx.init(_engine);
 
 	stop();
 
@@ -127,7 +127,7 @@ bool Movie::isRunning() const {
 }
 
 BoltRsp Movie::handleMsg(const BoltMsg &msg) {
-	_mode.react(msg);
+	_modeCtx.react(msg);
 	return kDone;
 }
 
@@ -137,11 +137,11 @@ void Movie::setTriggerCallback(TriggerCallback callback, void *param) {
 }
 
 void Movie::playMode() {
-	_mode.transition();
-	_mode.onEnter([this]() {
+	_playMode = {};
+	_playMode.onEnter([this]() {
 		_frameTimer.start(_framePeriod, true);
 	});
-	_mode.onMsg([this](const BoltMsg &msg) {
+	_playMode.onMsg([this](const BoltMsg &msg) {
 		bool handled = false;
 		switch (msg.type) {
 		case BoltMsg::kSmoothAnimation:
@@ -163,7 +163,7 @@ void Movie::playMode() {
 			_engine->requestSmoothAnimation();
 		}
 	});
-	_mode.onTimer(&_frameTimer, [this]() {
+	_playMode.onTimer(&_frameTimer, [this]() {
 		_frameTimer.ticks -= _framePeriod;
 
 		driveAudio();
@@ -175,6 +175,8 @@ void Movie::playMode() {
 			_engine->requestSmoothAnimation();
 		}
 	});
+
+	_modeCtx.setNextMode(&_playMode);
 }
 
 void Movie::loadAudio() {

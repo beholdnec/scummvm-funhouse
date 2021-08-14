@@ -79,7 +79,9 @@ private:
 	bool isSolved() const;
 
 	MerlinGame *_game;
-	DynamicMode _mode;
+	ModeContext _modeCtx;
+	DynamicMode _idleMode;
+	DynamicMode _morphMode;
 	Scene _scene;
 	ScopedArray<BltSoundList> _soundLists;
 

@@ -143,19 +143,39 @@ struct Timer {
 	void start(int32 elapse, bool arm);
 };
 
+struct ModeTimer {
+	Timer *timer;
+	std::function <void()> fn;
+};
+
 class Mode {
 public:
 	virtual ~Mode() { }
+	virtual void enter() = 0;
+	virtual void leave() = 0;
+	virtual const Common::Array<ModeTimer> &getTimers() = 0;
 	virtual void react(const BoltMsg &msg) = 0;
+};
+
+class ModeContext {
+public:
+	void init(FunhouseEngine *engine);
+	void react(const BoltMsg &msg);
+	void setNextMode(Mode *nextMode);
+
+private:
+	FunhouseEngine *_engine = nullptr;
+	Mode *_mode = nullptr;
+	Mode *_nextMode = nullptr;
 };
 
 class DynamicMode : public Mode {
 public:
-	void init(FunhouseEngine* engine);
-
+	void enter() override;
+	void leave() override;
+	const Common::Array<ModeTimer>& getTimers() override;
 	void react(const BoltMsg &msg) override;
 
-	void transition();
 	void onEnter(std::function<void()> fn);
 	void onMsg(std::function<void(const BoltMsg &msg)> fn);
 	void onTimer(Timer *timer, std::function<void()> fn);
@@ -163,15 +183,9 @@ public:
 	bool _entered = false;
 
 private:
-	struct TimerDefn {
-		Timer *timer;
-		std::function<void()> fn;
-	};
-
-	FunhouseEngine *_engine;
 	std::function<void()> _enterFn;
 	std::function<void(const BoltMsg &msg)> _msgFn;
-	Common::Array<TimerDefn> _timers;
+	Common::Array<ModeTimer> _timers;
 };
 
 enum TimerId {

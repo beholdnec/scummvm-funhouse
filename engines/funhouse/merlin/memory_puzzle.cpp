@@ -84,7 +84,7 @@ MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
 
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_animMode.init(_game->getEngine());
+	_modeCtx.init(_game->getEngine());
 	idle();
 	_matches = 0;
 
@@ -154,7 +154,7 @@ void MemoryPuzzle::enter() {
 }
 
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-	_animMode.react(msg);
+	_modeCtx.react(msg);
 	return kDone;
 }
 
@@ -190,7 +190,6 @@ void MemoryPuzzle::startPlayback() {
 void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
 	debug(3, "Starting animation for item %d", itemNum);
 
-	_animMode = {};
 	_animItem = itemNum;
 	_animFrame = 0;
 	_animSubFrame = 0;
@@ -237,11 +236,11 @@ void MemoryPuzzle::playbackNext() {
 }
 
 void MemoryPuzzle::idle() {
-	_animMode.transition();
-	_animMode.onEnter([this]() {
+	_idleMode = {};
+	_idleMode.onEnter([this]() {
 		_game->getEngine()->setNextMsg(BoltMsg::kDrive); // Check for win now
 	});
-	_animMode.onMsg([this](const BoltMsg& msg) {
+	_idleMode.onMsg([this](const BoltMsg &msg) {
 		BoltRsp cmd;
 
 		if (_matches >= _finalGoal) {
@@ -266,17 +265,19 @@ void MemoryPuzzle::idle() {
 
 		return _scene.handleMsg(msg);
 	});
+
+	_modeCtx.setNextMode(&_idleMode);
 }
 
 void MemoryPuzzle::animPlaying() {
-	_animMode.transition();
-	_animMode.onEnter([this]() {
+	_animPlayingMode = {};
+	_animPlayingMode.onEnter([this]() {
 		_frameTimer.start(kFrameDelayMs, true);
 		_animTimer.start(_animSoundTime, false);
 	});
-	_animMode.onMsg([](const BoltMsg& msg) {
+	_animPlayingMode.onMsg([](const BoltMsg &msg) {
 	});
-	_animMode.onTimer(&_frameTimer, [this]() {
+	_animPlayingMode.onTimer(&_frameTimer, [this]() {
 		const Item& item = _itemList[_animItem];
 		const ItemFrame& frame = item.frames[_animFrame];
 
@@ -313,16 +314,18 @@ void MemoryPuzzle::animPlaying() {
 			}
 		}
 	});
-	_animMode.onTimer(&_animTimer, nullptr);
+	_animPlayingMode.onTimer(&_animTimer, nullptr);
+
+	_modeCtx.setNextMode(&_animPlayingMode);
 }
 
 void MemoryPuzzle::animWindingDown() {
-	_animMode.transition();
-	_animMode.onEnter([this]() {
+	_animWindingDownMode = {};
+	_animWindingDownMode.onEnter([this]() {
 	});
-	_animMode.onMsg([](const BoltMsg& msg) {
+	_animWindingDownMode.onMsg([](const BoltMsg &msg) {
 	});
-	_animMode.onTimer(&_frameTimer, [this]() {
+	_animWindingDownMode.onTimer(&_frameTimer, [this]() {
 		_frameTimer.ticks -= kFrameDelayMs;
 
 		const Item& item = _itemList[_animItem];
@@ -348,21 +351,25 @@ void MemoryPuzzle::animWindingDown() {
 			drawItemFrame(_animItem, _animFrame);
 		}
 	});
-	_animMode.onTimer(&_animTimer, nullptr);
+	_animWindingDownMode.onTimer(&_animTimer, nullptr);
+
+	_modeCtx.setNextMode(&_animWindingDownMode);
 }
 
 void MemoryPuzzle::animStopping() {
-	_animMode.transition();
-	_animMode.onEnter([this]() {
+	_animStoppingMode = {};
+	_animStoppingMode.onEnter([this]() {
 		_animTimer.armed = true;
 	});
-	_animMode.onMsg([](const BoltMsg& msg) {
+	_animStoppingMode.onMsg([](const BoltMsg &msg) {
 	});
-	_animMode.onTimer(&_animTimer, [this]() {
+	_animStoppingMode.onTimer(&_animTimer, [this]() {
 		_animTimer.armed = false;
 		drawItemFrame(_animItem, -1);
 		_animThen();
 	});
+
+	_modeCtx.setNextMode(&_animStoppingMode);
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {

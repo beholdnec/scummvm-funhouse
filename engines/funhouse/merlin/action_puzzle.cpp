@@ -55,7 +55,7 @@ struct BltParticles { // type 46
 
 void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_mode.init(_game->getEngine());
+	_modeCtx.init(_game->getEngine());
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -183,16 +183,16 @@ void ActionPuzzle::redraw() {
 }
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
-	_mode.react(msg);
+	_modeCtx.react(msg);
 	return kDone;
 }
 
 void ActionPuzzle::playMode() {
-	_mode.transition();
-	_mode.onEnter([=]() {
+	_playMode = {};
+	_playMode.onEnter([=]() {
 		_timer.start(kTickPeriod, true);
 	});
-	_mode.onMsg([this](const BoltMsg &msg) {
+	_playMode.onMsg([this](const BoltMsg &msg) {
 		_game->handlePopup(msg);
 		if (_game->getPopup().isActive()) {
 			_timer.active = false;
@@ -207,7 +207,7 @@ void ActionPuzzle::playMode() {
 			handleClick(msg.point);
 		}
 	});
-	_mode.onTimer(&_timer, [this]() {
+	_playMode.onTimer(&_timer, [this]() {
 		_timer.ticks -= kTickPeriod;
 
 		tick();
@@ -215,6 +215,8 @@ void ActionPuzzle::playMode() {
 			win();
 		}
 	});
+
+	_modeCtx.setNextMode(&_playMode);
 }
 
 const BltImage& ActionPuzzle::getParticleImage(const Particle &particle) {
