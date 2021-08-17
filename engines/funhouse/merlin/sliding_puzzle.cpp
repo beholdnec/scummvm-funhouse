@@ -104,20 +104,12 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 void SlidingPuzzle::enter() {
 	_scene.enter();
 	setSprites();
+	idleMode();
 }
 
 BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
-	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
-		return cmd;
-	}
-
-	switch (msg.type) {
-	case Scene::kClickButton:
-		return handleButtonClick(msg.num);
-	default:
-		return _scene.handleMsg(msg);
-	}
+	_modeCtx.react(msg);
+	return kDone;
 }
 
 void SlidingPuzzle::setSprites() {
@@ -127,6 +119,25 @@ void SlidingPuzzle::setSprites() {
 
 	_scene.redraw();
 	_game->getGraphics()->markDirty();
+}
+
+void SlidingPuzzle::idleMode() {
+	_idleMode = {};
+	_idleMode.onMsg([this](const BoltMsg& msg) {
+		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
+		if (cmd != BoltRsp::kPass) {
+			return cmd;
+		}
+
+		switch (msg.type) {
+		case Scene::kClickButton:
+			return handleButtonClick(msg.num);
+		default:
+			return _scene.handleMsg(msg);
+		}
+	});
+
+	_modeCtx.setNextMode(&_idleMode);
 }
 
 BoltRsp SlidingPuzzle::handleButtonClick(int num) {

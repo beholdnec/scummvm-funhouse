@@ -40,7 +40,7 @@ public:
 
 	bool isActive() const;
 	void dismiss();
-	BoltRsp handleMsg(const BoltMsg &msg);
+	BoltRsp react(ModeContext *ctx, const BoltMsg &msg);
 
 private:
 	struct Button {
@@ -50,13 +50,15 @@ private:
 	};
 	typedef ScopedArray<Button> ButtonList;
 
-	void activate();
+	void activate(ModeContext *ctx);
 	int getButtonAt(const Common::Point &pt) const;
 	BoltRsp handleButtonClick(int num);
 
 	MerlinGame *_game;
 
 	bool _active = false;
+	DynamicMode _activatedMode;
+	Mode *_oldMode = nullptr;
 	BltImage _bgImage;
 	BltPalette _palette;
 	ButtonList _buttons;

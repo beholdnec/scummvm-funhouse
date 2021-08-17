@@ -97,19 +97,31 @@ void HubCard::enter() {
 	}
 
 	_game->getGraphics()->markDirty();
+
+	idle();
 }
 
 BoltRsp HubCard::handleMsg(const BoltMsg &msg) {
-	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
-		return cmd;
-	}
+	_modeCtx.react(msg);
+	return kDone;
+}
 
-	if (msg.type == Scene::kClickButton) {
-		return handleButtonClick(msg.num);
-	}
+void HubCard::idle() {
+	_idleMode = {};
+	_idleMode.onMsg([this](const BoltMsg& msg) {
+		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
+		if (cmd != BoltRsp::kPass) {
+			return cmd;
+		}
 
-	return _scene.handleMsg(msg);
+		if (msg.type == Scene::kClickButton) {
+			return handleButtonClick(msg.num);
+		}
+
+		return _scene.handleMsg(msg);
+	});
+
+	_modeCtx.setNextMode(&_idleMode);
 }
 
 BoltRsp HubCard::handleButtonClick(int num) {

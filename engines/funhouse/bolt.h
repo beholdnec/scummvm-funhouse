@@ -161,6 +161,7 @@ class ModeContext {
 public:
 	void init(FunhouseEngine *engine);
 	void react(const BoltMsg &msg);
+	Mode *getMode();
 	void setNextMode(Mode *nextMode);
 
 private:

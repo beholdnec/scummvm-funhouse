@@ -276,8 +276,8 @@ PopupMenu& MerlinGame::getPopup() {
 	return _popup;
 }
 
-BoltRsp MerlinGame::handlePopup(const BoltMsg& msg) {
-	return _popup.handleMsg(msg);
+BoltRsp MerlinGame::handlePopup(ModeContext *ctx, const BoltMsg& msg) {
+	return _popup.react(ctx, msg);
 }
 
 void MerlinGame::dismissPopup() {

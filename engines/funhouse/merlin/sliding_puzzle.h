@@ -37,10 +37,13 @@ public:
 	void setSprites();
 
 private:
+	void idleMode();
 	BoltRsp handleButtonClick(int num);
 
 	MerlinGame *_game;
 	Scene _scene;
+	ModeContext _modeCtx;
+	DynamicMode _idleMode;
 
 	static const int kNumButtons = 4;
 

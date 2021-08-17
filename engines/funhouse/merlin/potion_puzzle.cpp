@@ -179,7 +179,7 @@ void PotionPuzzle::idle() {
 BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
 	BoltRsp cmd;
 
-	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
+	if ((cmd = _game->handlePopup(&_modeCtx, msg)) != BoltRsp::kPass) {
 		return cmd;
 	}
 

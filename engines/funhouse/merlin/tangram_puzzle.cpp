@@ -126,6 +126,8 @@ void TangramPuzzle::enter() {
 	drawPieces();
 
 	_game->getGraphics()->markDirty();
+
+	idle();
 }
 
 static int16 snap(int16 x, int spacing) {
@@ -168,63 +170,73 @@ bool TangramPuzzle::pieceIsPlaceableAt(int pieceNum, int px, int py) {
 }
 
 BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
-	// FIXME: Is popup allowed while a piece is held?
-	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
-		return cmd;
-	}
+	_modeCtx.react(msg);
+	return kDone;
+}
 
-	if (msg.type == BoltMsg::kClick) {
-		// TODO: implement puzzle.
-		if (_pieceInHand != -1) {
-			// Place piece
-			Piece& p = _pieces[_pieceInHand];
-			p.pos = msg.point - _grabPos;
-			p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
-			p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
-			p.placed = pieceIsPlaceableAt(_pieceInHand,
-				(p.pos.x - _offset.x) / _gridSpacing,
-				(p.pos.y - _offset.y) / _gridSpacing);
-			_pieceInHand = -1;
-			drawPieces();
+void TangramPuzzle::idle() {
+	_idleMode = {};
+	_idleMode.onMsg([this](const BoltMsg& msg) {
+		// FIXME: Is popup allowed while a piece is held?
+		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
+		if (cmd != BoltRsp::kPass) {
+			return cmd;
+		}
 
-			if (checkWin()) {
-				_game->branchWin();
-				return BoltRsp::kDone;
-			}
-		} else {
-			_pieceInHand = getPieceAtPosition(msg.point);
+		if (msg.type == BoltMsg::kClick) {
+			// TODO: implement puzzle.
 			if (_pieceInHand != -1) {
-				// Pick up piece
-				// First, move the piece to be under the cursor
-				// TODO: Restrict to screen
-				Piece& p = _pieces[_pieceInHand];
-				_grabPos = Common::Point(p.placedImage.getWidth() / 2, p.placedImage.getHeight() / 2);
+				// Place piece
+				Piece &p = _pieces[_pieceInHand];
+				p.pos = msg.point - _grabPos;
+				p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
+				p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
+				p.placed = pieceIsPlaceableAt(_pieceInHand,
+											  (p.pos.x - _offset.x) / _gridSpacing,
+											  (p.pos.y - _offset.y) / _gridSpacing);
+				_pieceInHand = -1;
+				drawPieces();
+
+				if (checkWin()) {
+					_game->branchWin();
+					return BoltRsp::kDone;
+				}
+			} else {
+				_pieceInHand = getPieceAtPosition(msg.point);
+				if (_pieceInHand != -1) {
+					// Pick up piece
+					// First, move the piece to be under the cursor
+					// TODO: Restrict to screen
+					Piece &p = _pieces[_pieceInHand];
+					_grabPos = Common::Point(p.placedImage.getWidth() / 2, p.placedImage.getHeight() / 2);
+					p.pos = msg.point - _grabPos;
+					p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
+					p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
+					drawPieces();
+					debug(3, "Picked up piece %d", _pieceInHand);
+				}
+			}
+
+			return BoltRsp::kDone;
+		}
+
+		if (msg.type == BoltMsg::kHover) {
+			// Move piece
+			if (_pieceInHand != -1) {
+				// TODO: Restrict piece to a region inset from the screen.
+				Piece &p = _pieces[_pieceInHand];
 				p.pos = msg.point - _grabPos;
 				p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
 				p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
 				drawPieces();
-				debug(3, "Picked up piece %d", _pieceInHand);
+				return BoltRsp::kDone;
 			}
 		}
 
 		return BoltRsp::kDone;
-	}
+	});
 
-	if (msg.type == BoltMsg::kHover) {
-		// Move piece
-		if (_pieceInHand != -1) {
-			// TODO: Restrict piece to a region inset from the screen.
-			Piece& p = _pieces[_pieceInHand];
-			p.pos = msg.point - _grabPos;
-			p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
-			p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
-			drawPieces();
-			return BoltRsp::kDone;
-		}
-	}
-
-	return BoltRsp::kDone;
+	_modeCtx.setNextMode(&_idleMode);
 }
 
 int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {

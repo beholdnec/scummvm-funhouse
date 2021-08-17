@@ -193,19 +193,17 @@ void ActionPuzzle::playMode() {
 		_timer.start(kTickPeriod, true);
 	});
 	_playMode.onMsg([this](const BoltMsg &msg) {
-		_game->handlePopup(msg);
-		if (_game->getPopup().isActive()) {
-			_timer.active = false;
-			return;
-		}
-		else {
-			_timer.active = true;
+		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
+		if (cmd != BoltRsp::kPass) {
+			return cmd;
 		}
 
 		switch (msg.type) {
 		case BoltMsg::kClick:
-			handleClick(msg.point);
+			return handleClick(msg.point);
 		}
+
+		return kDone;
 	});
 	_playMode.onTimer(&_timer, [this]() {
 		_timer.ticks -= kTickPeriod;

@@ -146,7 +146,7 @@ void SynchPuzzle::idle() {
 	_idleMode.onEnter([]() {
 	});
 	_idleMode.onMsg([this](const BoltMsg &msg) {
-		BoltRsp cmd = _game->handlePopup(msg);
+		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
 		if (cmd != BoltRsp::kPass) {
 			return cmd;
 		}

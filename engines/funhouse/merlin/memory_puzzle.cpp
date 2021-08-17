@@ -254,7 +254,7 @@ void MemoryPuzzle::idle() {
 			return BoltRsp::kDone;
 		}
 
-		if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
+		if ((cmd = _game->handlePopup(&_modeCtx, msg)) != BoltRsp::kPass) {
 			return cmd;
 		}
 

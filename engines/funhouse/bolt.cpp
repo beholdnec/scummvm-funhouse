@@ -285,6 +285,10 @@ void ModeContext::react(const BoltMsg& msg) {
 	}
 }
 
+Mode* ModeContext::getMode() {
+	return _mode;
+}
+
 void ModeContext::setNextMode(Mode* nextMode) {
 	_nextMode = nextMode;
 }

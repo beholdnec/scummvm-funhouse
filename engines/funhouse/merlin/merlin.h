@@ -86,7 +86,7 @@ public:
 
 	void setPopup(PopupType type);
 	PopupMenu &getPopup();
-	BoltRsp handlePopup(const BoltMsg &msg);
+	BoltRsp handlePopup(ModeContext *ctx, const BoltMsg &msg);
 	void dismissPopup();
 
 	int getDifficulty(DifficultyCategory category) const;

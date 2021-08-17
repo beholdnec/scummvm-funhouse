@@ -39,6 +39,7 @@ public:
 private:
 	static const int kNumLetters = 26;
 
+	void idle();
 	BoltRsp handleReset();
 	BoltRsp handleButtonClick(int num);
 
@@ -53,6 +54,8 @@ private:
 
 	MerlinGame *_game;
 	Scene _scene;
+	ModeContext _modeCtx;
+	DynamicMode _idleMode;
 	BltSoundList _resetSound;
 
 	BltSprites _normalSprites;

@@ -86,12 +86,14 @@ void PopupMenu::dismiss() {
 	_active = false;
 }
 
-BoltRsp PopupMenu::handleMsg(const BoltMsg &msg) {
+BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kRightClick) {
 		if (!_active) {
-			activate();
+			activate(ctx);
 		} else {
 			_active = false;
+			ctx->setNextMode(_oldMode);
+			_oldMode = nullptr;
 			_game->redraw();
 		}
 
@@ -136,21 +138,31 @@ bool PopupMenu::isActive() const {
 	return _active;
 }
 
-void PopupMenu::activate() {
-	_active = true;
+void PopupMenu::activate(ModeContext *ctx) {
+	_oldMode = ctx->getMode();
 
-	// The original engine does something hacky here: Only colors 121-127 are applied.
-	static const int kFirstPopupColor = 121;
-	static const int kNumPopupColors = 7;
-	_game->getGraphics()->setPlanePalette(kBack, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
+	_activatedMode = {};
+	_activatedMode.onEnter([this]() {
+		_active = true;
 
-	static const int kPopupX = -32;
-	static const int kPopupY = 168;
-	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), kPopupX, kPopupY, true);
+		// The original engine does something hacky here: Only colors 121-127 are applied.
+		static const int kFirstPopupColor = 121;
+		static const int kNumPopupColors = 7;
+		_game->getGraphics()->setPlanePalette(kBack, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
 
-	_game->getGraphics()->markDirty();
+		static const int kPopupX = -32;
+		static const int kPopupY = 168;
+		_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), kPopupX, kPopupY, true);
 
-	_game->getEngine()->requestHover();
+		_game->getGraphics()->markDirty();
+
+		_game->getEngine()->requestHover();
+	});
+	_activatedMode.onMsg([this, ctx](const BoltMsg& msg) {
+		react(ctx, msg);
+	});
+
+	ctx->setNextMode(&_activatedMode);
 }
 
 int PopupMenu::getButtonAt(const Common::Point &pt) const {

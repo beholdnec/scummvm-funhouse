@@ -112,20 +112,12 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 void WordPuzzle::enter() {
 	_scene.enter();
 	setupButtons();
+	idle();
 }
 
 BoltRsp WordPuzzle::handleMsg(const BoltMsg &msg) {
-	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
-		return cmd;
-	}
-
-	switch (msg.type) {
-	case Scene::kClickButton:
-		return handleButtonClick(msg.num);
-	default:
-		return _scene.handleMsg(msg);
-	}
+	_modeCtx.react(msg);
+	return kDone;
 }
 
 BoltRsp WordPuzzle::handleReset() {
@@ -134,6 +126,25 @@ BoltRsp WordPuzzle::handleReset() {
 	reset();
 	setupButtons();
 	return BoltRsp::kDone;
+}
+
+void WordPuzzle::idle() {
+	_idleMode = {};
+	_idleMode.onMsg([this](const BoltMsg& msg) {
+		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
+		if (cmd != BoltRsp::kPass) {
+			return cmd;
+		}
+
+		switch (msg.type) {
+		case Scene::kClickButton:
+			return handleButtonClick(msg.num);
+		default:
+			return _scene.handleMsg(msg);
+		}
+	});
+
+	_modeCtx.setNextMode(&_idleMode);
 }
 
 BoltRsp WordPuzzle::handleButtonClick(int num) {

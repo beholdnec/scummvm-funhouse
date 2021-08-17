@@ -51,6 +51,7 @@ private:
 
 	typedef ScopedArray<Piece> PieceArray;
 
+	void idle();
 	int getPieceAtPosition(const Common::Point& pos);
 	bool pieceIsPlaceableAt(int pieceNum, int x, int y);
 	int getCollisionAt(int x, int y);
@@ -58,6 +59,8 @@ private:
 	void drawPieces();
 
 	MerlinGame *_game;
+	ModeContext _modeCtx;
+	DynamicMode _idleMode;
 
 	// Main resources
 	BltImage _bgImage;
