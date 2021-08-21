@@ -142,9 +142,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_failSound.load(boltlib, failSoundId);
 
 	_solution.alloc(_finalGoal);
-	for (int i = 0; i < _finalGoal; ++i) {
-		_solution[i] = _random.getRandomNumber(_itemList.size() - 1);
-	}
+	makeShuffledSequence(_itemList.size(), _solution.span());
 
 	startPlayback();
 }

@@ -30,6 +30,16 @@
 
 namespace Funhouse {
 
+/// Generate a sequence of shuffled numbers. Optionally, a deviance factor can be specified,
+/// and a list of numbers to exclude can be given.
+/// If an exclusion list is passed in, this function first generates a shuffled sequence
+/// that excludes the specified numbers. If there is space remaining in the
+/// output buffer, the excluded numbers are shuffled and placed in the rest of the
+/// output buffer. If there is still space remaining in the output buffer,
+/// the function continues generating shuffled sequences (ignoring exclusions) until no more
+/// space remains.
+void makeShuffledSequence(int count, Common::Span<int> out, int deviance = 0, Common::Span<bool> placed = {});
+
 template<class T>
 class ScopedArray {
 public:
@@ -97,8 +107,12 @@ public:
 		return result;
 	}
 
-	Common::Span<const byte> span() const {
-		return Common::Span<const byte>(_data, _size);
+	Common::Span<T> span() {
+		return Common::Span<T>(_data, _size);
+	}
+
+	Common::Span<const T> span() const {
+		return Common::Span<const T>(_data, _size);
 	}
 
 private:

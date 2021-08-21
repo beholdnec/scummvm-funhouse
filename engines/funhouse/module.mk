@@ -8,6 +8,7 @@ MODULE_OBJS := \
 	movie.o \
 	pf_file.o \
 	scene.o \
+	util.o \
 	boltlib/boltlib.o \
 	boltlib/palette.o \
 	boltlib/sound.o \
