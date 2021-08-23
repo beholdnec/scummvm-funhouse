@@ -348,19 +348,24 @@ function openBltFile(path: string) {
   const numDirectories = myReadU8(bltFile)
 
   const fileSizeField = myReadU32(bltFile)
-  if (fileSizeField != fileSize) {
+  if (fileSizeField > fileSize) {
     throw new Error("Invalid file size field.")
   }
 
   dirTable = []
   for (let i = 0; i < numDirectories; i++) {
+    mySkip(bltFile, 3);
+    let numResources = myReadU8(bltFile);
+    if (numResources === 0) {
+      numResources = 256;
+    }
     let newDir: DirEntry = {
-      numResources: myReadU32(bltFile),
+      numResources,
       compBufSize: myReadU32(bltFile),
       position: myReadU32(bltFile),
       resourceTable: []
     }
-    // Skip unknown field.
+    // Skip empty field. This field serves as a placeholder for a pointer.
     myReadU32(bltFile)
 
     const cursor = myTell(bltFile)
