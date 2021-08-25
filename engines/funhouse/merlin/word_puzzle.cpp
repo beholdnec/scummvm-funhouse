@@ -28,9 +28,11 @@ struct BltWordPuzzleInfo {
 	static const uint32 kType = kBltWordPuzzleInfo;
 	static const uint kSize = 0x4;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		centerX = src.getInt16BEAt(2);
+		variationSlot = src.getUint8At(0x0);
+		centerX = src.getInt16BEAt(0x2);
 	}
 
+	uint8 variationSlot;
 	int16 centerX;
 };
 	
@@ -74,6 +76,10 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	loadBltResource(puzzleInfo, boltlib, infoId);
 	_centerX = puzzleInfo.centerX;
 
+	int difficultyLevel = _game->getDifficulty(kWordsDifficulty);
+	int variation = (_game->getPuzzleVariation(puzzleInfo.variationSlot) + 1) % 4;
+	debug(3, "Loading word puzzle difficulty %d, variation %d", difficultyLevel, variation);
+
 	_resetSound.load(boltlib, resetSoundId);
 
 	_normalSprites.load(boltlib, normalSpriteListId);
@@ -83,17 +89,15 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltU16Values difficulties;
 	loadBltResourceArray(difficulties, boltlib, difficultiesId);
-	BltId difficultyId = BltShortId(difficulties[_game->getDifficulty(kWordsDifficulty)].value); // Ex: 5E18
-
-	int puzzleVariant = 0; // TODO: Choose puzzle variant 0-3
+	BltId difficultyId = BltShortId(difficulties[difficultyLevel].value); // Ex: 5E18
 
 	BltResourceList difficulty;
 	loadBltResourceArray(difficulty, boltlib, difficultyId);
-	BltId variantInfoId    = difficulty[puzzleVariant].value; // Ex: 5E00
-	BltId lineLengthsId    = difficulty[4 + puzzleVariant].value; // Ex: 5E01
-	BltId lineYPositionsId = difficulty[8 + puzzleVariant].value; // Ex: 5E02
-	BltId solutionId       = difficulty[12 + puzzleVariant].value; // Ex: 5E03
-	BltId sceneId          = difficulty[16 + puzzleVariant].value; // Ex: 5E05
+	BltId variantInfoId    = difficulty[variation].value;      // Ex: 5E00
+	BltId lineLengthsId    = difficulty[4 + variation].value;  // Ex: 5E01
+	BltId lineYPositionsId = difficulty[8 + variation].value;  // Ex: 5E02
+	BltId solutionId       = difficulty[12 + variation].value; // Ex: 5E03
+	BltId sceneId          = difficulty[16 + variation].value; // Ex: 5E05
 
 	BltWordPuzzleVariantInfo variantInfo;
 	loadBltResource(variantInfo, boltlib, variantInfoId);

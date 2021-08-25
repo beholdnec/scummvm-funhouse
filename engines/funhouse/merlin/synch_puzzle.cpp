@@ -28,11 +28,13 @@ struct BltSynchPuzzleInfo { // type 52
 	static const uint32 kType = kBltSynchPuzzleInfo;
 	static const uint kSize = 0x12;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		numItems = src.getUint8At(0);
+		numItems = src.getUint8At(0x0);
+		variationSlot = src.getUint8At(0x1);
 		// TODO: More fields
 	}
 
 	uint8 numItems;
+	uint8 variationSlot;
 };
 
 void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
@@ -57,23 +59,25 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltU16Values difficultiesList;
 	loadBltResourceArray(difficultiesList, boltlib, difficultiesId);
-	BltId difficultyId = BltShortId(difficultiesList[_game->getDifficulty(kLogicDifficulty)].value); // Ex: 7A72
 
 	BltSynchPuzzleInfo info;
 	loadBltResource(info, boltlib, infoId);
 
-	_moveAgenda.alloc(info.numItems - 1);
+	int difficultyLevel = _game->getDifficulty(kLogicDifficulty);
+	int variation = (_game->getPuzzleVariation(info.variationSlot) + 1) % 4;
+	debug(3, "Loading synch puzzle difficulty %d, variation %d", difficultyLevel, variation);
 
-	// Each difficulty has 4 possible puzzles. Choose one.
-	int puzzleNum = 0; // TODO: choose a random puzzle number 0-3
+	BltId difficultyId = BltShortId(difficultiesList[difficultyLevel].value); // Ex: 7A72
+
+	_moveAgenda.alloc(info.numItems - 1);
 
 	BltResourceList difficulty;
 	loadBltResourceArray(difficulty, boltlib, difficultyId);
 	BltId stateCountsId = difficulty[0].value; // Ex: 7A00
 	BltId itemListId    = difficulty[1].value; // Ex: 7A3D
-	BltId solutionId    = difficulty[3 + puzzleNum].value; // Ex: 7A3E
-	BltId initialId     = difficulty[7 + puzzleNum].value; // Ex: 7A42
-	BltId movesetsId    = difficulty[11 + puzzleNum].value; // Ex: 7A4E
+	BltId solutionId    = difficulty[3 + variation].value;  // Ex: 7A3E
+	BltId initialId     = difficulty[7 + variation].value;  // Ex: 7A42
+	BltId movesetsId    = difficulty[11 + variation].value; // Ex: 7A4E
 	// 0: State counts for each item
 	// 1: Sprites
 	// 2: Sounds

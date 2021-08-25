@@ -30,12 +30,14 @@ struct BltMemoryPuzzleInfo {
 	static const uint32 kType = kBltMemoryPuzzleInfos;
 	static const uint kSize = 0x10;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		finalGoal = src.getUint16BEAt(2);
+		pieceCount = src.getUint16BEAt(0x0);
+		solutionLength = src.getUint16BEAt(0x2);
 		// TODO: the rest of the fields appear to be timing parameters
-		foo = src.getUint16BEAt(8);
+		foo = src.getUint16BEAt(0x8);
 	}
 
-	uint16 finalGoal; // Number of matches to win
+	uint16 pieceCount;
+	uint16 solutionLength;
 	uint16 foo;
 };
 
@@ -79,9 +81,6 @@ struct BltMemoryPuzzleItemFrame {
 
 typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 
-MemoryPuzzle::MemoryPuzzle() : _random("MemoryPuzzleRandomSource")
-{}
-
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
 	_modeCtx.init(_game->getEngine());
@@ -108,7 +107,6 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltMemoryPuzzleInfos infos;
 	loadBltResourceArray(infos, boltlib, infosId);
 	const BltMemoryPuzzleInfo& info = infos[_game->getDifficulty(kMemoryDifficulty)];
-	_finalGoal = info.finalGoal;
 	_foo = info.foo;
 	_goal = 3;
 
@@ -141,8 +139,8 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_failSound.load(boltlib, failSoundId);
 
-	_solution.alloc(_finalGoal);
-	makeShuffledSequence(_itemList.size(), _solution.span());
+	_solution.alloc(info.solutionLength);
+	makeShuffledSequence(info.pieceCount, _solution.span());
 
 	startPlayback();
 }
@@ -236,21 +234,16 @@ void MemoryPuzzle::playbackNext() {
 void MemoryPuzzle::idle() {
 	_idleMode = {};
 	_idleMode.onEnter([this]() {
-		_game->getEngine()->setNextMsg(BoltMsg::kDrive); // Check for win now
-	});
-	_idleMode.onMsg([this](const BoltMsg &msg) {
-		BoltRsp cmd;
-
-		if (_matches >= _finalGoal) {
+		if (_matches >= _solution.size()) {
 			_game->branchWin();
-			return BoltRsp::kDone;
-		}
-		else if (_matches >= _goal) {
+		} else if (_matches >= _goal) {
 			_matches = 0;
 			_goal += 3;
 			startPlayback();
-			return BoltRsp::kDone;
 		}
+	});
+	_idleMode.onMsg([this](const BoltMsg &msg) {
+		BoltRsp cmd;
 
 		if ((cmd = _game->handlePopup(&_modeCtx, msg)) != BoltRsp::kPass) {
 			return cmd;

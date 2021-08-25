@@ -28,9 +28,11 @@ struct BltPotionPuzzleInfo {
 	static const uint32 kType = kBltPotionPuzzle;
 	static const uint kSize = 0x46;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		difficultiesId = BltId(src.getUint32BEAt(0));
-		bgImageId = BltId(src.getUint32BEAt(4));
-		bgPaletteId = BltId(src.getUint32BEAt(8));
+		difficultiesId = BltId(src.getUint32BEAt(0x0));
+		bgImageId = BltId(src.getUint32BEAt(0x4));
+		bgPaletteId = BltId(src.getUint32BEAt(0x8));
+		comboTableCount = src.getUint16BEAt(0x12);
+		variationSlot = src.getUint16BEAt(0x14);
 		numShelfPoints = src.getUint16BEAt(0x16);
 		shelfPointsId = BltId(src.getUint32BEAt(0x18));
 		// FIXME: U8Values resource specified at 0x1C has an unknown purpose.
@@ -42,6 +44,8 @@ struct BltPotionPuzzleInfo {
 	BltId difficultiesId;
 	BltId bgImageId;
 	BltId bgPaletteId;
+	uint16 comboTableCount;
+	uint16 variationSlot;
 	uint16 numShelfPoints;
 	BltId shelfPointsId;
 	BltId basinPointsId;
@@ -116,6 +120,11 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_bgImage.load(boltlib, puzzle.bgImageId);
 	_bgPalette.load(boltlib, puzzle.bgPaletteId);
 
+	int difficultyLevel = _game->getDifficulty(kLogicDifficulty);
+	int variation = (((_game->getPuzzleVariation(puzzle.variationSlot) << 2) + _game->getPuzzleVariation(puzzle.variationSlot + 1))
+					+ 1) % puzzle.comboTableCount;
+	debug(3, "Loading potion puzzle difficulty %d, variation %d", difficultyLevel, variation);
+
 	loadBltResourceArray(difficultyIds, boltlib, puzzle.difficultiesId);
 	
 	BltId difficultyId = BltShortId(difficultyIds[_game->getDifficulty(kLogicDifficulty)].value);
@@ -125,12 +134,9 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	loadBltResourceArray(ingredientImagesList, boltlib, difficulty.ingredientImagesId);
 	loadBltResourceArray(shelfPoints, boltlib, puzzle.shelfPointsId);
 	loadBltResourceArray(bowlPoints, boltlib, puzzle.basinPointsId);
-	loadBltResourceArray(comboTableList, boltlib, difficulty.comboTableListId); // TODO: which combo table should we choose?
+	loadBltResourceArray(comboTableList, boltlib, difficulty.comboTableListId);
 
-	// XXX: Although there are multiple reaction tables, it is unclear how to select which one is
-	//      used. In the original program, it has something to do with the value at 0x14 in the
-	//      puzzle descriptor, combined with a value from the save data.
-	loadBltResourceArray(_reactionTable, boltlib, comboTableList[0].comboTableId);
+	loadBltResourceArray(_reactionTable, boltlib, comboTableList[variation].comboTableId);
 
 	_ingredientImages.alloc(difficulty.numIngredients);
 	for (uint16 i = 0; i < difficulty.numIngredients; ++i) {

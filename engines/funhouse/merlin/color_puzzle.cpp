@@ -25,6 +25,19 @@
 
 namespace Funhouse {
 
+struct BltColorPuzzleInfo { // type 57
+	static const uint32 kType = kBltColorPuzzleInfo;
+	static const uint kSize = 0xa;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		pieceCount = src.getUint8At(0x0);
+		variationSlot = src.getUint8At(0x1);
+		// TODO: More fields
+	}
+
+	uint8 pieceCount;
+	uint8 variationSlot;
+};
+
 void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
 	_modeCtx.init(_game->getEngine());
@@ -42,23 +55,29 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
 	BltId difficultiesId = resourceList[0].value;
+	BltId infoId         = resourceList[1].value; // Ex: 9001
 	BltId sceneId        = resourceList[3].value;
+
+	BltColorPuzzleInfo info;
+	loadBltResource(info, boltlib, infoId);
+
+	int difficultyLevel = _game->getDifficulty(kLogicDifficulty);
+	int variation = (_game->getPuzzleVariation(info.variationSlot) + 1) % 4;
+	debug(3, "Loading color puzzle difficulty %d, variation %d", difficultyLevel, variation);
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
 	BltU16Values difficultyIds;
 	loadBltResourceArray(difficultyIds, boltlib, difficultiesId);
 
-	int puzzleNum = 0; // TODO: Choose a random puzzle 0..3.
-
 	BltResourceList difficulty;
-	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultyIds[_game->getDifficulty(kLogicDifficulty)].value));
+	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultyIds[difficultyLevel].value));
 	BltId numStatesId        = difficulty[0].value; // Ex: 8D00
 	BltId statePaletteModsId = difficulty[1].value; // Ex: 8D1D
 	BltId soundsId           = difficulty[2].value; // Ex: 8D52
-	BltId solutionId         = difficulty[3 + puzzleNum].value; // Ex: 8D1E
-	BltId initialId          = difficulty[7 + puzzleNum].value; // Ex: 8D22
-	BltId moveSetId          = difficulty[11 + puzzleNum].value; // Ex: 8D2E
+	BltId solutionId         = difficulty[3 + variation].value; // Ex: 8D1E
+	BltId initialId          = difficulty[7 + variation].value; // Ex: 8D22
+	BltId moveSetId          = difficulty[11 + variation].value; // Ex: 8D2E
 
 	BltU8Values numStates;
 	loadBltResourceArray(numStates, boltlib, numStatesId);

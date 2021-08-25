@@ -35,8 +35,6 @@ namespace Funhouse {
 
 class MemoryPuzzle : public Card {
 public:
-	MemoryPuzzle();
-
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
 	BoltRsp handleMsg(const BoltMsg &msg);
@@ -76,11 +74,9 @@ private:
 	MerlinGame *_game;
 	Scene _scene;
 	ItemList _itemList;
-	int _finalGoal;
 	uint16 _foo; // Parameter used to determine puzzle variant? Also used to override animation timing!
 	BltSoundList _failSound;
 
-	Common::RandomSource _random;
 	int _goal;
 	int _matches;
 	ScopedArray<int> _solution;

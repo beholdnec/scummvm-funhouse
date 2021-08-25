@@ -70,6 +70,8 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 		// _difficulties[i] = -1;
 		_difficulties[i] = 0;
 	}
+	// TODO: generate variations only once, when creating the save file for the first time
+	generateVariations();
 
 	_boltlib.load("BOLTLIB.BLT");
 
@@ -265,6 +267,11 @@ int MerlinGame::getProfile() const {
 
 void MerlinGame::selectProfile(int idx) {
 	_saveMan.setProfileIdx(idx);
+	// TODO: load variations and stuff
+}
+
+void MerlinGame::save() {
+	// TODO
 }
 
 void MerlinGame::setPopup(PopupType type) {
@@ -395,6 +402,15 @@ void MerlinGame::setChallengeStatus(int idx, ChallengeStatus status) {
 	_challengeStatuses[idx] = status;
 }
 
+int MerlinGame::getPuzzleVariation(int slot) const {
+	if (slot < 0 || slot >= _variations.size()) {
+		// FIXME: potion puzzles trigger this
+		warning("Tried to query variation slot %d", slot);
+		return 0;
+	}
+	return _variations[slot];
+}
+
 void MerlinGame::playHelpMovie() {
 	startMovie(_helpPf, kHelpMovies[kScript[_scriptCursor].helpIdx]);
 }
@@ -479,6 +495,55 @@ void MerlinGame::branchGamePieces() {
 void MerlinGame::branchDifficultyMenu() {
 	_nextScriptCursor = kDifficultyScriptCursor;
 	_engine->setNextMsg(BoltMsg::kDrive);
+}
+
+void MerlinGame::generateVariations() {
+	int varsPerProfile = 0;
+	int i = 0;
+	while (kVariationInfo[i].puzzleCount != 0) {
+		varsPerProfile += kVariationInfo[i].puzzleCount;
+		++i;
+	}
+
+	_variations.alloc(varsPerProfile);
+
+	ScopedArray<int> allVars;
+	allVars.alloc(varsPerProfile * kProfileCount);
+
+	ScopedArray<int> varSet;
+	varSet.alloc(kProfileCount);
+
+	// Generate all variations
+	// FIXME: variations don't seem to be very random...
+	i = 0;
+	int iout = 0;
+	while (kVariationInfo[i].puzzleCount != 0) {
+		for (int j = 0; j < kVariationInfo[i].puzzleCount; ++j) {
+			makeShuffledSequence(kVariationInfo[i].variationCount, varSet.span());
+			debugN(3, "sequence set %d, puzzle %d: ", i, j);
+			for (int k = 0; k < kProfileCount; ++k) {
+				debugN(3, "%d,", varSet[k]);
+				allVars[k * varsPerProfile + iout] = varSet[k];
+			}
+			debug(3, "");
+			++iout;
+		}
+		++i;
+	}
+
+	// Assign variations to profiles
+	for (int k = 0; k < kProfileCount; ++k) {
+		selectProfile(k);
+		debugN(3, "profile %d variations: ", k);
+		for (int j = 0; j < varsPerProfile; ++j) {
+			_variations[j] = allVars[k * varsPerProfile + j];
+			debugN(3, "%d,", _variations[j]);
+		}
+		debug(3, "");
+		save();
+	}
+
+	selectProfile(-1);
 }
 
 class MovieCard : public Card
@@ -636,6 +701,18 @@ void MerlinGame::scriptPuzzle(const ScriptEntry* entry) {
 //   'SQID', 'CLOD', 'SWIR', 'VOLC', 'WORM',
 //
 // TODO: there are more: cursor, menus, etc.
+
+const MerlinGame::VariationInfo MerlinGame::kVariationInfo[] = {
+	{ 6, 4 },
+	{ 3, 4 },
+	{ 2, 4 },
+	{ 3, 4 },
+	{ 4, 4 },
+	{ 1, 5 },
+	{ 1, 8 },
+	{ 1, 11 },
+	{ 0, 0 }
+};
 
 static const uint16 kFreeplayScenes = 0x0600; // TODO: this resource contains freeplay hub ID's. Use this instead of hardcoding them.
 

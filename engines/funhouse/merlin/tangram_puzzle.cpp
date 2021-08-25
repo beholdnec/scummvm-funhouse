@@ -24,6 +24,16 @@
 
 namespace Funhouse {
 
+struct BltTangramPuzzleInfo {
+	static const uint32 kType = kBltTangramPuzzleInfo;
+	static const uint kSize = 0x2;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		variationSlot = src.getUint16BEAt(0x0);
+	}
+
+	uint16 variationSlot;
+};
+
 struct BltTangramPuzzleDifficultyInfo {
 	static const uint32 kType = kBltTangramPuzzleDifficultyInfo;
 	static const uint kSize = 0x6;
@@ -59,9 +69,17 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
 	BltId difficultiesId = resourceList[0].value; // Ex: 7100
+	BltId infoId         = resourceList[1].value; // Ex: 6D01
 	BltId bgImageId      = resourceList[2].value;
 	BltId paletteId      = resourceList[3].value;
 	BltId colorCyclesId  = resourceList[4].value;
+
+	BltTangramPuzzleInfo info;
+	loadBltResource(info, boltlib, infoId);
+
+	int difficultyLevel = _game->getDifficulty(kShapesDifficulty);
+	int variation = (_game->getPuzzleVariation(info.variationSlot) + 1) % 4;
+	debug(3, "Loading tangram puzzle difficulty %d, variation %d", difficultyLevel, variation);
 
 	_bgImage.load(boltlib, bgImageId);
 	_palette.load(boltlib, paletteId);

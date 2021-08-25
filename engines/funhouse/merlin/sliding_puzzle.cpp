@@ -24,24 +24,30 @@
 
 namespace Funhouse {
 
-struct BltSlidingPuzzleInfo { // type 44
-	static const uint32 kType = kBltSlidingPuzzle;
-	static const uint kSize = 0xC;
+struct BltSlidingPuzzleInfo { // type 43
+	static const uint32 kType = kBltSlidingPuzzleInfo;
+	static const uint kSize = 0x2;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		numPieces1 = src.getUint16BEAt(0);
-		difficulty1 = BltShortId(src.getUint16BEAt(2));
-		numPieces2 = src.getUint16BEAt(4);
-		difficulty2 = BltShortId(src.getUint16BEAt(6));
-		numPieces3 = src.getUint16BEAt(8);
-		difficulty3 = BltShortId(src.getUint16BEAt(0xA));
+		variationSlot = src.getUint8At(0x1);
 	}
 
-	uint16 numPieces1;
-	BltShortId difficulty1;
-	uint16 numPieces2;
-	BltShortId difficulty2;
-	uint16 numPieces3;
-	BltShortId difficulty3;
+	uint8 variationSlot;
+};
+
+struct BltSlidingPuzzleDifficulties { // type 44
+	static const uint32 kType = kBltSlidingPuzzleDifficulties;
+	static const uint kSize = 0xC;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		pieceCount[0] = src.getUint16BEAt(0x0);
+		difficulty[0] = BltShortId(src.getUint16BEAt(0x2));
+		pieceCount[1] = src.getUint16BEAt(0x4);
+		difficulty[1] = BltShortId(src.getUint16BEAt(0x6));
+		pieceCount[2] = src.getUint16BEAt(0x8);
+		difficulty[2] = BltShortId(src.getUint16BEAt(0xA));
+	}
+
+	uint16 pieceCount[3];
+	BltShortId difficulty[3];
 };
 
 void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
@@ -62,32 +68,32 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltResourceList resourceList;
 	loadBltResourceArray(resourceList, boltlib, BltShortId(resId));
+	BltId infoId = resourceList[0].value;
 	BltId puzzleInfoId = resourceList[1].value;
 
-	BltSlidingPuzzleInfo slidingPuzzleInfo;
-	loadBltResource(slidingPuzzleInfo, boltlib, puzzleInfoId);
+	BltSlidingPuzzleInfo info;
+	loadBltResource(info, boltlib, infoId);
 
-	BltId difficultyId;
-	uint16 numPieces = 0;
-	switch (_game->getDifficulty(kLogicDifficulty)) { // FIXME: is this logic or shapes?
-	case 0: difficultyId = slidingPuzzleInfo.difficulty1; numPieces = slidingPuzzleInfo.numPieces1; break;
-	case 1: difficultyId = slidingPuzzleInfo.difficulty2; numPieces = slidingPuzzleInfo.numPieces2; break;
-	case 2: difficultyId = slidingPuzzleInfo.difficulty3; numPieces = slidingPuzzleInfo.numPieces3; break;
-	default: assert(false && "Invalid sliding puzzle difficulty"); break;
-	}
+	int difficultyLevel = _game->getDifficulty(kLogicDifficulty);
+	int variation = (_game->getPuzzleVariation(info.variationSlot) + 1) % 4;
+	debug(3, "Loading sliding puzzle difficulty %d, variation %d", difficultyLevel, variation);
+
+	BltSlidingPuzzleDifficulties slidingPuzzleDiffs;
+	loadBltResource(slidingPuzzleDiffs, boltlib, puzzleInfoId);
+
+	BltId difficultyId = slidingPuzzleDiffs.difficulty[difficultyLevel];
 
 	BltResourceList difficultyInfo;
 	loadBltResourceArray(difficultyInfo, boltlib, difficultyId); // Ex: 3A34, 3B34, 3C34
 	BltId sceneId        = difficultyInfo[1].value;
-	BltId initialStateId = difficultyInfo[2].value;
-	BltId moveTablesId   = difficultyInfo[6].value;
+	BltId initialStateId = difficultyInfo[2 + variation].value;
+	BltId moveTablesId   = difficultyInfo[6 + variation].value;
 
-	// FIXME: difficultyInfo[3-5] are probably more initial state tables.
 	BltU8Values initialState;
 	loadBltResourceArray(initialState, boltlib, initialStateId);
 
-	_pieces.alloc(numPieces);
-	for (int i = 0; i < numPieces; ++i) {
+	_pieces.alloc(slidingPuzzleDiffs.pieceCount[difficultyLevel]);
+	for (int i = 0; i < _pieces.size(); ++i) {
 		_pieces[i] = initialState[i].value;
 	}
 
@@ -95,7 +101,6 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltResourceList moveTablesRes;
 	loadBltResourceArray(moveTablesRes, boltlib, moveTablesId);
-	// FIXME: difficultyInfo[7-9] are more move tables. What are they for?
 	for (int i = 0; i < kNumButtons * 2; ++i) {
 		loadBltResourceArray(_moveTables[i], boltlib, moveTablesRes[i].value);
 	}

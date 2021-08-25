@@ -30,6 +30,8 @@
 
 namespace Funhouse {
 
+// NOTE: These resource type ID's only apply to the PC/Mac version. The CD-i version has
+// different type ID's.
 enum BltType {
 	kBltU8Values = 1,
 	kBltS16Values = 2, // signed 16-bit values
@@ -54,17 +56,20 @@ enum BltType {
 	kBltPopupCatalog = 38,
 	kBltHub = 40,
 	kBltHubItem = 41,
-	kBltSlidingPuzzle = 44,
-	kBltParticleDeaths = 45, // action puzzles
+	kBltSlidingPuzzleInfo           = 43,
+	kBltSlidingPuzzleDifficulties   = 44,
+	kBltParticleDeaths              = 45, // action puzzles
 	kBltParticles                   = 46, // action puzzles
 	kBltWordPuzzleInfo              = 48,
 	kBltWordPuzzleVariantInfo       = 49,
+	kBltTangramPuzzleInfo           = 50,
 	kBltTangramPuzzleDifficultyInfo = 51,
 	kBltSynchPuzzleInfo             = 52,
 	kBltSynchPuzzleTransition       = 53,
 	kBltMemoryPuzzleInfos           = 54,
 	kBltMemoryPuzzleItemFrameList   = 55,
 	kBltMemoryPuzzleItemList        = 56,
+	kBltColorPuzzleInfo             = 57,
 	kBltColorPuzzleTransition       = 58,
 	kBltPotionPuzzle                = 59,
 	kBltPotionPuzzleSpritePoints    = 60, // potion puzzles

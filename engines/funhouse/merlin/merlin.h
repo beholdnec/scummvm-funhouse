@@ -83,6 +83,7 @@ public:
 	bool doesProfileExist(int idx) const;
 	int getProfile() const;
 	void selectProfile(int idx);
+	void save();
 
 	void setPopup(PopupType type);
 	PopupMenu &getPopup();
@@ -100,6 +101,8 @@ public:
 
 	bool getCheatMode() const;
 	void setCheatMode(bool enable);
+
+	int getPuzzleVariation(int slot) const;
 
 	static const int kInitialScriptCursor;
 	static const int kMainMenuScriptCursor;
@@ -120,6 +123,7 @@ private:
 		int branchTable[16];
 	};
 
+	void generateVariations();
 	void scriptPlotMovie(const ScriptEntry *entry);
 	void scriptPostBumper(const ScriptEntry* entry);
 	void scriptMenu(const ScriptEntry* entry);
@@ -178,6 +182,14 @@ private:
 
 	static const int kChallengeCount = 30;
 	ChallengeStatus _challengeStatuses[kChallengeCount] = { };
+
+	struct VariationInfo {
+		int puzzleCount;
+		int variationCount;
+	};
+
+	static const VariationInfo kVariationInfo[];
+	ScopedArray<int> _variations;
 
 	void runScript();
 	
