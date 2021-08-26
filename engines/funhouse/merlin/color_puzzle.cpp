@@ -62,7 +62,7 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	loadBltResource(info, boltlib, infoId);
 
 	int difficultyLevel = _game->getDifficulty(kLogicDifficulty);
-	int variation = (_game->getPuzzleVariation(info.variationSlot) + 1) % 4;
+	int variation = (_game->getVariationSlot(info.variationSlot) + 1) % 4;
 	debug(3, "Loading color puzzle difficulty %d, variation %d", difficultyLevel, variation);
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);

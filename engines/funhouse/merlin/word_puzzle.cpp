@@ -77,7 +77,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_centerX = puzzleInfo.centerX;
 
 	int difficultyLevel = _game->getDifficulty(kWordsDifficulty);
-	int variation = (_game->getPuzzleVariation(puzzleInfo.variationSlot) + 1) % 4;
+	int variation = (_game->getVariationSlot(puzzleInfo.variationSlot) + 1) % 4;
 	debug(3, "Loading word puzzle difficulty %d, variation %d", difficultyLevel, variation);
 
 	_resetSound.load(boltlib, resetSoundId);

@@ -102,7 +102,7 @@ public:
 	bool getCheatMode() const;
 	void setCheatMode(bool enable);
 
-	int getPuzzleVariation(int slot) const;
+	int getVariationSlot(int slot) const;
 
 	static const int kInitialScriptCursor;
 	static const int kMainMenuScriptCursor;
@@ -189,7 +189,8 @@ private:
 	};
 
 	static const VariationInfo kVariationInfo[];
-	ScopedArray<int> _variations;
+	static const int kVariationInfoCount;
+	ScopedArray<int> _variationSlots;
 
 	void runScript();
 	

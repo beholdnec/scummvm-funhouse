@@ -121,7 +121,7 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_bgPalette.load(boltlib, puzzle.bgPaletteId);
 
 	int difficultyLevel = _game->getDifficulty(kLogicDifficulty);
-	int variation = (((_game->getPuzzleVariation(puzzle.variationSlot) << 2) + _game->getPuzzleVariation(puzzle.variationSlot + 1))
+	int variation = (((_game->getVariationSlot(puzzle.variationSlot) << 2) + _game->getVariationSlot(puzzle.variationSlot + 1))
 					+ 1) % puzzle.comboTableCount;
 	debug(3, "Loading potion puzzle difficulty %d, variation %d", difficultyLevel, variation);
 

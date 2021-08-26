@@ -402,13 +402,12 @@ void MerlinGame::setChallengeStatus(int idx, ChallengeStatus status) {
 	_challengeStatuses[idx] = status;
 }
 
-int MerlinGame::getPuzzleVariation(int slot) const {
-	if (slot < 0 || slot >= _variations.size()) {
-		// FIXME: potion puzzles trigger this
-		warning("Tried to query variation slot %d", slot);
+int MerlinGame::getVariationSlot(int slot) const {
+	if (slot < 0 || slot >= _variationSlots.size()) {
+		assert(false && "Tried to query invalid variation slot");
 		return 0;
 	}
-	return _variations[slot];
+	return _variationSlots[slot];
 }
 
 void MerlinGame::playHelpMovie() {
@@ -498,48 +497,93 @@ void MerlinGame::branchDifficultyMenu() {
 }
 
 void MerlinGame::generateVariations() {
-	int varsPerProfile = 0;
-	int i = 0;
-	while (kVariationInfo[i].puzzleCount != 0) {
+	static const int kBitsPerSlot = 2;
+	static const int kValuesPerSlot = 1 << kBitsPerSlot; // Each slot is 2 bits
+
+	int varsPerProfile = 0; // A var tells which variation of a puzzle to load
+	for (int i = 0; i < kVariationInfoCount; ++i) {
 		varsPerProfile += kVariationInfo[i].puzzleCount;
-		++i;
 	}
 
-	_variations.alloc(varsPerProfile);
+	int slotsPerProfile = 0; // Sometimes, a var can be spread across two slots
+	ScopedArray<int> slotCountForVar;
+	slotCountForVar.alloc(varsPerProfile);
+	int iout = 0;
+	for (int i = 0; i < kVariationInfoCount; ++i) {
+		int j = 1;
+		int slotsPerPuzzle = 0;
+		while (j < kVariationInfo[i].variationCount) {
+			++slotsPerPuzzle;
+			j *= kValuesPerSlot;
+		}
 
-	ScopedArray<int> allVars;
-	allVars.alloc(varsPerProfile * kProfileCount);
+		debug(3, "slots per puzzle: %d", slotsPerPuzzle);
+		slotsPerProfile += kVariationInfo[i].puzzleCount * slotsPerPuzzle;
+		for (int k = 0; k < kVariationInfo[i].puzzleCount; ++k) {
+			slotCountForVar[iout] = slotsPerPuzzle;
+			++iout;
+		}
+	}
+
+	debug(3, "slot count for each var:");
+	for (int i = 0; i < slotCountForVar.size(); ++i) {
+		debugN(3, "%d,", slotCountForVar[i]);
+	}
+	debug(3, "");
+
+	ScopedArray<ScopedArray<int>> allVars;
+	allVars.alloc(kProfileCount);
+	for (int i = 0; i < kProfileCount; ++i) {
+		allVars[i].alloc(varsPerProfile);
+	}
 
 	ScopedArray<int> varSet;
 	varSet.alloc(kProfileCount);
 
 	// Generate all variations
 	// FIXME: variations don't seem to be very random...
-	i = 0;
-	int iout = 0;
-	while (kVariationInfo[i].puzzleCount != 0) {
+	iout = 0;
+	for (int i = 0; i < kVariationInfoCount; ++i) {
 		for (int j = 0; j < kVariationInfo[i].puzzleCount; ++j) {
 			makeShuffledSequence(kVariationInfo[i].variationCount, varSet.span());
 			debugN(3, "sequence set %d, puzzle %d: ", i, j);
 			for (int k = 0; k < kProfileCount; ++k) {
 				debugN(3, "%d,", varSet[k]);
-				allVars[k * varsPerProfile + iout] = varSet[k];
+				allVars[k][iout] = varSet[k];
 			}
 			debug(3, "");
 			++iout;
 		}
-		++i;
 	}
 
+	_variationSlots.alloc(slotsPerProfile);
+
 	// Assign variations to profiles
-	for (int k = 0; k < kProfileCount; ++k) {
-		selectProfile(k);
-		debugN(3, "profile %d variations: ", k);
+	for (int profile = 0; profile < kProfileCount; ++profile) {
+		selectProfile(profile);
+
+		debugN(3, "vars for profile %d: ", profile);
 		for (int j = 0; j < varsPerProfile; ++j) {
-			_variations[j] = allVars[k * varsPerProfile + j];
-			debugN(3, "%d,", _variations[j]);
+			debugN(3, "%d,", allVars[profile][j]);
 		}
 		debug(3, "");
+
+		iout = 0;
+		for (int j = 0; j < varsPerProfile; ++j) {
+			int var = allVars[profile][j];
+			for (int m = slotCountForVar[j] - 1; m >= 0; --m) {
+				int slotValue = (var >> (kBitsPerSlot * m)) & (kValuesPerSlot - 1);
+				_variationSlots[iout] = slotValue;
+				++iout;
+			}
+		}
+
+		debugN(3, "slots for profile %d: ", profile);
+		for (int j = 0; j < slotsPerProfile; ++j) {
+			debugN(3, "%d,", _variationSlots[j]);
+		}
+		debug(3, "");
+
 		save();
 	}
 
@@ -711,8 +755,9 @@ const MerlinGame::VariationInfo MerlinGame::kVariationInfo[] = {
 	{ 1, 5 },
 	{ 1, 8 },
 	{ 1, 11 },
-	{ 0, 0 }
 };
+
+const int MerlinGame::kVariationInfoCount = sizeof(kVariationInfo) / sizeof(VariationInfo);
 
 static const uint16 kFreeplayScenes = 0x0600; // TODO: this resource contains freeplay hub ID's. Use this instead of hardcoding them.
 
