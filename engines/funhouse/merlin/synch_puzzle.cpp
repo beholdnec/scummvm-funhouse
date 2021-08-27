@@ -184,19 +184,6 @@ void SynchPuzzle::idle() {
 	_modeCtx.setNextMode(&_idleMode);
 }
 
-void SynchPuzzle::setTimeout(int32 delay, std::function<void()> then) {
-	_timeoutMode = {};
-	_timeoutMode.onEnter([this, delay]() {
-		_timer.start(delay, true);
-	});
-	_timeoutMode.onTimer(&_timer, [this]() {
-		_timeoutThen();
-	});
-	_timeoutThen = then;
-
-	_modeCtx.setNextMode(&_timeoutMode);
-}
-
 BoltRsp SynchPuzzle::driveTransition() {
 	for (int i = 0; i < _moveAgenda.size(); ++i) {
 		if (_moveAgenda[i].item != -1 && _moveAgenda[i].count != 0) {
@@ -220,7 +207,7 @@ BoltRsp SynchPuzzle::driveTransition() {
 
 			enter(); // Redraw the scene
 
-			setTimeout(kTimeoutDelay, [this]() {
+			_game->setTimeout(&_modeCtx, kTimeoutDelay, [this]() {
 				driveTransition();
 			});
 			_game->getEngine()->setNextMsg(BoltMsg::kDrive);

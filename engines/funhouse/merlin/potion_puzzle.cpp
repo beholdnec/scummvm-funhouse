@@ -225,7 +225,7 @@ void PotionPuzzle::evaluate() {
 		draw();
 
 		// TODO: Play "plunk" sound
-		setTimeout(kPlacing2Time, [this]() { evaluate(); });
+		_game->setTimeout(&_modeCtx, kPlacing2Time, [this]() { evaluate(); });
 		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return;
 	}
@@ -288,7 +288,7 @@ BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
 	debug(3, "requested ingredient %d", ingredient);
-	setTimeout(kPlacing1Time, [this]() {
+	_game->setTimeout(&_modeCtx, kPlacing1Time, [this]() {
 		evaluate();
 	});
 	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
@@ -478,19 +478,6 @@ int PotionPuzzle::getNumRemainingIngredients() const {
 		}
 	}
 	return num;
-}
-
-void PotionPuzzle::setTimeout(int32 delay, std::function<void()> then) {
-	_timeoutMode = {};
-	_timeoutMode.onEnter([this, delay]() {
-		_timer.start(delay, true);
-	});
-	_timeoutMode.onTimer(&_timer, [=]() {
-		_timer.active = false;
-		then();
-	});
-
-	_modeCtx.setNextMode(&_timeoutMode);
 }
 
 } // End of namespace Funhouse

@@ -74,7 +74,6 @@ private:
 
 	bool isValidIngredient(int ingredient) const;
 	int getNumRemainingIngredients() const;
-	void setTimeout(int32 delay, std::function<void()> then);
 
 	void draw();
 
@@ -83,8 +82,6 @@ private:
 	MerlinGame *_game;
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;
-	DynamicMode _timeoutMode;
-	Timer _timer;
 	BltImage _bgImage;
 	BltPalette _bgPalette;
 	Common::Point _origin;

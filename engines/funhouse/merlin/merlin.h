@@ -104,6 +104,8 @@ public:
 
 	int getVariationSlot(int slot) const;
 
+	void setTimeout(ModeContext *ctx, int32 delay, std::function<void()> then);
+
 	static const int kInitialScriptCursor;
 	static const int kMainMenuScriptCursor;
 	static const int kNewGameScriptCursor;
@@ -175,6 +177,9 @@ private:
 	void enterActiveCard(bool cursorActive);
 
 	bool _cheatMode = false;
+
+	DynamicMode _timeoutMode;
+	Timer _timeoutTimer;
 
 	// Difficulty levels:
 	// 0: beginner; 1: advanced; 2: expert; -1: not set

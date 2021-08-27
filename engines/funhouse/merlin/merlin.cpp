@@ -590,6 +590,19 @@ void MerlinGame::generateVariations() {
 	selectProfile(-1);
 }
 
+void MerlinGame::setTimeout(ModeContext *ctx, int32 delay, std::function<void()> then) {
+	_timeoutMode = {};
+	_timeoutMode.onEnter([this, delay]() {
+		_timeoutTimer.start(delay, true);
+	});
+	_timeoutMode.onTimer(&_timeoutTimer, [=]() {
+		_timeoutTimer.active = false;
+		then();
+	});
+
+	ctx->setNextMode(&_timeoutMode);
+}
+
 class MovieCard : public Card
 {
 public:
