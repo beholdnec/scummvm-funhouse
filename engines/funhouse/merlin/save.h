@@ -26,6 +26,14 @@
 #define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
 
 #include "common/array.h"
+#include "common/serializer.h"
+#include "common/span.h"
+#include "funhouse/util.h"
+
+namespace Common {
+	class Serializer;
+	class SaveFileManager;
+}
 
 namespace Funhouse
 {
@@ -34,29 +42,48 @@ class MerlinGame;
 
 static const int kProfileCount = 12;
 
+enum ChallengeStatus {
+	kNotWon = 0,
+	kWon = 1,
+	kPlayWinMovie = 3,
+};
+
 struct ProfileData
 {
 	int scriptCursor = 0;
 	int scriptReturnCursor = 0;
-	Common::Array<int> difficulties;
-	Common::Array<int> challengeStatuses;
-	Common::Array<int> puzzleVariants;
+	// Difficulty levels:
+	// 0: beginner; 1: advanced; 2: expert; -1: not set
+	Common::Array<byte> difficulties;
+	Common::Array<byte> challengeStatuses;
+	Common::Array<byte> variationSlots;
+};
+
+struct VariationInfo {
+	int puzzleCount;
+	int variationCount;
 };
 
 class SaveManager
 {
 public:
-	void init(MerlinGame *game);
+	void init(MerlinGame *game, int difficultyCount, int challengeCount, Common::Span<const VariationInfo> variationInfo);
 	bool getProfileStatus(int idx) const;
-	int getProfileIdx() const;
-	void setProfileIdx(int idx);
-	ProfileData &getProfile();
+	ProfileData &getProfile(int idx);
 	void save();
 
 private:
+	void syncHeader(Common::Serializer &s);
+	void syncProfile(Common::Serializer &s, int profile);
+	void countVariationSlots(Common::Span<const VariationInfo> variationInfo, int &varsPerProfile, int &slotsPerProfile, ScopedArray<int> &slotCountForVar);
+	void generateVariations(Common::Span<const VariationInfo> variationInfo);
+
 	MerlinGame *_game = nullptr;
-	int _profileIdx = -1; // -1: No profile loaded
-	bool _profileStatus[kProfileCount] = {};
+	int _difficultyCount = 0;
+	int _challengeCount = 0;
+	int _variationSlotCount = 0;
+
+	byte _profileStatus[kProfileCount] = {};
 	ProfileData _profiles[kProfileCount];
 };
 

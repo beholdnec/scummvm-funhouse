@@ -43,12 +43,6 @@ enum DifficultyCategory {
 	kNumDifficultyCategories,
 };
 
-enum ChallengeStatus {
-	kNotWon = 0,
-	kWon = 1,
-	kPlayWinMovie = 3,
-};
-
 class MerlinGame : public FunhouseGame {
 public:
 	static const int kNumPotionMovies;
@@ -90,10 +84,10 @@ public:
 	BoltRsp handlePopup(ModeContext *ctx, const BoltMsg &msg);
 	void dismissPopup();
 
-	int getDifficulty(DifficultyCategory category) const;
+	int getDifficulty(DifficultyCategory category);
 	void setDifficulty(DifficultyCategory category, int level);
 
-	ChallengeStatus getChallengeStatus(int idx) const;
+	ChallengeStatus getChallengeStatus(int idx);
 	void setChallengeStatus(int idx, ChallengeStatus status);
 
 	void playHelpMovie();
@@ -102,7 +96,7 @@ public:
 	bool getCheatMode() const;
 	void setCheatMode(bool enable);
 
-	int getVariationSlot(int slot) const;
+	int getVariationSlot(int slot);
 
 	void setTimeout(ModeContext *ctx, int32 delay, std::function<void()> then);
 
@@ -125,7 +119,6 @@ private:
 		int branchTable[16];
 	};
 
-	void generateVariations();
 	void scriptPlotMovie(const ScriptEntry *entry);
 	void scriptPostBumper(const ScriptEntry* entry);
 	void scriptMenu(const ScriptEntry* entry);
@@ -159,6 +152,7 @@ private:
 	OSystem *_system;
 	FunhouseEngine *_engine;
 	SaveManager _saveMan;
+	int _profileIdx = -1; // -1: No profile selected
 	PopupType _popupType = kNoPopup;
 	PopupMenu _popup;
 
@@ -181,21 +175,10 @@ private:
 	DynamicMode _timeoutMode;
 	Timer _timeoutTimer;
 
-	// Difficulty levels:
-	// 0: beginner; 1: advanced; 2: expert; -1: not set
-	int _difficulties[kNumDifficultyCategories];
-
 	static const int kChallengeCount = 30;
-	ChallengeStatus _challengeStatuses[kChallengeCount] = { };
-
-	struct VariationInfo {
-		int puzzleCount;
-		int variationCount;
-	};
 
 	static const VariationInfo kVariationInfo[];
 	static const int kVariationInfoCount;
-	ScopedArray<int> _variationSlots;
 
 	void runScript();
 	

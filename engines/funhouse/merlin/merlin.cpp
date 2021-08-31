@@ -64,14 +64,8 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 	_system = system;
 	_engine = engine;
 	_cheatMode = false;
-	_saveMan.init(this);
-	for (int i = 0; i < kNumDifficultyCategories; ++i) {
-		// FIXME: Set all difficulties to -1: not set
-		// _difficulties[i] = -1;
-		_difficulties[i] = 0;
-	}
-	// TODO: generate variations only once, when creating the save file for the first time
-	generateVariations();
+
+	_saveMan.init(this, kNumDifficultyCategories, kChallengeCount, Common::Span<const VariationInfo>(kVariationInfo, kVariationInfoCount));
 
 	_boltlib.load("BOLTLIB.BLT");
 
@@ -262,16 +256,15 @@ bool MerlinGame::doesProfileExist(int idx) const {
 }
 
 int MerlinGame::getProfile() const {
-	return _saveMan.getProfileIdx();
+	return _profileIdx;
 }
 
 void MerlinGame::selectProfile(int idx) {
-	_saveMan.setProfileIdx(idx);
-	// TODO: load variations and stuff
+	_profileIdx = idx;
 }
 
 void MerlinGame::save() {
-	// TODO
+	_saveMan.save();
 }
 
 void MerlinGame::setPopup(PopupType type) {
@@ -382,32 +375,32 @@ BoltRsp MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
 	return cmd;
 }
 
-int MerlinGame::getDifficulty(DifficultyCategory category) const {
+int MerlinGame::getDifficulty(DifficultyCategory category) {
 	assert(category >= 0 && category < kNumDifficultyCategories);
-	return _difficulties[category];
+	return _saveMan.getProfile(_profileIdx).difficulties[category];
 }
 
 void MerlinGame::setDifficulty(DifficultyCategory category, int level) {
 	assert(level >= 0 && level < 3);
-	_difficulties[category] = level;
+	_saveMan.getProfile(_profileIdx).difficulties[category] = level;
 }
 
-ChallengeStatus MerlinGame::getChallengeStatus(int idx) const {
+ChallengeStatus MerlinGame::getChallengeStatus(int idx) {
 	assert(idx >= 0 && idx < kChallengeCount);
-	return _challengeStatuses[idx];
+	return (ChallengeStatus)_saveMan.getProfile(_profileIdx).challengeStatuses[idx];
 }
 
 void MerlinGame::setChallengeStatus(int idx, ChallengeStatus status) {
 	assert(idx >= 0 && idx < kChallengeCount);
-	_challengeStatuses[idx] = status;
+	_saveMan.getProfile(_profileIdx).challengeStatuses[idx] = status;
 }
 
-int MerlinGame::getVariationSlot(int slot) const {
-	if (slot < 0 || slot >= _variationSlots.size()) {
+int MerlinGame::getVariationSlot(int slot) {
+	if (slot < 0 || slot >= _saveMan.getProfile(_profileIdx).variationSlots.size()) {
 		assert(false && "Tried to query invalid variation slot");
 		return 0;
 	}
-	return _variationSlots[slot];
+	return _saveMan.getProfile(_profileIdx).variationSlots[slot];
 }
 
 void MerlinGame::playHelpMovie() {
@@ -470,12 +463,12 @@ void MerlinGame::branchReturn() {
 
 void MerlinGame::branchWin() {
 	int challengeIdx = kScript[_scriptCursor].param;
-	_challengeStatuses[challengeIdx] = kPlayWinMovie;
+	_saveMan.getProfile(_profileIdx).challengeStatuses[challengeIdx] = kPlayWinMovie;
 	branchReturn();
 }
 
 void MerlinGame::branchLoadProfile() {
-	const ProfileData &profile = _saveMan.getProfile();
+	const ProfileData &profile = _saveMan.getProfile(_profileIdx);
 	_nextScriptCursor = profile.scriptCursor;
 	_scriptReturnCursor = profile.scriptReturnCursor;
 	_engine->setNextMsg(BoltMsg::kDrive);
@@ -494,100 +487,6 @@ void MerlinGame::branchGamePieces() {
 void MerlinGame::branchDifficultyMenu() {
 	_nextScriptCursor = kDifficultyScriptCursor;
 	_engine->setNextMsg(BoltMsg::kDrive);
-}
-
-void MerlinGame::generateVariations() {
-	static const int kBitsPerSlot = 2;
-	static const int kValuesPerSlot = 1 << kBitsPerSlot; // Each slot is 2 bits
-
-	int varsPerProfile = 0; // A var tells which variation of a puzzle to load
-	for (int i = 0; i < kVariationInfoCount; ++i) {
-		varsPerProfile += kVariationInfo[i].puzzleCount;
-	}
-
-	int slotsPerProfile = 0; // Sometimes, a var can be spread across two slots
-	ScopedArray<int> slotCountForVar;
-	slotCountForVar.alloc(varsPerProfile);
-	int iout = 0;
-	for (int i = 0; i < kVariationInfoCount; ++i) {
-		int j = 1;
-		int slotsPerPuzzle = 0;
-		while (j < kVariationInfo[i].variationCount) {
-			++slotsPerPuzzle;
-			j *= kValuesPerSlot;
-		}
-
-		debug(3, "slots per puzzle: %d", slotsPerPuzzle);
-		slotsPerProfile += kVariationInfo[i].puzzleCount * slotsPerPuzzle;
-		for (int k = 0; k < kVariationInfo[i].puzzleCount; ++k) {
-			slotCountForVar[iout] = slotsPerPuzzle;
-			++iout;
-		}
-	}
-
-	debug(3, "slot count for each var:");
-	for (int i = 0; i < slotCountForVar.size(); ++i) {
-		debugN(3, "%d,", slotCountForVar[i]);
-	}
-	debug(3, "");
-
-	ScopedArray<ScopedArray<int>> allVars;
-	allVars.alloc(kProfileCount);
-	for (int i = 0; i < kProfileCount; ++i) {
-		allVars[i].alloc(varsPerProfile);
-	}
-
-	ScopedArray<int> varSet;
-	varSet.alloc(kProfileCount);
-
-	// Generate all variations
-	// FIXME: variations don't seem to be very random...
-	iout = 0;
-	for (int i = 0; i < kVariationInfoCount; ++i) {
-		for (int j = 0; j < kVariationInfo[i].puzzleCount; ++j) {
-			makeShuffledSequence(kVariationInfo[i].variationCount, varSet.span());
-			debugN(3, "sequence set %d, puzzle %d: ", i, j);
-			for (int k = 0; k < kProfileCount; ++k) {
-				debugN(3, "%d,", varSet[k]);
-				allVars[k][iout] = varSet[k];
-			}
-			debug(3, "");
-			++iout;
-		}
-	}
-
-	_variationSlots.alloc(slotsPerProfile);
-
-	// Assign variations to profiles
-	for (int profile = 0; profile < kProfileCount; ++profile) {
-		selectProfile(profile);
-
-		debugN(3, "vars for profile %d: ", profile);
-		for (int j = 0; j < varsPerProfile; ++j) {
-			debugN(3, "%d,", allVars[profile][j]);
-		}
-		debug(3, "");
-
-		iout = 0;
-		for (int j = 0; j < varsPerProfile; ++j) {
-			int var = allVars[profile][j];
-			for (int m = slotCountForVar[j] - 1; m >= 0; --m) {
-				int slotValue = (var >> (kBitsPerSlot * m)) & (kValuesPerSlot - 1);
-				_variationSlots[iout] = slotValue;
-				++iout;
-			}
-		}
-
-		debugN(3, "slots for profile %d: ", profile);
-		for (int j = 0; j < slotsPerProfile; ++j) {
-			debugN(3, "%d,", _variationSlots[j]);
-		}
-		debug(3, "");
-
-		save();
-	}
-
-	selectProfile(-1);
 }
 
 void MerlinGame::setTimeout(ModeContext *ctx, int32 delay, std::function<void()> then) {
@@ -759,7 +658,7 @@ void MerlinGame::scriptPuzzle(const ScriptEntry* entry) {
 //
 // TODO: there are more: cursor, menus, etc.
 
-const MerlinGame::VariationInfo MerlinGame::kVariationInfo[] = {
+const VariationInfo MerlinGame::kVariationInfo[] = {
 	{ 6, 4 },
 	{ 3, 4 },
 	{ 2, 4 },
