@@ -94,15 +94,14 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltResourceList movesets;
 	loadBltResourceArray(movesets, boltlib, movesetsId);
 
-	BltU8Values initial;
-	loadBltResourceArray(initial, boltlib, initialId);
+	loadBltResourceArray(_initial, boltlib, initialId);
 
 	BltU8Values solution;
 	loadBltResourceArray(solution, boltlib, solutionId);
 
 	_items.alloc(itemList.size());
 	for (uint i = 0; i < _items.size(); ++i) {
-		_items[i].state = initial[i].value;
+		_items[i].state = _initial[i].value;
 		_items[i].solution = solution[i].value;
 		_items[i].sprites.load(boltlib, itemList[i].value);
 
@@ -126,6 +125,13 @@ void SynchPuzzle::enter() {
 BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
 	_modeCtx.react(msg);
 	return kDone;
+}
+
+void SynchPuzzle::handleReset() {
+	for (uint i = 0; i < _items.size(); ++i) {
+		_items[i].state = _initial[i].value;
+	}
+	redraw();
 }
 
 BoltRsp SynchPuzzle::handleButtonClick(int num) {

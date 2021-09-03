@@ -173,6 +173,11 @@ BoltRsp PotionPuzzle::handleMsg(const BoltMsg &msg) {
 	return kDone;
 }
 
+void PotionPuzzle::handleReset() {
+	reset();
+	draw();
+}
+
 void PotionPuzzle::idle() {
 	_idleMode = {};
 	_idleMode.onMsg([this](const BoltMsg &msg) {

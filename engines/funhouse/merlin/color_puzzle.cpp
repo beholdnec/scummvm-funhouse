@@ -98,15 +98,14 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltU8Values solution;
 	loadBltResourceArray(solution, boltlib, solutionId);
 
-	BltU8Values initial;
-	loadBltResourceArray(initial, boltlib, initialId);
+	loadBltResourceArray(_initial, boltlib, initialId);
 
 	for (int i = 0; i < kNumPieces; ++i) {
 		Piece &p = _pieces[i];
 
 		p.numStates = numStates[i].value;
 		loadBltResourceArray(p.palettes, boltlib, statePaletteMods[i].value);
-		p.state = initial[i].value;
+		p.state = _initial[i].value;
 		p.solution = solution[i].value;
 
 		BltResourceList moveArray;
@@ -130,6 +129,13 @@ void ColorPuzzle::enter() {
 BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
 	_modeCtx.react(msg);
 	return kDone;
+}
+
+void ColorPuzzle::handleReset() {
+	for (uint i = 0; i < kNumPieces; ++i) {
+		_pieces[i].state = _initial[i].value;
+	}
+	_scene.redraw();
 }
 
 BoltRsp ColorPuzzle::handleButtonClick(int num) {

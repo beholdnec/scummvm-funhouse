@@ -33,14 +33,14 @@ namespace Funhouse {
 class WordPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
-	void enter();
-	BoltRsp handleMsg(const BoltMsg &msg);
+	void enter() override;
+	BoltRsp handleMsg(const BoltMsg &msg) override;
+	void handleReset() override;
 
 private:
 	static const int kNumLetters = 26;
 
 	void idle();
-	BoltRsp handleReset();
 	BoltRsp handleButtonClick(int num);
 
 	void reset();

@@ -124,12 +124,10 @@ BoltRsp WordPuzzle::handleMsg(const BoltMsg &msg) {
 	return kDone;
 }
 
-BoltRsp WordPuzzle::handleReset() {
-	_game->dismissPopup();
+void WordPuzzle::handleReset() {
 	_resetSound.play(_game->getEngine()->_mixer);
 	reset();
 	setupButtons();
-	return BoltRsp::kDone;
 }
 
 void WordPuzzle::idle() {

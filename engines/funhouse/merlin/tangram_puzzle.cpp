@@ -106,23 +106,21 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_forePalette.load(boltlib, forePaletteId);
 
-	int puzzleVariant = 0; // TODO: Choose a random puzzle variant 0..3.
-
 	BltResourceList placedImagesCatalog;
 	loadBltResourceArray(placedImagesCatalog, boltlib, placedImagesCatalogId);
-	BltId placedImagesId = placedImagesCatalog[puzzleVariant].value; // Ex: 6E32
+	BltId placedImagesId = placedImagesCatalog[variation].value; // Ex: 6E32
 	BltResourceList placedImagesList;
 	loadBltResourceArray(placedImagesList, boltlib, placedImagesId);
 
 	BltResourceList unplacedImagesCatalog;
 	loadBltResourceArray(unplacedImagesCatalog, boltlib, unplacedImagesCatalogId);
-	BltId unplacedImagesId = unplacedImagesCatalog[puzzleVariant].value; // Ex: 6E36
+	BltId unplacedImagesId = unplacedImagesCatalog[variation].value; // Ex: 6E36
 	BltResourceList unplacedImagesList;
 	loadBltResourceArray(unplacedImagesList, boltlib, unplacedImagesId);
 
 	BltResourceList collisionsCatalog;
 	loadBltResourceArray(collisionsCatalog, boltlib, collisionsCatalogId);
-	BltId collisionsId = collisionsCatalog[puzzleVariant].value; // Ex: 6E54
+	BltId collisionsId = collisionsCatalog[variation].value; // Ex: 6E54
 	BltResourceList collisionsList;
 	loadBltResourceArray(collisionsList, boltlib, collisionsId);
 
@@ -190,6 +188,14 @@ bool TangramPuzzle::pieceIsPlaceableAt(int pieceNum, int px, int py) {
 BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 	_modeCtx.react(msg);
 	return kDone;
+}
+
+void TangramPuzzle::handleReset() {
+	_pieceInHand = -1;
+	for (uint i = 0; i < _pieces.size(); ++i) {
+		_pieces[i].placed = false;
+	}
+	drawPieces();
 }
 
 void TangramPuzzle::idle() {

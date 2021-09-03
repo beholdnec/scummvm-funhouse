@@ -48,6 +48,7 @@ public:
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
 	void enter();
 	BoltRsp handleMsg(const BoltMsg &msg);
+	void handleReset() override;
 
 private:
 	static const int kTimeoutDelay = 250;
@@ -80,6 +81,7 @@ private:
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;
 
+	BltU8Values _initial;
 	ItemArray _items;
 
 	ScopedArray<Move> _moveAgenda;

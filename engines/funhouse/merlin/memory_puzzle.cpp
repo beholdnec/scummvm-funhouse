@@ -154,6 +154,13 @@ BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
 	return kDone;
 }
 
+void MemoryPuzzle::handleReset() {
+	// TODO: generate new solution?
+	_matches = 0;
+	_goal = 3;
+	startPlayback();
+}
+
 BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 

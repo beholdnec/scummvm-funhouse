@@ -36,9 +36,10 @@ class ActionPuzzle : public Card {
 public:
 	ActionPuzzle();
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
-	void enter();
+	void enter() override;
 	void redraw() override;
-	BoltRsp handleMsg(const BoltMsg &msg);
+	BoltRsp handleMsg(const BoltMsg &msg) override;
+	void handleReset() override;
 
 protected:
 	struct Particle {

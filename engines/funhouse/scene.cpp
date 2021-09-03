@@ -227,7 +227,7 @@ void Scene::Button::setUserData(void *userData) {
 }
 
 void Scene::Button::setGraphics(int num) {
-	assert(num >= 0 && num < _graphicsSet.size());
+	assert(num >= 0 && num < (int)_graphicsSet.size());
 	_graphicsNum = num;
 }
 
@@ -333,8 +333,8 @@ void Scene::drawButton(const Button &button, bool hovered) {
 }
 
 void Scene::drawButtons(int hoveredButton) {
-	for (int i = 0; i < _buttons.size(); ++i) {
-		drawButton(_buttons[i], (int)i == hoveredButton);
+	for (int i = 0; i < (int)_buttons.size(); ++i) {
+		drawButton(_buttons[i], i == hoveredButton);
 	}
 	_engine->getGraphics()->markDirty();
 }

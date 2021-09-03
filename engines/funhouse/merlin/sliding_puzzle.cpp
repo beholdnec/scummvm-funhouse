@@ -89,12 +89,11 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltId initialStateId = difficultyInfo[2 + variation].value;
 	BltId moveTablesId   = difficultyInfo[6 + variation].value;
 
-	BltU8Values initialState;
-	loadBltResourceArray(initialState, boltlib, initialStateId);
+	loadBltResourceArray(_initialState, boltlib, initialStateId);
 
 	_pieces.alloc(slidingPuzzleDiffs.pieceCount[difficultyLevel]);
 	for (int i = 0; i < _pieces.size(); ++i) {
-		_pieces[i] = initialState[i].value;
+		_pieces[i] = _initialState[i].value;
 	}
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
@@ -115,6 +114,13 @@ void SlidingPuzzle::enter() {
 BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 	_modeCtx.react(msg);
 	return kDone;
+}
+
+void SlidingPuzzle::handleReset() {
+	for (uint i = 0; i < _pieces.size(); ++i) {
+		_pieces[i] = _initialState[i].value;
+	}
+	setSprites();
 }
 
 void SlidingPuzzle::setSprites() {

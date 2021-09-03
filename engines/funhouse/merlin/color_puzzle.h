@@ -48,8 +48,9 @@ class BltSoundList;
 class ColorPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
-	void enter();
-	BoltRsp handleMsg(const BoltMsg &msg);
+	void enter() override;
+	BoltRsp handleMsg(const BoltMsg &msg) override;
+	void handleReset() override;
 
 private:
 	// All color puzzles in Merlin's Apprentice have 4 pieces.
@@ -85,6 +86,7 @@ private:
 	Scene _scene;
 	ScopedArray<BltSoundList> _soundLists;
 
+	BltU8Values _initial;
 	Piece _pieces[kNumPieces];
 
 	int _selectedPiece;

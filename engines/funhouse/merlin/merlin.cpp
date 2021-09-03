@@ -111,11 +111,7 @@ BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	BoltRsp rsp = kDone;
 
 	if (_activeCard) {
-		if (msg.type == BoltMsg::kPopupButtonClick) {
-			rsp = handlePopupButtonClick(msg);
-		} else {
-			rsp = _activeCard->handleMsg(msg);
-		}
+		rsp = _activeCard->handleMsg(msg);
 	}
 
 	if (rsp == kDone) {
@@ -130,22 +126,22 @@ BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	return rsp;
 }
 
-BoltRsp MerlinGame::handlePopupButtonClick(const BoltMsg& msg) {
+BoltRsp MerlinGame::handlePopupButtonClick(ModeContext *ctx, int num) {
 	switch (_popupType) {
 	case kHubPopup:
-		return handleHubPopupButtonClick(msg);
+		return handleHubPopupButtonClick(num);
 	case kPuzzlePopup:
-		return handlePuzzlePopupButtonClick(msg);
+		return handlePuzzlePopupButtonClick(ctx, num);
 	case kPotionPuzzlePopup:
-		return handlePotionPuzzlePopupButtonClick(msg);
+		return handlePotionPuzzlePopupButtonClick(ctx, num);
 	default:
 		assert(false && "Invalid popup type");
 		return kDone;
 	}
 }
 
-BoltRsp MerlinGame::handleHubPopupButtonClick(const BoltMsg &msg) {
-	switch (msg.num) {
+BoltRsp MerlinGame::handleHubPopupButtonClick(int num) {
+	switch (num) {
 	case 0: // Exit
 		branchMainMenu();
 		return kDone;
@@ -159,13 +155,13 @@ BoltRsp MerlinGame::handleHubPopupButtonClick(const BoltMsg &msg) {
 		playHelpMovie();
 		return kDone;
 	default:
-		warning("Hub popup button %d not implemented", msg.num);
+		warning("Hub popup button %d not implemented", num);
 		return kDone;
 	}
 }
 
-BoltRsp MerlinGame::handlePuzzlePopupButtonClick(const BoltMsg &msg) {
-	switch (msg.num) {
+BoltRsp MerlinGame::handlePuzzlePopupButtonClick(ModeContext *ctx, int num) {
+	switch (num) {
 	case 0: // Return
 		branchReturn();
 		return BoltRsp::kDone;
@@ -176,17 +172,19 @@ BoltRsp MerlinGame::handlePuzzlePopupButtonClick(const BoltMsg &msg) {
 		playHelpMovie();
 		return kDone;
 	case 3: // Reset
-		// TODO
+		_popup.dismiss(ctx);
+		_activeCard->handleReset();
+		return kDone;
 	case 4: // Undo
 		// TODO
 	default:
-		warning("Puzzle popup button %d not implemented", msg.num);
+		warning("Puzzle popup button %d not implemented", num);
 		return kDone;
 	}
 }
 
-BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(const BoltMsg &msg) {
-	switch (msg.num) {
+BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(ModeContext *ctx, int num) {
+	switch (num) {
 	case 0: // Exit
 		branchMainMenu();
 		return kDone;
@@ -197,11 +195,13 @@ BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(const BoltMsg &msg) {
 		playHelpMovie();
 		return kDone;
 	case 3: // Reset
-		// TODO
+		_popup.dismiss(ctx);
+		_activeCard->handleReset();
+		return kDone;
 	case 4: // Undo
 		// TODO
 	default:
-		warning("Potion puzzle popup button %d not implemented", msg.num);
+		warning("Potion puzzle popup button %d not implemented", num);
 		return kDone;
 	}
 }
@@ -280,8 +280,8 @@ BoltRsp MerlinGame::handlePopup(ModeContext *ctx, const BoltMsg& msg) {
 	return _popup.react(ctx, msg);
 }
 
-void MerlinGame::dismissPopup() {
-	_popup.dismiss();
+void MerlinGame::dismissPopup(ModeContext *ctx) {
+	_popup.dismiss(ctx);
 }
 
 void MerlinGame::initCursor() {
@@ -565,7 +565,7 @@ void MerlinGame::scriptMenu(const ScriptEntry* entry) {
 
 void MerlinGame::scriptHub(const ScriptEntry* entry) {
 	_scriptReturnCursor = _scriptCursor;
-	_saveMan.save();
+	save();
 
 	_activeCard.reset();
 
@@ -589,7 +589,7 @@ void MerlinGame::scriptFreeplay(const ScriptEntry* entry) {
 template<class T>
 void MerlinGame::scriptPuzzle(const ScriptEntry* entry) {
 	// FIXME: don't save in freeplay mode
-	_saveMan.save();
+	save();
 
 	_activeCard.reset();
 

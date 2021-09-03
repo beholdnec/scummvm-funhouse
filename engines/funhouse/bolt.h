@@ -105,7 +105,6 @@ struct BoltMsg {
 		kTimer,
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
-		kPopupButtonClick,
 		kSceneMsgs = 100,
 	};
 
@@ -130,6 +129,9 @@ public:
 		enter();
 	}
 	virtual BoltRsp handleMsg(const BoltMsg &msg) = 0;
+	virtual void handleReset() {
+		assert(false && "handleReset not implemented for this card");
+	}
 };
 
 class FunhouseEngine;

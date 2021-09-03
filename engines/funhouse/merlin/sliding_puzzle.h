@@ -32,8 +32,9 @@ namespace Funhouse {
 class SlidingPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
-	void enter();
-	BoltRsp handleMsg(const BoltMsg &msg);
+	void enter() override;
+	BoltRsp handleMsg(const BoltMsg &msg) override;
+	void handleReset() override;
 	void setSprites();
 
 private:
@@ -47,6 +48,7 @@ private:
 
 	static const int kNumButtons = 4;
 
+	BltU8Values _initialState;
 	BltU8Values _moveTables[kNumButtons * 2]; // 0-3: backward; 4-7: forward
 	ScopedArray<int> _pieces;
 };

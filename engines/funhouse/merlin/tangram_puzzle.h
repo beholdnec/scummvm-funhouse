@@ -32,17 +32,16 @@ namespace Funhouse {
 class TangramPuzzle : public Card {
 public:
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
-	void enter();
-	BoltRsp handleMsg(const BoltMsg &msg);
+	void enter() override;
+	BoltRsp handleMsg(const BoltMsg &msg) override;
+	void handleReset() override;
 
 private:
 	struct Piece {
-		Piece() : placed(false) {}
-
 		BltImage placedImage;
 		BltImage unplacedImage;
 		BltU8Values collision;
-		bool placed;
+		bool placed = false;
 		// The position of the upper left of the piece's image (NOT including
 		// the offset specified in the BltImage). This field is only relevant
 		// when the piece is placed.

@@ -67,7 +67,7 @@ void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 void HubCard::enter() {
 	if (!_game->isInMovie()) {
 		// Find win movie to play
-		for (int i = 0; i < _items.size(); i++) {
+		for (uint i = 0; i < _items.size(); i++) {
 			if (_game->getChallengeStatus(_items[i].challengeIdx) == kPlayWinMovie) {
 				_game->playWinMovie(_items[i].winMovie);
 				return;
@@ -76,7 +76,7 @@ void HubCard::enter() {
 	}
 
 	// Set button enablements
-	for (int i = 0; i < _itemImages.size(); ++i) {
+	for (int i = 0; i < (int)_itemImages.size(); ++i) {
 		ChallengeStatus status = _game->getChallengeStatus(_items[i].challengeIdx);
 		_scene.getButton(i).setEnable(status != kWon);
 	}
@@ -84,7 +84,7 @@ void HubCard::enter() {
 	_scene.enter();
 
 	// Draw item images
-	for (int i = 0; i < _itemImages.size(); ++i) {
+	for (uint i = 0; i < _itemImages.size(); ++i) {
 		ChallengeStatus status = _game->getChallengeStatus(_items[i].challengeIdx);
 		if (status == kWon) {
 			_itemImages[i].drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, true);

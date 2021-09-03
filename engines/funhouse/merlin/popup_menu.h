@@ -39,7 +39,7 @@ public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId id);
 
 	bool isActive() const;
-	void dismiss();
+	void dismiss(ModeContext *ctx);
 	BoltRsp react(ModeContext *ctx, const BoltMsg &msg);
 
 private:
@@ -52,7 +52,7 @@ private:
 
 	void activate(ModeContext *ctx);
 	int getButtonAt(const Common::Point &pt) const;
-	BoltRsp handleButtonClick(int num);
+	BoltRsp handleButtonClick(ModeContext *ctx, int num);
 
 	MerlinGame *_game;
 

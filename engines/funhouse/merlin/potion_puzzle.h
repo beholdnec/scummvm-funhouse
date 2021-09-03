@@ -53,8 +53,9 @@ class PotionPuzzle : public Card {
 public:
 	// From Card
 	void init(MerlinGame *game, Boltlib &boltlib, int challengeIdx);
-	void enter();
-	BoltRsp handleMsg(const BoltMsg &msg);
+	void enter() override;
+	BoltRsp handleMsg(const BoltMsg &msg) override;
+	void handleReset() override;
 
 private:
 	static const int kNoIngredient = -1; // NOTE: original game uses 0xFE for this value...

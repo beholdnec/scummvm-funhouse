@@ -82,8 +82,11 @@ void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
 	}
 }
 
-void PopupMenu::dismiss() {
+void PopupMenu::dismiss(ModeContext *ctx) {
 	_active = false;
+	ctx->setNextMode(_oldMode);
+	_oldMode = nullptr;
+	_game->redraw();
 }
 
 BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
@@ -91,17 +94,10 @@ BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 		if (!_active) {
 			activate(ctx);
 		} else {
-			_active = false;
-			ctx->setNextMode(_oldMode);
-			_oldMode = nullptr;
-			_game->redraw();
+			dismiss(ctx);
 		}
 
 		return BoltRsp::kDone;
-	}
-
-	if (msg.type == BoltMsg::kPopupButtonClick) {
-		return BoltRsp::kPass;
 	}
 
 	if (!_active) {
@@ -119,7 +115,7 @@ BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 			}
 
 			if (msg.type == BoltMsg::kClick) {
-				return handleButtonClick(num);
+				return handleButtonClick(ctx, num);
 			}
 		}
 	}
@@ -127,10 +123,8 @@ BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 	return BoltRsp::kDone;
 }
 
-BoltRsp PopupMenu::handleButtonClick(int num) {
-	BoltMsg msg(BoltMsg::kPopupButtonClick);
-	msg.num = num;
-	_game->getEngine()->setNextMsg(msg);
+BoltRsp PopupMenu::handleButtonClick(ModeContext *ctx, int num) {
+	_game->handlePopupButtonClick(ctx, num);
 	return BoltRsp::kDone;
 }
 

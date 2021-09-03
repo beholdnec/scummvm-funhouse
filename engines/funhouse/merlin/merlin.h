@@ -82,7 +82,8 @@ public:
 	void setPopup(PopupType type);
 	PopupMenu &getPopup();
 	BoltRsp handlePopup(ModeContext *ctx, const BoltMsg &msg);
-	void dismissPopup();
+	void dismissPopup(ModeContext *ctx);
+	BoltRsp handlePopupButtonClick(ModeContext *ctx, int num);
 
 	int getDifficulty(DifficultyCategory category);
 	void setDifficulty(DifficultyCategory category, int level);
@@ -143,10 +144,9 @@ private:
 
 	BoltRsp handleMsgInMovie(const BoltMsg &msg);
 	BoltRsp handleMsgInCard(const BoltMsg &msg);
-	BoltRsp handlePopupButtonClick(const BoltMsg &msg);
-	BoltRsp handleHubPopupButtonClick(const BoltMsg &msg);
-	BoltRsp handlePuzzlePopupButtonClick(const BoltMsg &msg);
-	BoltRsp handlePotionPuzzlePopupButtonClick(const BoltMsg &msg);
+	BoltRsp handleHubPopupButtonClick(int num);
+	BoltRsp handlePuzzlePopupButtonClick(ModeContext *ctx, int num);
+	BoltRsp handlePotionPuzzlePopupButtonClick(ModeContext *ctx, int num);
 	void branchLoadProfile();
 
 	OSystem *_system;

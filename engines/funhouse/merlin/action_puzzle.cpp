@@ -159,12 +159,6 @@ void ActionPuzzle::enter() {
 	// (and what happens when you change difficulty mid-puzzle?)
 	_goalNum = 0;
 
-	// XXX: spawn particles on all paths
-	// TODO: don't.
-	for (uint i = 0; i < _paths.size(); ++i) {
-		spawnParticle(i % _particleImages.size(), i);
-	}
-
 	redraw();
 
 	playMode();
@@ -185,6 +179,13 @@ void ActionPuzzle::redraw() {
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 	_modeCtx.react(msg);
 	return kDone;
+}
+
+void ActionPuzzle::handleReset() {
+	_tickNum = 0;
+	_goalNum = 0;
+	_particles.clear();
+	redraw();
 }
 
 void ActionPuzzle::playMode() {
