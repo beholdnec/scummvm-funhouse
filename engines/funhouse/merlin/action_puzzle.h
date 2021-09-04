@@ -81,10 +81,10 @@ protected:
 	ImageArray _goalImages;
 	static const int kNumDeathSequences = 3;
 	ImageArray _deathSequences[kNumDeathSequences];
+	int _tickPeriod;
 
 	ParticleList _particles;
 
-	static const int kTickPeriod = 50;
 	Common::RandomSource _random;
 	uint _tickNum;
 	uint _goalNum;

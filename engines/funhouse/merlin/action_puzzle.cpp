@@ -24,6 +24,12 @@
 
 namespace Funhouse {
 
+// If the action puzzles seem too easy, remember this game was ported
+// from the CD-i.
+// Basically, imagine playing this game on a DVD remote.
+// TODO: Implement arrow keys for cursor movement, as in the original game.
+static const int kTickPeriodForDifficulty[3] = {80, 66, 50};
+
 ActionPuzzle::ActionPuzzle() : _random("ActionPuzzleRandomSource")
 { }
 
@@ -78,6 +84,11 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltId backPaletteId = resourceList[3].value;
 	BltId particleImagesId = resourceList[4].value;
 
+	int difficultyLevel = _game->getDifficulty(kActionDifficulty);
+	debug(3, "Loading color puzzle difficulty %d", difficultyLevel);
+
+	_tickPeriod = kTickPeriodForDifficulty[difficultyLevel];
+
 	BltParticles particles;
 	loadBltResource(particles, boltlib, particlesId);
 	_particleImages.alloc(particles.numParticles);
@@ -93,7 +104,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltU16Values difficultiesList;
 	loadBltResourceArray(difficultiesList, boltlib, difficultiesId);
 	BltResourceList difficulty;
-	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultiesList[_game->getDifficulty(kActionDifficulty)].value));
+	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultiesList[difficultyLevel].value));
 	BltId forePaletteId = difficulty[1].value;
 	BltId backColorCyclesId = difficulty[2].value;
 	BltId foreColorCyclesId = difficulty[3].value;
@@ -191,7 +202,7 @@ void ActionPuzzle::handleReset() {
 void ActionPuzzle::playMode() {
 	_playMode = {};
 	_playMode.onEnter([=]() {
-		_timer.start(kTickPeriod, true);
+		_timer.start(_tickPeriod, true);
 	});
 	_playMode.onMsg([this](const BoltMsg &msg) {
 		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
@@ -207,7 +218,7 @@ void ActionPuzzle::playMode() {
 		return kDone;
 	});
 	_playMode.onTimer(&_timer, [this]() {
-		_timer.ticks -= kTickPeriod;
+		_timer.ticks -= _tickPeriod;
 
 		tick();
 		if (_goalNum >= _goals.size()) {
