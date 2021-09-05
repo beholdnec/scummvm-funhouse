@@ -85,13 +85,14 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltId particleImagesId = resourceList[4].value;
 
 	int difficultyLevel = _game->getDifficulty(kActionDifficulty);
-	debug(3, "Loading color puzzle difficulty %d", difficultyLevel);
+	debug(3, "Loading action puzzle difficulty %d", difficultyLevel);
 
 	_tickPeriod = kTickPeriodForDifficulty[difficultyLevel];
 
 	BltParticles particles;
 	loadBltResource(particles, boltlib, particlesId);
 	_particleImages.alloc(particles.numParticles);
+	_spriteSequence.alloc(particles.numParticles);
 	BltResourceList particleImagesList;
 	loadBltResourceArray(particleImagesList, boltlib, particleImagesId);
 	for (uint16 i = 0; i < particles.numParticles; ++i) {
@@ -120,6 +121,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltResourceList pathList;
 	loadBltResourceArray(pathList, boltlib, pathListId);
 	_paths.alloc(pathList.size());
+	_pathSequence.alloc(pathList.size());
 	for (uint i = 0; i < pathList.size(); ++i) {
 		BltS16Values pathValues;
 		loadBltResourceArray(pathValues, boltlib, pathList[i].value);
@@ -164,14 +166,8 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 }
 
 void ActionPuzzle::enter() {
-	_tickNum = 0;
-	// TODO: Load progress from save data
-	// (check original to see if action puzzles are saved)
-	// (and what happens when you change difficulty mid-puzzle?)
-	_goalNum = 0;
-
+	reset();
 	redraw();
-
 	playMode();
 }
 
@@ -193,10 +189,18 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 }
 
 void ActionPuzzle::handleReset() {
+	reset();
+	redraw();
+}
+
+void ActionPuzzle::reset() {
 	_tickNum = 0;
 	_goalNum = 0;
+	Common::fill(_spriteSequence.begin(), _spriteSequence.end(), -1);
+	_spriteIdx = _spriteSequence.size();
+	Common::fill(_pathSequence.begin(), _pathSequence.end(), -1);
+	_pathIdx = _pathSequence.size();
 	_particles.clear();
-	redraw();
 }
 
 void ActionPuzzle::playMode() {
@@ -229,6 +233,22 @@ void ActionPuzzle::playMode() {
 	_modeCtx.setNextMode(&_playMode);
 }
 
+void ActionPuzzle::launchNewParticle() {
+	if (_spriteIdx >= _spriteSequence.size()) {
+		makeShuffledSequence(_spriteSequence.size(), _spriteSequence.span(), 0, _spriteSequence[_spriteSequence.size() - 1]);
+		_spriteIdx = 0;
+	}
+
+	if (_pathIdx >= _pathSequence.size()) {
+		makeShuffledSequence(_pathSequence.size(), _pathSequence.span(), 0, _pathSequence[_pathSequence.size() - 1]);
+		_pathIdx = 0;
+	}
+
+	spawnParticle(_spriteSequence[_spriteIdx], _pathSequence[_pathIdx]);
+	++_spriteIdx;
+	++_pathIdx;
+}
+
 const BltImage& ActionPuzzle::getParticleImage(const Particle &particle) {
 	if (particle.deathNum > 0) {
 		const ImageArray &deathSequence = _deathSequences[particle.deathNum - 1];
@@ -257,7 +277,9 @@ BoltRsp ActionPuzzle::handleClick(const Common::Point &pt) {
 bool ActionPuzzle::isParticleAtPoint(const Particle &particle, const Common::Point &pt) {
 	// Only consider particles that are not dying
 	if (particle.deathNum == 0) {
-		Common::Rect rect = getParticleImage(particle).getRect(getParticlePos(particle));
+		const BltImage &image = getParticleImage(particle);
+		Common::Rect rect = image.getRect(getParticlePos(particle), kNoOffset);
+		rect.translate(-(int)image.getWidth() / 2, -(int)image.getHeight() / 2);
 		return rect.contains(pt);
 	}
 
@@ -293,8 +315,9 @@ void ActionPuzzle::drawFore() {
 		const Particle &p = *it;
 		const BltImage &image = getParticleImage(p);
 		Common::Point pt = getParticlePos(p);
+		pt += Common::Point(-(int)image.getWidth() / 2, -(int)image.getHeight() / 2);
 		// FIXME: positions of particles in death sequence are wrong
-		image.drawAt(_game->getGraphics()->getPlaneSurface(kFore), pt.x, pt.y, true);
+		image.drawAt(_game->getGraphics()->getPlaneSurface(kFore), pt.x, pt.y, true, kNoOffset);
 	}
 }
 
@@ -324,14 +347,15 @@ void ActionPuzzle::tick() {
 	}
 
 	// Spawn a new particle every 20 ticks
+	// (FIXME: keep up to N particles on screen)
 	static const int kNewParticleTicks = 20;
 	if (_tickNum % kNewParticleTicks == 0) {
-		spawnParticle(_random.getRandomNumber(_particleImages.size()-1),
-			_random.getRandomNumber(_paths.size()-1));
+		launchNewParticle();
 	}
 
 	// Award new goal every 100 ticks
-	// TODO: implement game
+	// FIXME: award new goals when particles are clicked
+	// remove goals when particles escape
 	static const int kGoalTicks = 100;
 	if (_tickNum % kGoalTicks == 0) {
 		if (_goalNum < _goals.size()) {

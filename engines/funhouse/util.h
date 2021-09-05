@@ -38,7 +38,7 @@ namespace Funhouse {
 /// output buffer. If there is still space remaining in the output buffer,
 /// the function continues generating shuffled sequences (ignoring exclusions) until no more
 /// space remains.
-void makeShuffledSequence(int count, Common::Span<int> out, int deviance = 0, Common::Span<bool> placed = {});
+void makeShuffledSequence(int count, Common::Span<int> out, int deviance = 0, int previous = -1, Common::Span<bool> placed = {});
 
 template<class T>
 class ScopedArray {
@@ -106,6 +106,11 @@ public:
 		}
 		return result;
 	}
+
+	T* begin() { return &_data[0]; }
+	T* end() { return &_data[_size]; }
+	const T *begin() const { return &_data[0]; }
+	const T *end() const { return &_data[_size]; }
 
 	Common::Span<T> span() {
 		return Common::Span<T>(_data, _size);

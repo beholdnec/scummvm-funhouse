@@ -46,14 +46,19 @@ static int rotate(int initial, int adjust, int mod) {
 	return (initial + adjust) % mod;
 }
 
-void makeShuffledSequence(int count, Common::Span<int> out, int deviance, Common::Span<bool> placed) {
+void makeShuffledSequence(int count, Common::Span<int> out, int deviance, int previous, Common::Span<bool> placed) {
 	Common::RandomSource random_("ShuffleRandom");
 
 	if (deviance == 0) {
 		deviance = count / 2;
 	}
 
-	int outValue = random_.getRandomNumber(count - 1);
+	int outValue;
+	if (previous == -1) {
+		outValue = random_.getRandomNumber(count - 1);
+	} else {
+		outValue = previous;
+	}
 
 	ScopedArray<bool> localPlacedArray;
 	if (!placed) {

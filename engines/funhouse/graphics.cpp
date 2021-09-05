@@ -625,12 +625,17 @@ void BltImage::draw(::Graphics::Surface &surface, bool transparency) const {
 }
 
 void BltImage::drawAt(::Graphics::Surface &surface, int x, int y,
-	bool transparency) const {
+	bool transparency, DrawFlags flags) const {
 	assert(_res);
 
+	int topLeftX = x;
+	int topLeftY = y;
+	
 	BltImageHeader header(_res.span());
-	int topLeftX = x + header.offset.x;
-	int topLeftY = y + header.offset.y;
+	if (!(flags & kNoOffset)) {
+		topLeftX += header.offset.x;
+		topLeftY += header.offset.y;
+	}
 
 	drawWithTopLeftAnchor(surface, topLeftX, topLeftY, transparency);
 }
@@ -663,10 +668,12 @@ byte BltImage::query(int x, int y) const {
 		queryCLUT7(x, y, src, srcLen, header.width, header.height);
 }
 
-Common::Rect BltImage::getRect(const Common::Point &pos) const {
+Common::Rect BltImage::getRect(const Common::Point &pos, DrawFlags flags) const {
 	BltImageHeader header(_res.span());
 	Common::Rect result(0, 0, header.width, header.height);
-	result.translate(header.offset.x, header.offset.y);
+	if (!(flags & kNoOffset)) {
+		result.translate(header.offset.x, header.offset.y);
+	}
 	result.translate(pos.x, pos.y);
 	return result;
 }

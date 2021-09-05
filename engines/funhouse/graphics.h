@@ -124,6 +124,11 @@ private:
 	bool _dirty;
 };
 
+enum DrawFlags {
+	kNone = 0,
+	kNoOffset = 0x1,
+};
+
 class BltImage { // type 8
 public:
 	operator bool() const {
@@ -133,10 +138,10 @@ public:
 	void load(Boltlib &bltFile, BltId id);
 
 	void draw(::Graphics::Surface &surface, bool transparency) const;
-	void drawAt(::Graphics::Surface &surface, int x, int y, bool transparency) const;
+	void drawAt(::Graphics::Surface &surface, int x, int y, bool transparency, DrawFlags flags = kNone) const;
 	byte query(int x, int y) const;
 
-	Common::Rect getRect(const Common::Point &pos = Common::Point(0, 0)) const;
+	Common::Rect getRect(const Common::Point &pos = Common::Point(0, 0), DrawFlags flags = kNone) const;
 	uint16 getWidth() const;
 	uint16 getHeight() const;
 	Common::Point getOffset() const;

@@ -57,9 +57,11 @@ protected:
 	Common::Point getParticlePos(const Particle &particle);
 	BoltRsp handleClick(const Common::Point &pt);
 	bool isParticleAtPoint(const Particle &particle, const Common::Point &pt);
-	void spawnParticle(int imageNum, int pathNum);
+	void launchNewParticle();
+	void spawnParticle(int sprite, int path);
 	void drawBack();
 	void drawFore();
+	void reset();
 	void tick();
 	BoltRsp win();
 
@@ -88,6 +90,10 @@ protected:
 	Common::RandomSource _random;
 	uint _tickNum;
 	uint _goalNum;
+	ScopedArray<int> _spriteSequence;
+	int _spriteIdx = 0;
+	ScopedArray<int> _pathSequence;
+	int _pathIdx = 0;
 };
 
 } // End of namespace Funhouse
