@@ -82,7 +82,7 @@ public:
 
 		bool _enable;
 		void* _userData;
-		ScopedArray<ButtonGraphics> _graphicsSet;
+		Common::Array<ButtonGraphics> _graphicsSet;
 		int _graphicsNum;
 
 		uint16 _plane; // ??? TODO: remove?
@@ -138,7 +138,7 @@ private:
 	Plane _backPlane;
 	Common::ScopedPtr<BltColorCycles> _colorCycles;
 
-	ScopedArray<Button> _buttons;
+	Common::Array<Button> _buttons;
 	BltSprites _sprites;
 };
 

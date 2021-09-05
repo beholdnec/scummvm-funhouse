@@ -91,8 +91,8 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltParticles particles;
 	loadBltResource(particles, boltlib, particlesId);
-	_particleImages.alloc(particles.numParticles);
-	_spriteSequence.alloc(particles.numParticles);
+	_particleImages.resize(particles.numParticles);
+	_spriteSequence.resize(particles.numParticles);
 	BltResourceList particleImagesList;
 	loadBltResourceArray(particleImagesList, boltlib, particleImagesId);
 	for (uint16 i = 0; i < particles.numParticles; ++i) {
@@ -120,8 +120,8 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltResourceList pathList;
 	loadBltResourceArray(pathList, boltlib, pathListId);
-	_paths.alloc(pathList.size());
-	_pathSequence.alloc(pathList.size());
+	_paths.resize(pathList.size());
+	_pathSequence.resize(pathList.size());
 	for (uint i = 0; i < pathList.size(); ++i) {
 		BltS16Values pathValues;
 		loadBltResourceArray(pathValues, boltlib, pathList[i].value);
@@ -130,7 +130,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 			warning("Invalid particle path, specified wrong number of points");
 		}
 		else {
-			_paths[i].alloc(numPoints);
+			_paths[i].resize(numPoints);
 			for (int16 j = 0; j < numPoints; ++j) {
 				_paths[i][j].x = pathValues[1 + 2 * j].value;
 				_paths[i][j].y = pathValues[1 + 2 * j + 1].value;
@@ -140,7 +140,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltS16Values goalsValues;
 	loadBltResourceArray(goalsValues, boltlib, goalsId);
-	_goals.alloc(goalsValues.size() / 2);
+	_goals.resize(goalsValues.size() / 2);
 	for (uint i = 0; i < _goals.size(); ++i) {
 		_goals[i].x = goalsValues[2 * i].value;
 		_goals[i].y = goalsValues[2 * i + 1].value;
@@ -148,7 +148,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltResourceList goalImagesList;
 	loadBltResourceArray(goalImagesList, boltlib, goalImagesListId);
-	_goalImages.alloc(goalImagesList.size());
+	_goalImages.resize(goalImagesList.size());
 	for (uint i = 0; i < goalImagesList.size(); ++i) {
 		_goalImages[i].load(boltlib, goalImagesList[i].value);
 	}
@@ -156,7 +156,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltParticleDeaths particleDeaths;
 	loadBltResource(particleDeaths, boltlib, particleDeathsId);
 	for (int i = 0; i < kNumDeathSequences; ++i) {
-		_deathSequences[i].alloc(particleDeaths.numImages[i]);
+		_deathSequences[i].resize(particleDeaths.numImages[i]);
 		BltResourceList imageList;
 		loadBltResourceArray(imageList, boltlib, particleDeaths.imagesListId[i]);
 		for (int j = 0; j < particleDeaths.numImages[i]; ++j) {
@@ -235,12 +235,12 @@ void ActionPuzzle::playMode() {
 
 void ActionPuzzle::launchNewParticle() {
 	if (_spriteIdx >= _spriteSequence.size()) {
-		makeShuffledSequence(_spriteSequence.size(), _spriteSequence.span(), 0, _spriteSequence[_spriteSequence.size() - 1]);
+		makeShuffledSequence(_spriteSequence.size(), spanOf(_spriteSequence), 0, _spriteSequence[_spriteSequence.size() - 1]);
 		_spriteIdx = 0;
 	}
 
 	if (_pathIdx >= _pathSequence.size()) {
-		makeShuffledSequence(_pathSequence.size(), _pathSequence.span(), 0, _pathSequence[_pathSequence.size() - 1]);
+		makeShuffledSequence(_pathSequence.size(), spanOf(_pathSequence), 0, _pathSequence[_pathSequence.size() - 1]);
 		_pathIdx = 0;
 	}
 

@@ -63,7 +63,7 @@ struct BltPotionPuzzleSpritePointElement {
 	Common::Point pos;
 };
 
-typedef ScopedArray<BltPotionPuzzleSpritePointElement> BltPotionPuzzleSpritePoints;
+typedef Common::Array<BltPotionPuzzleSpritePointElement> BltPotionPuzzleSpritePoints;
 
 struct BltPotionPuzzleDifficultyDef {
 	static const uint32 kType = kBltPotionPuzzleDifficulty;
@@ -91,7 +91,7 @@ struct BltPotionPuzzleComboTableListElement {
 	BltId comboTableId;
 };
 
-typedef ScopedArray<BltPotionPuzzleComboTableListElement> BltPotionPuzzleComboTableList;
+typedef Common::Array<BltPotionPuzzleComboTableListElement> BltPotionPuzzleComboTableList;
 
 void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
@@ -138,12 +138,12 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	loadBltResourceArray(_reactionTable, boltlib, comboTableList[variation].comboTableId);
 
-	_ingredientImages.alloc(difficulty.numIngredients);
+	_ingredientImages.resize(difficulty.numIngredients);
 	for (uint16 i = 0; i < difficulty.numIngredients; ++i) {
 		_ingredientImages[i].load(boltlib, ingredientImagesList[i].value);
 	}
 
-	_shelfPoints.alloc(puzzle.numShelfPoints);
+	_shelfPoints.resize(puzzle.numShelfPoints);
 	for (uint16 i = 0; i < puzzle.numShelfPoints; ++i) {
 		_shelfPoints[i] = shelfPoints[i].pos;
 	}
@@ -156,7 +156,7 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 		_bowlPoints[i] = bowlPoints[i].pos;
 	}
 	
-	_shelfSlotOccupied.alloc(puzzle.numShelfPoints);
+	_shelfSlotOccupied.resize(puzzle.numShelfPoints);
 
 	reset();
 }

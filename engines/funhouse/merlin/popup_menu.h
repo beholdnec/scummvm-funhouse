@@ -48,7 +48,7 @@ private:
 		BltSprites hovered;
 		BltSprites unhovered;
 	};
-	typedef ScopedArray<Button> ButtonList;
+	typedef Common::Array<Button> ButtonList;
 
 	void activate(ModeContext *ctx);
 	int getButtonAt(const Common::Point &pt) const;

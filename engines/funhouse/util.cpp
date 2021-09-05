@@ -60,18 +60,18 @@ void makeShuffledSequence(int count, Common::Span<int> out, int deviance, int pr
 		outValue = previous;
 	}
 
-	ScopedArray<bool> localPlacedArray;
+	Common::Array<bool> localPlacedArray;
 	if (!placed) {
-		localPlacedArray.alloc(count);
+		localPlacedArray.resize(count);
 		for (int i = 0; i < count; ++i) {
 			localPlacedArray[i] = false;
 		}
 
-		placed = localPlacedArray.span();
+		placed = spanOf(localPlacedArray);
 	}
 
-	ScopedArray<bool> initialUnplaced;
-	initialUnplaced.alloc(count);
+	Common::Array<bool> initialUnplaced;
+	initialUnplaced.resize(count);
 
 	int numbersRemaining = 0;
 	for (int i = 0; i < count; ++i) {

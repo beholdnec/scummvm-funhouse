@@ -84,7 +84,7 @@ private:
 	DynamicMode _idleMode;
 	DynamicMode _morphMode;
 	Scene _scene;
-	ScopedArray<BltSoundList> _soundLists;
+	Common::Array<BltSoundList> _soundLists;
 
 	BltU8Values _initial;
 	Piece _pieces[kNumPieces];

@@ -50,7 +50,7 @@ private:
 		int16 delayFrames; // In units of 50ms; -1 triggers pause and wind-down
 	};
 
-	typedef ScopedArray<ItemFrame> ItemFrameList;
+	typedef Common::Array<ItemFrame> ItemFrameList;
 
 	struct Item {
 		ItemFrameList frames;
@@ -59,7 +59,7 @@ private:
 		BltSound sound;
 	};
 
-	typedef ScopedArray<Item> ItemList;
+	typedef Common::Array<Item> ItemList;
 
 	BoltRsp handleButtonClick(int num);
 	void startPlayback();
@@ -80,7 +80,7 @@ private:
 
 	int _goal;
 	int _matches;
-	ScopedArray<int> _solution;
+	Common::Array<int> _solution;
 
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;

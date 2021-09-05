@@ -91,7 +91,7 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	loadBltResourceArray(_initialState, boltlib, initialStateId);
 
-	_pieces.alloc(slidingPuzzleDiffs.pieceCount[difficultyLevel]);
+	_pieces.resize(slidingPuzzleDiffs.pieceCount[difficultyLevel]);
 	for (int i = 0; i < _pieces.size(); ++i) {
 		_pieces[i] = _initialState[i].value;
 	}
@@ -153,7 +153,7 @@ void SlidingPuzzle::idleMode() {
 
 BoltRsp SlidingPuzzle::handleButtonClick(int num) {
 	if (num >= 0 && num < kNumButtons * 2) {
-		ScopedArray<int> oldPieces(_pieces.clone());
+		Common::Array<int> oldPieces(_pieces);
 		for (uint i = 0; i < _pieces.size(); ++i) {
 			_pieces[i] = oldPieces[_moveTables[num][i].value];
 		}

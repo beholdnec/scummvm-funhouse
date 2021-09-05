@@ -62,7 +62,7 @@ void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
 
 	BltPopup popup;
 	loadBltResource(popup, boltlib, id);
-	_buttons.alloc(popup.numButtons);
+	_buttons.resize(popup.numButtons);
 	_bgImage.load(boltlib, popup.bgImageId);
 	_palette.load(boltlib, popup.paletteId);
 

@@ -41,7 +41,7 @@ struct BltSynchPuzzleTransitionElement { // type 53
 	int8 count;
 };
 
-typedef ScopedArray<BltSynchPuzzleTransitionElement> BltSynchPuzzleTransition;
+typedef Common::Array<BltSynchPuzzleTransitionElement> BltSynchPuzzleTransition;
 
 class SynchPuzzle : public Card {
 public:
@@ -63,10 +63,10 @@ private:
 		int state;
 		int solution;
 		BltSprites sprites;
-		ScopedArray<BltSynchPuzzleTransition> moveset;
+		Common::Array<BltSynchPuzzleTransition> moveset;
 	};
 
-	typedef ScopedArray<Item> ItemArray;
+	typedef Common::Array<Item> ItemArray;
 
 	BoltRsp handleButtonClick(int num);
 	void redraw();
@@ -84,7 +84,7 @@ private:
 	BltU8Values _initial;
 	ItemArray _items;
 
-	ScopedArray<Move> _moveAgenda;
+	Common::Array<Move> _moveAgenda;
 };
 
 } // End of namespace Funhouse

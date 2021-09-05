@@ -393,6 +393,10 @@ public:
 
 	explicit ScopedPtr(PointerType o = nullptr) : _pointer(o) {}
 
+#ifdef USE_CXX11
+	ScopedPtr(ScopedPtr &&o) : _pointer(o.release()) {}
+#endif
+
 	ReferenceType operator*() const { return *_pointer; }
 	PointerType operator->() const { return _pointer; }
 

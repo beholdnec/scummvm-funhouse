@@ -626,12 +626,12 @@ void BltImage::draw(::Graphics::Surface &surface, bool transparency) const {
 
 void BltImage::drawAt(::Graphics::Surface &surface, int x, int y,
 	bool transparency, DrawFlags flags) const {
-	assert(_res);
+	assert(!_res.empty());
 
 	int topLeftX = x;
 	int topLeftY = y;
 	
-	BltImageHeader header(_res.span());
+	BltImageHeader header(spanOf(_res));
 	if (!(flags & kNoOffset)) {
 		topLeftX += header.offset.x;
 		topLeftY += header.offset.y;
@@ -643,9 +643,9 @@ void BltImage::drawAt(::Graphics::Surface &surface, int x, int y,
 void BltImage::drawWithTopLeftAnchor(
 	::Graphics::Surface &surface, int x, int y, bool transparency) const {
 
-	assert(_res);
+	assert(!_res.empty());
 
-	BltImageHeader header(_res.span());
+	BltImageHeader header(spanOf(_res));
 	const byte *imageData = &_res[BltImageHeader::kSize];
 	int imageDataSize = _res.size() - BltImageHeader::kSize;
 
@@ -660,7 +660,7 @@ void BltImage::drawWithTopLeftAnchor(
 }
 
 byte BltImage::query(int x, int y) const {
-	BltImageHeader header(_res.span());
+	BltImageHeader header(spanOf(_res));
 	const byte *src = &_res[BltImageHeader::kSize];
 	int srcLen = _res.size() - BltImageHeader::kSize;
 	return header.compression ?
@@ -669,7 +669,7 @@ byte BltImage::query(int x, int y) const {
 }
 
 Common::Rect BltImage::getRect(const Common::Point &pos, DrawFlags flags) const {
-	BltImageHeader header(_res.span());
+	BltImageHeader header(spanOf(_res));
 	Common::Rect result(0, 0, header.width, header.height);
 	if (!(flags & kNoOffset)) {
 		result.translate(header.offset.x, header.offset.y);
@@ -679,17 +679,17 @@ Common::Rect BltImage::getRect(const Common::Point &pos, DrawFlags flags) const 
 }
 
 uint16 BltImage::getWidth() const {
-	BltImageHeader header(_res.span());
+	BltImageHeader header(spanOf(_res));
 	return header.width;
 }
 
 uint16 BltImage::getHeight() const {
-	BltImageHeader header(_res.span());
+	BltImageHeader header(spanOf(_res));
 	return header.height;
 }
 
 Common::Point BltImage::getOffset() const {
-	BltImageHeader header(_res.span());
+	BltImageHeader header(spanOf(_res));
 	return header.offset;
 }
 

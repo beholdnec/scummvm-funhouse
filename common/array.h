@@ -353,8 +353,13 @@ public:
 		allocCapacity(newCapacity);
 
 		if (oldStorage) {
+#ifdef USE_CXX11
+			// Move old data
+			uninitialized_move(oldStorage, oldStorage + _size, _storage);
+#else
 			// Copy old data
 			uninitialized_copy(oldStorage, oldStorage + _size, _storage);
+#endif
 			freeStorage(oldStorage, _size);
 		}
 	}

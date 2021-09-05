@@ -69,7 +69,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltId difficultyId = BltShortId(difficultiesList[difficultyLevel].value); // Ex: 7A72
 
-	_moveAgenda.alloc(info.numItems - 1);
+	_moveAgenda.resize(info.numItems - 1);
 
 	BltResourceList difficulty;
 	loadBltResourceArray(difficulty, boltlib, difficultyId);
@@ -99,7 +99,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltU8Values solution;
 	loadBltResourceArray(solution, boltlib, solutionId);
 
-	_items.alloc(itemList.size());
+	_items.resize(itemList.size());
 	for (uint i = 0; i < _items.size(); ++i) {
 		_items[i].state = _initial[i].value;
 		_items[i].solution = solution[i].value;
@@ -108,7 +108,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 		BltResourceList moveset;
 		loadBltResourceArray(moveset, boltlib, movesets[i].value);
 
-		_items[i].moveset.alloc(stateCounts[i].value);
+		_items[i].moveset.resize(stateCounts[i].value);
 		for (uint j = 0; j < stateCounts[i].value; ++j) {
 			loadBltResourceArray(_items[i].moveset[j], boltlib, moveset[j].value);
 		}

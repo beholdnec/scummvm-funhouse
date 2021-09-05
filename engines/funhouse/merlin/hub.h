@@ -62,8 +62,8 @@ private:
 	Scene _scene;
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;
-	ScopedArray<BltHubItem> _items;
-	ScopedArray<BltImage> _itemImages;
+	Common::Array<BltHubItem> _items;
+	Common::Array<BltImage> _itemImages;
 };
 
 } // End of namespace Funhouse

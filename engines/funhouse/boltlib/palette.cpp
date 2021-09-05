@@ -63,8 +63,8 @@ void BltPalette::load(Boltlib &boltlib, BltId id) {
 }
 
 void applyPalette(Graphics *graphics, int plane, const BltPalette &palette) {
-	if (palette.data) {
-		BltPaletteHeader header(palette.data.span());
+	if (!palette.data.empty()) {
+		BltPaletteHeader header(spanOf(palette.data));
 
 		int count = header.last - header.first + 1;
 		if (count > 128) {

@@ -84,8 +84,8 @@ bool Boltlib::load(const Common::String &filename) {
 
 // Decompress a BOLT LZ-compressed resource. dst must be sized to fit the
 // decompressed data.
-static void decompressBoltLZ(ScopedArray<byte> &dst,
-	const ScopedArray<byte> &src) {
+static void decompressBoltLZ(Common::Array<byte> &dst,
+							 const Common::Array<byte> &src) {
 
 	// BOLT's compression algorithm is an LZ variant with some questionable
 	// design choices.
@@ -151,7 +151,7 @@ static void decompressBoltLZ(ScopedArray<byte> &dst,
 
 BltResource Boltlib::loadResource(BltId id, uint32 expectedType) {
 	if (!id.isValid()) {
-		return nullptr;
+		return {};
 	}
 
 	BltShortId shortId = BltShortId(id.value >> 16);
@@ -160,7 +160,7 @@ BltResource Boltlib::loadResource(BltId id, uint32 expectedType) {
 	if (offset != 0) {
 		// XXX: offset is not handled. It is always zero.
 		error("offset part of long resource id is not 0 (it is 0x%.04X)", (int)offset);
-		return nullptr;
+		return {};
 	}
 
 	byte dirNum = shortId.value >> 8;
@@ -168,7 +168,7 @@ BltResource Boltlib::loadResource(BltId id, uint32 expectedType) {
 
 	if (dirNum >= _dirs.size()) {
 		error("Tried to load non-existent resource 0x%.04X", (int)id.value);
-		return nullptr;
+		return {};
 	}
 
 	ensureDirLoaded(dirNum);
@@ -176,7 +176,7 @@ BltResource Boltlib::loadResource(BltId id, uint32 expectedType) {
 
 	if (resNum >= dir.resEntries.size()) {
 		error("Tried to load non-existent resource 0x%.04X", (int)id.value);
-		return nullptr;
+		return {};
 	}
 
 	ResourceEntry &res = dir.resEntries[resNum];
@@ -184,16 +184,16 @@ BltResource Boltlib::loadResource(BltId id, uint32 expectedType) {
 	if (res.type != expectedType) {
 		error("Tried to load wrong resource type %d instead of %d",
 			(int)res.type, (int)expectedType);
-		return nullptr;
+		return {};
 	}
 
 	// Load and decompress resource
 	BltResource resourceData;
-	resourceData.alloc(res.size);
+	resourceData.resize(res.size);
 	if (res.compression == 0) {
 		// BOLT-LZ
-		ScopedArray<byte> compressedData;
-		compressedData.alloc(dir.entry.compReadSize);
+		Common::Array<byte> compressedData;
+		compressedData.resize(dir.entry.compReadSize);
 		_file.seek(res.offset);
 		_file.read(&compressedData[0], dir.entry.compReadSize);
 		decompressBoltLZ(resourceData, compressedData);
@@ -205,7 +205,7 @@ BltResource Boltlib::loadResource(BltId id, uint32 expectedType) {
 	}
 	else {
 		error("Unknown compression type %d", (int)res.compression);
-		return nullptr;
+		return {};
 	}
 
 	return resourceData;

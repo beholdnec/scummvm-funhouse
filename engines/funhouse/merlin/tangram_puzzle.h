@@ -48,7 +48,7 @@ private:
 		Common::Point pos;
 	};
 
-	typedef ScopedArray<Piece> PieceArray;
+	typedef Common::Array<Piece> PieceArray;
 
 	void idle();
 	int getPieceAtPosition(const Common::Point& pos);

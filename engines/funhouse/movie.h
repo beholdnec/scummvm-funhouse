@@ -70,7 +70,7 @@ private:
 	FunhouseEngine *_engine;
 	Common::File *_file;
 
-	typedef ScopedArray<byte> ScopedBuffer;
+	typedef Common::Array<byte> ScopedBuffer;
 	typedef Common::Queue<ScopedBuffer> ScopedBufferQueue;
 
 	bool _parserActive = false; // Set to false when final packet is found

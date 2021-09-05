@@ -89,7 +89,7 @@ struct BltButtonGraphicElement { // type 30
 	BltId idleId;
 };
 
-typedef ScopedArray<BltButtonGraphicElement> BltButtonGraphicsList;
+typedef Common::Array<BltButtonGraphicElement> BltButtonGraphicsList;
 
 struct BltButtonElement { // type 31
 	static const uint32 kType = kBltButtonList;
@@ -116,7 +116,7 @@ struct BltButtonElement { // type 31
 	BltId graphicsId;
 };
 
-typedef ScopedArray<BltButtonElement> BltButtonList;
+typedef Common::Array<BltButtonElement> BltButtonList;
 
 Scene::Scene() : _engine(nullptr)
 { }
@@ -125,7 +125,7 @@ void Scene::init(FunhouseEngine *engine, int numButtons, int numSprites)
 {
 	_engine = engine;
 
-	_buttons.alloc(numButtons);
+	_buttons.resize(numButtons);
 }
 
 void Scene::enter() {
@@ -244,7 +244,7 @@ void Scene::Button::loadGraphicsSet(Boltlib &boltlib, BltId id) {
 	BltButtonGraphicsList buttonGraphics;
 	loadBltResourceArray(buttonGraphics, boltlib, id);
 
-	_graphicsSet.alloc(buttonGraphics.size());
+	_graphicsSet.resize(buttonGraphics.size());
 	for (uint j = 0; j < buttonGraphics.size(); ++j) {
 		_graphicsSet[j].graphicsType = static_cast<GraphicsType>(buttonGraphics[j].type);
 		if (buttonGraphics[j].type == kPaletteMods) {
@@ -313,7 +313,7 @@ void Scene::drawButton(const Button &button, bool hovered) {
 		BltImage* image = hovered ? button._overrideHoveredImage : button._overrideIdleImage;
 		Common::Point position = button._overridePosition - _origin;
 		image->drawAt(_engine->getGraphics()->getPlaneSurface(button._plane), position.x, position.y, true);
-	} else if (button._graphicsSet) {
+	} else if (!button._graphicsSet.empty()) {
 		const ButtonGraphics& graphicsSet = button._graphicsSet[button._graphicsNum];
 		if (graphicsSet.graphicsType == kPaletteMods) {
 			const BltPaletteMods &paletteMod = hovered ? graphicsSet.hoveredPaletteMods : graphicsSet.idlePaletteMods;

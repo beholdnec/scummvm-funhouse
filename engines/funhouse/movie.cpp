@@ -80,17 +80,17 @@ void Movie::stop() {
 	_parserActive = false;
 	_timelineActive = false;
 
-	_timelineBufAssembler.buf.reset();
-	_audioBufAssembler.buf.reset();
-	_videoBufAssembler.buf.reset();
-	_auxVideoBufAssembler.buf.reset();
+	_timelineBufAssembler.buf.clear();
+	_audioBufAssembler.buf.clear();
+	_videoBufAssembler.buf.clear();
+	_auxVideoBufAssembler.buf.clear();
 
-	_timeline.reset();
+	_timeline.clear();
 	for (int i = 0; i < 5; ++i) {
 		_videoQueues[i].clear();
 	}
-	_cels.reset();
-	_celsBackground.reset();
+	_cels.clear();
+	_celsBackground.clear();
 	_celCurCameraX = 0;
 	_celNextCameraX = 0;
 	_celCurCameraY = 0;
@@ -227,7 +227,7 @@ void Movie::startTimeline(ScopedBuffer buf) {
 
 	_curFrameNum = 0;
 
-	TimelineHeader header(_timeline.span());
+	TimelineHeader header(spanOf(_timeline));
 	_numTimelineCmds = header.numCommands;
 	_framePeriod = header.framePeriod;
 	_timelineCursor = TimelineHeader::kSize;
@@ -269,7 +269,7 @@ namespace TimelineOpcodes {
 }
 
 void Movie::stepTimeline() {
-	assert(_timeline);
+	assert(!_timeline.empty());
 
 	if (!_timelineActive) {
 		return;
@@ -280,7 +280,7 @@ void Movie::stepTimeline() {
 	// There may be one or more timeline commands with 0 delay. Run them all in this step.
 	bool done = false;
 	while (!done) {
-		TimelineCommand cmd(_timeline.span().subspan(_timelineCursor));
+		TimelineCommand cmd(spanOf(_timeline).subspan(_timelineCursor));
 		if (_timelineReps <= 0) {
 			// Advance to next timeline command
 			_timelineCursor += TimelineCommand::kSize + getTimelineCmdParamSize(cmd.opcode);
@@ -309,9 +309,9 @@ void Movie::stepTimeline() {
 }
 
 void Movie::loadTimelineCommand() {
-	assert(_timeline);
+	assert(!_timeline.empty());
 
-	TimelineCommand cmd(_timeline.span().subspan(_timelineCursor));
+	TimelineCommand cmd(spanOf(_timeline).subspan(_timelineCursor));
 	_timelineReps = cmd.reps;
 }
 
@@ -334,7 +334,7 @@ int Movie::getTimelineCmdParamSize(uint16 opcode) {
 }
 
 void Movie::runTimelineCommand() {
-	TimelineCommand cmd(_timeline.span().subspan(_timelineCursor));
+	TimelineCommand cmd(spanOf(_timeline).subspan(_timelineCursor));
 	int paramsOffset = _timelineCursor + TimelineCommand::kSize;
 
 	switch (cmd.opcode) {
@@ -438,7 +438,7 @@ struct CelsHeader {
 void Movie::loadCels(ScopedBuffer buf) {
 	_cels = std::move(buf);
 
-	CelsHeader header(_cels.span());
+	CelsHeader header(spanOf(_cels));
 	assert(header.queueNum == 4);
 
 	debug(4, "loading cels width %d, height %d, numFrames %d, unk8 %d",
@@ -450,8 +450,8 @@ void Movie::loadCels(ScopedBuffer buf) {
 }
 
 void Movie::stepCels() {
-	if (_cels) {
-		CelsHeader header(_cels.span());
+	if (!_cels.empty()) {
+		CelsHeader header(spanOf(_cels));
 		if (_celsFrame >= header.numFrames) {
 			_celsFrame = header.numFrames - 1;
 			warning("Ran past end of cel sequence");
@@ -499,14 +499,14 @@ namespace CelOpcodes {
 }
 
 void Movie::stepCelCommands() {
-	assert(_cels);
+	assert(!_cels.empty());
 
 	// FIXME: Cel control commands are different between Merlin and Crete.
 	// Only Merlin commands are implemented.
 
 	bool done = false;
 	while (!done) {
-		CelCommand cmd(_cels.span().subspan(_celControlCursor));
+		CelCommand cmd(spanOf(_cels).subspan(_celControlCursor));
 		int paramsOffset = _celControlCursor + CelCommand::kSize;
 
 		// FIXME: There's still an off-by-one error causing a one frame desync.
@@ -523,7 +523,7 @@ void Movie::stepCelCommands() {
 			case CelOpcodes::kLoadBack:
 			{
 				debug(3, "cel command: load background");
-				Common::Span<const byte> params = _cels.span().subspan(paramsOffset);
+				Common::Span<const byte> params = spanOf(_cels).subspan(paramsOffset);
 
 				_celsBackground = fetchBuffer(_videoQueues[1]);
 
@@ -540,7 +540,7 @@ void Movie::stepCelCommands() {
 			}
 			case CelOpcodes::kLoadForePalette:
 			{
-				Common::Span<const byte> params = _cels.span().subspan(paramsOffset);
+				Common::Span<const byte> params = spanOf(_cels).subspan(paramsOffset);
 
 				byte numColors = params.getUint8At(0);
 				byte firstColor = params.getUint8At(1);
@@ -554,7 +554,7 @@ void Movie::stepCelCommands() {
 			}
 			case CelOpcodes::kScroll:
 			{
-				Common::Span<const byte> params = _cels.span().subspan(paramsOffset);
+				Common::Span<const byte> params = spanOf(_cels).subspan(paramsOffset);
 
 				uint16 duration = params.getUint16BEAt(0);
 				byte speed = params.getUint8At(2);
@@ -633,19 +633,19 @@ void Movie::advanceScroll() {
 }
 
 void Movie::drawCelBackground() {
-	if (_celsBackground) {
+	if (!_celsBackground.empty()) {
 		drawQueue0or1(kBack, _celsBackground, -_celCurCameraX, -_celCurCameraY);
 	}
 }
 
 void Movie::drawCel(const ScopedBuffer &src, uint16 frameNum) {
 	// Queue 4 buffers define a sequence of foreground cels and background control commands.
-	CelsHeader header(src.span());
+	CelsHeader header(spanOf(src));
 	assert(header.queueNum == 4);
 	assert(frameNum < header.numFrames);
 
-	uint32 rl7Offset = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8);
-	uint32 rl7Size = src.span().getUint32BEAt(CelsHeader::kSize + frameNum * 8 + 4);
+	uint32 rl7Offset = spanOf(src).getUint32BEAt(CelsHeader::kSize + frameNum * 8);
+	uint32 rl7Size = spanOf(src).getUint32BEAt(CelsHeader::kSize + frameNum * 8 + 4);
 
 	decodeRL7(_engine->getGraphics()->getPlaneSurface(kFore), 0, 0, header.width, header.height,
 		&src[rl7Offset], rl7Size, false);
@@ -692,7 +692,7 @@ void Movie::readNextPacket() {
 	case kPfTimeline:
 		if (readIntoBuffer(_timelineBufAssembler, header)) {
 			_timelineQueue.push(std::move(_timelineBufAssembler.buf));
-			_timelineBufAssembler.buf.reset();
+			_timelineBufAssembler.buf.clear();
 		}
 		break;
 	case kPfAudio:
@@ -706,13 +706,13 @@ void Movie::readNextPacket() {
 				// sound will be freed by audio system
 			}
 
-			_audioBufAssembler.buf.reset();
+			_audioBufAssembler.buf.clear();
 		}
 		break;
 	case kPfVideo:
 		if (readIntoBuffer(_videoBufAssembler, header)) {
 			enqueueVideoBuffer(std::move(_videoBufAssembler.buf));
-			_videoBufAssembler.buf.reset();
+			_videoBufAssembler.buf.clear();
 		}
 		break;
 	case kPfAuxVideo:
@@ -722,7 +722,7 @@ void Movie::readNextPacket() {
 			// stream, allowing large video buffers (like background images)
 			// to be loaded alongside regular video.
 			enqueueVideoBuffer(std::move(_auxVideoBufAssembler.buf));
-			_auxVideoBufAssembler.buf.reset();
+			_auxVideoBufAssembler.buf.clear();
 		}
 		break;
 	case kPfFinal:
@@ -745,10 +745,10 @@ void Movie::readNextPacket() {
 // packets.
 bool Movie::readIntoBuffer(BufferAssembler &assembler, const PacketHeader &header) {
 
-	if (!assembler.buf) {
+	if (assembler.buf.empty()) {
 		// Begin buffer
 		assembler.totalSize = header.totalSize;
-		assembler.buf.alloc(header.totalSize);
+		assembler.buf.resize(header.totalSize);
 		assembler.cursor = 0;
 	}
 	else if (header.totalSize != assembler.totalSize) {
@@ -774,7 +774,7 @@ Movie::ScopedBuffer Movie::fetchBuffer(ScopedBufferQueue &queue) {
 
 	if (queue.empty()) {
 		warning("Failed to fetch movie data buffer");
-		return nullptr;
+		return {};
 	}
 
 	return queue.pop();
@@ -845,7 +845,7 @@ struct Queue01ImageHeader {
 };
 
 void Movie::applyQueue0or1Palette(int plane, const ScopedBuffer &src) {
-	Queue01ImageHeader header(src.span());
+	Queue01ImageHeader header(spanOf(src));
 	assert(header.queueNum == 0 || header.queueNum == 1);
 
 	_engine->getGraphics()->setPlanePalette(plane, &src[Queue01ImageHeader::kSize], 0, 128);
@@ -854,7 +854,7 @@ void Movie::applyQueue0or1Palette(int plane, const ScopedBuffer &src) {
 void Movie::drawQueue0or1(int plane, const ScopedBuffer &src, int x, int y) {
 	// Queue 0 buffers define background frames for scene changes.
 	// Queue 1 buffers define background frames for use with cel sequences.
-	Queue01ImageHeader header(src.span());
+	Queue01ImageHeader header(spanOf(src));
 	assert(header.queueNum == 0 || header.queueNum == 1);
 
 	const byte *imageSrc = &src[Queue01ImageHeader::kSize + 128 * 3];
@@ -871,7 +871,7 @@ void Movie::drawQueue0or1(int plane, const ScopedBuffer &src, int x, int y) {
 }
 
 void Movie::enqueueVideoBuffer(ScopedBuffer buf) {
-	uint16 queueNum = buf.span().getUint16BEAt(0);
+	uint16 queueNum = spanOf(buf).getUint16BEAt(0);
 	if (queueNum < 5) {
 		_videoQueues[queueNum].push(std::move(buf));
 	}

@@ -35,7 +35,7 @@ void SaveManager::init(MerlinGame *game, int difficultyCount, int challengeCount
 
 	int varsPerProfile;
 	int slotsPerProfile;
-	ScopedArray<int> slotCountForVar;
+	Common::Array<int> slotCountForVar;
 	countVariationSlots(variationInfo, varsPerProfile, slotsPerProfile, slotCountForVar);
 	_variationSlotCount = slotsPerProfile;
 
@@ -128,14 +128,14 @@ void SaveManager::syncProfile(Common::Serializer& s, int profileIdx) {
 static const int kBitsPerSlot = 2;
 static const int kValuesPerSlot = 1 << kBitsPerSlot; // Each slot is 2 bits
 
-void SaveManager::countVariationSlots(Common::Span<const VariationInfo> variationInfo, int &varsPerProfile, int &slotsPerProfile, ScopedArray<int> &slotCountForVar) {
+void SaveManager::countVariationSlots(Common::Span<const VariationInfo> variationInfo, int &varsPerProfile, int &slotsPerProfile, Common::Array<int> &slotCountForVar) {
 	varsPerProfile = 0; // A var tells which variation of a puzzle to load
 	for (int i = 0; i < variationInfo.size(); ++i) {
 		varsPerProfile += variationInfo[i].puzzleCount;
 	}
 
 	slotsPerProfile = 0; // Sometimes, a var can be spread across two slots
-	slotCountForVar.alloc(varsPerProfile);
+	slotCountForVar.resize(varsPerProfile);
 	int iout = 0;
 	for (int i = 0; i < variationInfo.size(); ++i) {
 		int j = 1;
@@ -163,24 +163,24 @@ void SaveManager::countVariationSlots(Common::Span<const VariationInfo> variatio
 void SaveManager::generateVariations(Common::Span<const VariationInfo> variationInfo) {
 	int varsPerProfile = 0;
 	int slotsPerProfile = 0;
-	ScopedArray<int> slotCountForVar;
+	Common::Array<int> slotCountForVar;
 	countVariationSlots(variationInfo, varsPerProfile, slotsPerProfile, slotCountForVar);
 
-	ScopedArray<ScopedArray<int> > allVars;
-	allVars.alloc(kProfileCount);
+	Common::Array<Common::Array<int> > allVars;
+	allVars.resize(kProfileCount);
 	for (int i = 0; i < kProfileCount; ++i) {
-		allVars[i].alloc(varsPerProfile);
+		allVars[i].resize(varsPerProfile);
 	}
 
-	ScopedArray<int> varSet;
-	varSet.alloc(kProfileCount);
+	Common::Array<int> varSet;
+	varSet.resize(kProfileCount);
 
 	// Generate all variations
 	// FIXME: variations don't seem to be very random...
 	int iout = 0;
 	for (int i = 0; i < variationInfo.size(); ++i) {
 		for (int j = 0; j < variationInfo[i].puzzleCount; ++j) {
-			makeShuffledSequence(variationInfo[i].variationCount, varSet.span());
+			makeShuffledSequence(variationInfo[i].variationCount, spanOf(varSet));
 			debugN(3, "sequence set %d, puzzle %d: ", i, j);
 			for (int k = 0; k < kProfileCount; ++k) {
 				debugN(3, "%d,", varSet[k]);

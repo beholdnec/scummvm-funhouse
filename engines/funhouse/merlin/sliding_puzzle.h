@@ -50,7 +50,7 @@ private:
 
 	BltU8Values _initialState;
 	BltU8Values _moveTables[kNumButtons * 2]; // 0-3: backward; 4-7: forward
-	ScopedArray<int> _pieces;
+	Common::Array<int> _pieces;
 };
 
 } // End of namespace Funhouse

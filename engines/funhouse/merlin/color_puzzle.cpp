@@ -87,7 +87,7 @@ void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltResourceList soundLists;
 	loadBltResourceArray(soundLists, boltlib, soundsId);
-	_soundLists.alloc(soundLists.size());
+	_soundLists.resize(soundLists.size());
 	for (int i = 0; i < soundLists.size(); ++i) {
 		_soundLists[i].load(boltlib, soundLists[i].value);
 	}

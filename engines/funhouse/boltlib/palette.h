@@ -98,7 +98,7 @@ struct BltPaletteModElement { // type 29
 	BltResource colors;
 };
 
-typedef ScopedArray<BltPaletteModElement> BltPaletteMods;
+typedef Common::Array<BltPaletteModElement> BltPaletteMods;
 
 void applyPaletteMod(Graphics *graphics, int plane, const BltPaletteMods &mod, int state);
 void applyPaletteModBlended(Graphics *graphics, int plane, const BltPaletteMods &mod,

@@ -43,8 +43,8 @@ private:
 		int imageNum;
 	};
 
-	ScopedArray<BltImage> _images;
-	ScopedArray<Sprite> _sprites;
+	Common::Array<BltImage> _images;
+	Common::Array<Sprite> _sprites;
 };
 	
 } // End of namespace Funhouse

@@ -124,7 +124,7 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltResourceList collisionsList;
 	loadBltResourceArray(collisionsList, boltlib, collisionsId);
 
-	_pieces.alloc(difficultyInfo.numPieces);
+	_pieces.resize(difficultyInfo.numPieces);
 	for (int i = 0; i < difficultyInfo.numPieces; ++i) {
 		_pieces[i].placedImage.load(boltlib, placedImagesList[i].value);
 		_pieces[i].unplacedImage.load(boltlib, unplacedImagesList[i].value);

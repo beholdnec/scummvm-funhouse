@@ -23,10 +23,7 @@
 #ifndef FUNHOUSE_UTIL_H
 #define FUNHOUSE_UTIL_H
 
-#include "common/endian.h"
-#include "common/queue.h"
 #include "common/span.h"
-#include "common/textconsole.h"
 
 namespace Funhouse {
 
@@ -41,89 +38,14 @@ namespace Funhouse {
 void makeShuffledSequence(int count, Common::Span<int> out, int deviance = 0, int previous = -1, Common::Span<bool> placed = {});
 
 template<class T>
-class ScopedArray {
-public:
-	ScopedArray() = default;
+Common::Span<T> spanOf(Common::Array<T>& array) {
+	return Common::Span<T>(array.data(), array.size());
+}
 
-	ScopedArray(std::nullptr_t) {
-	}
-
-	ScopedArray(const ScopedArray &) = delete;
-	ScopedArray &operator=(const ScopedArray &) = delete;
-
-	ScopedArray(ScopedArray&& other) {
-		*this = std::move(other); // Use move assignment operator
-	}
-
-	ScopedArray& operator=(ScopedArray&& other) {
-		std::swap(_data, other._data);
-		std::swap(_size, other._size);
-		return *this;
-	}
-
-	~ScopedArray() {
-		reset();
-	}
-
-	operator bool() const {
-		return _data;
-	}
-
-	uint size() const {
-		return _size;
-	}
-
-	void reset() {
-		delete[] _data;
-		_data = nullptr;
-		_size = 0;
-	}
-
-	void alloc(uint arraySize) {
-		delete[] _data;
-		_data = nullptr;
-		_size = arraySize;
-		if (arraySize > 0) {
-			_data = new T[arraySize];
-		}
-	}
-
-	T& operator[](uint idx) {
-		assert(idx < _size);
-		return _data[idx];
-	}
-
-	const T& operator[](uint idx) const {
-		assert(idx < _size);
-		return _data[idx];
-	}
-
-	ScopedArray clone() const {
-		ScopedArray result;
-		result.alloc(_size);
-		for (uint i = 0; i < _size; ++i) {
-			result._data[i] = _data[i];
-		}
-		return result;
-	}
-
-	T* begin() { return &_data[0]; }
-	T* end() { return &_data[_size]; }
-	const T *begin() const { return &_data[0]; }
-	const T *end() const { return &_data[_size]; }
-
-	Common::Span<T> span() {
-		return Common::Span<T>(_data, _size);
-	}
-
-	Common::Span<const T> span() const {
-		return Common::Span<const T>(_data, _size);
-	}
-
-private:
-	T *_data = nullptr;
-	uint _size = 0;
-};
+template<class T>
+Common::Span<const T> spanOf(const Common::Array<T>& array) {
+	return Common::Span<const T>(array.data(), array.size());
+}
 
 } // End of namespace Funhouse
 

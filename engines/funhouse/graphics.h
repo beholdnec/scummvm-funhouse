@@ -132,7 +132,7 @@ enum DrawFlags {
 class BltImage { // type 8
 public:
 	operator bool() const {
-		return _res;
+		return !_res.empty();
 	}
 
 	void load(Boltlib &bltFile, BltId id);

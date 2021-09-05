@@ -47,7 +47,7 @@ struct BltPotionPuzzleComboTableElement {
 	uint16 movie;
 };
 
-typedef ScopedArray<BltPotionPuzzleComboTableElement> BltPotionPuzzleComboTable;
+typedef Common::Array<BltPotionPuzzleComboTableElement> BltPotionPuzzleComboTable;
 
 class PotionPuzzle : public Card {
 public:
@@ -87,12 +87,12 @@ private:
 	BltPalette _bgPalette;
 	Common::Point _origin;
 	int _numIngredients;
-	ScopedArray<BltImage> _ingredientImages;
-	ScopedArray<Common::Point> _shelfPoints;
+	Common::Array<BltImage> _ingredientImages;
+	Common::Array<Common::Point> _shelfPoints;
 	Common::Point _bowlPoints[3];
 	BltPotionPuzzleComboTable _reactionTable;
 
-	ScopedArray<bool> _shelfSlotOccupied; // False: Empty; True: Filled
+	Common::Array<bool> _shelfSlotOccupied; // False: Empty; True: Filled
 	static const int kNumBowlSlots = 3;
 	int _bowlSlots[kNumBowlSlots]; // Ingredients in bowl
 	int _requestedIngredient;

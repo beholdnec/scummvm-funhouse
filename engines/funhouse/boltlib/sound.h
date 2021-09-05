@@ -57,7 +57,7 @@ public:
 	BltSound& pickSound();
 
 private:
-	ScopedArray<BltSound> _sounds;
+	Common::Array<BltSound> _sounds;
 	Common::RandomSource _random; // FIXME: use the game's random source
 };
 

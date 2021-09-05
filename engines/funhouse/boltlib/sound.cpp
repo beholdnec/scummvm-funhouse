@@ -67,7 +67,7 @@ BltSoundList::BltSoundList() : _random("SoundRandomSource")
 void BltSoundList::load(Boltlib &boltlib, BltId id) {
 	BltU16Values soundIds;
 	loadBltResourceArray(soundIds, boltlib, id);
-	_sounds.alloc(soundIds.size());
+	_sounds.resize(soundIds.size());
 	for (int i = 0; i < _sounds.size(); ++i) {
 		_sounds[i].load(boltlib, BltShortId(soundIds[i].value));
 	}

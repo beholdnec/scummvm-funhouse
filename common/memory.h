@@ -47,6 +47,15 @@ Type *uninitialized_copy(In first, In last, Type *dst) {
 	return dst;
 }
 
+#ifdef USE_CXX11
+template<class In, class Type>
+Type *uninitialized_move(In first, In last, Type *dst) {
+	while (first != last)
+		new ((void *)dst++) Type(std::move(*first++));
+	return dst;
+}
+#endif
+
 /**
  * Initializes the memory [first, first + (last - first)) with the value x.
  * It requires the range [first, first + (last - first)) to be valid and

@@ -41,7 +41,7 @@ struct BltMemoryPuzzleInfo {
 	uint16 foo;
 };
 
-typedef ScopedArray<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
+typedef Common::Array<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
 
 struct BltMemoryPuzzleItem {
 	static const uint32 kType = kBltMemoryPuzzleItemList;
@@ -61,7 +61,7 @@ struct BltMemoryPuzzleItem {
 	BltId soundId;
 };
 
-typedef ScopedArray<BltMemoryPuzzleItem> BltMemoryPuzzleItemList;
+typedef Common::Array<BltMemoryPuzzleItem> BltMemoryPuzzleItemList;
 
 struct BltMemoryPuzzleItemFrame {
 	static const uint32 kType = kBltMemoryPuzzleItemFrameList;
@@ -79,7 +79,7 @@ struct BltMemoryPuzzleItemFrame {
 	int16 delayFrames;
 };
 
-typedef ScopedArray<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
+typedef Common::Array<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
@@ -115,12 +115,12 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltMemoryPuzzleItemList itemList;
 	loadBltResourceArray(itemList, boltlib, itemsId);
 
-	_itemList.alloc(itemList.size());
+	_itemList.resize(itemList.size());
 	for (uint i = 0; i < itemList.size(); ++i) {
 		BltMemoryPuzzleItemFrameList frames;
 		loadBltResourceArray(frames, boltlib, itemList[i].framesId);
 
-		_itemList[i].frames.alloc(frames.size());
+		_itemList[i].frames.resize(frames.size());
 		for (uint j = 0; j < frames.size(); ++j) {
 			ItemFrame& frame = _itemList[i].frames[j];
 			frame.pos = frames[j].pos;
@@ -139,8 +139,8 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_failSound.load(boltlib, failSoundId);
 
-	_solution.alloc(info.solutionLength);
-	makeShuffledSequence(info.pieceCount, _solution.span());
+	_solution.resize(info.solutionLength);
+	makeShuffledSequence(info.pieceCount, spanOf(_solution));
 
 	startPlayback();
 }

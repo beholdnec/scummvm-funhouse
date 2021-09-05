@@ -28,23 +28,23 @@ struct BltSpriteElement { // type 27
 	static const uint32 kType = kBltSpriteList;
 	static const uint kSize = 0x8;
 	void load(Common::Span<const byte> src, Boltlib &bltFile) {
-		pos.x = src.getInt16BEAt(0);
-		pos.y = src.getInt16BEAt(2);
-		imageId = BltId(src.getUint32BEAt(4));
+		pos.x = src.getInt16BEAt(0x0);
+		pos.y = src.getInt16BEAt(0x2);
+		imageId = BltId(src.getUint32BEAt(0x4));
 	}
 
 	Common::Point pos;
 	BltId imageId;
 };
 
-typedef ScopedArray<BltSpriteElement> BltSpriteList;
+typedef Common::Array<BltSpriteElement> BltSpriteList;
 
 void BltSprites::load(Boltlib &boltlib, BltId id) {
 	BltSpriteList spriteList;
 	loadBltResourceArray(spriteList, boltlib, id);
 
-	_images.alloc(spriteList.size());
-	_sprites.alloc(spriteList.size());
+	_images.resize(spriteList.size());
+	_sprites.resize(spriteList.size());
 	for (uint i = 0; i < _sprites.size(); ++i) {
 		_images[i].load(boltlib, spriteList[i].imageId);
 		_sprites[i].pos = spriteList[i].pos;

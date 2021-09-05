@@ -101,7 +101,7 @@ struct BltId {
 	uint32 value;
 };
 
-typedef ScopedArray<byte> BltResource;
+typedef Common::Array<byte> BltResource;
 
 class Boltlib {
 public:
@@ -150,22 +150,22 @@ void loadBltResource(T &obj, Boltlib &boltlib, BltId id) {
 	// Reset obj to unloaded state
 	obj.~T();
 	new(&obj) T();
-	if (res) {
+	if (!res.empty()) {
 		if (res.size() != T::kSize) {
 			error("Invalid size for resource type %u: %u", (uint)T::kType, (uint)res.size());
 		}
-		obj.load(res.span(), boltlib);
+		obj.load(spanOf(res), boltlib);
 	}
 }
 
 // Common template function for loading a simple BLT resource array.
 template<class T>
-void loadBltResourceArray(ScopedArray<T>& array, Boltlib &boltlib, BltId id) {
+void loadBltResourceArray(Common::Array<T>& array, Boltlib &boltlib, BltId id) {
 	BltResource res(boltlib.loadResource(id, T::kType));
 	uint numItems = res.size() / T::kSize;
-	array.alloc(numItems);
+	array.resize(numItems);
 	for (uint i = 0; i < numItems; ++i) {
-		array[i].load(res.span().subspan(i * T::kSize), boltlib);
+		array[i].load(spanOf(res).subspan(i * T::kSize), boltlib);
 	}
 }
 
@@ -179,7 +179,7 @@ struct BltU8ValueElement { // type 1
 	byte value;
 };
 
-typedef ScopedArray<BltU8ValueElement> BltU8Values;
+typedef Common::Array<BltU8ValueElement> BltU8Values;
 
 struct BltS16ValueElement { // type 2
 	static const uint32 kType = kBltS16Values;
@@ -191,7 +191,7 @@ struct BltS16ValueElement { // type 2
 	int16 value;
 };
 
-typedef ScopedArray<BltS16ValueElement> BltS16Values;
+typedef Common::Array<BltS16ValueElement> BltS16Values;
 
 struct BltU16ValueElement { // type 3
 	static const uint32 kType = kBltU16Values;
@@ -203,7 +203,7 @@ struct BltU16ValueElement { // type 3
 	uint16 value;
 };
 
-typedef ScopedArray<BltU16ValueElement> BltU16Values;
+typedef Common::Array<BltU16ValueElement> BltU16Values;
 
 struct BltResourceListElement { // type 6
 	static const uint32 kType = kBltResourceList;
@@ -215,7 +215,7 @@ struct BltResourceListElement { // type 6
 	BltId value;
 };
 
-typedef ScopedArray<BltResourceListElement> BltResourceList;
+typedef Common::Array<BltResourceListElement> BltResourceList;
 
 } // End of namespace Funhouse
 

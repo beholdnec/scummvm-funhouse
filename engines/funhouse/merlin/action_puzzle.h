@@ -74,12 +74,12 @@ protected:
 	BltPalette _forePalette;
 	BltColorCycles _backColorCycles;
 	BltColorCycles _foreColorCycles;
-	ScopedArray<BltImage> _particleImages;
-	typedef ScopedArray<Common::Point> PointArray;
-	ScopedArray<PointArray> _paths;
+	Common::Array<BltImage> _particleImages;
+	typedef Common::Array<Common::Point> PointArray;
+	Common::Array<PointArray> _paths;
 	PointArray _goals;
 
-	typedef ScopedArray<BltImage> ImageArray;
+	typedef Common::Array<BltImage> ImageArray;
 	ImageArray _goalImages;
 	static const int kNumDeathSequences = 3;
 	ImageArray _deathSequences[kNumDeathSequences];
@@ -90,9 +90,9 @@ protected:
 	Common::RandomSource _random;
 	uint _tickNum;
 	uint _goalNum;
-	ScopedArray<int> _spriteSequence;
+	Common::Array<int> _spriteSequence;
 	int _spriteIdx = 0;
-	ScopedArray<int> _pathSequence;
+	Common::Array<int> _pathSequence;
 	int _pathIdx = 0;
 };
 

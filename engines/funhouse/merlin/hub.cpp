@@ -56,8 +56,8 @@ void HubCard::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 
 	BltResourceList hubItemsList;
 	loadBltResourceArray(hubItemsList, boltlib, hubInfo.itemListId);
-	_items.alloc(hubInfo.numItems);
-	_itemImages.alloc(hubInfo.numItems);
+	_items.resize(hubInfo.numItems);
+	_itemImages.resize(hubInfo.numItems);
 	for (uint i = 0; i < hubInfo.numItems; ++i) {
 		loadBltResource(_items[i], boltlib, hubItemsList[i].value);
 		_itemImages[i].load(boltlib, _items[i].imageId);

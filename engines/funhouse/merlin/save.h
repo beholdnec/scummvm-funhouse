@@ -75,7 +75,7 @@ public:
 private:
 	void syncHeader(Common::Serializer &s);
 	void syncProfile(Common::Serializer &s, int profile);
-	void countVariationSlots(Common::Span<const VariationInfo> variationInfo, int &varsPerProfile, int &slotsPerProfile, ScopedArray<int> &slotCountForVar);
+	void countVariationSlots(Common::Span<const VariationInfo> variationInfo, int &varsPerProfile, int &slotsPerProfile, Common::Array<int> &slotCountForVar);
 	void generateVariations(Common::Span<const VariationInfo> variationInfo);
 
 	MerlinGame *_game = nullptr;
