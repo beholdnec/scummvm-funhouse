@@ -132,6 +132,9 @@ public:
 	virtual void handleReset() {
 		assert(false && "handleReset not implemented for this card");
 	}
+	virtual void handleUndo() {
+		assert(false && "handleUndo not implemented for this card");
+	}
 };
 
 class FunhouseEngine;

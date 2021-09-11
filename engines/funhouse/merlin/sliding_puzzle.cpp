@@ -92,9 +92,6 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	loadBltResourceArray(_initialState, boltlib, initialStateId);
 
 	_pieces.resize(slidingPuzzleDiffs.pieceCount[difficultyLevel]);
-	for (int i = 0; i < _pieces.size(); ++i) {
-		_pieces[i] = _initialState[i].value;
-	}
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
@@ -103,6 +100,8 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	for (int i = 0; i < kNumButtons * 2; ++i) {
 		loadBltResourceArray(_moveTables[i], boltlib, moveTablesRes[i].value);
 	}
+
+	reset();
 }
 
 void SlidingPuzzle::enter() {
@@ -117,9 +116,36 @@ BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 }
 
 void SlidingPuzzle::handleReset() {
+	reset();
+	// TODO: play reset sound
+}
+
+void SlidingPuzzle::handleUndo() {
+	// Only one move can be undone. When an undo is requested, the game swaps
+	// the current and previous state.
+	Common::Array<int> temp = _pieces;
+	_pieces = _previousPieces;
+	_previousPieces = temp;
+	// TODO: play undo sound
+	setSprites();
+}
+
+void SlidingPuzzle::reset() {
+	_pieces.resize(_initialState.size());
 	for (uint i = 0; i < _pieces.size(); ++i) {
 		_pieces[i] = _initialState[i].value;
 	}
+	_previousPieces = _pieces;
+	_game->setUndoAvailable(false);
+	setSprites();
+}
+
+void SlidingPuzzle::move(int moveIdx) {
+	_previousPieces = _pieces;
+	for (uint i = 0; i < _pieces.size(); ++i) {
+		_pieces[i] = _previousPieces[_moveTables[moveIdx][i].value];
+	}
+	_game->setUndoAvailable(true);
 	setSprites();
 }
 
@@ -153,12 +179,7 @@ void SlidingPuzzle::idleMode() {
 
 BoltRsp SlidingPuzzle::handleButtonClick(int num) {
 	if (num >= 0 && num < kNumButtons * 2) {
-		Common::Array<int> oldPieces(_pieces);
-		for (uint i = 0; i < _pieces.size(); ++i) {
-			_pieces[i] = oldPieces[_moveTables[num][i].value];
-		}
-
-		setSprites();
+		move(num);
 
 		bool win = true;
 		for (uint i = 0; i < _pieces.size(); ++i) {

@@ -81,6 +81,7 @@ public:
 
 	void setPopup(PopupType type);
 	PopupMenu &getPopup();
+	void setUndoAvailable(bool available);
 	BoltRsp handlePopup(ModeContext *ctx, const BoltMsg &msg);
 	void dismissPopup(ModeContext *ctx);
 	BoltRsp handlePopupButtonClick(ModeContext *ctx, int num);

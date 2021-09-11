@@ -35,9 +35,12 @@ public:
 	void enter() override;
 	BoltRsp handleMsg(const BoltMsg &msg) override;
 	void handleReset() override;
+	void handleUndo() override;
 	void setSprites();
 
 private:
+	void reset();
+	void move(int moveIdx);
 	void idleMode();
 	BoltRsp handleButtonClick(int num);
 
@@ -51,6 +54,7 @@ private:
 	BltU8Values _initialState;
 	BltU8Values _moveTables[kNumButtons * 2]; // 0-3: backward; 4-7: forward
 	Common::Array<int> _pieces;
+	Common::Array<int> _previousPieces;
 };
 
 } // End of namespace Funhouse

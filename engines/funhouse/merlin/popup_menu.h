@@ -40,10 +40,12 @@ public:
 
 	bool isActive() const;
 	void dismiss(ModeContext *ctx);
+	void setButtonEnable(int idx, bool enable);
 	BoltRsp react(ModeContext *ctx, const BoltMsg &msg);
 
 private:
 	struct Button {
+		bool enable = true;
 		Rect hotspot;
 		BltSprites hovered;
 		BltSprites unhovered;

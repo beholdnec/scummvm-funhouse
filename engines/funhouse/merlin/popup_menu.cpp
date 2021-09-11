@@ -89,6 +89,10 @@ void PopupMenu::dismiss(ModeContext *ctx) {
 	_game->redraw();
 }
 
+void PopupMenu::setButtonEnable(int idx, bool enable) {
+	_buttons[idx].enable = enable;
+}
+
 BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kRightClick) {
 		if (!_active) {
@@ -106,14 +110,13 @@ BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 
 	if (msg.type == BoltMsg::kClick || msg.type == BoltMsg::kHover) {
 		int num = getButtonAt(msg.point);
-		if (num != -1) {
-			for (int i = 0; i < _buttons.size(); ++i) {
-				const BltSprites &sprites = (i == num) ? _buttons[i].hovered : _buttons[i].unhovered;
-				const Common::Point &spritePos = sprites.getSpritePosition(0);
-				const BltImage *spriteImage = sprites.getSpriteImage(0);
-				spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kBack), spritePos.x, spritePos.y, true);
-			}
-
+		for (int i = 0; i < _buttons.size(); ++i) {
+			const BltSprites &sprites = (i == num) ? _buttons[i].hovered : _buttons[i].unhovered;
+			const Common::Point &spritePos = sprites.getSpritePosition(0);
+			const BltImage *spriteImage = sprites.getSpriteImage(0);
+			spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kBack), spritePos.x, spritePos.y, true);
+		}
+		if (num != -1 && _buttons[num].enable) {
 			if (msg.type == BoltMsg::kClick) {
 				return handleButtonClick(ctx, num);
 			}
@@ -161,7 +164,7 @@ void PopupMenu::activate(ModeContext *ctx) {
 
 int PopupMenu::getButtonAt(const Common::Point &pt) const {
 	for (int i = 0; i < _buttons.size(); ++i) {
-		if (_buttons[i].hotspot.contains(pt)) {
+		if (_buttons[i].enable && _buttons[i].hotspot.contains(pt)) {
 			return i;
 		}
 	}

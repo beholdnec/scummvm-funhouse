@@ -126,6 +126,21 @@ BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
 	return rsp;
 }
 
+void MerlinGame::setUndoAvailable(bool available) {
+	switch (_popupType) {
+	case kHubPopup:
+		// Ignore
+		break;
+	case kPuzzlePopup:
+	case kPotionPuzzlePopup:
+		_popup.setButtonEnable(4, available);
+		break;
+	default:
+		assert(false && "Invalid popup type in setUndoAvailable");
+		break;
+	}
+}
+
 BoltRsp MerlinGame::handlePopupButtonClick(ModeContext *ctx, int num) {
 	switch (_popupType) {
 	case kHubPopup:
@@ -176,7 +191,9 @@ BoltRsp MerlinGame::handlePuzzlePopupButtonClick(ModeContext *ctx, int num) {
 		_activeCard->handleReset();
 		return kDone;
 	case 4: // Undo
-		// TODO
+		_popup.dismiss(ctx);
+		_activeCard->handleUndo();
+		return kDone;
 	default:
 		warning("Puzzle popup button %d not implemented", num);
 		return kDone;
@@ -199,7 +216,9 @@ BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(ModeContext *ctx, int num
 		_activeCard->handleReset();
 		return kDone;
 	case 4: // Undo
-		// TODO
+		_popup.dismiss(ctx);
+		_activeCard->handleUndo();
+		return kDone;
 	default:
 		warning("Potion puzzle popup button %d not implemented", num);
 		return kDone;
@@ -270,6 +289,7 @@ void MerlinGame::save() {
 void MerlinGame::setPopup(PopupType type) {
 	_popupType = type;
 	_popup.init(this, _boltlib, _popupResIds[type]);
+	setUndoAvailable(false);
 }
 
 PopupMenu& MerlinGame::getPopup() {
