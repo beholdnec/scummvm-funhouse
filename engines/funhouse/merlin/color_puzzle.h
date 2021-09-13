@@ -51,6 +51,7 @@ public:
 	void enter() override;
 	BoltRsp handleMsg(const BoltMsg &msg) override;
 	void handleReset() override;
+	void handleUndo() override;
 
 private:
 	// All color puzzles in Merlin's Apprentice have 4 pieces.
@@ -63,21 +64,22 @@ private:
 	struct Piece {
 		int numStates;
 		BltPaletteMods palettes;
-		int state;
 		int solution;
 		BltColorPuzzleTransition transition;
 	};
 
 	BoltRsp handleButtonClick(int num);
 
+	void evaluate();
 	void idleMode();
-	BoltRsp driveTransition();
-	BoltRsp driveMorph();
-	void selectPiece(int piece);
-	void setPieceState(int piece, int state);
-	void morphPiece(int piece, int state);
-	void startMorph(BltPaletteMods *paletteMods, int startState, int endState);
+	void startMove(int piece, int currState);
+	void driveMove();
+	void morphPiece(int piece, int state, std::function<void()> then);
+	void startMorph(BltPaletteMods *paletteMods, int startState, int endState, std::function<void()> then);
+	bool driveMorph(); // Returns true when morph if finished
 	bool isSolved() const;
+	void draw();
+	void reset();
 
 	MerlinGame *_game;
 	ModeContext _modeCtx;
@@ -88,6 +90,11 @@ private:
 
 	BltU8Values _initial;
 	Piece _pieces[kNumPieces];
+	Common::Array<int> _state;
+	Common::Array<int> _previousState;
+	bool _undone;
+	int _redoPiece;
+	int _redoCurrState;
 
 	int _selectedPiece;
 	int _transitionStep;
