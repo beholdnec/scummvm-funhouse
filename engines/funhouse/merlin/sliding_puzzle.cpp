@@ -151,7 +151,7 @@ void SlidingPuzzle::move(int moveIdx) {
 
 void SlidingPuzzle::setSprites() {
 	for (int i = 0; i < _pieces.size(); ++i) {
-		_scene.setSpriteImageNum(i, _pieces[i]);
+		_scene.getForeSprites().setSpriteImageNum(i, _pieces[i]);
 	}
 
 	_scene.redraw();

@@ -50,8 +50,8 @@ void applyColorCycles(Graphics *graphics, int plane, const BltColorCycles *cycle
 struct BltPaletteHeader {
 	static const uint32 kSize = 6;
 	BltPaletteHeader(Common::Span<const byte> src) {
-		first = src.getUint16BEAt(2);
-		last = src.getUint16BEAt(4);
+		first = src.getUint16BEAt(0x2);
+		last = src.getUint16BEAt(0x4);
 	}
 
 	uint16 first; // first color index (usually 0)
@@ -74,13 +74,7 @@ void applyPalette(Graphics *graphics, int plane, const BltPalette &palette) {
 			count = 0;
 		}
 
-		// FIXME: are the planes backwards?
-		if (plane == 0) {
-			graphics->setPlanePalette(kFore, &palette.data[BltPaletteHeader::kSize + header.first * 3], header.first, count);
-		}
-		else { // plane == 1
-			graphics->setPlanePalette(kBack, &palette.data[BltPaletteHeader::kSize + header.first * 3], header.first, count);
-		}
+		graphics->setPlanePalette(plane, &palette.data[BltPaletteHeader::kSize], header.first, count);
 	}
 }
 

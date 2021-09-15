@@ -734,7 +734,13 @@ function openResource(resourceId) {
     const labelEl = document.getElementById('blt-resource-label');
     labelEl.innerText = u16hex(resourceId);
     if (resTableEntry.type in PC_RESOURCE_LOADERS) {
-        PC_RESOURCE_LOADERS[resTableEntry.type](data);
+        try {
+            PC_RESOURCE_LOADERS[resTableEntry.type](data);
+        }
+        catch (e) {
+            console.warn("Error when displaying resource:");
+            console.error(e);
+        }
     }
     const hexContentEl = document.getElementById('blt-hex-content');
     const hexDataEl = document.getElementById('blt-hex-data');

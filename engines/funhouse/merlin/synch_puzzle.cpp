@@ -115,9 +115,13 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	}
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
+	// XXX: The portcullis puzzle mistakenly has an image attached to the foreground in the PC version.
+	// In the CD-i version, the image is null.
+	_scene.setPlaneImageEnable(kFore, false);
 }
 
 void SynchPuzzle::enter() {
+	_scene.enter();
 	redraw();
 	idle();
 }
@@ -140,7 +144,7 @@ BoltRsp SynchPuzzle::handleButtonClick(int num) {
 }
 
 void SynchPuzzle::redraw() {
-	_scene.enter();
+	_scene.redraw();
 
 	for (uint i = 0; i < _items.size(); ++i) {
 		const Item& item = _items[i];

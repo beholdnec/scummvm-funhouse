@@ -85,7 +85,7 @@ public:
 		Common::Array<ButtonGraphics> _graphicsSet;
 		int _graphicsNum;
 
-		uint16 _plane; // ??? TODO: remove?
+		uint16 _plane; // 0: fore; 1: back
 
 		HotspotType _hotspotType;
 		// If hotspotType == kRect: this field holds the rectangular area of the button.
@@ -101,25 +101,26 @@ public:
 
 	Scene();
 
-	void init(FunhouseEngine *engine, int numButtons, int numSprites);
+	void init(FunhouseEngine *engine, int buttonCount);
 	void enter();
 	void redraw();
 	BoltRsp handleMsg(const BoltMsg &msg);
 
-	void loadBackPlane(Boltlib &boltlib, BltId planeId);
 	void loadForePlane(Boltlib &boltlib, BltId planeId);
+	void loadBackPlane(Boltlib &boltlib, BltId planeId);
 	void loadColorCycles(Boltlib &boltlib, BltId id);
-	void loadSprites(Boltlib &boltlib, BltId id);
+	void loadForeSprites(Boltlib &boltlib, BltId id);
 
 	Common::Point getOrigin() const;
 	void setOrigin(const Common::Point &origin);
-
-	void setSpriteImageNum(int num, int imageNum);
+	void setPlaneImageEnable(int plane, bool enable);
+	BltSprites& getForeSprites();
 
 	Button& getButton(int num);
 
 private:
 	struct Plane {
+		bool enableImage = true; // XXX: Must be disabled on synch puzzles due to the portcullis puzzle mistakenly having an image attached
 		BltImage image;
 		BltPalette palette;
 		BltImage hotspots;
@@ -139,7 +140,7 @@ private:
 	Common::ScopedPtr<BltColorCycles> _colorCycles;
 
 	Common::Array<Button> _buttons;
-	BltSprites _sprites;
+	BltSprites _foreSprites;
 };
 
 void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sceneId);

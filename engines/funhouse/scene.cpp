@@ -33,13 +33,13 @@ struct BltScene { // type 32
 	static const uint32 kType = kBltScene;
 	static const uint32 kSize = 0x24;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		forePlaneId = BltId(src.getUint32BEAt(0));
-		backPlaneId = BltId(src.getUint32BEAt(4));
-		numSprites = src.getUint8At(0x8);
-		spritesId = BltId(src.getUint32BEAt(0xA));
+		forePlaneId = BltId(src.getUint32BEAt(0x0));
+		backPlaneId = BltId(src.getUint32BEAt(0x4));
+		foreSpriteCount = src.getUint8At(0x8);
+		foreSpritesId = BltId(src.getUint32BEAt(0xA));
 		// FIXME: unknown fields at 0xD..0x16
 		colorCyclesId = BltId(src.getUint32BEAt(0x16));
-		numButtons = src.getUint16BEAt(0x1A);
+		buttonCount = src.getUint16BEAt(0x1A);
 		buttonsId = BltId(src.getUint32BEAt(0x1C));
 		origin.x = src.getInt16BEAt(0x20);
 		origin.y = src.getInt16BEAt(0x22);
@@ -47,10 +47,10 @@ struct BltScene { // type 32
 
 	BltId forePlaneId;
 	BltId backPlaneId;
-	uint8 numSprites;
-	BltId spritesId;
+	uint8 foreSpriteCount;
+	BltId foreSpritesId;
 	BltId colorCyclesId;
-	uint16 numButtons;
+	uint16 buttonCount;
 	BltId buttonsId;
 	Common::Point origin;
 };
@@ -59,9 +59,9 @@ struct BltPlane { // type 26
 	static const uint32 kType = kBltPlane;
 	static const uint kSize = 0x10;
 	void load(Common::Span<const byte> src, Boltlib &bltFile) {
-		imageId = BltId(src.getUint32BEAt(0));
-		paletteId = BltId(src.getUint32BEAt(4));
-		hotspotsId = BltId(src.getUint32BEAt(8));
+		imageId = BltId(src.getUint32BEAt(0x0));
+		paletteId = BltId(src.getUint32BEAt(0x4));
+		hotspotsId = BltId(src.getUint32BEAt(0x8));
 	}
 
 	BltId imageId;
@@ -81,7 +81,7 @@ struct BltButtonGraphicElement { // type 30
 		type = src.getUint16BEAt(0);
 		// FIXME: unknown field at 2. It points to an image in sliding puzzles.
 		hoveredId = BltId(src.getUint32BEAt(6));
-		idleId = BltId(src.getUint32BEAt(0xA));
+		idleId = BltId(src.getUint32BEAt(0xa));
 	}
 
 	uint16 type;
@@ -95,17 +95,17 @@ struct BltButtonElement { // type 31
 	static const uint32 kType = kBltButtonList;
 	static const uint kSize = 0x14;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		type = src.getUint16BEAt(0);
-		rect = Rect(src.subspan(2));
-		plane = src.getUint16BEAt(0xA);
-		numGraphics = src.getUint16BEAt(0xC);
+		type = src.getUint16BEAt(0x0);
+		rect = Rect(src.subspan(0x2));
+		plane = src.getUint16BEAt(0xa);
+		numGraphics = src.getUint16BEAt(0xc);
 		// FIXME: unknown field at 0xE. Always 0 in game data.
 		graphicsId = BltId(src.getUint32BEAt(0x10));
 	}
 
 	enum HotspotType {
 		Rectangle = 1,
-		// 2 is regular display query (unused)
+		// 2 is visible display query (unused)
 		HotspotQuery = 3
 	};
 
@@ -121,11 +121,9 @@ typedef Common::Array<BltButtonElement> BltButtonList;
 Scene::Scene() : _engine(nullptr)
 { }
 
-void Scene::init(FunhouseEngine *engine, int numButtons, int numSprites)
-{
+void Scene::init(FunhouseEngine *engine, int buttonCount) {
 	_engine = engine;
-
-	_buttons.resize(numButtons);
+	_buttons.resize(buttonCount);
 }
 
 void Scene::enter() {
@@ -137,22 +135,21 @@ void Scene::enter() {
 }
 
 void Scene::redraw() {
-	if (_backPlane.image) {
+	if (_backPlane.image && _backPlane.enableImage) {
 		_backPlane.image.drawAt(_engine->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 	} else {
 		_engine->getGraphics()->clearPlane(kBack);
 	}
 
-	if (_forePlane.image) {
+	if (_forePlane.image && _forePlane.enableImage) {
 		_forePlane.image.drawAt(_engine->getGraphics()->getPlaneSurface(kFore), 0, 0, false);
 	} else {
 		_engine->getGraphics()->clearPlane(kFore);
 	}
 
-	for (int i = 0; i < _sprites.getSpriteCount(); ++i) {
-		Common::Point position = _sprites.getSpritePosition(i) - _origin;
-		// FIXME: Are sprites drawn to back or fore plane? Is it selectable?
-		_sprites.getSpriteImage(i)->drawAt(_engine->getGraphics()->getPlaneSurface(kFore), position.x, position.y, true);
+	for (int i = 0; i < _foreSprites.getSpriteCount(); ++i) {
+		Common::Point position = _foreSprites.getSpritePosition(i) - _origin;
+		_foreSprites.getSpriteImage(i)->drawAt(_engine->getGraphics()->getPlaneSurface(kFore), position.x, position.y, true);
 	}
 
 	drawButtons(getButtonAtPoint(_engine->getEventManager()->getMousePos()));
@@ -179,12 +176,12 @@ BoltRsp Scene::handleMsg(const BoltMsg &msg) {
 	return BoltRsp::kDone;
 }
 
-void Scene::loadBackPlane(Boltlib &boltlib, BltId planeId) {
-	loadPlane(_backPlane, boltlib, planeId);
-}
-
 void Scene::loadForePlane(Boltlib &boltlib, BltId planeId) {
 	loadPlane(_forePlane, boltlib, planeId);
+}
+
+void Scene::loadBackPlane(Boltlib &boltlib, BltId planeId) {
+	loadPlane(_backPlane, boltlib, planeId);
 }
 
 void Scene::loadColorCycles(Boltlib &boltlib, BltId id) {
@@ -195,8 +192,8 @@ void Scene::loadColorCycles(Boltlib &boltlib, BltId id) {
 	}
 }
 
-void Scene::loadSprites(Boltlib &boltlib, BltId id) {
-	_sprites.load(boltlib, id);
+void Scene::loadForeSprites(Boltlib &boltlib, BltId id) {
+	_foreSprites.load(boltlib, id);
 }
 
 Common::Point Scene::getOrigin() const {
@@ -207,8 +204,13 @@ void Scene::setOrigin(const Common::Point &origin) {
 	_origin = origin;
 }
 
-void Scene::setSpriteImageNum(int num, int imageNum) {
-	_sprites.setSpriteImageNum(num, imageNum);
+void Scene::setPlaneImageEnable(int plane, bool enableImage) {
+	Plane &p = (plane == kBack) ? _backPlane : _forePlane;
+	p.enableImage = enableImage;
+}
+
+BltSprites& Scene::getForeSprites() {
+	return _foreSprites;
 }
 
 Scene::Button::Button() : _enable(false), _userData(nullptr), _graphicsNum(0), _overrideGraphics(false)
@@ -352,16 +354,15 @@ void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sce
 	BltScene sceneInfo;
 	loadBltResource(sceneInfo, boltlib, sceneId);
 
+	scene.init(engine, sceneInfo.buttonCount);
 	scene.setOrigin(sceneInfo.origin);
 	scene.loadBackPlane(boltlib, sceneInfo.backPlaneId);
 	scene.loadForePlane(boltlib, sceneInfo.forePlaneId);
 	scene.loadColorCycles(boltlib, sceneInfo.colorCyclesId);
-	scene.loadSprites(boltlib, sceneInfo.spritesId);
+	scene.loadForeSprites(boltlib, sceneInfo.foreSpritesId);
 
 	BltButtonList buttons;
 	loadBltResourceArray(buttons, boltlib, sceneInfo.buttonsId);
-
-	scene.init(engine, sceneInfo.numButtons, sceneInfo.numSprites);
 
 	for (uint i = 0; i < buttons.size(); ++i) {
 		Scene::Button &button = scene.getButton(i);
