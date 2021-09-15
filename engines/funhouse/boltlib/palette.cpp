@@ -50,6 +50,7 @@ void applyColorCycles(Graphics *graphics, int plane, const BltColorCycles *cycle
 struct BltPaletteHeader {
 	static const uint32 kSize = 6;
 	BltPaletteHeader(Common::Span<const byte> src) {
+		// 0x0: flags (ignored by PC version)
 		first = src.getUint16BEAt(0x2);
 		last = src.getUint16BEAt(0x4);
 	}

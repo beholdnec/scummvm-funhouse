@@ -30,7 +30,7 @@ namespace Funhouse {
 	
 struct BltRect {
 	static const uint32 kType = kBltRect;
-	static const uint32 kSize = 8;
+	static const uint32 kSize = 0x8;
 	void load(Common::Span<const byte> src, Boltlib &bltFile) {
 		rect = Rect(src);
 	}
@@ -42,11 +42,11 @@ struct BltPopup {
 	static const uint32 kType = kBltPopup;
 	static const uint32 kSize = 0x12;
 	void load(Common::Span<const byte> src, Boltlib &bltFile) {
-		numButtons = src.getUint16BEAt(0);
-		bgImageId = BltId(src.getUint32BEAt(2));
-		paletteId = BltId(src.getUint32BEAt(6));
-		hotspotListId = BltId(src.getUint32BEAt(0xA));
-		spriteListId = BltId(src.getUint32BEAt(0xE));
+		numButtons = src.getUint16BEAt(0x0);
+		bgImageId = BltId(src.getUint32BEAt(0x2));
+		paletteId = BltId(src.getUint32BEAt(0x6));
+		hotspotListId = BltId(src.getUint32BEAt(0xa));
+		spriteListId = BltId(src.getUint32BEAt(0xe));
 	}
 
 	uint16 numButtons;
@@ -114,7 +114,7 @@ BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 			const BltSprites &sprites = (i == num) ? _buttons[i].hovered : _buttons[i].unhovered;
 			const Common::Point &spritePos = sprites.getSpritePosition(0);
 			const BltImage *spriteImage = sprites.getSpriteImage(0);
-			spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kBack), spritePos.x, spritePos.y, true);
+			spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kFore), spritePos.x, spritePos.y, true);
 		}
 		if (num != -1 && _buttons[num].enable) {
 			if (msg.type == BoltMsg::kClick) {
@@ -145,11 +145,11 @@ void PopupMenu::activate(ModeContext *ctx) {
 		// The original engine does something hacky here: Only colors 121-127 are applied.
 		static const int kFirstPopupColor = 121;
 		static const int kNumPopupColors = 7;
-		_game->getGraphics()->setPlanePalette(kBack, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
+		_game->getGraphics()->setPlanePalette(kFore, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
 
 		static const int kPopupX = -32;
 		static const int kPopupY = 168;
-		_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), kPopupX, kPopupY, true);
+		_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kFore), kPopupX, kPopupY, true);
 
 		_game->getGraphics()->markDirty();
 

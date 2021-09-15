@@ -120,7 +120,7 @@ public:
 
 private:
 	struct Plane {
-		bool enableImage = true; // XXX: Must be disabled on synch puzzles due to the portcullis puzzle mistakenly having an image attached
+		bool enableImage = true;
 		BltImage image;
 		BltPalette palette;
 		BltImage hotspots;

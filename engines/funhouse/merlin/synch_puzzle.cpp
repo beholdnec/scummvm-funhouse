@@ -115,7 +115,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	}
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
-	// XXX: The portcullis puzzle mistakenly has an image attached to the foreground in the PC version.
+	// XXX: The door puzzle mistakenly has an image attached to the foreground in the PC version.
 	// In the CD-i version, the image is null.
 	_scene.setPlaneImageEnable(kFore, false);
 }

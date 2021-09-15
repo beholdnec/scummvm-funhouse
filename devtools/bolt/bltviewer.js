@@ -1,8 +1,17 @@
 "use strict";
+// Runs in the renderer process
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const electron = require("electron");
+const electron_1 = require("electron");
 const fs = require("fs");
-const dialog = electron.remote.dialog;
 const audioCtx = new window.AudioContext();
 let bltAudioBuffer = null;
 let bltAudioSource = null;
@@ -329,7 +338,7 @@ function openBltFile(path) {
             const typeField = myReadU32(bltFile);
             const resRecord = {
                 type: typeField & 0x00FFFFFF,
-                compression: typeField >> 24,
+                flags: typeField >> 24,
                 size: myReadU32(bltFile),
                 position: myReadU32(bltFile)
             };
@@ -711,19 +720,15 @@ function openResource(resourceId) {
     const resTableEntry = dirTableEntry.resourceTable[resNum];
     mySeek(bltFile, resTableEntry.position);
     let data = null;
-    switch (resTableEntry.compression) {
-        case 0:
-            // BOLT-LZ
-            const compressedData = myRead(bltFile, dirTableEntry.compBufSize);
-            data = new Uint8Array(resTableEntry.size);
-            decompressBoltLZ(data, compressedData);
-            break;
-        case 8:
-            // Raw
-            data = myRead(bltFile, resTableEntry.size);
-            break;
-        default:
-            throw new Error(`Invalid compression type ${resTableEntry.compression}`);
+    if (resTableEntry.flags & 0x8) {
+        // Raw
+        data = myRead(bltFile, resTableEntry.size);
+    }
+    else {
+        // BOLT-LZ
+        const compressedData = myRead(bltFile, dirTableEntry.compBufSize);
+        data = new Uint8Array(resTableEntry.size);
+        decompressBoltLZ(data, compressedData);
     }
     for (let el of document.querySelectorAll('.is-highlighted')) {
         el.classList.remove('is-highlighted');
@@ -793,20 +798,13 @@ function onClick(target) {
 document.body.addEventListener('click', function (event) {
     onClick(event.target);
 });
-document.getElementById('open-file').addEventListener('click', function (event) {
-    dialog.showOpenDialog(null, {
-        filters: [
-            { name: 'BLT Files', extensions: ['BLT'] },
-            { name: 'All Files', extensions: ['*'] }
-        ],
-        properties: ['openFile']
-    }).then(function (files) {
-        if (files) {
-            openBltFile(files.filePaths[0]);
-            openResource(0x9901);
-        }
-    });
-});
+document.getElementById('open-file').addEventListener('click', (event) => __awaiter(void 0, void 0, void 0, function* () {
+    const path = yield electron_1.ipcRenderer.invoke('open-file');
+    if (path !== undefined) {
+        openBltFile(path);
+        openResource(0x9901);
+    }
+}));
 for (let el of document.querySelectorAll('.is-not-loaded')) {
     el.classList.add('is-shown');
 }

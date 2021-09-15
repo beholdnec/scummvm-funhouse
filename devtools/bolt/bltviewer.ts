@@ -1,7 +1,8 @@
-import * as electron from 'electron'
+// Runs in the renderer process
+
+import { ipcRenderer } from 'electron'
 import * as fs from 'fs'
 
-const dialog = electron.remote.dialog
 const audioCtx: AudioContext = new window.AudioContext()
 let bltAudioBuffer: AudioBuffer = null
 let bltAudioSource: AudioBufferSourceNode = null
@@ -59,7 +60,7 @@ type DirEntry = {
 }
 type ResEntry = {
   type: number,
-  compression: number,
+  flags: number,
   size: number,
   position: number
 }
@@ -374,7 +375,7 @@ function openBltFile(path: string) {
       const typeField = myReadU32(bltFile)
       const resRecord: ResEntry = {
         type: typeField & 0x00FFFFFF,
-        compression: typeField >> 24,
+        flags: typeField >> 24,
         size: myReadU32(bltFile),
         position: myReadU32(bltFile)
       }
@@ -818,19 +819,14 @@ function openResource(resourceId: number) {
 
   mySeek(bltFile, resTableEntry.position)
   let data = null
-  switch (resTableEntry.compression) {
-    case 0:
-      // BOLT-LZ
-      const compressedData = myRead(bltFile, dirTableEntry.compBufSize)
-      data = new Uint8Array(resTableEntry.size)
-      decompressBoltLZ(data, compressedData)
-      break
-    case 8:
-      // Raw
-      data = myRead(bltFile, resTableEntry.size)
-      break
-    default:
-      throw new Error(`Invalid compression type ${resTableEntry.compression}`)
+  if (resTableEntry.flags & 0x8) {
+    // Raw
+    data = myRead(bltFile, resTableEntry.size)
+  } else {
+    // BOLT-LZ
+    const compressedData = myRead(bltFile, dirTableEntry.compBufSize)
+    data = new Uint8Array(resTableEntry.size)
+    decompressBoltLZ(data, compressedData)
   }
 
   for (let el of document.querySelectorAll('.is-highlighted')) {
@@ -903,19 +899,12 @@ document.body.addEventListener('click', function(event: MouseEvent) {
   onClick(event.target)
 })
 
-document.getElementById('open-file').addEventListener('click', function (event: MouseEvent) {
-  dialog.showOpenDialog(null, {
-    filters: [
-      {name: 'BLT Files', extensions: ['BLT']},
-      {name: 'All Files', extensions: ['*']}
-    ],
-    properties: ['openFile']
-  }).then(function (files) {
-    if (files) {
-      openBltFile(files.filePaths[0])
-      openResource(0x9901)
-    }
-  })
+document.getElementById('open-file').addEventListener('click', async (event: MouseEvent) => {
+  const path = await ipcRenderer.invoke('open-file')
+  if (path !== undefined) {
+    openBltFile(path)
+    openResource(0x9901)
+  }
 })
 
 for (let el of document.querySelectorAll('.is-not-loaded')) {
