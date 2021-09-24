@@ -38,15 +38,15 @@ struct BltSlidingPuzzleDifficulties { // type 44
 	static const uint32 kType = kBltSlidingPuzzleDifficulties;
 	static const uint kSize = 0xC;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		pieceCount[0] = src.getUint16BEAt(0x0);
+		tileCount[0] = src.getUint16BEAt(0x0);
 		difficulty[0] = BltShortId(src.getUint16BEAt(0x2));
-		pieceCount[1] = src.getUint16BEAt(0x4);
+		tileCount[1] = src.getUint16BEAt(0x4);
 		difficulty[1] = BltShortId(src.getUint16BEAt(0x6));
-		pieceCount[2] = src.getUint16BEAt(0x8);
+		tileCount[2] = src.getUint16BEAt(0x8);
 		difficulty[2] = BltShortId(src.getUint16BEAt(0xA));
 	}
 
-	uint16 pieceCount[3];
+	uint16 tileCount[3];
 	BltShortId difficulty[3];
 };
 
@@ -80,24 +80,32 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltSlidingPuzzleDifficulties slidingPuzzleDiffs;
 	loadBltResource(slidingPuzzleDiffs, boltlib, puzzleInfoId);
-
+	int tileCount = slidingPuzzleDiffs.tileCount[difficultyLevel];
 	BltId difficultyId = slidingPuzzleDiffs.difficulty[difficultyLevel];
 
 	BltResourceList difficultyInfo;
 	loadBltResourceArray(difficultyInfo, boltlib, difficultyId); // Ex: 3A34, 3B34, 3C34
+	_solutionTileSprites = loadBltSprites(boltlib, difficultyInfo[0].value);
 	BltId sceneId        = difficultyInfo[1].value;
 	BltId initialStateId = difficultyInfo[2 + variation].value;
 	BltId moveTablesId   = difficultyInfo[6 + variation].value;
 
 	loadBltResourceArray(_initialState, boltlib, initialStateId);
 
-	_pieces.resize(slidingPuzzleDiffs.pieceCount[difficultyLevel]);
-
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
+
+	_tileSprites.reset(new Common::Array<SharedSprite>(tileCount));
+	_oldTileSprites.reset(new Common::Array<SharedSprite>(tileCount));
+	for (int i = 0; i < tileCount; ++i) {
+		(*_tileSprites)[i].reset(new Sprite);
+		(*_tileSprites)[i]->pos = (*_solutionTileSprites)[i]->pos;
+		(*_oldTileSprites)[i].reset(new Sprite);
+		(*_oldTileSprites)[i]->pos = (*_solutionTileSprites)[i]->pos;
+	}
 
 	BltResourceList moveTablesRes;
 	loadBltResourceArray(moveTablesRes, boltlib, moveTablesId);
-	for (int i = 0; i < kNumButtons * 2; ++i) {
+	for (int i = 0; i < kMoveCount; ++i) {
 		loadBltResourceArray(_moveTables[i], boltlib, moveTablesRes[i].value);
 	}
 
@@ -106,7 +114,7 @@ void SlidingPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 void SlidingPuzzle::enter() {
 	_scene.enter();
-	setSprites();
+	draw();
 	idleMode();
 }
 
@@ -123,40 +131,38 @@ void SlidingPuzzle::handleReset() {
 void SlidingPuzzle::handleUndo() {
 	// Only one move can be undone. When an undo is requested, the game swaps
 	// the current and previous state.
-	Common::Array<int> temp = _pieces;
-	_pieces = _previousPieces;
-	_previousPieces = temp;
+	SWAP(_oldTileSprites, _tileSprites);
 	// TODO: play undo sound
-	setSprites();
+	draw();
 }
 
 void SlidingPuzzle::reset() {
-	_pieces.resize(_initialState.size());
-	for (uint i = 0; i < _pieces.size(); ++i) {
-		_pieces[i] = _initialState[i].value;
+	for (int i = 0; i < _initialState.size(); ++i) {
+		(*_tileSprites)[i]->image = (*_solutionTileSprites)[_initialState[i].value]->image;
+		(*_oldTileSprites)[i]->image = (*_solutionTileSprites)[_initialState[i].value]->image;
 	}
-	_previousPieces = _pieces;
 	_game->setUndoAvailable(false);
-	setSprites();
+	draw();
 }
 
-void SlidingPuzzle::move(int moveIdx) {
-	_previousPieces = _pieces;
-	for (uint i = 0; i < _pieces.size(); ++i) {
-		_pieces[i] = _previousPieces[_moveTables[moveIdx][i].value];
+bool SlidingPuzzle::move(int moveIdx) {
+	bool win = true;
+	for (int i = 0; i < _solutionTileSprites->size(); ++i) {
+		int dst = _moveTables[moveIdx][i].value;
+		(*_oldTileSprites)[dst]->image = (*_tileSprites)[i]->image;
+		if ((*_oldTileSprites)[dst]->image != (*_solutionTileSprites)[dst]->image) {
+			win = false;
+		}
 	}
+	SWAP(_oldTileSprites, _tileSprites);
 	_game->setUndoAvailable(true);
-	setSprites();
+	draw();
+	return win;
 }
 
-void SlidingPuzzle::setSprites() {
-	for (int i = 0; i < _pieces.size(); ++i) {
-		// FIXME
-		//_scene.getForeSprites().setSpriteImageNum(i, _pieces[i]);
-	}
-
-	_scene.redraw();
-	_game->getGraphics()->markDirty();
+void SlidingPuzzle::draw() {
+	_scene.redraw((SceneDrawFlags)(kDrawBack | kDrawFore | kDrawButtons));
+	drawSprites(_game->getEngine()->getGraphics()->getPlaneSurface(kFore), _tileSprites, true, _scene.getOrigin());
 }
 
 void SlidingPuzzle::idleMode() {
@@ -179,17 +185,8 @@ void SlidingPuzzle::idleMode() {
 }
 
 BoltRsp SlidingPuzzle::handleButtonClick(int num) {
-	if (num >= 0 && num < kNumButtons * 2) {
-		move(num);
-
-		bool win = true;
-		for (uint i = 0; i < _pieces.size(); ++i) {
-			if (_pieces[i] != i) {
-				win = false;
-				break;
-			}
-		}
-
+	if (num >= 0 && num < kMoveCount) {
+		bool win = move(num);
 		if (win) {
 			_game->branchWin();
 			return BoltRsp::kDone;
