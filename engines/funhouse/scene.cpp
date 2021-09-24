@@ -80,7 +80,8 @@ struct BltButtonGraphicElement { // type 30
 	}
 
 	uint16 type;
-	BltId alternateId; // Holds palette mods when type==kSprites, or sprites when type==kPaletteMod
+	BltId alternateId; // Holds palette mods when type==kSprites, or sprites when type==kPaletteMod.
+	                   // Used to redraw button when instance is changed.
 	BltId hoveredId;
 	BltId idleId;
 };
@@ -123,6 +124,8 @@ void Scene::init(FunhouseEngine *engine, int buttonCount) {
 	_buttons.resize(buttonCount);
 	_currButtonInstances.resize(buttonCount);
 	Common::fill(_currButtonInstances.begin(), _currButtonInstances.end(), -1);
+	_currButtonStates.resize(buttonCount);
+	Common::fill(_currButtonStates.begin(), _currButtonStates.end(), false);
 }
 
 void Scene::enter() {
@@ -313,16 +316,16 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 	return -1;
 }
 
-void Scene::drawButton(const Button& button) {
+void Scene::drawButton(const Button& button, bool drawAlternate) {
 	if (button._enable && button._graphicsSet) {
 		const ButtonGraphics &buttonGraphics = (*button._graphicsSet)[button._instance];
-		drawButtonGraphics(buttonGraphics, button._state, button._plane);
+		drawButtonGraphics(buttonGraphics, drawAlternate, button._state, button._plane);
 	}
 }
 
-void Scene::drawButtonGraphics(const ButtonGraphics &buttonGraphics, bool state, int plane) {
+void Scene::drawButtonGraphics(const ButtonGraphics &buttonGraphics, bool drawAlternate, bool state, int plane) {
 	if (buttonGraphics.graphicsType == kPaletteMods) {
-		if (buttonGraphics.alternateSprite) {
+		if (drawAlternate && buttonGraphics.alternateSprite) {
 			SharedImage spriteImage = buttonGraphics.alternateSprite->image;
 			if (spriteImage) {
 				Common::Point pos = buttonGraphics.alternateSprite->pos - _origin;
@@ -332,7 +335,7 @@ void Scene::drawButtonGraphics(const ButtonGraphics &buttonGraphics, bool state,
 		const BltPaletteMods &paletteMod = state ? buttonGraphics.hoveredPaletteMods : buttonGraphics.idlePaletteMods;
 		applyPaletteMod(_engine->getGraphics(), plane, paletteMod, 0);
 	} else if (buttonGraphics.graphicsType == kSprite) {
-		if (!buttonGraphics.alternatePaletteMods.empty()) {
+		if (drawAlternate && !buttonGraphics.alternatePaletteMods.empty()) {
 			applyPaletteMod(_engine->getGraphics(), plane, buttonGraphics.alternatePaletteMods, 0);
 		}
 		SharedSprite sprite = state ? buttonGraphics.hoveredSprite : buttonGraphics.idleSprite;
@@ -348,8 +351,13 @@ void Scene::drawButtonGraphics(const ButtonGraphics &buttonGraphics, bool state,
 void Scene::updateButtons(const Common::Point *cursor) {
 	for (int i = 0; i < (int)_buttons.size(); ++i) {
 		if (_buttons[i]._instance != _currButtonInstances[i]) {
-			drawButton(_buttons[i]);
+			drawButton(_buttons[i], true);
 			_currButtonInstances[i] = _buttons[i]._instance;
+			_currButtonStates[i] = _buttons[i]._state;
+		}
+		if (_buttons[i]._state != _currButtonStates[i]) {
+			drawButton(_buttons[i], false);
+			_currButtonStates[i] = _buttons[i]._state;
 		}
 	}
 
@@ -358,11 +366,13 @@ void Scene::updateButtons(const Common::Point *cursor) {
 		if (buttonAtCursor != _hoveredButton) {
 			if (_hoveredButton >= 0) {
 				_buttons[_hoveredButton].setState(false);
-				drawButton(_buttons[_hoveredButton]);
+				_currButtonStates[_hoveredButton] = false;
+				drawButton(_buttons[_hoveredButton], false);
 			}
 			if (buttonAtCursor >= 0) {
 				_buttons[buttonAtCursor].setState(true);
-				drawButton(_buttons[buttonAtCursor]);
+				_currButtonStates[buttonAtCursor] = true;
+				drawButton(_buttons[buttonAtCursor], false);
 			}
 			_hoveredButton = buttonAtCursor;
 		}
@@ -373,7 +383,7 @@ void Scene::updateButtons(const Common::Point *cursor) {
 
 void Scene::drawAllButtons() {
 	for (int i = 0; i < (int)_buttons.size(); ++i) {
-		drawButton(_buttons[i]);
+		drawButton(_buttons[i], true);
 	}
 }
 

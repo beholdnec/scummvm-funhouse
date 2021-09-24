@@ -133,8 +133,8 @@ private:
 	void loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId);
 	// Return the button at a given point, or -1 if there is no button.
 	int getButtonAtPoint(const Common::Point &pt);
-	void drawButton(const Button &button);
-	void drawButtonGraphics(const ButtonGraphics &buttonGraphics, bool state, int plane);
+	void drawButton(const Button &button, bool drawAlternate);
+	void drawButtonGraphics(const ButtonGraphics &buttonGraphics, bool drawAlternate, bool state, int plane);
 	void updateButtons(const Common::Point *cursor);
 	void drawAllButtons();
 
@@ -146,6 +146,7 @@ private:
 	Common::ScopedPtr<BltColorCycles> _colorCycles;
 
 	Common::Array<int> _currButtonInstances;
+	Common::Array<bool> _currButtonStates;
 	Common::Array<Button> _buttons;
 	SharedSpriteList _foreSprites;
 
