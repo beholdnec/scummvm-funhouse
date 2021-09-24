@@ -133,8 +133,10 @@ private:
 	void loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId);
 	// Return the button at a given point, or -1 if there is no button.
 	int getButtonAtPoint(const Common::Point &pt);
-	void drawButton(const ButtonGraphics &buttonGraphics, bool state, int plane);
-	void drawButtons(const Common::Point *cursor);
+	void drawButton(const Button &button);
+	void drawButtonGraphics(const ButtonGraphics &buttonGraphics, bool state, int plane);
+	void updateButtons(const Common::Point *cursor);
+	void drawAllButtons();
 
 	FunhouseEngine *_engine;
 
@@ -143,6 +145,7 @@ private:
 	Plane _backPlane;
 	Common::ScopedPtr<BltColorCycles> _colorCycles;
 
+	Common::Array<int> _currButtonInstances;
 	Common::Array<Button> _buttons;
 	SharedSpriteList _foreSprites;
 

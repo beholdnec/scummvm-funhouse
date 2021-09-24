@@ -121,6 +121,8 @@ Scene::Scene() : _engine(nullptr)
 void Scene::init(FunhouseEngine *engine, int buttonCount) {
 	_engine = engine;
 	_buttons.resize(buttonCount);
+	_currButtonInstances.resize(buttonCount);
+	Common::fill(_currButtonInstances.begin(), _currButtonInstances.end(), -1);
 }
 
 void Scene::enter() {
@@ -153,7 +155,7 @@ void Scene::redraw(SceneDrawFlags flags) {
 	}
 
 	if (flags & kDrawButtons) {
-		drawButtons(nullptr);
+		drawAllButtons();
 	}
 
 	_engine->getGraphics()->markDirty();
@@ -162,7 +164,7 @@ void Scene::redraw(SceneDrawFlags flags) {
 BoltRsp Scene::handleMsg(const BoltMsg &msg) {
 	switch (msg.type) {
 	case BoltMsg::kHover: {
-		drawButtons(&msg.point);
+		updateButtons(&msg.point);
 		break;
 	}
 
@@ -311,7 +313,14 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 	return -1;
 }
 
-void Scene::drawButton(const ButtonGraphics &buttonGraphics, bool state, int plane) {
+void Scene::drawButton(const Button& button) {
+	if (button._enable && button._graphicsSet) {
+		const ButtonGraphics &buttonGraphics = (*button._graphicsSet)[button._instance];
+		drawButtonGraphics(buttonGraphics, button._state, button._plane);
+	}
+}
+
+void Scene::drawButtonGraphics(const ButtonGraphics &buttonGraphics, bool state, int plane) {
 	if (buttonGraphics.graphicsType == kPaletteMods) {
 		if (buttonGraphics.alternateSprite) {
 			SharedImage spriteImage = buttonGraphics.alternateSprite->image;
@@ -336,27 +345,36 @@ void Scene::drawButton(const ButtonGraphics &buttonGraphics, bool state, int pla
 	}
 }
 
-void Scene::drawButtons(const Common::Point *cursor) {
+void Scene::updateButtons(const Common::Point *cursor) {
+	for (int i = 0; i < (int)_buttons.size(); ++i) {
+		if (_buttons[i]._instance != _currButtonInstances[i]) {
+			drawButton(_buttons[i]);
+			_currButtonInstances[i] = _buttons[i]._instance;
+		}
+	}
+
 	if (cursor) {
 		int buttonAtCursor = getButtonAtPoint(*cursor);
 		if (buttonAtCursor != _hoveredButton) {
 			if (_hoveredButton >= 0) {
 				_buttons[_hoveredButton].setState(false);
+				drawButton(_buttons[_hoveredButton]);
 			}
 			if (buttonAtCursor >= 0) {
 				_buttons[buttonAtCursor].setState(true);
+				drawButton(_buttons[buttonAtCursor]);
 			}
 			_hoveredButton = buttonAtCursor;
 		}
 	}
 
-	for (int i = 0; i < (int)_buttons.size(); ++i) {
-		if (_buttons[i]._enable && _buttons[i]._graphicsSet) {
-			const ButtonGraphics &buttonGraphics = (*_buttons[i]._graphicsSet)[_buttons[i]._instance];
-			drawButton(buttonGraphics, _buttons[i]._state, _buttons[i]._plane);
-		}
-	}
 	_engine->getGraphics()->markDirty();
+}
+
+void Scene::drawAllButtons() {
+	for (int i = 0; i < (int)_buttons.size(); ++i) {
+		drawButton(_buttons[i]);
+	}
 }
 
 void Scene::loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId) {
