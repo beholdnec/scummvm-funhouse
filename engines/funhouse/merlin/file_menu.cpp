@@ -119,12 +119,12 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 
 void FileMenu::setButtons() {
 	for (int i = 0; i < kProfileCount; ++i) {
-		_scene.getButton(kFirstFileButton + i).setGraphics(i == _game->getProfile() ? 1 : 0);
+		_scene.getButton(kFirstFileButton + i).setGraphicsIdx(i == _game->getProfile() ? 1 : 0);
 	}
 
 	static const int kPlayButton = 1;
 	if (_game->getProfile() != -1) {
-		_scene.getButton(kPlayButton).setGraphics(1);
+		_scene.getButton(kPlayButton).setGraphicsIdx(1);
 	}
 
 	_scene.redraw();

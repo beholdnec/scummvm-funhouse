@@ -50,6 +50,13 @@ Type *uninitialized_copy(In first, In last, Type *dst) {
 #ifdef USE_CXX11
 template<class In, class Type>
 Type *uninitialized_move(In first, In last, Type *dst) {
+	// FIXME: Verify this is correct when dst contains garbage data (i.e. is uninitialized).
+	// The issue is that move constructors often work by swapping the two objects' data.
+	// For example, std::unique_ptr's move constructor will swap the current and new
+	// pointers, so the current unique_ptr takes ownership of the other unique_ptr's memory,
+	// and the other unique_ptr takes the old memory, whereupon it will be deleted when
+	// it goes out of scope.
+	// How this interacts with in-place new... is a mystery!
 	while (first != last)
 		new ((void *)dst++) Type(std::move(*first++));
 	return dst;

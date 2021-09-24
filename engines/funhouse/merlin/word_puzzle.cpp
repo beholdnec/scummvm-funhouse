@@ -29,10 +29,12 @@ struct BltWordPuzzleInfo {
 	static const uint kSize = 0x4;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		variationSlot = src.getUint8At(0x0);
+		lineHeight = src.getUint8At(0x1);
 		centerX = src.getInt16BEAt(0x2);
 	}
 
 	uint8 variationSlot;
+	uint8 lineHeight;
 	int16 centerX;
 };
 	
@@ -40,13 +42,13 @@ struct BltWordPuzzleVariantInfo {
 	static const uint32 kType = kBltWordPuzzleVariantInfo;
 	static const uint kSize = 0x4;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		numChars = src.getUint8At(0);
-		numLines = src.getUint8At(1);
+		charCount = src.getUint8At(0x0);
+		lineCount = src.getUint8At(0x1);
 		// TODO: more fields
 	}
 
-	uint8 numChars;
-	uint8 numLines;
+	uint8 charCount;
+	uint8 lineCount;
 };
 
 void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
@@ -69,12 +71,14 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltId normalSpriteListId      = resourceList[2].value;  // Ex: 61B4
 	BltId highlightedSpriteListId = resourceList[3].value;  // Ex: 61B5
 	BltId selectedSpriteListId    = resourceList[4].value;  // Ex: 61B6
+	BltId glyphButtonGraphicsId   = resourceList[5].value; // Ex: 61D2
 	BltId charWidthsId            = resourceList[10].value; // Ex: 61B3
 	BltId resetSoundId            = resourceList[11].value; // Ex: 61D9
 
 	BltWordPuzzleInfo puzzleInfo;
 	loadBltResource(puzzleInfo, boltlib, infoId);
 	_centerX = puzzleInfo.centerX;
+	_lineHeight = puzzleInfo.lineHeight;
 
 	int difficultyLevel = _game->getDifficulty(kWordsDifficulty);
 	int variation = (_game->getVariationSlot(puzzleInfo.variationSlot) + 1) % 4;
@@ -82,10 +86,22 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_resetSound.load(boltlib, resetSoundId);
 
-	_normalSprites.load(boltlib, normalSpriteListId);
-	_highlightedSprites.load(boltlib, highlightedSpriteListId);
-	_selectedSprites.load(boltlib, selectedSpriteListId);
+	_normalSprites = loadBltSprites(boltlib, normalSpriteListId);
+	_highlightedSprites = loadBltSprites(boltlib, highlightedSpriteListId);
+	_selectedSprites = loadBltSprites(boltlib, selectedSpriteListId);
+
 	loadBltResourceArray(_charWidths, boltlib, charWidthsId);
+
+	BltResourceList glyphButtonGraphicsIds;
+	loadBltResourceArray(glyphButtonGraphicsIds, boltlib, glyphButtonGraphicsId);
+	for (int i = 0; i < kGlyphCount - 1; ++i) {
+		_glyphButtonGraphics[i] = loadButtonGraphics(boltlib, glyphButtonGraphicsIds[i].value);
+		(*_glyphButtonGraphics[i])[0].idleSprite = (*_normalSprites)[i];
+		(*_glyphButtonGraphics[i])[0].hoveredSprite = (*_highlightedSprites)[i];
+		(*_glyphButtonGraphics[i])[1].idleSprite = (*_selectedSprites)[i];
+		(*_glyphButtonGraphics[i])[1].hoveredSprite = (*_selectedSprites)[i];
+		// Do not set glyph 52 (space)
+	}
 
 	BltU16Values difficulties;
 	loadBltResourceArray(difficulties, boltlib, difficultiesId);
@@ -101,14 +117,17 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltWordPuzzleVariantInfo variantInfo;
 	loadBltResource(variantInfo, boltlib, variantInfoId);
-	_numChars = variantInfo.numChars;
-	_numLines = variantInfo.numLines;
+	_charCount = variantInfo.charCount;
+	_lineCount = variantInfo.lineCount;
 
 	loadBltResourceArray(_lineLengths, boltlib, lineLengthsId);
 	loadBltResourceArray(_lineYPositions, boltlib, lineYPositionsId);
 	loadBltResourceArray(_solution, boltlib, solutionId);
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
+
+	Common::RandomSource random_("RuneA");
+	_runeA = random_.getRandomNumber(kLetterCount - 1);
 
 	reset();
 }
@@ -156,66 +175,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 		return BoltRsp::kDone;
 	}
 
-	int selectedLetter = glyphToLetter(_selectedGlyph);
-	int selectedRune = glyphToRune(_selectedGlyph);
-
-	int clickedLetter = -1;
-	if (num >= 0 && num < kNumLetters) {
-		clickedLetter = num;
-	}
-
-	int clickedRune = -1;
-	if (num >= kNumLetters) {
-		clickedRune = reinterpret_cast<intptr_t>(_scene.getButton(num).getUserData());
-	}
-
-	// TODO: implement unselecting
-	// TODO: prevent assigning a letter to more than one rune
-	// TODO: assigned letters should disappear from the box
-	if (_selectedGlyph == -1) {
-		if (num >= 0 && num < kNumLetters) {
-			// Select letter
-			_selectedGlyph = letterToGlyph(num);
-		}
-		else {
-			// Select rune
-			// Note that a rune will be selected even if the player clicks on a rune that has been
-			// assigned to a letter.
-			_selectedGlyph = runeToGlyph(reinterpret_cast<intptr_t>(_scene.getButton(num).getUserData()));
-		}
-	}
-	else if (selectedLetter != -1) {
-		if (clickedRune != -1) {
-			// Assign selected letter to rune
-			mapRuneAndLetter(clickedRune, selectedLetter);
-			_selectedGlyph = -1;
-		}
-		else if (clickedLetter != -1) {
-			// Select another letter
-			_selectedGlyph = letterToGlyph(clickedLetter);
-		}
-	}
-	else if (selectedRune != -1) {
-		if (clickedLetter != -1) {
-			// Assign selected rune to letter
-			mapRuneAndLetter(selectedRune, clickedLetter);
-			_selectedGlyph = -1;
-		}
-		else if (clickedRune != -1) {
-			if (selectedRune != clickedRune && (_runeToLetterMap[selectedRune] != -1 || _runeToLetterMap[clickedRune] != -1)) {
-				// Swap rune assignments (FIXME: is this correct behavior?)
-				int oldSelectedRuneLetter = _runeToLetterMap[selectedRune];
-				int oldClickedRuneLetter = _runeToLetterMap[clickedRune];
-				mapRuneAndLetter(selectedRune, oldClickedRuneLetter);
-				mapRuneAndLetter(clickedRune, oldSelectedRuneLetter);
-				_selectedGlyph = -1;
-			}
-			else {
-				// Select another rune
-				_selectedGlyph = runeToGlyph(clickedRune);
-			}
-		}
-	}
+	// TODO: implement
 
 	setupButtons();
 
@@ -228,117 +188,74 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 
 void WordPuzzle::reset() {
 	_selectedGlyph = -1;
-	for (int i = 0; i < kNumLetters; ++i) {
-		_runeToLetterMap[i] = -1;
-		_letterToRuneMap[i] = -1;
+
+	for (int i = 0; i < kLetterCount; ++i) {
+		_rack[i] = true;
+	}
+
+	_board.resize(_charCount);
+	for (int i = 0; i < _charCount; ++i) {
+		if (_solution[i].value == kSpace) {
+			_board[i] = kSpace;
+		} else {
+			_board[i] = kLetterCount + (_solution[i].value + _runeA) % kLetterCount;
+		}
 	}
 }
 
-int WordPuzzle::glyphToRune(int glyph) const {
-	if (glyph >= kNumLetters && glyph < kNumLetters + kNumLetters) {
-		return glyph - kNumLetters;
-	}
+void WordPuzzle::computeBoardRects() {
+	_boardRects.resize(_charCount);
 
-	return -1;
-}
-
-int WordPuzzle::glyphToLetter(int glyph) const {
-	if (glyph >= 0 && glyph < kNumLetters) {
-		return glyph;
-	}
-
-	return -1;
-}
-
-int WordPuzzle::runeToGlyph(int rune) const {
-	assert(rune >= 0 && rune < kNumLetters);
-	return kNumLetters + rune;
-}
-
-int WordPuzzle::letterToGlyph(int letter) const {
-	assert(letter >= 0 && letter < kNumLetters);
-	return letter;
-}
-
-void WordPuzzle::mapRuneAndLetter(int rune, int letter) {
-	assert(rune == -1 || (rune >= 0 && rune < kNumLetters));
-	assert(letter == -1 || (letter >= 0 && letter < kNumLetters));
-
-	// Remove existing mappings
-	if (rune != -1 && _runeToLetterMap[rune] != -1) {
-		_letterToRuneMap[_runeToLetterMap[rune]] = -1;
-		_runeToLetterMap[rune] = -1;
-	}
-	if (letter != -1 && _letterToRuneMap[letter] != -1) {
-		_runeToLetterMap[_letterToRuneMap[letter]] = -1;
-		_letterToRuneMap[letter] = -1;
-	}
-
-	// Add new mapping
-	if (rune != -1) {
-		_runeToLetterMap[rune] = letter;
-	}
-	if (letter != -1) {
-		_letterToRuneMap[letter] = rune;
-	}
-}
-
-void WordPuzzle::setupButtons() {
 	int curChar = 0;
-	for (int lineNum = 0; lineNum < _numLines; ++lineNum) {
+	for (int lineNum = 0; lineNum < _lineCount; ++lineNum) {
 		int lineLength = _lineLengths[lineNum].value;
 
 		int lineLengthInPixels = 0;
 		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
-			int ch = _solution[curChar + charNumber].value;
-			if (ch >= 0 && ch < kNumLetters) {
-				int glyph = _runeToLetterMap[ch];
-				if (glyph == -1) {
-					glyph = runeToGlyph(ch);
-				}
-				lineLengthInPixels += _charWidths[glyph].value;
-			} else {
-				lineLengthInPixels += _charWidths[ch].value;
-			}
+			int glyph = _board[curChar + charNumber];
+			lineLengthInPixels += _charWidths[glyph].value;
 		}
 
 		int x = _centerX - lineLengthInPixels / 2;
 		int y = _lineYPositions[lineNum].value;
 
 		for (int charNum = 0; charNum < lineLength; ++charNum) {
-			int ch = _solution[curChar].value;
-			if (ch >= 0 && ch < kNumLetters) {
-				int glyph = _runeToLetterMap[ch];
-				if (glyph == -1) {
-					glyph = runeToGlyph(ch);
-				}
-				BltImage* selectedSprite = _selectedSprites.getImageFromSet(glyph);
-				BltImage* highlightedSprite = (_selectedGlyph == glyph) ? selectedSprite : _highlightedSprites.getImageFromSet(glyph);
-				BltImage* normalSprite = (_selectedGlyph == glyph) ? selectedSprite : _normalSprites.getImageFromSet(glyph);
-				Scene::Button &button = _scene.getButton(kNumLetters + curChar);
-				button.overrideGraphics(Common::Point(x, y), highlightedSprite, normalSprite);
-				button.setUserData(reinterpret_cast<void*>(ch));
-				x += _charWidths[glyph].value;
-			} else {
-				x += _charWidths[ch].value;
-			}
+			int glyph = _board[curChar];
+
+			_boardRects[curChar].left = x;
+			_boardRects[curChar].top = y;
+			_boardRects[curChar].right = x + _charWidths[glyph].value - 1;
+			_boardRects[curChar].bottom = y + _lineHeight - 1;
+
+			x += _charWidths[glyph].value;
 
 			++curChar;
 		}
 	}
+}
 
-	// Redraw entire scene (FIXME: avoid doing this)
+void WordPuzzle::setupButtons() {
+	// Setup board buttons
+	computeBoardRects();
+	for (int i = 0; i < _charCount; ++i) {
+		Scene::Button &button = _scene.getButton(kLetterCount + i);
+		button.setHotspot(Scene::HotspotType::kRect, _boardRects[i]);
+		if (_board[i] == kSpace) {
+			button.setEnable(false);
+			button.setGraphics(nullptr);
+		} else {
+			button.setEnable(true);
+			button.setGraphics(_glyphButtonGraphics[_board[i]]);
+		}
+	}
+
 	_scene.redraw();
 }
 
 bool WordPuzzle::isSolved() {
 	for (int i = 0; i < _solution.size(); ++i) {
-		// The puzzle is solved when all runes in the solution are mapped to their corresponding letters
-		int ch = _solution[i].value;
-		if (ch >= 0 && ch < kNumLetters) {
-			if (_runeToLetterMap[ch] != ch) {
-				return false;
-			}
+		if (_board[i] != _solution[i].value) {
+			return false;
 		}
 	}
 

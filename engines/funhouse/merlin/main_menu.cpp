@@ -49,7 +49,7 @@ void MainMenu::init(MerlinGame *game, Boltlib &boltlib, BltId resId) {
 }
 
 void MainMenu::enter() {
-  _scene.enter();
+	_scene.enter();
 }
 
 BoltRsp MainMenu::handleMsg(const BoltMsg &msg) {

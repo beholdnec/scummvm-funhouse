@@ -39,38 +39,19 @@ struct BltSpriteElement { // type 27
 
 typedef Common::Array<BltSpriteElement> BltSpriteList;
 
-void BltSprites::load(Boltlib &boltlib, BltId id) {
+SharedSpriteList loadBltSprites(Boltlib &boltlib, BltId id) {
 	BltSpriteList spriteList;
 	loadBltResourceArray(spriteList, boltlib, id);
 
-	_images.resize(spriteList.size());
-	_sprites.resize(spriteList.size());
-	for (uint i = 0; i < _sprites.size(); ++i) {
-		_images[i].load(boltlib, spriteList[i].imageId);
-		_sprites[i].pos = spriteList[i].pos;
-		_sprites[i].imageNum = i;
+	SharedSpriteList result(new Common::Array<SharedSprite>(spriteList.size()));
+	for (uint i = 0; i < spriteList.size(); ++i) {
+		(*result)[i].reset(new Sprite);
+		(*result)[i]->pos = spriteList[i].pos;
+		(*result)[i]->image.reset(new BltImage);
+		(*result)[i]->image->load(boltlib, spriteList[i].imageId);
 	}
-}
 
-int BltSprites::getSpriteCount() const {
-	return _sprites.size();
-}
-
-const Common::Point& BltSprites::getSpritePosition(int num) const {
-	return _sprites[num].pos;
-}
-
-const BltImage* BltSprites::getSpriteImage(int num) const {
-	return &_images[_sprites[num].imageNum];
-}
-
-void BltSprites::setSpriteImageNum(int i, int imageNum) {
-	assert(imageNum >= 0 && imageNum < _images.size());
-	_sprites[i].imageNum = imageNum;
-}
-
-BltImage* BltSprites::getImageFromSet(int num) {
-	return &_images[num];
+	return result;
 }
 
 } // End of namespace Funhouse

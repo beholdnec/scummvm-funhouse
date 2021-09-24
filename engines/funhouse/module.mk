@@ -10,6 +10,7 @@ MODULE_OBJS := \
 	scene.o \
 	util.o \
 	boltlib/boltlib.o \
+	boltlib/image.o \
 	boltlib/palette.o \
 	boltlib/sound.o \
 	boltlib/sprites.o \

@@ -103,7 +103,7 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	for (uint i = 0; i < _items.size(); ++i) {
 		_items[i].state = _initial[i].value;
 		_items[i].solution = solution[i].value;
-		_items[i].sprites.load(boltlib, itemList[i].value);
+		_items[i].sprites = loadBltSprites(boltlib, itemList[i].value);
 
 		BltResourceList moveset;
 		loadBltResourceArray(moveset, boltlib, movesets[i].value);
@@ -148,10 +148,9 @@ void SynchPuzzle::redraw() {
 
 	for (uint i = 0; i < _items.size(); ++i) {
 		const Item& item = _items[i];
-		const Common::Point& spritePos = item.sprites.getSpritePosition(item.state);
-		const BltImage* spriteImage = item.sprites.getSpriteImage(item.state);
-		const Common::Point& origin = _scene.getOrigin();
-		spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kFore), spritePos.x - origin.x, spritePos.y - origin.y, true);
+		SharedSprite sprite = (*item.sprites)[item.state];
+		Common::Point pos = sprite->pos - _scene.getOrigin();
+		sprite->image->drawAt(_game->getGraphics()->getPlaneSurface(kFore), pos.x, pos.y, true);
 	}
 }
 
@@ -203,7 +202,7 @@ BoltRsp SynchPuzzle::driveTransition() {
 				--_moveAgenda[i].count;
 
 				++item.state;
-				if (item.state >= item.sprites.getSpriteCount()) {
+				if (item.state >= item.sprites->size()) {
 					item.state = 0;
 				}
 			} else {
@@ -211,7 +210,7 @@ BoltRsp SynchPuzzle::driveTransition() {
 
 				--item.state;
 				if (item.state < 0) {
-					item.state = item.sprites.getSpriteCount() - 1;
+					item.state = item.sprites->size() - 1;
 				}
 			}
 
@@ -241,10 +240,9 @@ int SynchPuzzle::getItemAtPosition(const Common::Point &pt) {
 
 	for (int i = 0; i < _items.size(); ++i) {
 		const Item &item = _items[i];
-		const Common::Point spritePos = item.sprites.getSpritePosition(item.state);
-		const BltImage* spriteImage = item.sprites.getSpriteImage(item.state);
-		const Common::Point &origin = _scene.getOrigin();
-		if (spriteImage->query(pt.x - (spritePos.x - origin.x), pt.y - (spritePos.y - origin.y)) != 0) {
+		SharedSprite sprite = (*item.sprites)[item.state];
+		Common::Point pos = sprite->pos - _scene.getOrigin();
+		if (sprite->image->query(pt.x - pos.x, pt.y - pos.y) != 0) {
 			result = i;
 			// Don't break early. All items must be queried, since later items
 			// may overlap earlier items.

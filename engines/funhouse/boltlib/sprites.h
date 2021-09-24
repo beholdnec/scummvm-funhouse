@@ -23,29 +23,19 @@
 #ifndef FUNHOUSE_BOLTLIB_SPRITES_H
 #define FUNHOUSE_BOLTLIB_SPRITES_H
 
-#include "funhouse/graphics.h"
+#include "funhouse/boltlib/image.h"
 
 namespace Funhouse {
 
-class BltSprites {
-public:
-	void load(Boltlib &boltlib, BltId id);
-
-	int getSpriteCount() const;
-	const Common::Point& getSpritePosition(int num) const;
-	const BltImage* getSpriteImage(int num) const;
-	void setSpriteImageNum(int num, int imageNum);
-	BltImage* getImageFromSet(int num);
-
-private:
-	struct Sprite {
-		Common::Point pos;
-		int imageNum;
-	};
-
-	Common::Array<BltImage> _images;
-	Common::Array<Sprite> _sprites;
+struct Sprite {
+	Common::Point pos;
+	SharedImage image;
 };
+
+typedef Common::SharedPtr<Sprite> SharedSprite;
+typedef Common::SharedPtr<Common::Array<SharedSprite>> SharedSpriteList;
+
+SharedSpriteList loadBltSprites(Boltlib &boltlib, BltId id);
 	
 } // End of namespace Funhouse
 

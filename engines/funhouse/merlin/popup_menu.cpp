@@ -77,8 +77,8 @@ void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
 		loadBltResource(hotspotRect, boltlib, hotspotList[i].value);
 
 		_buttons[i].hotspot = hotspotRect.rect;
-		_buttons[i].hovered.load(boltlib, spriteList[i * 2].value);
-		_buttons[i].unhovered.load(boltlib, spriteList[i * 2 + 1].value);
+		_buttons[i].hovered = (*loadBltSprites(boltlib, spriteList[i * 2].value))[0];
+		_buttons[i].unhovered = (*loadBltSprites(boltlib, spriteList[i * 2 + 1].value))[0];
 	}
 }
 
@@ -111,10 +111,8 @@ BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kClick || msg.type == BoltMsg::kHover) {
 		int num = getButtonAt(msg.point);
 		for (int i = 0; i < _buttons.size(); ++i) {
-			const BltSprites &sprites = (i == num) ? _buttons[i].hovered : _buttons[i].unhovered;
-			const Common::Point &spritePos = sprites.getSpritePosition(0);
-			const BltImage *spriteImage = sprites.getSpriteImage(0);
-			spriteImage->drawAt(_game->getGraphics()->getPlaneSurface(kFore), spritePos.x, spritePos.y, true);
+			SharedSprite sprite = (i == num) ? _buttons[i].hovered : _buttons[i].unhovered;
+			sprite->image->drawAt(_game->getGraphics()->getPlaneSurface(kFore), sprite->pos.x, sprite->pos.y, true);
 		}
 		if (num != -1 && _buttons[num].enable) {
 			if (msg.type == BoltMsg::kClick) {

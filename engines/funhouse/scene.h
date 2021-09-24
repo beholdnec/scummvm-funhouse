@@ -35,6 +35,28 @@
 
 namespace Funhouse {
 
+enum ButtonGraphicsType {
+	kPaletteMods = 1,
+	kSprite = 2
+};
+
+struct ButtonGraphics {
+	ButtonGraphicsType graphicsType;
+
+	// If graphicsType == kPaletteMods
+	BltPaletteMods alternatePaletteMods;
+	BltPaletteMods hoveredPaletteMods;
+	BltPaletteMods idlePaletteMods;
+
+	// If graphicsType == kSprites
+	SharedSprite alternateSprite;
+	SharedSprite hoveredSprite;
+	SharedSprite idleSprite;
+};
+
+typedef Common::SharedPtr<Common::Array<ButtonGraphics> > SharedButtonGraphics;
+SharedButtonGraphics loadButtonGraphics(Boltlib &boltlib, BltId id);
+
 class Scene {
 public:
 	enum SceneMsg {
@@ -47,43 +69,20 @@ public:
 		kHotspotQuery = 3 // Query the hotspot image
 	};
 
-	enum GraphicsType {
-		kPaletteMods = 1,
-		kSprites = 2
-	};
-
-	struct ButtonGraphics {
-		GraphicsType graphicsType;
-
-		// If graphicsType == kPaletteMods
-		BltPaletteMods hoveredPaletteMods;
-		BltPaletteMods idlePaletteMods;
-
-		// If graphicsType == kSprites
-		BltSprites hoveredSprites;
-		BltSprites idleSprites;
-	};
-
 	class Button {
 	public:
-		Button();
-
 		void setEnable(bool enable);
-		void* getUserData() const;
-		void setUserData(void *userData);
-		void setGraphics(int num);
+		void setGraphics(SharedButtonGraphics graphicsSet);
+		void setGraphicsIdx(int idx);
 		void setHotspot(HotspotType type, Rect hotspot);
 		void setPlane(uint16 plane);
-		void loadGraphicsSet(Boltlib &boltlib, BltId id);
-		void overrideGraphics(Common::Point position, BltImage* hoveredImage, BltImage* idleImage);
 
 	private:
 		friend class Scene;
 
-		bool _enable;
-		void* _userData;
-		Common::Array<ButtonGraphics> _graphicsSet;
-		int _graphicsNum;
+		bool _enable = false;
+		Common::SharedPtr<Common::Array<ButtonGraphics>> _graphicsSet;
+		int _graphicsIdx = 0;
 
 		uint16 _plane; // 0: fore; 1: back
 
@@ -92,11 +91,6 @@ public:
 		// If hotspotType == kDisplayQuery: this field holds the min and max color indices of the button in the visible plane.
 		// If hotspotType == kHotspotQuery: this field holds the min and max color indices of the button in the hotspot image.
 		Rect _hotspot;
-
-		bool _overrideGraphics;
-		BltImage *_overrideHoveredImage;
-		BltImage *_overrideIdleImage;
-		Common::Point _overridePosition;
 	};
 
 	Scene();
@@ -114,7 +108,7 @@ public:
 	Common::Point getOrigin() const;
 	void setOrigin(const Common::Point &origin);
 	void setPlaneImageEnable(int plane, bool enable);
-	BltSprites& getForeSprites();
+	SharedSpriteList& getForeSprites();
 
 	Button& getButton(int num);
 
@@ -140,7 +134,7 @@ private:
 	Common::ScopedPtr<BltColorCycles> _colorCycles;
 
 	Common::Array<Button> _buttons;
-	BltSprites _foreSprites;
+	SharedSpriteList _foreSprites;
 };
 
 void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sceneId);

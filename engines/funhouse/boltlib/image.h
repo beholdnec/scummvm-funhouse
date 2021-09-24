@@ -20,51 +20,42 @@
  *
  */
 
-#ifndef FUNHOUSE_MERLIN_POPUP_MENU_H
-#define FUNHOUSE_MERLIN_POPUP_MENU_H
+#ifndef FUNHOUSE_BOLTLIB_IMAGE_H
+#define FUNHOUSE_BOLTLIB_IMAGE_H
 
-#include "funhouse/bolt.h"
-#include "funhouse/graphics.h"
-#include "funhouse/boltlib/palette.h"
-#include "funhouse/boltlib/sprites.h"
+#include "funhouse/boltlib/boltlib.h"
 
 namespace Funhouse {
 
-class Boltlib;
-struct BltId;
-class MerlinGame;
+enum DrawFlags {
+	kNone = 0,
+	kNoOffset = 0x1,
+};
 
-class PopupMenu {
+class BltImage { // type 8
 public:
-	void init(MerlinGame *game, Boltlib &boltlib, BltId id);
+	operator bool() const {
+		return !_res.empty();
+	}
 
-	bool isActive() const;
-	void dismiss(ModeContext *ctx);
-	void setButtonEnable(int idx, bool enable);
-	BoltRsp react(ModeContext *ctx, const BoltMsg &msg);
+	void load(Boltlib &bltFile, BltId id);
+
+	void draw(::Graphics::Surface &surface, bool transparency) const;
+	void drawAt(::Graphics::Surface &surface, int x, int y, bool transparency, DrawFlags flags = kNone) const;
+	byte query(int x, int y) const;
+
+	Common::Rect getRect(const Common::Point &pos = Common::Point(0, 0), DrawFlags flags = kNone) const;
+	uint16 getWidth() const;
+	uint16 getHeight() const;
+	Common::Point getOffset() const;
 
 private:
-	struct Button {
-		bool enable = true;
-		Rect hotspot;
-		SharedSprite hovered;
-		SharedSprite unhovered;
-	};
-	typedef Common::Array<Button> ButtonList;
+	void drawWithTopLeftAnchor(::Graphics::Surface &surface, int x, int y, bool transparency) const;
 
-	void activate(ModeContext *ctx);
-	int getButtonAt(const Common::Point &pt) const;
-	BoltRsp handleButtonClick(ModeContext *ctx, int num);
-
-	MerlinGame *_game;
-
-	bool _active = false;
-	DynamicMode _activatedMode;
-	Mode *_oldMode = nullptr;
-	BltImage _bgImage;
-	BltPalette _palette;
-	ButtonList _buttons;
+	BltResource _res;
 };
+
+typedef Common::SharedPtr<BltImage> SharedImage;
 
 } // End of namespace Funhouse
 

@@ -62,7 +62,7 @@ private:
 	struct Item {
 		int state;
 		int solution;
-		BltSprites sprites;
+		SharedSpriteList sprites;
 		Common::Array<BltSynchPuzzleTransition> moveset;
 	};
 
