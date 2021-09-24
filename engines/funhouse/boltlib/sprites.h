@@ -23,6 +23,7 @@
 #ifndef FUNHOUSE_BOLTLIB_SPRITES_H
 #define FUNHOUSE_BOLTLIB_SPRITES_H
 
+#include "graphics/surface.h"
 #include "funhouse/boltlib/image.h"
 
 namespace Funhouse {
@@ -36,6 +37,7 @@ typedef Common::SharedPtr<Sprite> SharedSprite;
 typedef Common::SharedPtr<Common::Array<SharedSprite>> SharedSpriteList;
 
 SharedSpriteList loadBltSprites(Boltlib &boltlib, BltId id);
+void drawSprites(::Graphics::Surface &surface, SharedSpriteList sprites, bool transparency = true, Common::Point origin = {});
 	
 } // End of namespace Funhouse
 

@@ -70,7 +70,7 @@ private:
 
 	void reset();
 	void computeBoardRects();
-	void setupButtons();
+	void draw();
 	bool isSolved();
 
 	MerlinGame *_game;
@@ -97,6 +97,7 @@ private:
 	bool _rack[kLetterCount] = { 0 }; // True if letter is in rack; false if letter is placed on board
 	Common::Array<uint8> _board;
 	Common::Array<Rect> _boardRects;
+	SharedSpriteList _boardSprites;
 	int _runeA; // Rune assigned to letter A (0-25). Randomly assigned once at load time.
 };
 

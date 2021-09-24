@@ -54,4 +54,13 @@ SharedSpriteList loadBltSprites(Boltlib &boltlib, BltId id) {
 	return result;
 }
 
+void drawSprites(::Graphics::Surface& surface, SharedSpriteList sprites, bool transparency, Common::Point origin) {
+	for (int i = 0; i < sprites->size(); ++i) {
+		if ((*sprites)[i] && (*sprites)[i]->image) {
+			Common::Point pos = (*sprites)[i]->pos - origin;
+			(*sprites)[i]->image->drawAt(surface, pos.x, pos.y, transparency);
+		}
+	}
+}
+
 } // End of namespace Funhouse

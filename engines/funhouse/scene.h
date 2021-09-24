@@ -57,6 +57,14 @@ struct ButtonGraphics {
 typedef Common::SharedPtr<Common::Array<ButtonGraphics> > SharedButtonGraphics;
 SharedButtonGraphics loadButtonGraphics(Boltlib &boltlib, BltId id);
 
+enum SceneDrawFlags {
+	kDrawBack = (1 << 0),
+	kDrawFore = (1 << 1),
+	kDrawForeSprites = (1 << 2),
+	kDrawButtons = (1 << 3),
+	kDrawAll = kDrawBack | kDrawFore | kDrawForeSprites | kDrawButtons,
+};
+
 class Scene {
 public:
 	enum SceneMsg {
@@ -97,7 +105,7 @@ public:
 
 	void init(FunhouseEngine *engine, int buttonCount);
 	void enter();
-	void redraw();
+	void redraw(SceneDrawFlags flags = kDrawAll);
 	BoltRsp handleMsg(const BoltMsg &msg);
 
 	void loadForePlane(Boltlib &boltlib, BltId planeId);

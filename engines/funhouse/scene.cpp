@@ -130,25 +130,30 @@ void Scene::enter() {
 	redraw();
 }
 
-void Scene::redraw() {
-	if (_backPlane.image && _backPlane.enableImage) {
-		_backPlane.image.drawAt(_engine->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
-	} else {
-		_engine->getGraphics()->clearPlane(kBack);
+void Scene::redraw(SceneDrawFlags flags) {
+	if (flags & kDrawBack) {
+		if (_backPlane.image && _backPlane.enableImage) {
+			_backPlane.image.drawAt(_engine->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
+		} else {
+			_engine->getGraphics()->clearPlane(kBack);
+		}
 	}
 
-	if (_forePlane.image && _forePlane.enableImage) {
-		_forePlane.image.drawAt(_engine->getGraphics()->getPlaneSurface(kFore), 0, 0, false);
-	} else {
-		_engine->getGraphics()->clearPlane(kFore);
+	if (flags & kDrawFore) {
+		if (_forePlane.image && _forePlane.enableImage) {
+			_forePlane.image.drawAt(_engine->getGraphics()->getPlaneSurface(kFore), 0, 0, false);
+		} else {
+			_engine->getGraphics()->clearPlane(kFore);
+		}
 	}
 
-	for (int i = 0; i < _foreSprites->size(); ++i) {
-		Common::Point position = (*_foreSprites)[i]->pos - _origin;
-		(*_foreSprites)[i]->image->drawAt(_engine->getGraphics()->getPlaneSurface(kFore), position.x, position.y, true);
+	if (flags & kDrawForeSprites) {
+		drawSprites(_engine->getGraphics()->getPlaneSurface(kFore), _foreSprites, true, _origin);
 	}
 
-	drawButtons(getButtonAtPoint(_engine->getEventManager()->getMousePos()));
+	if (flags & kDrawButtons) {
+		drawButtons(getButtonAtPoint(_engine->getEventManager()->getMousePos()));
+	}
 
 	_engine->getGraphics()->markDirty();
 }

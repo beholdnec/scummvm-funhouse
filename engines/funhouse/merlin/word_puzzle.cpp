@@ -134,7 +134,7 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 void WordPuzzle::enter() {
 	_scene.enter();
-	setupButtons();
+	draw();
 	idle();
 }
 
@@ -146,7 +146,7 @@ BoltRsp WordPuzzle::handleMsg(const BoltMsg &msg) {
 void WordPuzzle::handleReset() {
 	_resetSound.play(_game->getEngine()->_mixer);
 	reset();
-	setupButtons();
+	draw();
 }
 
 void WordPuzzle::idle() {
@@ -177,7 +177,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 
 	// TODO: implement
 
-	setupButtons();
+	draw();
 
 	if (isSolved()) {
 		_game->branchWin();
@@ -234,9 +234,10 @@ void WordPuzzle::computeBoardRects() {
 	}
 }
 
-void WordPuzzle::setupButtons() {
-	// Setup board buttons
+void WordPuzzle::draw() {
 	computeBoardRects();
+	
+	// Setup board buttons
 	for (int i = 0; i < _charCount; ++i) {
 		Scene::Button &button = _scene.getButton(kLetterCount + i);
 		button.setHotspot(Scene::HotspotType::kRect, _boardRects[i]);
@@ -250,6 +251,20 @@ void WordPuzzle::setupButtons() {
 	}
 
 	_scene.redraw();
+
+	// Draw board sprites
+	_boardSprites.reset(new Common::Array<SharedSprite>(_charCount));
+	for (int i = 0; i < _charCount; ++i) {
+		(*_boardSprites)[i].reset(new Sprite);
+		(*_boardSprites)[i]->pos.x = _boardRects[i].left;
+		(*_boardSprites)[i]->pos.y = _boardRects[i].top;
+		if (_board[i] == kSpace) {
+			(*_boardSprites)[i]->image = nullptr;
+		} else {
+			(*_boardSprites)[i]->image = (*_normalSprites)[_board[i]]->image;
+		}
+	}
+	drawSprites(_game->getEngine()->getGraphics()->getPlaneSurface(kFore), _boardSprites, true, _scene.getOrigin());
 }
 
 bool WordPuzzle::isSolved() {
