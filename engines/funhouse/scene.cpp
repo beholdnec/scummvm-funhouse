@@ -36,11 +36,11 @@ struct BltScene { // type 32
 		forePlaneId = BltId(src.getUint32BEAt(0x0));
 		backPlaneId = BltId(src.getUint32BEAt(0x4));
 		foreSpriteCount = src.getUint8At(0x8);
-		foreSpritesId = BltId(src.getUint32BEAt(0xA));
-		// FIXME: unknown fields at 0xD..0x16
+		foreSpritesId = BltId(src.getUint32BEAt(0xa));
+		// FIXME: unknown fields at 0xd..0x16
 		colorCyclesId = BltId(src.getUint32BEAt(0x16));
-		buttonCount = src.getUint16BEAt(0x1A);
-		buttonsId = BltId(src.getUint32BEAt(0x1C));
+		buttonCount = src.getUint16BEAt(0x1a);
+		buttonsId = BltId(src.getUint32BEAt(0x1c));
 		origin.x = src.getInt16BEAt(0x20);
 		origin.y = src.getInt16BEAt(0x22);
 	}
@@ -94,21 +94,22 @@ struct BltButtonElement { // type 31
 		type = src.getUint16BEAt(0x0);
 		rect = Rect(src.subspan(0x2));
 		plane = src.getUint16BEAt(0xa);
-		numGraphics = src.getUint16BEAt(0xc);
-		// FIXME: unknown field at 0xe. Always 0 in game data.
+		graphicsCount = src.getUint16BEAt(0xc);
+		instance = src.getUint8At(0xf);
 		graphicsId = BltId(src.getUint32BEAt(0x10));
 	}
 
 	enum HotspotType {
 		Rectangle = 1,
-		// 2 is visible display query (unused)
-		HotspotQuery = 3,
+		VisibleQuery = 2, // query visible display (unused)
+		HotspotQuery = 3, // query hotspots image
 	};
 
 	uint16 type;
 	Rect rect;
 	uint16 plane;
-	uint16 numGraphics;
+	uint16 graphicsCount;
+	uint8 instance;
 	BltId graphicsId;
 };
 
@@ -152,7 +153,7 @@ void Scene::redraw(SceneDrawFlags flags) {
 	}
 
 	if (flags & kDrawButtons) {
-		drawButtons(getButtonAtPoint(_engine->getEventManager()->getMousePos()));
+		drawButtons(nullptr);
 	}
 
 	_engine->getGraphics()->markDirty();
@@ -161,8 +162,7 @@ void Scene::redraw(SceneDrawFlags flags) {
 BoltRsp Scene::handleMsg(const BoltMsg &msg) {
 	switch (msg.type) {
 	case BoltMsg::kHover: {
-		int hoveredButton = getButtonAtPoint(msg.point);
-		drawButtons(hoveredButton);
+		drawButtons(&msg.point);
 		break;
 	}
 
@@ -223,8 +223,12 @@ void Scene::Button::setGraphics(SharedButtonGraphics graphicsSet) {
 	_graphicsSet = graphicsSet;
 }
 
-void Scene::Button::setGraphicsIdx(int idx) {
-	_graphicsIdx = idx;
+void Scene::Button::setState(bool state) {
+	_state = state;
+}
+
+void Scene::Button::setInstance(int instance) {
+	_instance = instance;
 }
 
 void Scene::Button::setHotspot(HotspotType type, Rect hotspot) {
@@ -307,42 +311,50 @@ int Scene::getButtonAtPoint(const Common::Point &pt) {
 	return -1;
 }
 
-void Scene::drawButton(const Button &button, bool hovered) {
-	if (!button._enable) {
-		return;
-	}
-
-	if (button._graphicsSet && !button._graphicsSet->empty()) {
-		const ButtonGraphics& graphicsSet = (*button._graphicsSet)[button._graphicsIdx];
-		if (graphicsSet.graphicsType == kPaletteMods) {
-			if (graphicsSet.alternateSprite) {
-				SharedImage spriteImage = graphicsSet.alternateSprite->image;
-				if (spriteImage) {
-					Common::Point pos = graphicsSet.alternateSprite->pos - _origin;
-					spriteImage->drawAt(_engine->getGraphics()->getPlaneSurface(button._plane), pos.x, pos.y, true);
-				}
+void Scene::drawButton(const ButtonGraphics &buttonGraphics, bool state, int plane) {
+	if (buttonGraphics.graphicsType == kPaletteMods) {
+		if (buttonGraphics.alternateSprite) {
+			SharedImage spriteImage = buttonGraphics.alternateSprite->image;
+			if (spriteImage) {
+				Common::Point pos = buttonGraphics.alternateSprite->pos - _origin;
+				spriteImage->drawAt(_engine->getGraphics()->getPlaneSurface(plane), pos.x, pos.y, true);
 			}
-			const BltPaletteMods &paletteMod = hovered ? graphicsSet.hoveredPaletteMods : graphicsSet.idlePaletteMods;
-			applyPaletteMod(_engine->getGraphics(), button._plane, paletteMod, 0);
 		}
-		else if (graphicsSet.graphicsType == kSprite) {
-			if (!graphicsSet.alternatePaletteMods.empty()) {
-				applyPaletteMod(_engine->getGraphics(), button._plane, graphicsSet.alternatePaletteMods, 0);
-			}
-			SharedSprite sprite = hovered ? graphicsSet.hoveredSprite : graphicsSet.idleSprite;
-			if (sprite) {
-				Common::Point pos = sprite->pos - _origin;
-				if (sprite->image) {
-					sprite->image->drawAt(_engine->getGraphics()->getPlaneSurface(button._plane), pos.x, pos.y, true);
-				}
+		const BltPaletteMods &paletteMod = state ? buttonGraphics.hoveredPaletteMods : buttonGraphics.idlePaletteMods;
+		applyPaletteMod(_engine->getGraphics(), plane, paletteMod, 0);
+	} else if (buttonGraphics.graphicsType == kSprite) {
+		if (!buttonGraphics.alternatePaletteMods.empty()) {
+			applyPaletteMod(_engine->getGraphics(), plane, buttonGraphics.alternatePaletteMods, 0);
+		}
+		SharedSprite sprite = state ? buttonGraphics.hoveredSprite : buttonGraphics.idleSprite;
+		if (sprite) {
+			Common::Point pos = sprite->pos - _origin;
+			if (sprite->image) {
+				sprite->image->drawAt(_engine->getGraphics()->getPlaneSurface(plane), pos.x, pos.y, true);
 			}
 		}
 	}
 }
 
-void Scene::drawButtons(int hoveredButton) {
+void Scene::drawButtons(const Common::Point *cursor) {
+	if (cursor) {
+		int buttonAtCursor = getButtonAtPoint(*cursor);
+		if (buttonAtCursor != _hoveredButton) {
+			if (_hoveredButton >= 0) {
+				_buttons[_hoveredButton].setState(false);
+			}
+			if (buttonAtCursor >= 0) {
+				_buttons[buttonAtCursor].setState(true);
+			}
+			_hoveredButton = buttonAtCursor;
+		}
+	}
+
 	for (int i = 0; i < (int)_buttons.size(); ++i) {
-		drawButton(_buttons[i], i == hoveredButton);
+		if (_buttons[i]._enable && _buttons[i]._graphicsSet) {
+			const ButtonGraphics &buttonGraphics = (*_buttons[i]._graphicsSet)[_buttons[i]._instance];
+			drawButton(buttonGraphics, _buttons[i]._state, _buttons[i]._plane);
+		}
 	}
 	_engine->getGraphics()->markDirty();
 }
@@ -376,7 +388,7 @@ void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sce
 		button.setHotspot(static_cast<Scene::HotspotType>(buttons[i].type), buttons[i].rect);
 		button.setPlane(buttons[i].plane);
 		button.setGraphics(loadButtonGraphics(boltlib, buttons[i].graphicsId));
-		button.setGraphicsIdx(0);
+		button.setInstance(buttons[i].instance);
 	}
 }
 

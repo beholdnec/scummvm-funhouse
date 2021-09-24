@@ -81,7 +81,8 @@ public:
 	public:
 		void setEnable(bool enable);
 		void setGraphics(SharedButtonGraphics graphicsSet);
-		void setGraphicsIdx(int idx);
+		void setState(bool state);
+		void setInstance(int instance);
 		void setHotspot(HotspotType type, Rect hotspot);
 		void setPlane(uint16 plane);
 
@@ -89,8 +90,9 @@ public:
 		friend class Scene;
 
 		bool _enable = false;
-		Common::SharedPtr<Common::Array<ButtonGraphics>> _graphicsSet;
-		int _graphicsIdx = 0;
+		SharedButtonGraphics _graphicsSet;
+		bool _state = false; // True if hovered
+		int _instance = 0; // selects graphics from set; not the clearest name but the original programmers used it.
 
 		uint16 _plane; // 0: fore; 1: back
 
@@ -131,8 +133,8 @@ private:
 	void loadPlane(Plane &plane, Boltlib &boltlib, BltId planeId);
 	// Return the button at a given point, or -1 if there is no button.
 	int getButtonAtPoint(const Common::Point &pt);
-	void drawButton(const Button &button, bool hovered);
-	void drawButtons(int hoveredButton);
+	void drawButton(const ButtonGraphics &buttonGraphics, bool state, int plane);
+	void drawButtons(const Common::Point *cursor);
 
 	FunhouseEngine *_engine;
 
@@ -143,6 +145,8 @@ private:
 
 	Common::Array<Button> _buttons;
 	SharedSpriteList _foreSprites;
+
+	int _hoveredButton = -1;
 };
 
 void loadScene(Scene &scene, FunhouseEngine *engine, Boltlib &boltlib, BltId sceneId);

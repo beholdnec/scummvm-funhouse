@@ -109,11 +109,11 @@ void DifficultyMenu::setAllDifficulties(int difficulty) {
 void DifficultyMenu::setupButtons() {
 	for (int i = 0; i < 3; ++i) {
 		for (int j = 0; j < kNumDifficultyCategories; ++j) {
-			_scene.getButton(kFirstDifficultyButton + 3 * j + i).setGraphicsIdx(i == _game->getDifficulty(static_cast<DifficultyCategory>(j)) ? 1 : 0);
+			_scene.getButton(kFirstDifficultyButton + 3 * j + i).setInstance(i == _game->getDifficulty(static_cast<DifficultyCategory>(j)) ? 1 : 0);
 		}
 	}
 
-	_scene.getButton(kPlayButton).setGraphicsIdx(isReadyToPlay() ? 1 : 0);
+	_scene.getButton(kPlayButton).setInstance(isReadyToPlay() ? 1 : 0);
 
 	_scene.redraw();
 }
