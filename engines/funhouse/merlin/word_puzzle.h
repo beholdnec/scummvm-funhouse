@@ -45,10 +45,10 @@
 * runes with other runes.
 *
 * Glyph: A value representing a letter, rune or space. The values are:
+*     -1:    No glyph.
 *     0-25:  Letter A-Z.
 *     26-51: Rune 1-26.
 *     52:    Space.
-*     -1:    No glyph.
  */
 
 namespace Funhouse {
@@ -69,6 +69,8 @@ private:
 	BoltRsp handleButtonClick(int num);
 
 	void reset();
+	void clickGlyph(int glyph);
+	void swapGlyphs(int from, int to);
 	void computeBoardRects();
 	void draw();
 	bool isSolved();
@@ -96,6 +98,7 @@ private:
 	int _selectedGlyph = -1; // -1: No selection; 0-25: English; 26-51: Runes
 	bool _rack[kLetterCount] = { 0 }; // True if letter is in rack; false if letter is placed on board
 	Common::Array<uint8> _board;
+	Common::Array<uint8> _prevBoard;
 	Common::Array<Rect> _boardRects;
 	SharedSpriteList _boardSprites;
 	int _runeA; // Rune assigned to letter A (0-25). Randomly assigned once at load time.

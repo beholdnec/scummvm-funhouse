@@ -175,7 +175,11 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 		return BoltRsp::kDone;
 	}
 
-	// TODO: implement
+	if (num < kLetterCount) {
+		clickGlyph(num);
+	} else {
+		clickGlyph(_board[num - kLetterCount]);
+	}
 
 	draw();
 
@@ -201,6 +205,43 @@ void WordPuzzle::reset() {
 			_board[i] = kLetterCount + (_solution[i].value + _runeA) % kLetterCount;
 		}
 	}
+
+	_prevBoard = _board;
+
+	_game->setUndoAvailable(false);
+}
+
+void WordPuzzle::clickGlyph(int glyph) {
+	debug(3, "Clicked glyph %d", glyph);
+
+	if (glyph == kSpace) {
+		return;
+	}
+
+	if (_selectedGlyph < 0) {
+		_selectedGlyph = glyph;
+	} else if (_selectedGlyph == glyph) {
+		// Deselect glyph
+		_selectedGlyph = -1;
+	} else {
+		swapGlyphs(_selectedGlyph, glyph);
+		_selectedGlyph = -1;
+	}
+}
+
+void WordPuzzle::swapGlyphs(int from, int to) {
+	debug(3, "Swapping glyphs %d and %d", from, to);
+
+	for (int i = 0; i < _charCount; ++i) {
+		_prevBoard[i] = _board[i];
+		if (_board[i] == from) {
+			_board[i] = to;
+		} else if (_board[i] == to) {
+			_board[i] = from;
+		}
+	}
+
+	// TODO: mark letters placed
 }
 
 void WordPuzzle::computeBoardRects() {
