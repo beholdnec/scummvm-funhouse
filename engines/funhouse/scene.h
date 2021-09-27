@@ -83,6 +83,7 @@ public:
 		void setGraphics(SharedButtonGraphics graphicsSet);
 		void setState(bool state);
 		void setInstance(int instance);
+		const Rect &getHotspot() const;
 		void setHotspot(HotspotType type, Rect hotspot);
 		void setPlane(uint16 plane);
 

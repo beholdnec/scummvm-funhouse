@@ -86,6 +86,7 @@ private:
 	SharedSpriteList _selectedSprites;
 	BltU8Values _charWidths;
 	SharedButtonGraphics _glyphButtonGraphics[kGlyphCount];
+	Common::Array<SharedImage> _blankPics;
 
 	int16 _centerX;
 	uint8 _lineHeight;
@@ -96,7 +97,7 @@ private:
 	BltU8Values _solution;
 
 	int _selectedGlyph = -1; // -1: No selection; 0-25: English; 26-51: Runes
-	bool _rack[kLetterCount] = { 0 }; // True if letter is in rack; false if letter is placed on board
+	bool _letterIsPlaced[kLetterCount] = { 0 }; // False if letter is in rack; true if letter is placed on board
 	Common::Array<uint8> _board;
 	Common::Array<uint8> _prevBoard;
 	Common::Array<Rect> _boardRects;

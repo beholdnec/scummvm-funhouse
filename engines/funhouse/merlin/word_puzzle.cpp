@@ -72,6 +72,9 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltId highlightedSpriteListId = resourceList[3].value;  // Ex: 61B5
 	BltId selectedSpriteListId    = resourceList[4].value;  // Ex: 61B6
 	BltId glyphButtonGraphicsId   = resourceList[5].value; // Ex: 61D2
+	BltId glyphPicsId             = resourceList[6].value; // Ex: 61B2
+	BltId letterPicsId            = resourceList[7].value; // Ex: 61B1
+	BltId blankPicsId             = resourceList[8].value; // Ex: 61B0
 	BltId charWidthsId            = resourceList[10].value; // Ex: 61B3
 	BltId resetSoundId            = resourceList[11].value; // Ex: 61D9
 
@@ -89,6 +92,14 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_normalSprites = loadBltSprites(boltlib, normalSpriteListId);
 	_highlightedSprites = loadBltSprites(boltlib, highlightedSpriteListId);
 	_selectedSprites = loadBltSprites(boltlib, selectedSpriteListId);
+
+	BltResourceList blankPicsIds;
+	loadBltResourceArray(blankPicsIds, boltlib, blankPicsId);
+	_blankPics.resize(kLetterCount);
+	for (int i = 0; i < kLetterCount; ++i) {
+		_blankPics[i].reset(new BltImage);
+		_blankPics[i]->load(boltlib, blankPicsIds[i].value);
+	}
 
 	loadBltResourceArray(_charWidths, boltlib, charWidthsId);
 
@@ -194,7 +205,7 @@ void WordPuzzle::reset() {
 	_selectedGlyph = -1;
 
 	for (int i = 0; i < kLetterCount; ++i) {
-		_rack[i] = true;
+		_letterIsPlaced[i] = false;
 	}
 
 	_board.resize(_charCount);
@@ -229,6 +240,11 @@ void WordPuzzle::clickGlyph(int glyph) {
 	}
 }
 
+static bool isVowel(int glyph) {
+	// A, E, I, O, U, Y
+	return glyph == 0 || glyph == 4 || glyph == 8 || glyph == 14 || glyph == 20 || glyph == 24;
+}
+
 void WordPuzzle::swapGlyphs(int from, int to) {
 	debug(3, "Swapping glyphs %d and %d", from, to);
 
@@ -241,7 +257,30 @@ void WordPuzzle::swapGlyphs(int from, int to) {
 		}
 	}
 
-	// TODO: mark letters placed
+	bool fromBoard = from >= kLetterCount || _letterIsPlaced[from];
+	bool toBoard = to >= kLetterCount || _letterIsPlaced[to];
+	if (fromBoard && !toBoard) { // from board to rack
+		if (from < kLetterCount) {
+			_letterIsPlaced[from] = false;
+		}
+		if (to < kLetterCount) {
+			_letterIsPlaced[to] = true;
+		}
+	} else if (!fromBoard && toBoard) { // from rack to board
+		if (from < kLetterCount) {
+			_letterIsPlaced[from] = true;
+		}
+		if (to < kLetterCount) {
+			_letterIsPlaced[to] = false;
+		}
+	}
+
+	// Lock vowels
+	for (int i = 0; i < _charCount; ++i) {
+		if (isVowel(_board[i]) && _board[i] == _solution[i].value) {
+			_scene.getButton(kLetterCount + i).setEnable(false);
+		}
+	}
 }
 
 void WordPuzzle::computeBoardRects() {
@@ -277,6 +316,10 @@ void WordPuzzle::computeBoardRects() {
 
 void WordPuzzle::draw() {
 	computeBoardRects();
+
+	for (int i = 0; i < kLetterCount; ++i) {
+		_scene.getButton(i).setEnable(!_letterIsPlaced[i]);
+	}
 	
 	// Setup board buttons
 	for (int i = 0; i < _charCount; ++i) {
@@ -286,12 +329,25 @@ void WordPuzzle::draw() {
 			button.setEnable(false);
 			button.setGraphics(nullptr);
 		} else {
-			button.setEnable(true);
 			button.setGraphics(_glyphButtonGraphics[_board[i]]);
 		}
 	}
 
 	_scene.redraw();
+
+	// Draw blank rectangles over rack letters that have been placed
+	// (How delightfully hacky!)
+	SharedSpriteList blankSprites(new Common::Array<SharedSprite>);
+	for (int i = 0; i < kLetterCount; ++i) {
+		if (_letterIsPlaced[i]) {
+			SharedSprite sprite(new Sprite);
+			sprite->pos.x = _scene.getButton(i).getHotspot().left;
+			sprite->pos.y = _scene.getButton(i).getHotspot().top;
+			sprite->image = _blankPics[i];
+			(*blankSprites).push_back(sprite);
+		}
+	}
+	drawSprites(_game->getEngine()->getGraphics()->getPlaneSurface(kFore), blankSprites, false, _scene.getOrigin());
 
 	// Draw board sprites
 	_boardSprites.reset(new Common::Array<SharedSprite>(_charCount));

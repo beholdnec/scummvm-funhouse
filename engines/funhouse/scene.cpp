@@ -236,6 +236,10 @@ void Scene::Button::setInstance(int instance) {
 	_instance = instance;
 }
 
+const Rect& Scene::Button::getHotspot() const {
+	return _hotspot;
+}
+
 void Scene::Button::setHotspot(HotspotType type, Rect hotspot) {
 	_hotspotType = type;
 	_hotspot = hotspot;
