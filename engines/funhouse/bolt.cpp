@@ -20,6 +20,9 @@
  *
  */
 
+// FIXME: Add WaitEventTimeout method to event manager
+#include <SDL.h>
+
 #include "funhouse/bolt.h"
 
 #include "common/error.h"
@@ -61,6 +64,7 @@ Common::Error FunhouseEngine::run() {
 	
 	while (!shouldQuit() && !_quitRequested) {
 		BoltMsg msg = getNextMsg();
+		debug(4, "handling msg %d", msg.type);
 		_graphics.handleMsg(msg);
 		if (msg.type == BoltMsg::kYield) {
 			yield();
@@ -71,6 +75,44 @@ Common::Error FunhouseEngine::run() {
 	}
 
 	return Common::kNoError;
+}
+
+void FunhouseEngine::waitForMsg() {
+	if (_nextMsg.type != BoltMsg::kYield)
+		return;
+
+	if (!_ticksSent)
+		return;
+
+	// Find next timer to handle
+	int timerId = kTimerCount;
+	for (int i = 0; i < kTimerCount; ++i) {
+		if (_timers[i].armed && _timers[i].ticks >= _timers[i].elapse) {
+			timerId = i;
+			break;
+		}
+	}
+
+	if (timerId != kTimerCount) {
+		return;
+	}
+
+	if (_nextEvent.type != Common::EVENT_INVALID)
+		return;
+
+	if (_eventMan->pollEvent(_nextEvent))
+		return;
+
+	if (_smoothAnimationRequested && !_smoothAnimationSent)
+		return;
+
+	if (_hoverRequested)
+		return;
+
+	if (_wakeupTicks > 0 && !_smoothAnimationRequested) {
+		debug(4, "waiting for event with timeout %d ...", _wakeupTicks);
+		SDL_WaitEventTimeout(NULL, _wakeupTicks); // FIXME: Adjust wakeup ticks for time passed since last frame
+	}
 }
 
 BoltMsg FunhouseEngine::getNextMsg()
@@ -90,11 +132,13 @@ BoltMsg FunhouseEngine::getNextMsg()
 	}
 
 	if (!_ticksSent) {
+		_wakeupTicks = INT32_MAX;
 		int32 ticks = _eventTime - _lastTicksTime;
 		_lastTicksTime = _eventTime;
 		_ticksSent = true;
 		BoltMsg msg(BoltMsg::kAddTicks);
 		msg.num = ticks;
+		debug(4, "adding %d ticks...", ticks);
 		return msg;
 	}
 
@@ -115,10 +159,8 @@ BoltMsg FunhouseEngine::getNextMsg()
 		return msg;
 	}
 
-	Common::Event event;
-	if (!_eventMan->pollEvent(event)) {
-		event.type = Common::EVENT_INVALID;
-	}
+	Common::Event event = _nextEvent;
+	_nextEvent = Common::Event();
 
 	if (event.type == Common::EVENT_KEYDOWN &&
 		event.kbd.keycode == Common::KEYCODE_d &&
@@ -157,7 +199,9 @@ BoltMsg FunhouseEngine::getNextMsg()
 }
 
 void FunhouseEngine::yield() {
+	debug(4, "yielding...");
 	_graphics.presentIfDirty();
+	waitForMsg();
 	_eventTime = getTotalPlayTime();
 	_eventsSinceYield = 0;
 	_ticksSent = false;
@@ -181,7 +225,8 @@ void FunhouseEngine::requestHover() {
 }
 
 void FunhouseEngine::requestWakeup(int32 ticks) {
-	// TODO: implement wakeup time; for now, the game wakes up on every frame
+	debug(4, "requesting wakeup in %d ticks", ticks);
+	_wakeupTicks = MIN(ticks, _wakeupTicks);
 }
 
 void FunhouseEngine::requestQuit() {

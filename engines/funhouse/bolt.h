@@ -26,6 +26,7 @@
 #define FORBIDDEN_SYMBOL_ALLOW_ALL // fix #include <functional>
 #include <functional>
 
+#include "common/events.h"
 #include "common/rect.h"
 
 #include "engines/engine.h"
@@ -236,6 +237,7 @@ protected:
 	virtual Common::Error run();
 
 private:
+	void waitForMsg();
 	BoltMsg getNextMsg();
 	void yield();
 	
@@ -246,6 +248,7 @@ private:
 
 	BoltMsg _nextMsg;
 	uint32 _eventTime;
+	Common::Event _nextEvent;
 
 	static const int kMaxEventsSinceYield = 1024;
 	int _eventsSinceYield = 0;
@@ -260,6 +263,7 @@ private:
 	// True if kAddTicks has been sent since the last yield.
 	uint32 _lastTicksTime = 0;
 	bool _ticksSent = false;
+	int32 _wakeupTicks = INT32_MAX;
 	// True if a kSmoothAnimation message has been requested.
 	bool _smoothAnimationRequested = false;
 	// True if a kSmoothAnimation message has been sent this frame.
