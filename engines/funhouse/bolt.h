@@ -103,7 +103,6 @@ struct BoltMsg {
 		kClick,
 		kRightClick,
 		kAddTicks,
-		kTimer,
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
 		kSceneMsgs = 100,
@@ -195,13 +194,6 @@ private:
 	Common::Array<ModeTimer> _timers;
 };
 
-enum TimerId {
-	kColorCycle0,
-	kMaxColorCycle = kColorCycle0 + 4,
-
-	kTimerCount,
-};
-
 class FunhouseGame {
 public:
 	virtual ~FunhouseGame() { }
@@ -224,11 +216,6 @@ public:
 	void requestHover();
 	void requestWakeup(int32 ticks);
 	void requestQuit();
-	void startTimer(int id, int32 elapse);
-	void armTimer(int id, int32 elapse);
-	void addTicks(int id, int32 ticks);
-	void removeTicks(int id, int32 ticks);
-	int32 getTicks(int id) const;
 
 	Graphics* getGraphics();
 
@@ -252,13 +239,6 @@ private:
 
 	static const int kMaxEventsSinceYield = 1024;
 	int _eventsSinceYield = 0;
-
-	struct Timer {
-		bool armed = false;
-		int32 ticks = 0;
-		int32 elapse = 0;
-	};
-	Timer _timers[kTimerCount];
 
 	// True if kAddTicks has been sent since the last yield.
 	uint32 _lastTicksTime = 0;

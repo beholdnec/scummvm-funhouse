@@ -84,19 +84,6 @@ void FunhouseEngine::waitForMsg() {
 	if (!_ticksSent)
 		return;
 
-	// Find next timer to handle
-	int timerId = kTimerCount;
-	for (int i = 0; i < kTimerCount; ++i) {
-		if (_timers[i].armed && _timers[i].ticks >= _timers[i].elapse) {
-			timerId = i;
-			break;
-		}
-	}
-
-	if (timerId != kTimerCount) {
-		return;
-	}
-
 	if (_nextEvent.type != Common::EVENT_INVALID)
 		return;
 
@@ -139,23 +126,6 @@ BoltMsg FunhouseEngine::getNextMsg()
 		BoltMsg msg(BoltMsg::kAddTicks);
 		msg.num = ticks;
 		debug(4, "adding %d ticks...", ticks);
-		return msg;
-	}
-
-	// Find next timer to handle
-	int timerId = kTimerCount;
-	for (int i = 0; i < kTimerCount; ++i) {
-		if (_timers[i].armed && _timers[i].ticks >= _timers[i].elapse) {
-			timerId = i;
-			break;
-		}
-	}
-
-	if (timerId != kTimerCount) {
-		debug(4, "timer %d, %d elapsed", timerId, _timers[timerId].elapse);
-		BoltMsg msg(BoltMsg::kTimer);
-		msg.num = timerId;
-		_timers[timerId].armed = false;
 		return msg;
 	}
 
@@ -231,32 +201,6 @@ void FunhouseEngine::requestWakeup(int32 ticks) {
 
 void FunhouseEngine::requestQuit() {
 	_quitRequested = true;
-}
-
-void FunhouseEngine::startTimer(int id, int32 elapse) {
-	debug(4, "start timer %d, %d", id, elapse);
-	Timer newTimer;
-	newTimer.armed = true;
-	newTimer.ticks = 0;
-	newTimer.elapse = elapse;
-	_timers[id] = newTimer;
-}
-
-void FunhouseEngine::armTimer(int id, int32 elapse) {
-	_timers[id].armed = true;
-	_timers[id].elapse = elapse;
-}
-
-void FunhouseEngine::addTicks(int id, int32 ticks) {
-	_timers[id].ticks += ticks;
-}
-
-void FunhouseEngine::removeTicks(int id, int32 ticks) {
-	_timers[id].ticks -= ticks;
-}
-
-int32 FunhouseEngine::getTicks(int id) const {
-	return _timers[id].ticks;
 }
 
 Graphics* FunhouseEngine::getGraphics() {

@@ -422,50 +422,20 @@ void Graphics::handleMsg(const BoltMsg &msg) {
 	case BoltMsg::kAddTicks:
 		for (int i = 0; i < kNumColorCycles; ++i) {
 			if (_colorCycles[i].delay > 0) {
-				_engine->addTicks(kColorCycle0 + i, msg.num);
+				_colorCycles[i].ticksRemaining -= msg.num;
+				if (_colorCycles[i].ticksRemaining < 0) {
+					advanceCycles(i);
+					_colorCycles[i].ticksRemaining += _colorCycles[i].delay;
+				}
 			}
-		}
-		break;
-	case BoltMsg::kTimer: {
-		if (msg.num < kColorCycle0 || msg.num >= kColorCycle0 + kMaxColorCycle) {
-			break;
-		}
-
-		int i = msg.num - kColorCycle0;
-		if (_colorCycles[i].delay > 0) {
-			bool backwards = _colorCycles[i].end < _colorCycles[i].start;
-
-			uint16 firstColor;
-			uint16 numColors;
-			if (backwards) {
-				firstColor = _colorCycles[i].end;
-				numColors = _colorCycles[i].start - _colorCycles[i].end + 1;
-			}
-			else {
-				firstColor = _colorCycles[i].start;
-				numColors = _colorCycles[i].end - _colorCycles[i].start + 1;
-			}
-
-			// Rotate colors
-			byte colors[128 * 3];
-			// FIXME: Both planes may have color cycles. Front plane color
-			// cycles are used in the "bubbles" action puzzle.
-			grabPlanePalette(_colorCycles[i].plane, colors, firstColor, numColors);
-			if (backwards) {
-				rotateColorsBackward(colors, numColors);
-			}
-			else {
-				rotateColorsForward(colors, numColors);
-			}
-			setPlanePalette(_colorCycles[i].plane, colors, firstColor, numColors);
-
-			markDirty();
-
-			_engine->armTimer(kColorCycle0 + i, _colorCycles[i].delay);
-			_engine->removeTicks(kColorCycle0 + i, _colorCycles[i].delay);
 		}
 		break;
 	}
+
+	for (int i = 0; i < kNumColorCycles; ++i) {
+		if (_colorCycles[i].delay > 0) {
+			_engine->requestWakeup(MAX(0, _colorCycles[i].ticksRemaining));
+		}
 	}
 }
 
@@ -483,8 +453,8 @@ void Graphics::setColorCycle(int slot, int plane, uint16 start, uint16 end, int 
 		_colorCycles[slot].end = end;
 		_colorCycles[slot].plane = plane;
 		_colorCycles[slot].delay = delay;
-		// Start cycling now
-		_engine->startTimer(kColorCycle0 + slot, delay);
+		_colorCycles[slot].ticksRemaining = delay;
+		_engine->requestWakeup(delay);
 	}
 	else {
 		warning("Invalid color cycle start %d, end %d", (int)start, (int)end);
@@ -596,6 +566,34 @@ void Graphics::commitVgaPalette(int first, int num) {
 		}
 		_system->getPaletteManager()->setPalette(faded, first, num);
 	}
+}
+
+void Graphics::advanceCycles(int slot) {
+	bool backwards = _colorCycles[slot].end < _colorCycles[slot].start;
+
+	uint16 firstColor;
+	uint16 numColors;
+	if (backwards) {
+		firstColor = _colorCycles[slot].end;
+		numColors = _colorCycles[slot].start - _colorCycles[slot].end + 1;
+	} else {
+		firstColor = _colorCycles[slot].start;
+		numColors = _colorCycles[slot].end - _colorCycles[slot].start + 1;
+	}
+
+	// Rotate colors
+	byte colors[128 * 3];
+	// FIXME: Both planes may have color cycles. Front plane color
+	// cycles are used in the "bubbles" action puzzle.
+	grabPlanePalette(_colorCycles[slot].plane, colors, firstColor, numColors);
+	if (backwards) {
+		rotateColorsBackward(colors, numColors);
+	} else {
+		rotateColorsForward(colors, numColors);
+	}
+	setPlanePalette(_colorCycles[slot].plane, colors, firstColor, numColors);
+
+	markDirty();
 }
 
 } // End of namespace Funhouse

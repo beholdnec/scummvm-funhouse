@@ -103,6 +103,7 @@ private:
 	void grabVgaPalette(byte *colors, int first, int num);
 	void setVgaPalette(const byte *colors, int first, int num);
 	void commitVgaPalette(int first, int num);
+	void advanceCycles(int slot);
 
 	Plane _forePlane;
 	Plane _backPlane;
@@ -114,6 +115,7 @@ private:
 		uint16 end;
 		int plane;
 		int delay; // 0 means this cycle is inactive
+		int32 ticksRemaining;
 	};
 
 	static const int kNumColorCycles = 4;
