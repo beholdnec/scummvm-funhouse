@@ -96,9 +96,13 @@ void FunhouseEngine::waitForMsg() {
 	if (_hoverRequested)
 		return;
 
-	if (_wakeupTicks > 0 && !_smoothAnimationRequested) {
-		debug(4, "waiting for event with timeout %d ...", _wakeupTicks);
-		SDL_WaitEventTimeout(NULL, _wakeupTicks); // FIXME: Adjust wakeup ticks for time passed since last frame
+	int32 waitTicks = _wakeupTicks;
+	if (_wakeupTicks != INT32_MAX) // Trim ticks that have elapsed during this frame
+		waitTicks -= (getTotalPlayTime() - _eventTime);
+
+	if (waitTicks > 0 && !_smoothAnimationRequested) {
+		debug(3, "waiting for event with timeout %d ...", waitTicks);
+		SDL_WaitEventTimeout(NULL, waitTicks);
 	}
 }
 
