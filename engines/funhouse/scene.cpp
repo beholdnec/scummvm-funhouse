@@ -290,6 +290,10 @@ Scene::Button& Scene::getButton(int num) {
 	return _buttons[num];
 }
 
+int Scene::getHoveredButton() const {
+	return _hoveredButton;
+}
+
 int Scene::getButtonAtPoint(const Common::Point &pt) {
 	byte foreHotspotColor = 0;
 	if (_forePlane.hotspots) {

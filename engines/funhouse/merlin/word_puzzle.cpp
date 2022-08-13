@@ -171,6 +171,10 @@ void WordPuzzle::idle() {
 		switch (msg.type) {
 		case Scene::kClickButton:
 			return handleButtonClick(msg.num);
+		case BoltMsg::kHover:
+			_scene.handleMsg(msg);
+			draw();
+			return kDone;
 		default:
 			return _scene.handleMsg(msg);
 		}
@@ -186,11 +190,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 		return BoltRsp::kDone;
 	}
 
-	if (num < kLetterCount) {
-		clickGlyph(num);
-	} else {
-		clickGlyph(_board[num - kLetterCount]);
-	}
+	clickGlyph(getGlyphFromButton(num));
 
 	draw();
 
@@ -357,6 +357,10 @@ void WordPuzzle::draw() {
 		(*_boardSprites)[i]->pos.y = _boardRects[i].top;
 		if (_board[i] == kSpace) {
 			(*_boardSprites)[i]->image = nullptr;
+		} else if (_board[i] == _selectedGlyph) {
+			(*_boardSprites)[i]->image = (*_selectedSprites)[_board[i]]->image;
+		} else if (_board[i] == getGlyphFromButton(_scene.getHoveredButton())) {
+			(*_boardSprites)[i]->image = (*_highlightedSprites)[_board[i]]->image;
 		} else {
 			(*_boardSprites)[i]->image = (*_normalSprites)[_board[i]]->image;
 		}
@@ -372,6 +376,16 @@ bool WordPuzzle::isSolved() {
 	}
 
 	return true;
+}
+
+int WordPuzzle::getGlyphFromButton(int button) const {
+	if (button < 0) {
+		return -1;
+	} else if (button < kLetterCount) {
+		return button;
+	} else {
+		return _board[button - kLetterCount];
+	}
 }
 
 } // End of namespace Funhouse

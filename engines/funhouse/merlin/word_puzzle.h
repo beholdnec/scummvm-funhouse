@@ -74,6 +74,7 @@ private:
 	void computeBoardRects();
 	void draw();
 	bool isSolved();
+	int getGlyphFromButton(int button) const;
 
 	MerlinGame *_game;
 	Scene _scene;

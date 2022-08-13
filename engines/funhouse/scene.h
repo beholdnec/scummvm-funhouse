@@ -122,6 +122,7 @@ public:
 	SharedSpriteList& getForeSprites();
 
 	Button& getButton(int num);
+	int getHoveredButton() const;
 
 private:
 	struct Plane {
