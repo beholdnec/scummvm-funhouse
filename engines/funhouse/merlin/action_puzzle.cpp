@@ -206,7 +206,7 @@ void ActionPuzzle::reset() {
 void ActionPuzzle::playMode() {
 	_playMode = {};
 	_playMode.onEnter([=]() {
-		_timer.start(_tickPeriod);
+		_game->getEngine()->startTimer(_timer, _tickPeriod);
 	});
 	_playMode.onMsg([this](const BoltMsg &msg) {
 		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);

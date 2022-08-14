@@ -270,8 +270,8 @@ void MemoryPuzzle::idle() {
 void MemoryPuzzle::animPlaying() {
 	_animPlayingMode = {};
 	_animPlayingMode.onEnter([this]() {
-		_frameTimer.start(kFrameDelayMs);
-		_animTimer.start(_animSoundTime);
+		_game->getEngine()->startTimer(_frameTimer, kFrameDelayMs);
+		_game->getEngine()->startTimer(_animTimer, _animSoundTime);
 	});
 	_animPlayingMode.onMsg([this](const BoltMsg &msg) {
 		_game->getEngine()->runTimer(msg, _frameTimer);

@@ -139,7 +139,7 @@ void Movie::setTriggerCallback(TriggerCallback callback, void *param) {
 void Movie::playMode() {
 	_playMode = {};
 	_playMode.onEnter([this]() {
-		_frameTimer.start(_framePeriod);
+		_engine->startTimer(_frameTimer, _framePeriod);
 	});
 	_playMode.onMsg([this](const BoltMsg &msg) {
 		bool handled = false;

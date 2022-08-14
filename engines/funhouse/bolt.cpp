@@ -289,6 +289,13 @@ void DynamicMode::react(const BoltMsg& msg) {
 	}
 }
 
+void FunhouseEngine::startTimer(Timer& timer, int32 elapse)
+{
+	timer.ticks = 0;
+	timer.elapse = elapse;
+	_probeWakeupTimeSent = false;
+}
+
 void FunhouseEngine::runTimer(const BoltMsg& msg, Timer& timer)
 {
 	if (msg.type == BoltMsg::kAddTicks)
@@ -312,11 +319,6 @@ bool FunhouseEngine::queryTimer(const BoltMsg& msg, const Timer& timer)
 		}
 		return false;
 	}
-}
-
-void Timer::start(int32 elapse_) {
-	ticks = 0;
-	elapse = elapse_;
 }
 
 } // End of namespace Funhouse

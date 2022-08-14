@@ -143,8 +143,6 @@ class FunhouseEngine;
 struct Timer {
 	int32 ticks = 0;
 	int32 elapse = 0;
-
-	void start(int32 elapse);
 };
 
 class Mode {
@@ -207,6 +205,7 @@ public:
 	void requestWakeup(int32 ticks);
 	void requestQuit();
 
+	void startTimer(Timer& timer, int32 elapse);
 	void runTimer(const BoltMsg& msg, Timer& timer);
 	bool queryTimer(const BoltMsg& msg, const Timer& timer);
 

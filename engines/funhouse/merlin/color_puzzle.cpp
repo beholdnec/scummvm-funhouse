@@ -234,7 +234,7 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 
 	_morphMode = {};
 	_morphMode.onEnter([this]() {
-		_morphTimer.start(0);
+		_game->getEngine()->startTimer(_morphTimer, 0);
 		_game->getEngine()->requestSmoothAnimation();
 	});
 	_morphMode.onMsg([=](const BoltMsg &msg) {
