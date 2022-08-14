@@ -270,49 +270,53 @@ void MemoryPuzzle::idle() {
 void MemoryPuzzle::animPlaying() {
 	_animPlayingMode = {};
 	_animPlayingMode.onEnter([this]() {
-		_frameTimer.start(kFrameDelayMs, true);
-		_animTimer.start(_animSoundTime, false);
+		_frameTimer.start(kFrameDelayMs);
+		_animTimer.start(_animSoundTime);
 	});
-	_animPlayingMode.onMsg([](const BoltMsg &msg) {
-	});
-	_animPlayingMode.onTimer(&_frameTimer, [this]() {
-		const Item& item = _itemList[_animItem];
-		const ItemFrame& frame = item.frames[_animFrame];
+	_animPlayingMode.onMsg([this](const BoltMsg &msg) {
+		_game->getEngine()->runTimer(msg, _frameTimer);
+		_game->getEngine()->runTimer(msg, _animTimer);
 
-		_frameTimer.ticks -= kFrameDelayMs;
+		debug(5, "frametimer ticks %d elapse %d", _frameTimer.ticks, _frameTimer.elapse);
+		if (_game->getEngine()->queryTimer(msg, _frameTimer))
+		{
+			const Item& item = _itemList[_animItem];
+			const ItemFrame& frame = item.frames[_animFrame];
 
-		if (_animTimer.ticks >= _animPlayTime) {
-			if (frame.delayFrames == -1) {
-				_animFrame++;
-				_animSubFrame = 0;
-				drawItemFrame(_animItem, _animFrame);
-				animWindingDown();
-				debug("winding down animation...");
-			}
-			else {
-				animStopping();
-			}
+			_frameTimer.ticks -= kFrameDelayMs;
 
-			return;
-		}
-		else {
-			if (frame.delayFrames == -1) {
-				// Do not advance frames
-			}
-			else {
-				++_animSubFrame;
-				if (_animSubFrame >= frame.delayFrames) {
-					++_animFrame;
-					if (_animFrame >= item.frames.size()) {
-						_animFrame = 0;
-					}
+			if (_animTimer.ticks >= _animPlayTime) {
+				if (frame.delayFrames == -1) {
+					_animFrame++;
 					_animSubFrame = 0;
 					drawItemFrame(_animItem, _animFrame);
+					animWindingDown();
+					debug("winding down animation...");
+				}
+				else {
+					animStopping();
+				}
+
+				return;
+			}
+			else {
+				if (frame.delayFrames == -1) {
+					// Do not advance frames
+				}
+				else {
+					++_animSubFrame;
+					if (_animSubFrame >= frame.delayFrames) {
+						++_animFrame;
+						if (_animFrame >= item.frames.size()) {
+							_animFrame = 0;
+						}
+						_animSubFrame = 0;
+						drawItemFrame(_animItem, _animFrame);
+					}
 				}
 			}
 		}
 	});
-	_animPlayingMode.onTimer(&_animTimer, nullptr);
 
 	_modeCtx.setNextMode(&_animPlayingMode);
 }
@@ -321,35 +325,38 @@ void MemoryPuzzle::animWindingDown() {
 	_animWindingDownMode = {};
 	_animWindingDownMode.onEnter([this]() {
 	});
-	_animWindingDownMode.onMsg([](const BoltMsg &msg) {
-	});
-	_animWindingDownMode.onTimer(&_frameTimer, [this]() {
-		_frameTimer.ticks -= kFrameDelayMs;
+	_animWindingDownMode.onMsg([this](const BoltMsg &msg) {
+		_game->getEngine()->runTimer(msg, _frameTimer);
+		_game->getEngine()->runTimer(msg, _animTimer);
 
-		const Item& item = _itemList[_animItem];
+		if (_game->getEngine()->queryTimer(msg, _frameTimer))
+		{
+			_frameTimer.ticks -= kFrameDelayMs;
 
-		if (_animFrame >= item.frames.size()) {
-			animStopping();
-			return;
-		}
+			const Item& item = _itemList[_animItem];
 
-		const ItemFrame& frame = item.frames[_animFrame];
+			if (_animFrame >= item.frames.size()) {
+				animStopping();
+				return;
+			}
 
-		if (frame.delayFrames != -1) {
-			++_animSubFrame;
-			if (_animSubFrame >= frame.delayFrames) {
-				++_animFrame;
+			const ItemFrame& frame = item.frames[_animFrame];
+
+			if (frame.delayFrames != -1) {
+				++_animSubFrame;
+				if (_animSubFrame >= frame.delayFrames) {
+					++_animFrame;
+					_animSubFrame = 0;
+					drawItemFrame(_animItem, _animFrame);
+				}
+			}
+			else {
+				_animFrame++;
 				_animSubFrame = 0;
 				drawItemFrame(_animItem, _animFrame);
 			}
 		}
-		else {
-			_animFrame++;
-			_animSubFrame = 0;
-			drawItemFrame(_animItem, _animFrame);
-		}
 	});
-	_animWindingDownMode.onTimer(&_animTimer, nullptr);
 
 	_modeCtx.setNextMode(&_animWindingDownMode);
 }
@@ -357,14 +364,14 @@ void MemoryPuzzle::animWindingDown() {
 void MemoryPuzzle::animStopping() {
 	_animStoppingMode = {};
 	_animStoppingMode.onEnter([this]() {
-		_animTimer.armed = true;
 	});
-	_animStoppingMode.onMsg([](const BoltMsg &msg) {
-	});
-	_animStoppingMode.onTimer(&_animTimer, [this]() {
-		_animTimer.armed = false;
-		drawItemFrame(_animItem, -1);
-		_animThen();
+	_animStoppingMode.onMsg([this](const BoltMsg &msg) {
+		_game->getEngine()->runTimer(msg, _animTimer);
+		if (_game->getEngine()->queryTimer(msg, _animTimer))
+		{
+			drawItemFrame(_animItem, -1);
+			_animThen();
+		}
 	});
 
 	_modeCtx.setNextMode(&_animStoppingMode);

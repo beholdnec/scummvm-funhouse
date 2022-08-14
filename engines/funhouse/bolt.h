@@ -103,6 +103,7 @@ struct BoltMsg {
 		kClick,
 		kRightClick,
 		kAddTicks,
+		kProbeWakeupTime,
 		kAudioEnded, // TODO: implement
 		kSmoothAnimation,
 		kSceneMsgs = 100,
@@ -140,17 +141,10 @@ public:
 class FunhouseEngine;
 
 struct Timer {
-	bool active = false;
-	bool armed = false;
 	int32 ticks = 0;
 	int32 elapse = 0;
 
-	void start(int32 elapse, bool arm);
-};
-
-struct ModeTimer {
-	Timer *timer;
-	std::function <void()> fn;
+	void start(int32 elapse);
 };
 
 class Mode {
@@ -158,7 +152,6 @@ public:
 	virtual ~Mode() { }
 	virtual void enter() = 0;
 	virtual void leave() = 0;
-	virtual const Common::Array<ModeTimer> &getTimers() = 0;
 	virtual void react(const BoltMsg &msg) = 0;
 };
 
@@ -179,19 +172,16 @@ class DynamicMode : public Mode {
 public:
 	void enter() override;
 	void leave() override;
-	const Common::Array<ModeTimer>& getTimers() override;
 	void react(const BoltMsg &msg) override;
 
 	void onEnter(std::function<void()> fn);
 	void onMsg(std::function<void(const BoltMsg &msg)> fn);
-	void onTimer(Timer *timer, std::function<void()> fn);
 
 	bool _entered = false;
 
 private:
 	std::function<void()> _enterFn;
 	std::function<void(const BoltMsg &msg)> _msgFn;
-	Common::Array<ModeTimer> _timers;
 };
 
 class FunhouseGame {
@@ -216,6 +206,9 @@ public:
 	void requestHover();
 	void requestWakeup(int32 ticks);
 	void requestQuit();
+
+	void runTimer(const BoltMsg& msg, Timer& timer);
+	bool queryTimer(const BoltMsg& msg, const Timer& timer);
 
 	Graphics* getGraphics();
 
@@ -244,6 +237,7 @@ private:
 	uint32 _lastTicksTime = 0;
 	bool _ticksSent = false;
 	int32 _wakeupTicks = INT32_MAX;
+	bool _probeWakeupTimeSent = false;
 	// True if a kSmoothAnimation message has been requested.
 	bool _smoothAnimationRequested = false;
 	// True if a kSmoothAnimation message has been sent this frame.

@@ -234,10 +234,12 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 
 	_morphMode = {};
 	_morphMode.onEnter([this]() {
-		_morphTimer.start(0, false);
+		_morphTimer.start(0);
 		_game->getEngine()->requestSmoothAnimation();
 	});
 	_morphMode.onMsg([=](const BoltMsg &msg) {
+		_game->getEngine()->runTimer(msg, _morphTimer);
+
 		switch (msg.type) {
 		case BoltMsg::kSmoothAnimation:
 			if (driveMorph()) {
@@ -248,7 +250,6 @@ void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int en
 			break;
 		}
 	});
-	_morphMode.onTimer(&_morphTimer, nullptr);
 
 	_modeCtx.setNextMode(&_morphMode);
 }

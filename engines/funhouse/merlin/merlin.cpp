@@ -512,11 +512,14 @@ void MerlinGame::branchDifficultyMenu() {
 void MerlinGame::setTimeout(ModeContext *ctx, int32 delay, std::function<void()> then) {
 	_timeoutMode = {};
 	_timeoutMode.onEnter([this, delay]() {
-		_timeoutTimer.start(delay, true);
+		_timeoutTimer.start(delay);
 	});
-	_timeoutMode.onTimer(&_timeoutTimer, [=]() {
-		_timeoutTimer.active = false;
-		then();
+	_timeoutMode.onMsg([=](const BoltMsg& msg) {
+		_engine->runTimer(msg, _timeoutTimer);
+		if (_engine->queryTimer(msg, _timeoutTimer))
+		{
+			then();
+		}
 	});
 
 	ctx->setNextMode(&_timeoutMode);

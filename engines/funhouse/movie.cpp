@@ -139,10 +139,27 @@ void Movie::setTriggerCallback(TriggerCallback callback, void *param) {
 void Movie::playMode() {
 	_playMode = {};
 	_playMode.onEnter([this]() {
-		_frameTimer.start(_framePeriod, true);
+		_frameTimer.start(_framePeriod);
 	});
 	_playMode.onMsg([this](const BoltMsg &msg) {
 		bool handled = false;
+
+		_engine->runTimer(msg, _frameTimer);
+
+		if (_engine->queryTimer(msg, _frameTimer))
+		{
+			_frameTimer.ticks -= _framePeriod;
+
+			driveAudio();
+			driveFade(); // TODO: use accurate time
+			stepTimeline();
+
+			if (_fadeDirection != 0) {
+				// Request smooth animation when fading
+				_engine->requestSmoothAnimation();
+			}
+		}
+
 		switch (msg.type) {
 		case BoltMsg::kSmoothAnimation:
 			// Fades have smooth animation; they have a higher frame rate than movie cels.
@@ -159,18 +176,6 @@ void Movie::playMode() {
 		}
 
 		if (handled && _fadeDirection != 0) {
-			// Request smooth animation when fading
-			_engine->requestSmoothAnimation();
-		}
-	});
-	_playMode.onTimer(&_frameTimer, [this]() {
-		_frameTimer.ticks -= _framePeriod;
-
-		driveAudio();
-		driveFade(); // TODO: use accurate time
-		stepTimeline();
-
-		if (_fadeDirection != 0) {
 			// Request smooth animation when fading
 			_engine->requestSmoothAnimation();
 		}

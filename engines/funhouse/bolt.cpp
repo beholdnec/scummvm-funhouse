@@ -133,6 +133,16 @@ BoltMsg FunhouseEngine::getNextMsg()
 		return msg;
 	}
 
+	if (!_probeWakeupTimeSent)
+	{
+		debug(3, "probing wakeup time...");
+		_probeWakeupTimeSent = true;
+		BoltMsg msg(BoltMsg::kProbeWakeupTime);
+		return msg;
+	}
+
+	_probeWakeupTimeSent = false;
+
 	Common::Event event = _nextEvent;
 	_nextEvent = Common::Event();
 
@@ -179,6 +189,7 @@ void FunhouseEngine::yield() {
 	_eventTime = getTotalPlayTime();
 	_eventsSinceYield = 0;
 	_ticksSent = false;
+	_probeWakeupTimeSent = false;
 	_smoothAnimationSent = false;
 }
 
@@ -217,7 +228,6 @@ void ModeContext::init(FunhouseEngine* engine) {
 
 void ModeContext::react(const BoltMsg& msg) {
 	bool done = false;
-	bool ticksAdded = false;
 	bool msgSent = false;
 
 	while (!done) {
@@ -237,32 +247,6 @@ void ModeContext::react(const BoltMsg& msg) {
 				_mode->enter();
 			}
 		}
-		else if (msg.type == BoltMsg::kAddTicks && !msgSent) {
-			// Before processing timers, send kAddTicks to the mode's message handler
-			done = false;
-			_mode->react(msg);
-			msgSent = true;
-		}
-		else if (msg.type == BoltMsg::kAddTicks) {
-			if (!ticksAdded) {
-				// Update all timers
-				for (auto& timer : _mode->getTimers()) {
-					if (timer.timer->active) {
-						timer.timer->ticks += msg.num;
-					}
-				}
-				ticksAdded = true;
-			}
-
-			// Continue processing timer handlers until no more timers are tripped
-			for (const auto& timer : _mode->getTimers()) {
-				if (timer.timer->active && timer.timer->armed && timer.timer->ticks >= timer.timer->elapse && timer.fn) {
-					done = false;
-					timer.fn();
-					break;
-				}
-			}
-		}
 		else if (!msgSent) {
 			done = false;
 			_mode->react(msg);
@@ -270,12 +254,7 @@ void ModeContext::react(const BoltMsg& msg) {
 		}
 	}
 
-	// Request engine to wake up at the next timer
-	for (const auto& timer : _mode->getTimers()) {
-		if (timer.timer->active && timer.timer->armed && timer.timer->ticks < timer.timer->elapse) {
-			_engine->requestWakeup(timer.timer->elapse - timer.timer->ticks);
-		}
-	}
+	// TODO: send timer probe message
 }
 
 Mode* ModeContext::getMode() {
@@ -294,10 +273,6 @@ void DynamicMode::onMsg(std::function<void(const BoltMsg& msg)> fn) {
 	_msgFn = fn;
 }
 
-void DynamicMode::onTimer(Timer *timer, std::function<void()> fn) {
-	_timers.push_back({timer, fn});
-}
-
 void DynamicMode::enter() {
 	if (_enterFn) {
 		_enterFn();
@@ -308,20 +283,38 @@ void DynamicMode::leave() {
 	// Unused
 }
 
-const Common::Array<ModeTimer>&
-DynamicMode::getTimers() {
-	return _timers;
-}
-
 void DynamicMode::react(const BoltMsg& msg) {
 	if (_msgFn) {
 		_msgFn(msg);
 	}
 }
 
-void Timer::start(int32 elapse_, bool arm) {
-	active = true;
-	armed = arm;
+void FunhouseEngine::runTimer(const BoltMsg& msg, Timer& timer)
+{
+	if (msg.type == BoltMsg::kAddTicks)
+	{
+		timer.ticks += msg.num;
+		_probeWakeupTimeSent = false;
+	}
+}
+
+bool FunhouseEngine::queryTimer(const BoltMsg& msg, const Timer& timer)
+{
+	if (timer.ticks >= timer.elapse)
+	{
+		return true;
+	}
+	else
+	{
+		if (msg.type == BoltMsg::kProbeWakeupTime)
+		{
+			requestWakeup(timer.elapse - timer.ticks);
+		}
+		return false;
+	}
+}
+
+void Timer::start(int32 elapse_) {
 	ticks = 0;
 	elapse = elapse_;
 }

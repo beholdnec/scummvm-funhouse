@@ -206,12 +206,26 @@ void ActionPuzzle::reset() {
 void ActionPuzzle::playMode() {
 	_playMode = {};
 	_playMode.onEnter([=]() {
-		_timer.start(_tickPeriod, true);
+		_timer.start(_tickPeriod);
 	});
 	_playMode.onMsg([this](const BoltMsg &msg) {
 		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
 		if (cmd != BoltRsp::kPass) {
 			return cmd;
+		}
+
+		_game->getEngine()->runTimer(msg, _timer);
+
+		if (_game->getEngine()->queryTimer(msg, _timer))
+		{
+			_timer.ticks -= _tickPeriod;
+
+			tick();
+			if (_goalNum >= _goals.size()) {
+				win();
+			}
+
+			return kDone;
 		}
 
 		switch (msg.type) {
@@ -220,14 +234,6 @@ void ActionPuzzle::playMode() {
 		}
 
 		return kDone;
-	});
-	_playMode.onTimer(&_timer, [this]() {
-		_timer.ticks -= _tickPeriod;
-
-		tick();
-		if (_goalNum >= _goals.size()) {
-			win();
-		}
 	});
 
 	_modeCtx.setNextMode(&_playMode);
