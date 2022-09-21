@@ -137,10 +137,28 @@ void WordPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
-	Common::RandomSource random_("RuneA");
-	_runeA = random_.getRandomNumber(kLetterCount - 1);
+	_state = _game->getChallengeState(challengeIdx).cast<State>();
+	if (!_state || _state->difficulty != difficultyLevel || _state->variation != variation) {
+		_state.reset(new State());
+		_game->setChallengeState(challengeIdx, _state);
 
-	reset();
+		_state->difficulty = difficultyLevel;
+		_state->variation = variation;
+
+		Common::RandomSource random_("RuneA");
+		_state->runeA = random_.getRandomNumber(kLetterCount - 1);
+
+		reset();
+	}
+	else {
+		for (int i = 0; i < kLetterCount; ++i) {
+			_letterIsPlaced[i] = false;
+		}
+		for (int i = 0; i < _state->board.size(); ++i) {
+			if (_state->board[i] < kLetterCount)
+				_letterIsPlaced[_state->board[i]] = true;
+		}
+	}
 }
 
 void WordPuzzle::enter() {
@@ -208,16 +226,16 @@ void WordPuzzle::reset() {
 		_letterIsPlaced[i] = false;
 	}
 
-	_board.resize(_charCount);
+	_state->board.resize(_charCount);
 	for (int i = 0; i < _charCount; ++i) {
 		if (_solution[i].value == kSpace) {
-			_board[i] = kSpace;
+			_state->board[i] = kSpace;
 		} else {
-			_board[i] = kLetterCount + (_solution[i].value + _runeA) % kLetterCount;
+			_state->board[i] = kLetterCount + (_solution[i].value + _state->runeA) % kLetterCount;
 		}
 	}
 
-	_prevBoard = _board;
+	_state->prevBoard = _state->board;
 
 	_game->setUndoAvailable(false);
 }
@@ -249,11 +267,11 @@ void WordPuzzle::swapGlyphs(int from, int to) {
 	debug(3, "Swapping glyphs %d and %d", from, to);
 
 	for (int i = 0; i < _charCount; ++i) {
-		_prevBoard[i] = _board[i];
-		if (_board[i] == from) {
-			_board[i] = to;
-		} else if (_board[i] == to) {
-			_board[i] = from;
+		_state->prevBoard[i] = _state->board[i];
+		if (_state->board[i] == from) {
+			_state->board[i] = to;
+		} else if (_state->board[i] == to) {
+			_state->board[i] = from;
 		}
 	}
 
@@ -277,7 +295,7 @@ void WordPuzzle::swapGlyphs(int from, int to) {
 
 	// Lock vowels
 	for (int i = 0; i < _charCount; ++i) {
-		if (isVowel(_board[i]) && _board[i] == _solution[i].value) {
+		if (isVowel(_state->board[i]) && _state->board[i] == _solution[i].value) {
 			_scene.getButton(kLetterCount + i).setEnable(false);
 		}
 	}
@@ -292,7 +310,7 @@ void WordPuzzle::computeBoardRects() {
 
 		int lineLengthInPixels = 0;
 		for (int charNumber = 0; charNumber < lineLength; ++charNumber) {
-			int glyph = _board[curChar + charNumber];
+			int glyph = _state->board[curChar + charNumber];
 			lineLengthInPixels += _charWidths[glyph].value;
 		}
 
@@ -300,7 +318,7 @@ void WordPuzzle::computeBoardRects() {
 		int y = _lineYPositions[lineNum].value;
 
 		for (int charNum = 0; charNum < lineLength; ++charNum) {
-			int glyph = _board[curChar];
+			int glyph = _state->board[curChar];
 
 			_boardRects[curChar].left = x;
 			_boardRects[curChar].top = y;
@@ -325,11 +343,11 @@ void WordPuzzle::draw() {
 	for (int i = 0; i < _charCount; ++i) {
 		Scene::Button &button = _scene.getButton(kLetterCount + i);
 		button.setHotspot(Scene::HotspotType::kRect, _boardRects[i]);
-		if (_board[i] == kSpace) {
+		if (_state->board[i] == kSpace) {
 			button.setEnable(false);
 			button.setGraphics(nullptr);
 		} else {
-			button.setGraphics(_glyphButtonGraphics[_board[i]]);
+			button.setGraphics(_glyphButtonGraphics[_state->board[i]]);
 		}
 	}
 
@@ -355,14 +373,14 @@ void WordPuzzle::draw() {
 		(*_boardSprites)[i].reset(new Sprite);
 		(*_boardSprites)[i]->pos.x = _boardRects[i].left;
 		(*_boardSprites)[i]->pos.y = _boardRects[i].top;
-		if (_board[i] == kSpace) {
+		if (_state->board[i] == kSpace) {
 			(*_boardSprites)[i]->image = nullptr;
-		} else if (_board[i] == _selectedGlyph) {
-			(*_boardSprites)[i]->image = (*_selectedSprites)[_board[i]]->image;
-		} else if (_board[i] == getGlyphFromButton(_scene.getHoveredButton())) {
-			(*_boardSprites)[i]->image = (*_highlightedSprites)[_board[i]]->image;
+		} else if (_state->board[i] == _selectedGlyph) {
+			(*_boardSprites)[i]->image = (*_selectedSprites)[_state->board[i]]->image;
+		} else if (_state->board[i] == getGlyphFromButton(_scene.getHoveredButton())) {
+			(*_boardSprites)[i]->image = (*_highlightedSprites)[_state->board[i]]->image;
 		} else {
-			(*_boardSprites)[i]->image = (*_normalSprites)[_board[i]]->image;
+			(*_boardSprites)[i]->image = (*_normalSprites)[_state->board[i]]->image;
 		}
 	}
 	drawSprites(_game->getEngine()->getGraphics()->getPlaneSurface(kFore), _boardSprites, true, _scene.getOrigin());
@@ -370,7 +388,7 @@ void WordPuzzle::draw() {
 
 bool WordPuzzle::isSolved() {
 	for (int i = 0; i < _solution.size(); ++i) {
-		if (_board[i] != _solution[i].value) {
+		if (_state->board[i] != _solution[i].value) {
 			return false;
 		}
 	}
@@ -384,7 +402,7 @@ int WordPuzzle::getGlyphFromButton(int button) const {
 	} else if (button < kLetterCount) {
 		return button;
 	} else {
-		return _board[button - kLetterCount];
+		return _state->board[button - kLetterCount];
 	}
 }
 

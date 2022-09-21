@@ -280,6 +280,9 @@ class WeakPtr;
 template<class T>
 class SharedPtr : public BasePtr<T> {
 public:
+	template<typename T2>
+	friend class SharedPtr;
+
 	typedef T *PointerType;
 	typedef T &ReferenceType;
 
@@ -339,6 +342,18 @@ public:
 	template<class T2>
 	bool operator!=(const SharedPtr<T2> &r) const {
 		return this->_pointer != r.get();
+	}
+
+	template<class T2>
+	SharedPtr<T2> cast() {
+		SharedPtr<T2> newPtr;
+		newPtr._refCount = this->_refCount;
+		newPtr._deletion = this->_deletion;
+		newPtr._pointer = static_cast<T2*>(this->_pointer);
+
+		if (this->_refCount) ++(*this->_refCount);
+
+		return newPtr;
 	}
 };
 

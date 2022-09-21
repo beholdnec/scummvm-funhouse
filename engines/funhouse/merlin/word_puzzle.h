@@ -65,6 +65,17 @@ private:
 	static const int kGlyphCount = 53; // 26 letters + 26 runes + 1 space
 	static const uint8 kSpace = 52;
 
+	struct State : public ChallengeState
+	{
+		virtual ~State() { }
+
+		int difficulty;
+		int variation;
+		Common::Array<uint8> board;
+		Common::Array<uint8> prevBoard;
+		int runeA; // Rune assigned to letter A (0-25). Randomly assigned once at load time.
+	};
+
 	void idle();
 	BoltRsp handleButtonClick(int num);
 
@@ -78,6 +89,7 @@ private:
 
 	MerlinGame *_game;
 	Scene _scene;
+	Common::SharedPtr<State> _state;
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;
 	BltSoundList _resetSound;
@@ -99,11 +111,8 @@ private:
 
 	int _selectedGlyph = -1; // -1: No selection; 0-25: English; 26-51: Runes
 	bool _letterIsPlaced[kLetterCount] = { 0 }; // False if letter is in rack; true if letter is placed on board
-	Common::Array<uint8> _board;
-	Common::Array<uint8> _prevBoard;
 	Common::Array<Rect> _boardRects;
 	SharedSpriteList _boardSprites;
-	int _runeA; // Rune assigned to letter A (0-25). Randomly assigned once at load time.
 };
 
 } // End of namespace Funhouse

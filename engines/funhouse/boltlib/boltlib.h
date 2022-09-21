@@ -162,9 +162,14 @@ void loadBltResource(T &obj, Boltlib &boltlib, BltId id) {
 template<class T>
 void loadBltResourceArray(Common::Array<T>& array, Boltlib &boltlib, BltId id) {
 	BltResource res(boltlib.loadResource(id, T::kType));
-	uint numItems = res.size() / T::kSize;
-	array.resize(numItems);
-	for (uint i = 0; i < numItems; ++i) {
+
+	if (res.size() % T::kSize != 0) {
+		error("Invalid size for array resource type %u: %u", (uint)T::kType, (uint)res.size());
+	}
+
+	uint count = res.size() / T::kSize;
+	array.resize(count);
+	for (uint i = 0; i < count; ++i) {
 		array[i].load(spanOf(res).subspan(i * T::kSize), boltlib);
 	}
 }

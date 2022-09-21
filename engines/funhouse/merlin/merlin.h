@@ -43,6 +43,11 @@ enum DifficultyCategory {
 	kNumDifficultyCategories,
 };
 
+struct ChallengeState
+{
+	virtual ~ChallengeState() { }
+};
+
 class MerlinGame : public FunhouseGame {
 public:
 	static const int kNumPotionMovies;
@@ -91,6 +96,9 @@ public:
 
 	ChallengeStatus getChallengeStatus(int idx);
 	void setChallengeStatus(int idx, ChallengeStatus status);
+
+	Common::SharedPtr<ChallengeState> getChallengeState(int idx);
+	void setChallengeState(int idx, Common::SharedPtr<ChallengeState> state);
 
 	void playHelpMovie();
 	void playWinMovie(int idx);
@@ -189,6 +197,10 @@ private:
 	int _prevScriptCursor = 0;
 
 	BltId _popupResIds[kNumPopupTypes];
+
+	// Challenge states for the current play session. Retains the state of a challenge if the
+	// player leaves the card. This data is not saved to disk and will be lost upon quitting.
+	Common::SharedPtr<ChallengeState> _challengeStates[kChallengeCount];
 };
 
 } // End of namespace Funhouse

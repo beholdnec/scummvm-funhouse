@@ -415,6 +415,16 @@ void MerlinGame::setChallengeStatus(int idx, ChallengeStatus status) {
 	_saveMan.getProfile(_profileIdx).challengeStatuses[idx] = status;
 }
 
+Common::SharedPtr<ChallengeState> MerlinGame::getChallengeState(int idx)
+{
+	return _challengeStates[idx];
+}
+
+void MerlinGame::setChallengeState(int idx, Common::SharedPtr<ChallengeState> state)
+{
+	_challengeStates[idx] = state;
+}
+
 int MerlinGame::getVariationSlot(int slot) {
 	if (slot < 0 || slot >= _saveMan.getProfile(_profileIdx).variationSlots.size()) {
 		assert(false && "Tried to query invalid variation slot");
