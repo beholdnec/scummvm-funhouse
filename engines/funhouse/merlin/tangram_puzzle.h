@@ -37,18 +37,27 @@ public:
 	void handleReset() override;
 
 private:
-	struct Piece {
+	struct PieceInfo {
 		BltImage placedImage;
 		BltImage unplacedImage;
 		BltU8Values collision;
+	};
+
+	struct PieceState {
 		bool placed = false;
-		// The position of the upper left of the piece's image (NOT including
-		// the offset specified in the BltImage). This field is only relevant
-		// when the piece is placed.
+		// Position of the upper left of the piece's image (NOT including the offset specified in the resource).
+		// This field is only valid when the piece is placed.
 		Common::Point pos;
 	};
 
-	typedef Common::Array<Piece> PieceArray;
+	struct State : public ChallengeState
+	{
+		virtual ~State() { }
+
+		int difficulty;
+		int variation;
+		Common::Array<PieceState> pieces;
+	};
 
 	void idle();
 	int getPieceAtPosition(const Common::Point& pos);
@@ -58,6 +67,7 @@ private:
 	void drawPieces();
 
 	MerlinGame *_game;
+	Common::SharedPtr<State> _state;
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;
 
@@ -72,8 +82,7 @@ private:
 	Common::Point _offset;
 	BltU8Values _windowCollision;
 
-	// Puzzle state
-	PieceArray _pieces;
+	Common::Array<PieceInfo> _pieceInfos;
 	int _pieceInHand; // -1 if no piece is in hand
 	Common::Point _grabPos;
 };

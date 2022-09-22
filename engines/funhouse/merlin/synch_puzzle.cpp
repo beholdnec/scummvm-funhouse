@@ -101,7 +101,6 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_items.resize(itemList.size());
 	for (uint i = 0; i < _items.size(); ++i) {
-		_items[i].state = _initial[i].value;
 		_items[i].solution = solution[i].value;
 		_items[i].sprites = loadBltSprites(boltlib, itemList[i].value);
 
@@ -118,6 +117,19 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	// XXX: The door puzzle mistakenly has an image attached to the foreground in the PC version.
 	// In the CD-i version, the image is null.
 	_scene.setPlaneImageEnable(kFore, false);
+
+	_state = _game->getChallengeState(challengeIdx).cast<State>();
+	if (!_state || _state->difficulty != difficultyLevel || _state->variation != variation) {
+		_state.reset(new State());
+		_game->setChallengeState(challengeIdx, _state);
+
+		_state->difficulty = difficultyLevel;
+		_state->variation = variation;
+		_state->items.resize(info.numItems);
+		for (uint i = 0; i < info.numItems; ++i) {
+			_state->items[i] = _initial[i].value;
+		}
+	}
 }
 
 void SynchPuzzle::enter() {
@@ -133,7 +145,7 @@ BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
 
 void SynchPuzzle::handleReset() {
 	for (uint i = 0; i < _items.size(); ++i) {
-		_items[i].state = _initial[i].value;
+		_state->items[i] = _initial[i].value;
 	}
 	redraw();
 }
@@ -148,7 +160,7 @@ void SynchPuzzle::redraw() {
 
 	for (uint i = 0; i < _items.size(); ++i) {
 		const Item& item = _items[i];
-		SharedSprite sprite = (*item.sprites)[item.state];
+		SharedSprite sprite = (*item.sprites)[_state->items[i]];
 		Common::Point pos = sprite->pos - _scene.getOrigin();
 		sprite->image->drawAt(_game->getGraphics()->getPlaneSurface(kFore), pos.x, pos.y, true);
 	}
@@ -172,7 +184,7 @@ void SynchPuzzle::idle() {
 			int itemNum = getItemAtPosition(msg.point);
 			if (itemNum != -1) {
 				const Item& item = _items[itemNum];
-				const BltSynchPuzzleTransition& transition = item.moveset[item.state];
+				const BltSynchPuzzleTransition& transition = item.moveset[_state->items[itemNum]];
 				for (int i = 0; i < transition.size(); ++i) {
 					_moveAgenda[i].item = transition[i].item;
 					_moveAgenda[i].count = transition[i].count;
@@ -196,21 +208,22 @@ void SynchPuzzle::idle() {
 BoltRsp SynchPuzzle::driveTransition() {
 	for (int i = 0; i < _moveAgenda.size(); ++i) {
 		if (_moveAgenda[i].item != -1 && _moveAgenda[i].count != 0) {
-			Item &item = _items[_moveAgenda[i].item];
+			int itemIdx = _moveAgenda[i].item;
+			Item &item = _items[itemIdx];
 
 			if (_moveAgenda[i].count > 0) {
 				--_moveAgenda[i].count;
 
-				++item.state;
-				if (item.state >= item.sprites->size()) {
-					item.state = 0;
+				++_state->items[itemIdx];
+				if (_state->items[itemIdx] >= item.sprites->size()) {
+					_state->items[itemIdx] = 0;
 				}
 			} else {
 				++_moveAgenda[i].count;
 
-				--item.state;
-				if (item.state < 0) {
-					item.state = item.sprites->size() - 1;
+				--_state->items[itemIdx];
+				if (_state->items[itemIdx] < 0) {
+					_state->items[itemIdx] = item.sprites->size() - 1;
 				}
 			}
 
@@ -240,7 +253,7 @@ int SynchPuzzle::getItemAtPosition(const Common::Point &pt) {
 
 	for (int i = 0; i < _items.size(); ++i) {
 		const Item &item = _items[i];
-		SharedSprite sprite = (*item.sprites)[item.state];
+		SharedSprite sprite = (*item.sprites)[_state->items[i]];
 		Common::Point pos = sprite->pos - _scene.getOrigin();
 		if (sprite->image->query(pt.x - pos.x, pt.y - pos.y) != 0) {
 			result = i;
@@ -256,7 +269,7 @@ bool SynchPuzzle::isSolved() const {
 	bool solved = true;
 
 	for (int i = 0; i < _items.size(); ++i) {
-		if (_items[i].state != _items[i].solution) {
+		if (_state->items[i] != _items[i].solution) {
 			solved = false;
 			break;
 		}

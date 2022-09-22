@@ -124,14 +124,24 @@ void TangramPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltResourceList collisionsList;
 	loadBltResourceArray(collisionsList, boltlib, collisionsId);
 
-	_pieces.resize(difficultyInfo.numPieces);
+	_pieceInfos.resize(difficultyInfo.numPieces);
 	for (int i = 0; i < difficultyInfo.numPieces; ++i) {
-		_pieces[i].placedImage.load(boltlib, placedImagesList[i].value);
-		_pieces[i].unplacedImage.load(boltlib, unplacedImagesList[i].value);
-		loadBltResourceArray(_pieces[i].collision, boltlib, collisionsList[i].value);
+		_pieceInfos[i].placedImage.load(boltlib, placedImagesList[i].value);
+		_pieceInfos[i].unplacedImage.load(boltlib, unplacedImagesList[i].value);
+		loadBltResourceArray(_pieceInfos[i].collision, boltlib, collisionsList[i].value);
 	}
 
 	loadBltResourceArray(_windowCollision, boltlib, windowCollisionId);
+
+	_state = _game->getChallengeState(challengeIdx).cast<State>();
+	if (!_state || _state->difficulty != difficultyLevel || _state->variation != variation) {
+		_state.reset(new State());
+		_game->setChallengeState(challengeIdx, _state);
+
+		_state->difficulty = difficultyLevel;
+		_state->variation = variation;
+		_state->pieces.resize(difficultyInfo.numPieces);
+	}
 }
 
 void TangramPuzzle::enter() {
@@ -161,7 +171,7 @@ static uint8 queryCollision(const BltU8Values& collision, int x, int y) {
 }
 
 bool TangramPuzzle::pieceIsPlaceableAt(int pieceNum, int px, int py) {
-	const Piece& piece = _pieces[pieceNum];
+	const PieceInfo& piece = _pieceInfos[pieceNum];
 	uint8 width = piece.collision[0].value;
 	uint8 height = piece.collision[1].value;
 	for (int y = 0; y < height; ++y) {
@@ -192,8 +202,8 @@ BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 
 void TangramPuzzle::handleReset() {
 	_pieceInHand = -1;
-	for (uint i = 0; i < _pieces.size(); ++i) {
-		_pieces[i].placed = false;
+	for (uint i = 0; i < _state->pieces.size(); ++i) {
+		_state->pieces[i].placed = false;
 	}
 	drawPieces();
 }
@@ -211,7 +221,7 @@ void TangramPuzzle::idle() {
 			// TODO: implement puzzle.
 			if (_pieceInHand != -1) {
 				// Place piece
-				Piece &p = _pieces[_pieceInHand];
+				PieceState &p = _state->pieces[_pieceInHand];
 				p.pos = msg.point - _grabPos;
 				p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
 				p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
@@ -231,11 +241,12 @@ void TangramPuzzle::idle() {
 					// Pick up piece
 					// First, move the piece to be under the cursor
 					// TODO: Restrict to screen
-					Piece &p = _pieces[_pieceInHand];
-					_grabPos = Common::Point(p.placedImage.getWidth() / 2, p.placedImage.getHeight() / 2);
-					p.pos = msg.point - _grabPos;
-					p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
-					p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
+					const PieceInfo &pieceInfo = _pieceInfos[_pieceInHand];
+					PieceState &pieceState = _state->pieces[_pieceInHand];
+					_grabPos = Common::Point(pieceInfo.placedImage.getWidth() / 2, pieceInfo.placedImage.getHeight() / 2);
+					pieceState.pos = msg.point - _grabPos;
+					pieceState.pos.x = snap(pieceState.pos.x, _gridSpacing) + _offset.x;
+					pieceState.pos.y = snap(pieceState.pos.y, _gridSpacing) + _offset.y;
 					drawPieces();
 					debug(3, "Picked up piece %d", _pieceInHand);
 				}
@@ -248,7 +259,7 @@ void TangramPuzzle::idle() {
 			// Move piece
 			if (_pieceInHand != -1) {
 				// TODO: Restrict piece to a region inset from the screen.
-				Piece &p = _pieces[_pieceInHand];
+				PieceState &p = _state->pieces[_pieceInHand];
 				p.pos = msg.point - _grabPos;
 				p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
 				p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
@@ -268,15 +279,16 @@ int TangramPuzzle::getPieceAtPosition(const Common::Point& pos) {
 
 	// Loop through all pieces. Do not break early, since later pieces may
 	// overlap earlier pieces. TODO: Prevent pieces from ever overlapping.
-	for (int i = 0; i < _pieces.size(); ++i) {
-		const Piece& piece = _pieces[i];
-		if (piece.placed) {
-			if (piece.placedImage.query(pos.x - piece.pos.x, pos.y - piece.pos.y) != 0) {
+	for (int i = 0; i < _pieceInfos.size(); ++i) {
+		const PieceInfo& pieceInfo = _pieceInfos[i];
+		const PieceState& pieceState = _state->pieces[i];
+		if (pieceState.placed) {
+			if (pieceInfo.placedImage.query(pos.x - pieceState.pos.x, pos.y - pieceState.pos.y) != 0) {
 				result = i;
 			}
 		} else {
-			if (piece.unplacedImage.query(pos.x - piece.unplacedImage.getOffset().x,
-				pos.y - piece.unplacedImage.getOffset().y) != 0) {
+			if (pieceInfo.unplacedImage.query(pos.x - pieceInfo.unplacedImage.getOffset().x,
+				pos.y - pieceInfo.unplacedImage.getOffset().y) != 0) {
 				result = i;
 			}
 		}
@@ -291,15 +303,16 @@ int TangramPuzzle::getCollisionAt(int x, int y) {
 		return result;
 	}
 
-	for (int i = 0; i < _pieces.size(); ++i) {
-		if (i == _pieceInHand || !_pieces[i].placed) {
+	for (int i = 0; i < _state->pieces.size(); ++i) {
+		if (i == _pieceInHand || !_state->pieces[i].placed) {
 			continue;
 		}
 
-		const Piece& piece = _pieces[i];
-		int px = (piece.pos.x - _offset.x) / _gridSpacing;
-		int py = (piece.pos.y - _offset.y) / _gridSpacing;
-		int pieceCollision = queryCollision(piece.collision, x - px, y - py);
+		const PieceInfo& pieceInfo = _pieceInfos[i];
+		const PieceState& pieceState = _state->pieces[i];
+		int px = (pieceState.pos.x - _offset.x) / _gridSpacing;
+		int py = (pieceState.pos.y - _offset.y) / _gridSpacing;
+		int pieceCollision = queryCollision(pieceInfo.collision, x - px, y - py);
 		if (result == 5) {
 			result = pieceCollision;
 		} else if (pieceCollision != 5) {
@@ -334,24 +347,26 @@ void TangramPuzzle::drawPieces() {
 
 	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 
-	for (int i = 0; i < _pieces.size(); ++i) {
+	for (int i = 0; i < _pieceInfos.size(); ++i) {
 		if (i != _pieceInHand) {
-			const Piece& piece = _pieces[i];
-			if (piece.placed) {
-				Common::Point imagePos = piece.pos - piece.placedImage.getOffset();
-				piece.placedImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack),
+			const PieceState& pieceState = _state->pieces[i];
+			const PieceInfo& pieceInfo = _pieceInfos[i];
+			if (pieceState.placed) {
+				Common::Point imagePos = pieceState.pos - pieceInfo.placedImage.getOffset();
+				pieceInfo.placedImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack),
 					imagePos.x, imagePos.y, true);
 			} else {
-				piece.unplacedImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, true);
+				pieceInfo.unplacedImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, true);
 			}
 		}
 	}
 
 	if (_pieceInHand != -1) {
-		const Piece& pieceInHand = _pieces[_pieceInHand];
+		const PieceState& pieceState = _state->pieces[_pieceInHand];
+		const PieceInfo& pieceInHand = _pieceInfos[_pieceInHand];
 		// The piece in hand is drawn on the foreground plane; thus, it has
 		// different colors than placed pieces, which are drawn on the background plane.
-		Common::Point imagePos = pieceInHand.pos - pieceInHand.placedImage.getOffset();
+		Common::Point imagePos = pieceState.pos - pieceInHand.placedImage.getOffset();
 		pieceInHand.placedImage.drawAt(_game->getGraphics()->getPlaneSurface(kFore), imagePos.x, imagePos.y, true);
 	}
 

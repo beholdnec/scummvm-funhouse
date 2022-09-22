@@ -68,6 +68,14 @@ private:
 		BltColorPuzzleTransition transition;
 	};
 
+	struct State : public ChallengeState
+	{
+		int difficulty;
+		int variation;
+		Common::Array<int> state;
+		Common::Array<int> prevState;
+	};
+
 	BoltRsp handleButtonClick(int num);
 
 	void evaluate();
@@ -82,6 +90,7 @@ private:
 	void reset();
 
 	MerlinGame *_game;
+	Common::SharedPtr<State> _state;
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;
 	DynamicMode _morphMode;
@@ -90,8 +99,6 @@ private:
 
 	BltU8Values _initial;
 	Piece _pieces[kNumPieces];
-	Common::Array<int> _state;
-	Common::Array<int> _previousState;
 	bool _undone;
 	int _redoPiece;
 	int _redoCurrState;

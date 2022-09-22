@@ -60,10 +60,18 @@ private:
 	};
 
 	struct Item {
-		int state;
 		int solution;
 		SharedSpriteList sprites;
 		Common::Array<BltSynchPuzzleTransition> moveset;
+	};
+
+	struct State : public ChallengeState
+	{
+		virtual ~State() { }
+
+		int difficulty;
+		int variation;
+		Common::Array<int> items;
 	};
 
 	typedef Common::Array<Item> ItemArray;
@@ -71,12 +79,12 @@ private:
 	BoltRsp handleButtonClick(int num);
 	void redraw();
 	void idle();
-	void setTimeout(int32 delay, std::function<void()> then);
 	BoltRsp driveTransition();
 	int getItemAtPosition(const Common::Point& pt);
 	bool isSolved() const;
 
 	MerlinGame *_game;
+	Common::SharedPtr<State> _state;
 	Scene _scene;
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;

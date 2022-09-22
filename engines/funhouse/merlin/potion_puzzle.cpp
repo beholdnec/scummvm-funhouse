@@ -155,10 +155,17 @@ void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	for (int i = 0; i < kNumBowlPoints; ++i) {
 		_bowlPoints[i] = bowlPoints[i].pos;
 	}
-	
-	_shelfSlotOccupied.resize(puzzle.numShelfPoints);
 
-	reset();
+	_state = _game->getChallengeState(challengeIdx).cast<State>();
+	if (!_state || _state->difficulty != difficultyLevel || _state->variation != variation) {
+		_state.reset(new State());
+		_game->setChallengeState(challengeIdx, _state);
+
+		_state->difficulty = difficultyLevel;
+		_state->variation = variation;
+		_state->shelfSlotOccupied.resize(puzzle.numShelfPoints);
+		reset();
+	}
 }
 
 void PotionPuzzle::enter() {
@@ -203,7 +210,7 @@ BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
 
 void PotionPuzzle::evaluate() {
 	// Examine bowl to decide what action to take
-	if (isValidIngredient(_bowlSlots[0]) && isValidIngredient(_bowlSlots[2])) {
+	if (isValidIngredient(_state->bowlSlots[0]) && isValidIngredient(_state->bowlSlots[2])) {
 		// Left and right bowl slots occupied; perform reaction
 		performReaction();
 		return;
@@ -211,18 +218,18 @@ void PotionPuzzle::evaluate() {
 	
 	if (isValidIngredient(_requestedIngredient)) {
 		// Piece selected; move piece to bowl
-		_shelfSlotOccupied[_requestedIngredient] = false;
+		_state->shelfSlotOccupied[_requestedIngredient] = false;
 
-		if (isValidIngredient(_bowlSlots[1])) {
-			_bowlSlots[0] = _bowlSlots[1];
-			_bowlSlots[1] = kNoIngredient;
-			_bowlSlots[2] = _requestedIngredient;
+		if (isValidIngredient(_state->bowlSlots[1])) {
+			_state->bowlSlots[0] = _state->bowlSlots[1];
+			_state->bowlSlots[1] = kNoIngredient;
+			_state->bowlSlots[2] = _requestedIngredient;
 		}
-		else if (isValidIngredient(_bowlSlots[0])) {
-			_bowlSlots[2] = _requestedIngredient;
+		else if (isValidIngredient(_state->bowlSlots[0])) {
+			_state->bowlSlots[2] = _requestedIngredient;
 		}
 		else {
-			_bowlSlots[0] = _requestedIngredient;
+			_state->bowlSlots[0] = _requestedIngredient;
 		}
 
 		_requestedIngredient = kNoIngredient;
@@ -236,8 +243,8 @@ void PotionPuzzle::evaluate() {
 	}
 
 	int numRemainingIngredients = getNumRemainingIngredients();
-	bool bowlIsEmpty = !isValidIngredient(_bowlSlots[0]) && !isValidIngredient(_bowlSlots[1])
-		&& !isValidIngredient(_bowlSlots[2]);
+	bool bowlIsEmpty = !isValidIngredient(_state->bowlSlots[0]) && !isValidIngredient(_state->bowlSlots[1])
+		&& !isValidIngredient(_state->bowlSlots[2]);
 	if (numRemainingIngredients == 0 || (bowlIsEmpty && numRemainingIngredients == 1)) {
 		// No more reactions are possible. Reset.
 		reset();
@@ -257,8 +264,8 @@ BoltRsp PotionPuzzle::handleClick(Common::Point point) {
 	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 
 	// Check if middle bowl piece was clicked. If it was clicked, undo the last action.
-	if (isValidIngredient(_bowlSlots[1])) {
-		const BltImage &image = _ingredientImages[_bowlSlots[1]];
+	if (isValidIngredient(_state->bowlSlots[1])) {
+		const BltImage &image = _ingredientImages[_state->bowlSlots[1]];
 		Common::Point imagePos = _bowlPoints[1] -
 			Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
 		// FIXME: should anchor point specified by image be ignored here?
@@ -272,7 +279,7 @@ BoltRsp PotionPuzzle::handleClick(Common::Point point) {
 
 	// Determine which shelf piece was clicked.
 	for (uint i = 0; i < _shelfPoints.size(); ++i) {
-		if (_shelfSlotOccupied[i]) {
+		if (_state->shelfSlotOccupied[i]) {
 			const BltImage &image = _ingredientImages[i];
 			Common::Point imagePos = _shelfPoints[i] -
 				Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
@@ -309,10 +316,10 @@ BoltRsp PotionPuzzle::requestUndo() {
 }
 
 BoltRsp PotionPuzzle::performReaction() {
-	int ingredientA = _bowlSlots[0];
-	int ingredientB = _bowlSlots[2];
+	int ingredientA = _state->bowlSlots[0];
+	int ingredientB = _state->bowlSlots[2];
 
-	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) && !isValidIngredient(_bowlSlots[1])
+	assert(isValidIngredient(ingredientA) && isValidIngredient(ingredientB) && !isValidIngredient(_state->bowlSlots[1])
 		&& "Invalid bowl state in performReaction");
 
 	// Find reaction
@@ -327,20 +334,20 @@ BoltRsp PotionPuzzle::performReaction() {
 			(int)reactionInfo->a, (int)reactionInfo->b, (int)reactionInfo->c, (int)reactionInfo->d,
 			(int)reactionInfo->movie);
 
-		if (_bowlSlots[0] == reactionInfo->a && _bowlSlots[2] == reactionInfo->b) {
+		if (_state->bowlSlots[0] == reactionInfo->a && _state->bowlSlots[2] == reactionInfo->b) {
 			uvarL = 0;
 			bestMatch = i;
 		}
 		else {
-			if (_bowlSlots[0] == reactionInfo->b && _bowlSlots[2] == reactionInfo->a && 1 < uvarL) {
+			if (_state->bowlSlots[0] == reactionInfo->b && _state->bowlSlots[2] == reactionInfo->a && 1 < uvarL) {
 				uvarL = 0x1;
 				bestMatch = i;
 				continue;
 			}
-			if (((((_bowlSlots[0] == reactionInfo->a) && (reactionInfo->b == -1)) ||
-				((_bowlSlots[0] == reactionInfo->b && (reactionInfo->a == -1)))) && (2 < uvarL)) ||
-				((((_bowlSlots[2] == reactionInfo->a && (reactionInfo->b == -1)) ||
-				((_bowlSlots[2] == reactionInfo->b && (reactionInfo->a == -1)))) && (2 < uvarL))))
+			if (((((_state->bowlSlots[0] == reactionInfo->a) && (reactionInfo->b == -1)) ||
+				((_state->bowlSlots[0] == reactionInfo->b && (reactionInfo->a == -1)))) && (2 < uvarL)) ||
+				((((_state->bowlSlots[2] == reactionInfo->a && (reactionInfo->b == -1)) ||
+				((_state->bowlSlots[2] == reactionInfo->b && (reactionInfo->a == -1)))) && (2 < uvarL))))
 			{
 				uvarL = uvarH;
 				bestMatch = i;
@@ -355,9 +362,9 @@ BoltRsp PotionPuzzle::performReaction() {
 	if (bestMatch < 0) {
 		warning("No reaction found for ingredients %d, %d", ingredientA, ingredientB);
 		// Empty the bowl. This should never happen.
-		_bowlSlots[0] = kNoIngredient;
-		_bowlSlots[1] = kNoIngredient;
-		_bowlSlots[2] = kNoIngredient;
+		_state->bowlSlots[0] = kNoIngredient;
+		_state->bowlSlots[1] = kNoIngredient;
+		_state->bowlSlots[2] = kNoIngredient;
 		draw();
 		idle();
 		return BoltRsp::kDone;
@@ -379,24 +386,24 @@ BoltRsp PotionPuzzle::performReaction() {
 			ingredientB = reactionInfo->d;
 		}
 		if (ingredientA == (int8)0xfe && ingredientB == (int8)0xfe) {
-			_bowlSlots[0] = kNoIngredient;
-			_bowlSlots[1] = kNoIngredient;
-			_bowlSlots[2] = kNoIngredient;
+			_state->bowlSlots[0] = kNoIngredient;
+			_state->bowlSlots[1] = kNoIngredient;
+			_state->bowlSlots[2] = kNoIngredient;
 		} else {
 			if (ingredientA == (int8)0xfe) {
-				_bowlSlots[0] = kNoIngredient;
-				_bowlSlots[1] = ingredientB;
-				_bowlSlots[2] = kNoIngredient;
+				_state->bowlSlots[0] = kNoIngredient;
+				_state->bowlSlots[1] = ingredientB;
+				_state->bowlSlots[2] = kNoIngredient;
 			} else {
 				if (ingredientB == (int8)0xfe) {
 					// FIXME: Here the original saves the ingredient in slot 1 for some reason?
-					_bowlSlots[0] = kNoIngredient;
-					_bowlSlots[1] = ingredientA;
-					_bowlSlots[2] = kNoIngredient;
+					_state->bowlSlots[0] = kNoIngredient;
+					_state->bowlSlots[1] = ingredientA;
+					_state->bowlSlots[2] = kNoIngredient;
 				} else {
 					warning("Whoops! No reaction available?");
-					_bowlSlots[0] = ingredientA;
-					_bowlSlots[2] = ingredientB;
+					_state->bowlSlots[0] = ingredientA;
+					_state->bowlSlots[2] = ingredientB;
 				}
 			}
 		}
@@ -411,12 +418,12 @@ BoltRsp PotionPuzzle::performReaction() {
 }
 
 void PotionPuzzle::reset() {
-	for (uint i = 0; i < _shelfSlotOccupied.size(); ++i) {
-		_shelfSlotOccupied[i] = true;
+	for (uint i = 0; i < _state->shelfSlotOccupied.size(); ++i) {
+		_state->shelfSlotOccupied[i] = true;
 	}
 
 	for (int i = 0; i < kNumBowlSlots; ++i) {
-		_bowlSlots[i] = kNoIngredient;
+		_state->bowlSlots[i] = kNoIngredient;
 	}
 
 	_requestedIngredient = kNoIngredient;
@@ -434,7 +441,7 @@ void PotionPuzzle::draw() {
 	for (uint i = 0; i < _shelfPoints.size(); ++i) {
 		// FIXME: can different ingredients be placed on the shelf? i.e. can the ingredient index be
 		//        different from the shelf-slot index?
-		if (_shelfSlotOccupied[i]) {
+		if (_state->shelfSlotOccupied[i]) {
 			// Draw ingredient on shelf, anchored at south point of image
 			const BltImage &image = _ingredientImages[i];
 			Common::Point pos = _shelfPoints[i] -
@@ -444,25 +451,25 @@ void PotionPuzzle::draw() {
 		}
 	}
 
-	if (isValidIngredient(_bowlSlots[0])) {
+	if (isValidIngredient(_state->bowlSlots[0])) {
 		// Anchor left ingredient at lower right corner
-		const BltImage &image = _ingredientImages[_bowlSlots[0]];
+		const BltImage &image = _ingredientImages[_state->bowlSlots[0]];
 		Common::Point pos = _bowlPoints[0] -
 			Common::Point(image.getWidth(), image.getHeight()) - _origin;
 		image.drawAt(_game->getGraphics()->getPlaneSurface(kBack), pos.x, pos.y, true);
 	}
 
-	if (isValidIngredient(_bowlSlots[1])) {
+	if (isValidIngredient(_state->bowlSlots[1])) {
 		// Anchor middle ingredient at lower middle point
-		const BltImage &image = _ingredientImages[_bowlSlots[1]];
+		const BltImage &image = _ingredientImages[_state->bowlSlots[1]];
 		Common::Point pos = _bowlPoints[1] -
 			Common::Point(image.getWidth() / 2, image.getHeight()) - _origin;
 		image.drawAt(_game->getGraphics()->getPlaneSurface(kBack), pos.x, pos.y, true);
 	}
 
-	if (isValidIngredient(_bowlSlots[2])) {
+	if (isValidIngredient(_state->bowlSlots[2])) {
 		// Anchor right ingredient at lower left corner
-		const BltImage &image = _ingredientImages[_bowlSlots[2]];
+		const BltImage &image = _ingredientImages[_state->bowlSlots[2]];
 		Common::Point pos = _bowlPoints[2] -
 			Common::Point(0, image.getHeight()) - _origin;
 		image.drawAt(_game->getGraphics()->getPlaneSurface(kBack), pos.x, pos.y, true);
@@ -477,8 +484,8 @@ bool PotionPuzzle::isValidIngredient(int ingredient) const {
 
 int PotionPuzzle::getNumRemainingIngredients() const {
 	int num = 0;
-	for (uint i = 0; i < _shelfSlotOccupied.size(); ++i) {
-		if (_shelfSlotOccupied[i]) {
+	for (uint i = 0; i < _state->shelfSlotOccupied.size(); ++i) {
+		if (_state->shelfSlotOccupied[i]) {
 			++num;
 		}
 	}

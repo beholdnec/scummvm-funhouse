@@ -62,6 +62,17 @@ private:
 	// TODO: Placing an ingredient should last as long as the "plunk" sound... I think.
 	static const uint32 kPlacing1Time = 500;
 	static const uint32 kPlacing2Time = 500;
+	static const int kNumBowlSlots = 3;
+
+	struct State : public ChallengeState
+	{
+		virtual ~State() { }
+
+		int difficulty;
+		int variation;
+		Common::Array<bool> shelfSlotOccupied; // False: Empty; True: Filled
+		int bowlSlots[kNumBowlSlots]; // Ingredients in bowl
+	};
 
 	void idle();
 	BoltRsp handleIdle(const BoltMsg &msg);
@@ -81,6 +92,7 @@ private:
 	static const int kNumBowlPoints = 3;
 
 	MerlinGame *_game;
+	Common::SharedPtr<State> _state;
 	ModeContext _modeCtx;
 	DynamicMode _idleMode;
 	BltImage _bgImage;
@@ -92,9 +104,6 @@ private:
 	Common::Point _bowlPoints[3];
 	BltPotionPuzzleComboTable _reactionTable;
 
-	Common::Array<bool> _shelfSlotOccupied; // False: Empty; True: Filled
-	static const int kNumBowlSlots = 3;
-	int _bowlSlots[kNumBowlSlots]; // Ingredients in bowl
 	int _requestedIngredient;
 };
 
