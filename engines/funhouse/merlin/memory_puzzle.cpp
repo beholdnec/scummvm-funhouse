@@ -83,8 +83,6 @@ typedef Common::Array<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_modeCtx.init(_game->getEngine());
-	idle();
 	_matches = 0;
 
 	uint16 resId = 0;
@@ -150,7 +148,10 @@ void MemoryPuzzle::enter() {
 }
 
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-	_modeCtx.react(msg);
+	if (_currTask) {
+		return CALL_MEMBER_FN(*this, _currTask)(msg);
+	}
+
 	return kDone;
 }
 
@@ -170,7 +171,7 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 			++_matches;
 			startAnimation(num, _itemList[num].sound);
 			_animThen = [this]() {
-				idle();
+				enterIdle();
 			};
 		} else {
 			// Mismatch
@@ -222,7 +223,7 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
 	
 	sound.play(_game->getEngine()->_mixer);
 
-	animPlaying();
+	enterAnimPlaying();
 }
 
 void MemoryPuzzle::playbackNext() {
@@ -234,147 +235,142 @@ void MemoryPuzzle::playbackNext() {
 		++_playbackStep;
 	}
 	else {
-		idle();
+		enterIdle();
 	}
 }
 
-void MemoryPuzzle::idle() {
-	_idleMode = {};
-	_idleMode.onEnter([this]() {
-		if (_matches >= _solution.size()) {
-			_game->branchWin();
-		} else if (_matches >= _goal) {
-			_matches = 0;
-			_goal += 3;
-			startPlayback();
-		}
-	});
-	_idleMode.onMsg([this](const BoltMsg &msg) {
-		BoltRsp cmd;
+void MemoryPuzzle::enterIdle() {
+	_currTask = &MemoryPuzzle::idle;
 
-		if ((cmd = _game->handlePopup(&_modeCtx, msg)) != BoltRsp::kPass) {
-			return cmd;
-		}
-
-		switch (msg.type) {
-		case Scene::kClickButton:
-			return handleButtonClick(msg.num);
-		}
-
-		return _scene.handleMsg(msg);
-	});
-
-	_modeCtx.setNextMode(&_idleMode);
+	if (_matches >= _solution.size()) {
+		_game->branchWin();
+	}
+	else if (_matches >= _goal) {
+		_matches = 0;
+		_goal += 3;
+		startPlayback();
+	}
 }
 
-void MemoryPuzzle::animPlaying() {
-	_animPlayingMode = {};
-	_animPlayingMode.onEnter([this]() {
-		_game->getEngine()->startTimer(_frameTimer, kFrameDelayMs);
-		_game->getEngine()->startTimer(_animTimer, _animSoundTime);
-	});
-	_animPlayingMode.onMsg([this](const BoltMsg &msg) {
-		_game->getEngine()->runTimer(msg, _frameTimer);
-		_game->getEngine()->runTimer(msg, _animTimer);
+BoltRsp MemoryPuzzle::idle(const BoltMsg &msg) {
+	BoltRsp cmd;
 
-		debug(5, "frametimer ticks %d elapse %d", _frameTimer.ticks, _frameTimer.elapse);
-		if (_game->getEngine()->queryTimer(msg, _frameTimer))
-		{
-			const Item& item = _itemList[_animItem];
-			const ItemFrame& frame = item.frames[_animFrame];
+	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
+		return cmd;
+	}
 
-			_frameTimer.ticks -= kFrameDelayMs;
+	switch (msg.type) {
+	case Scene::kClickButton:
+		return handleButtonClick(msg.num);
+	}
 
-			if (_animTimer.ticks >= _animPlayTime) {
-				if (frame.delayFrames == -1) {
-					_animFrame++;
-					_animSubFrame = 0;
-					drawItemFrame(_animItem, _animFrame);
-					animWindingDown();
-					debug("winding down animation...");
-				}
-				else {
-					animStopping();
-				}
+	return _scene.handleMsg(msg);
+}
 
-				return;
+void MemoryPuzzle::enterAnimPlaying() {
+	_currTask = &MemoryPuzzle::animPlaying;
+
+	_game->getEngine()->startTimer(_frameTimer, kFrameDelayMs);
+	_game->getEngine()->startTimer(_animTimer, _animSoundTime);
+}
+
+BoltRsp MemoryPuzzle::animPlaying(const BoltMsg &msg) {
+	_game->getEngine()->runTimer(msg, _frameTimer);
+	_game->getEngine()->runTimer(msg, _animTimer);
+
+	debug(5, "frametimer ticks %d elapse %d", _frameTimer.ticks, _frameTimer.elapse);
+	if (_game->getEngine()->queryTimer(msg, _frameTimer))
+	{
+		const Item& item = _itemList[_animItem];
+		const ItemFrame& frame = item.frames[_animFrame];
+
+		_frameTimer.ticks -= kFrameDelayMs;
+
+		if (_animTimer.ticks >= _animPlayTime) {
+			if (frame.delayFrames == -1) {
+				_animFrame++;
+				_animSubFrame = 0;
+				drawItemFrame(_animItem, _animFrame);
+				enterAnimWindingDown();
+				debug("winding down animation...");
 			}
 			else {
-				if (frame.delayFrames == -1) {
-					// Do not advance frames
-				}
-				else {
-					++_animSubFrame;
-					if (_animSubFrame >= frame.delayFrames) {
-						++_animFrame;
-						if (_animFrame >= item.frames.size()) {
-							_animFrame = 0;
-						}
-						_animSubFrame = 0;
-						drawItemFrame(_animItem, _animFrame);
-					}
-				}
+				enterAnimStopping();
 			}
 		}
-	});
-
-	_modeCtx.setNextMode(&_animPlayingMode);
-}
-
-void MemoryPuzzle::animWindingDown() {
-	_animWindingDownMode = {};
-	_animWindingDownMode.onEnter([this]() {
-	});
-	_animWindingDownMode.onMsg([this](const BoltMsg &msg) {
-		_game->getEngine()->runTimer(msg, _frameTimer);
-		_game->getEngine()->runTimer(msg, _animTimer);
-
-		if (_game->getEngine()->queryTimer(msg, _frameTimer))
-		{
-			_frameTimer.ticks -= kFrameDelayMs;
-
-			const Item& item = _itemList[_animItem];
-
-			if (_animFrame >= item.frames.size()) {
-				animStopping();
-				return;
+		else {
+			if (frame.delayFrames == -1) {
+				// Do not advance frames
 			}
-
-			const ItemFrame& frame = item.frames[_animFrame];
-
-			if (frame.delayFrames != -1) {
+			else {
 				++_animSubFrame;
 				if (_animSubFrame >= frame.delayFrames) {
 					++_animFrame;
+					if (_animFrame >= item.frames.size()) {
+						_animFrame = 0;
+					}
 					_animSubFrame = 0;
 					drawItemFrame(_animItem, _animFrame);
 				}
 			}
-			else {
-				_animFrame++;
+		}
+	}
+
+	return kDone;
+}
+
+void MemoryPuzzle::enterAnimWindingDown() {
+	_currTask = &MemoryPuzzle::animWindingDown;
+}
+
+BoltRsp MemoryPuzzle::animWindingDown(const BoltMsg &msg) {
+	_game->getEngine()->runTimer(msg, _frameTimer);
+	_game->getEngine()->runTimer(msg, _animTimer);
+
+	if (_game->getEngine()->queryTimer(msg, _frameTimer))
+	{
+		_frameTimer.ticks -= kFrameDelayMs;
+
+		const Item& item = _itemList[_animItem];
+
+		if (_animFrame >= item.frames.size()) {
+			enterAnimStopping();
+			return kDone;
+		}
+
+		const ItemFrame& frame = item.frames[_animFrame];
+
+		if (frame.delayFrames != -1) {
+			++_animSubFrame;
+			if (_animSubFrame >= frame.delayFrames) {
+				++_animFrame;
 				_animSubFrame = 0;
 				drawItemFrame(_animItem, _animFrame);
 			}
 		}
-	});
+		else {
+			_animFrame++;
+			_animSubFrame = 0;
+			drawItemFrame(_animItem, _animFrame);
+		}
+	}
 
-	_modeCtx.setNextMode(&_animWindingDownMode);
+	return kDone;
 }
 
-void MemoryPuzzle::animStopping() {
-	_animStoppingMode = {};
-	_animStoppingMode.onEnter([this]() {
-	});
-	_animStoppingMode.onMsg([this](const BoltMsg &msg) {
-		_game->getEngine()->runTimer(msg, _animTimer);
-		if (_game->getEngine()->queryTimer(msg, _animTimer))
-		{
-			drawItemFrame(_animItem, -1);
-			_animThen();
-		}
-	});
+void MemoryPuzzle::enterAnimStopping() {
+	_currTask = &MemoryPuzzle::animStopping;
+}
 
-	_modeCtx.setNextMode(&_animStoppingMode);
+BoltRsp MemoryPuzzle::animStopping(const BoltMsg &msg) {
+	_game->getEngine()->runTimer(msg, _animTimer);
+	if (_game->getEngine()->queryTimer(msg, _animTimer))
+	{
+		drawItemFrame(_animItem, -1);
+		_animThen();
+	}
+
+	return kDone;
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {

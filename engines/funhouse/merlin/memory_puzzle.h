@@ -66,11 +66,15 @@ private:
 	void startAnimation(int itemNum, BltSound& sound);
 	void drawItemFrame(int itemNum, int frameNum);
 
-	void idle();
+	void enterIdle();
+	BoltRsp idle(const BoltMsg &msg);
 	void playbackNext();
-	void animPlaying();
-	void animWindingDown();
-	void animStopping();
+	void enterAnimPlaying();
+	BoltRsp animPlaying(const BoltMsg &msg);
+	void enterAnimWindingDown();
+	BoltRsp animWindingDown(const BoltMsg &msg);
+	void enterAnimStopping();
+	BoltRsp animStopping(const BoltMsg &msg);
 
 	MerlinGame *_game;
 	Scene _scene;
@@ -82,11 +86,9 @@ private:
 	int _matches;
 	Common::Array<int> _solution;
 
-	ModeContext _modeCtx;
-	DynamicMode _idleMode;
-	DynamicMode _animPlayingMode;
-	DynamicMode _animWindingDownMode;
-	DynamicMode _animStoppingMode;
+	typedef BoltRsp (MemoryPuzzle::* TaskFunc)(const BoltMsg &msg);
+
+	TaskFunc _currTask = nullptr;
 	Timer _frameTimer;
 	Timer _animTimer;
 	std::function<void()> _animThen; // Function to call when anim is finished

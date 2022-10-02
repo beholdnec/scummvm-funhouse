@@ -31,7 +31,7 @@
 #include "funhouse/merlin/popup_menu.h"
 
 namespace Funhouse {
-	
+
 class MerlinGame;
 
 enum DifficultyCategory {
@@ -87,9 +87,9 @@ public:
 	void setPopup(PopupType type);
 	PopupMenu &getPopup();
 	void setUndoAvailable(bool available);
-	BoltRsp handlePopup(ModeContext *ctx, const BoltMsg &msg);
+	BoltRsp handlePopup(const BoltMsg &msg);
 	void dismissPopup(ModeContext *ctx);
-	BoltRsp handlePopupButtonClick(ModeContext *ctx, int num);
+	BoltRsp handlePopupButtonClick(int num);
 
 	int getDifficulty(DifficultyCategory category);
 	void setDifficulty(DifficultyCategory category, int level);
@@ -154,8 +154,8 @@ private:
 	BoltRsp handleMsgInMovie(const BoltMsg &msg);
 	BoltRsp handleMsgInCard(const BoltMsg &msg);
 	BoltRsp handleHubPopupButtonClick(int num);
-	BoltRsp handlePuzzlePopupButtonClick(ModeContext *ctx, int num);
-	BoltRsp handlePotionPuzzlePopupButtonClick(ModeContext *ctx, int num);
+	BoltRsp handlePuzzlePopupButtonClick(int num);
+	BoltRsp handlePotionPuzzlePopupButtonClick(int num);
 	void branchLoadProfile();
 
 	OSystem *_system;

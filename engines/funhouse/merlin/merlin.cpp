@@ -42,10 +42,6 @@
 
 namespace Funhouse {
 
-// Call pointer to member function.
-// See <https://isocpp.org/wiki/faq/pointers-to-members>
-#define CALL_MEMBER_FN(object, fn) ((object).*(fn))
-
 struct BltPopupCatalog {
 	static const uint32 kType = kBltPopupCatalog;
 	static const uint32 kSize = 0x22;
@@ -141,14 +137,14 @@ void MerlinGame::setUndoAvailable(bool available) {
 	}
 }
 
-BoltRsp MerlinGame::handlePopupButtonClick(ModeContext *ctx, int num) {
+BoltRsp MerlinGame::handlePopupButtonClick(int num) {
 	switch (_popupType) {
 	case kHubPopup:
 		return handleHubPopupButtonClick(num);
 	case kPuzzlePopup:
-		return handlePuzzlePopupButtonClick(ctx, num);
+		return handlePuzzlePopupButtonClick(num);
 	case kPotionPuzzlePopup:
-		return handlePotionPuzzlePopupButtonClick(ctx, num);
+		return handlePotionPuzzlePopupButtonClick(num);
 	default:
 		assert(false && "Invalid popup type");
 		return kDone;
@@ -175,7 +171,7 @@ BoltRsp MerlinGame::handleHubPopupButtonClick(int num) {
 	}
 }
 
-BoltRsp MerlinGame::handlePuzzlePopupButtonClick(ModeContext *ctx, int num) {
+BoltRsp MerlinGame::handlePuzzlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
 		branchReturn();
@@ -187,11 +183,11 @@ BoltRsp MerlinGame::handlePuzzlePopupButtonClick(ModeContext *ctx, int num) {
 		playHelpMovie();
 		return kDone;
 	case 3: // Reset
-		_popup.dismiss(ctx);
+		_popup.dismiss();
 		_activeCard->handleReset();
 		return kDone;
 	case 4: // Undo
-		_popup.dismiss(ctx);
+		_popup.dismiss();
 		_activeCard->handleUndo();
 		return kDone;
 	default:
@@ -200,7 +196,7 @@ BoltRsp MerlinGame::handlePuzzlePopupButtonClick(ModeContext *ctx, int num) {
 	}
 }
 
-BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(ModeContext *ctx, int num) {
+BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Exit
 		branchMainMenu();
@@ -212,11 +208,11 @@ BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(ModeContext *ctx, int num
 		playHelpMovie();
 		return kDone;
 	case 3: // Reset
-		_popup.dismiss(ctx);
+		_popup.dismiss();
 		_activeCard->handleReset();
 		return kDone;
 	case 4: // Undo
-		_popup.dismiss(ctx);
+		_popup.dismiss();
 		_activeCard->handleUndo();
 		return kDone;
 	default:
@@ -296,12 +292,12 @@ PopupMenu& MerlinGame::getPopup() {
 	return _popup;
 }
 
-BoltRsp MerlinGame::handlePopup(ModeContext *ctx, const BoltMsg& msg) {
-	return _popup.react(ctx, msg);
+BoltRsp MerlinGame::handlePopup(const BoltMsg& msg) {
+	return _popup.react(msg);
 }
 
 void MerlinGame::dismissPopup(ModeContext *ctx) {
-	_popup.dismiss(ctx);
+	_popup.dismiss();
 }
 
 void MerlinGame::initCursor() {

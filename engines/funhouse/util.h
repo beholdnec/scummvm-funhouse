@@ -25,6 +25,10 @@
 
 #include "common/span.h"
 
+// Call pointer to member function.
+// See <https://isocpp.org/wiki/faq/pointers-to-members>
+#define CALL_MEMBER_FN(object, fn) ((object).*(fn))
+
 namespace Funhouse {
 
 /// Generate a sequence of shuffled numbers. Optionally, a deviance factor can be specified,

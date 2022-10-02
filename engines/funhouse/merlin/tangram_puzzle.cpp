@@ -212,7 +212,7 @@ void TangramPuzzle::idle() {
 	_idleMode = {};
 	_idleMode.onMsg([this](const BoltMsg& msg) {
 		// FIXME: Is popup allowed while a piece is held?
-		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
+		BoltRsp cmd = _game->handlePopup(msg);
 		if (cmd != BoltRsp::kPass) {
 			return cmd;
 		}

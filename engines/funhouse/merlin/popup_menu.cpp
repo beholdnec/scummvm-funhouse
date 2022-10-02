@@ -82,9 +82,8 @@ void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
 	}
 }
 
-void PopupMenu::dismiss(ModeContext *ctx) {
+void PopupMenu::dismiss() {
 	_active = false;
-	ctx->setNextMode(_oldMode);
 	_oldMode = nullptr;
 	_game->redraw();
 }
@@ -93,12 +92,12 @@ void PopupMenu::setButtonEnable(int idx, bool enable) {
 	_buttons[idx].enable = enable;
 }
 
-BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
+BoltRsp PopupMenu::react(const BoltMsg &msg) {
 	if (msg.type == BoltMsg::kRightClick) {
 		if (!_active) {
-			activate(ctx);
+			activate();
 		} else {
-			dismiss(ctx);
+			dismiss();
 		}
 
 		return BoltRsp::kDone;
@@ -116,7 +115,7 @@ BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 		}
 		if (num != -1 && _buttons[num].enable) {
 			if (msg.type == BoltMsg::kClick) {
-				return handleButtonClick(ctx, num);
+				return handleButtonClick(num);
 			}
 		}
 	}
@@ -124,8 +123,8 @@ BoltRsp PopupMenu::react(ModeContext *ctx, const BoltMsg &msg) {
 	return BoltRsp::kDone;
 }
 
-BoltRsp PopupMenu::handleButtonClick(ModeContext *ctx, int num) {
-	_game->handlePopupButtonClick(ctx, num);
+BoltRsp PopupMenu::handleButtonClick(int num) {
+	_game->handlePopupButtonClick(num);
 	return BoltRsp::kDone;
 }
 
@@ -133,31 +132,21 @@ bool PopupMenu::isActive() const {
 	return _active;
 }
 
-void PopupMenu::activate(ModeContext *ctx) {
-	_oldMode = ctx->getMode();
+void PopupMenu::activate() {
+	_active = true;
 
-	_activatedMode = {};
-	_activatedMode.onEnter([this]() {
-		_active = true;
+	// The original engine does something hacky here: Only colors 121-127 are applied.
+	static const int kFirstPopupColor = 121;
+	static const int kNumPopupColors = 7;
+	_game->getGraphics()->setPlanePalette(kFore, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
 
-		// The original engine does something hacky here: Only colors 121-127 are applied.
-		static const int kFirstPopupColor = 121;
-		static const int kNumPopupColors = 7;
-		_game->getGraphics()->setPlanePalette(kFore, &_palette.data[6 + kFirstPopupColor * 3], kFirstPopupColor, kNumPopupColors);
+	static const int kPopupX = -32;
+	static const int kPopupY = 168;
+	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kFore), kPopupX, kPopupY, true);
 
-		static const int kPopupX = -32;
-		static const int kPopupY = 168;
-		_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kFore), kPopupX, kPopupY, true);
+	_game->getGraphics()->markDirty();
 
-		_game->getGraphics()->markDirty();
-
-		_game->getEngine()->requestHover();
-	});
-	_activatedMode.onMsg([this, ctx](const BoltMsg& msg) {
-		react(ctx, msg);
-	});
-
-	ctx->setNextMode(&_activatedMode);
+	_game->getEngine()->requestHover();
 }
 
 int PopupMenu::getButtonAt(const Common::Point &pt) const {

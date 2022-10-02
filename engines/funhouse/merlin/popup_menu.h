@@ -39,9 +39,9 @@ public:
 	void init(MerlinGame *game, Boltlib &boltlib, BltId id);
 
 	bool isActive() const;
-	void dismiss(ModeContext *ctx);
+	void dismiss();
 	void setButtonEnable(int idx, bool enable);
-	BoltRsp react(ModeContext *ctx, const BoltMsg &msg);
+	BoltRsp react(const BoltMsg &msg);
 
 private:
 	struct Button {
@@ -52,14 +52,13 @@ private:
 	};
 	typedef Common::Array<Button> ButtonList;
 
-	void activate(ModeContext *ctx);
+	void activate();
 	int getButtonAt(const Common::Point &pt) const;
-	BoltRsp handleButtonClick(ModeContext *ctx, int num);
+	BoltRsp handleButtonClick(int num);
 
 	MerlinGame *_game;
 
 	bool _active = false;
-	DynamicMode _activatedMode;
 	Mode *_oldMode = nullptr;
 	BltImage _bgImage;
 	BltPalette _palette;

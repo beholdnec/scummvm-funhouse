@@ -181,7 +181,7 @@ void WordPuzzle::handleReset() {
 void WordPuzzle::idle() {
 	_idleMode = {};
 	_idleMode.onMsg([this](const BoltMsg& msg) {
-		BoltRsp cmd = _game->handlePopup(&_modeCtx, msg);
+		BoltRsp cmd = _game->handlePopup(msg);
 		if (cmd != BoltRsp::kPass) {
 			return cmd;
 		}
