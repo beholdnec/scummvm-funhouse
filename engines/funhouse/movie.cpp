@@ -139,6 +139,8 @@ void Movie::setTriggerCallback(TriggerCallback callback, void *param) {
 void Movie::playMode() {
 	_playMode = {};
 	_playMode.onEnter([this]() {
+		// Start timer after data has been loaded from disk.
+		_engine->discardTicksUntilNextFrame();
 		_engine->startTimer(_frameTimer, _framePeriod);
 	});
 	_playMode.onMsg([this](const BoltMsg &msg) {

@@ -188,6 +188,10 @@ void FunhouseEngine::yield() {
 	waitForMsg();
 	_eventTime = getTotalPlayTime();
 	_eventsSinceYield = 0;
+	if (_discardingTicksUntilNextFrame) {
+		_lastTicksTime = _eventTime;
+		_discardingTicksUntilNextFrame = false;
+	}
 	_ticksSent = false;
 	_probeWakeupTimeSent = false;
 	_smoothAnimationSent = false;
@@ -216,6 +220,10 @@ void FunhouseEngine::requestWakeup(int32 ticks) {
 
 void FunhouseEngine::requestQuit() {
 	_quitRequested = true;
+}
+
+void FunhouseEngine::discardTicksUntilNextFrame() {
+	_discardingTicksUntilNextFrame = true;
 }
 
 Graphics* FunhouseEngine::getGraphics() {

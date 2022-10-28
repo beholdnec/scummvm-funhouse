@@ -204,6 +204,7 @@ public:
 	void requestHover();
 	void requestWakeup(int32 ticks);
 	void requestQuit();
+	void discardTicksUntilNextFrame();
 
 	void startTimer(Timer& timer, int32 elapse);
 	void runTimer(const BoltMsg& msg, Timer& timer);
@@ -246,6 +247,7 @@ private:
 	// This forces a kHover message to be sent even if the mouse has not moved.
 	bool _hoverRequested = false;
 	bool _quitRequested = false;
+	bool _discardingTicksUntilNextFrame = false;
 };
 
 } // End of namespace Funhouse
