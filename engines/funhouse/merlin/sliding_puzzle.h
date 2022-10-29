@@ -41,13 +41,10 @@ private:
 	void reset();
 	bool move(int moveIdx);
 	void draw();
-	void idleMode();
 	BoltRsp handleButtonClick(int num);
 
 	MerlinGame *_game;
 	Scene _scene;
-	ModeContext _modeCtx;
-	DynamicMode _idleMode;
 
 	static const int kMoveCount = 8;
 

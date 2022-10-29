@@ -76,7 +76,6 @@ private:
 		int runeA; // Rune assigned to letter A (0-25). Randomly assigned once at load time.
 	};
 
-	void idle();
 	BoltRsp handleButtonClick(int num);
 
 	void reset();
@@ -90,8 +89,6 @@ private:
 	MerlinGame *_game;
 	Scene _scene;
 	Common::SharedPtr<State> _state;
-	ModeContext _modeCtx;
-	DynamicMode _idleMode;
 	BltSoundList _resetSound;
 
 	SharedSpriteList _normalSprites;

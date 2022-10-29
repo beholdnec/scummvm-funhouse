@@ -61,7 +61,6 @@ struct BltParticles { // type 46
 
 void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_modeCtx.init(_game->getEngine());
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -168,7 +167,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 void ActionPuzzle::enter() {
 	reset();
 	redraw();
-	playMode();
+	_game->getEngine()->startTimer(_timer, _tickPeriod);
 }
 
 void ActionPuzzle::redraw() {
@@ -184,7 +183,30 @@ void ActionPuzzle::redraw() {
 }
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
-	_modeCtx.react(msg);
+	BoltRsp cmd = _game->handlePopup(msg);
+	if (cmd != BoltRsp::kPass) {
+		return cmd;
+	}
+
+	_game->getEngine()->runTimer(msg, _timer);
+
+	if (_game->getEngine()->queryTimer(msg, _timer))
+	{
+		_timer.ticks -= _tickPeriod;
+
+		tick();
+		if (_goalNum >= _goals.size()) {
+			win();
+		}
+
+		return kDone;
+	}
+
+	switch (msg.type) {
+	case BoltMsg::kClick:
+		return handleClick(msg.point);
+	}
+
 	return kDone;
 }
 
@@ -201,42 +223,6 @@ void ActionPuzzle::reset() {
 	Common::fill(_pathSequence.begin(), _pathSequence.end(), -1);
 	_pathIdx = _pathSequence.size();
 	_particles.clear();
-}
-
-void ActionPuzzle::playMode() {
-	_playMode = {};
-	_playMode.onEnter([=]() {
-		_game->getEngine()->startTimer(_timer, _tickPeriod);
-	});
-	_playMode.onMsg([this](const BoltMsg &msg) {
-		BoltRsp cmd = _game->handlePopup(msg);
-		if (cmd != BoltRsp::kPass) {
-			return cmd;
-		}
-
-		_game->getEngine()->runTimer(msg, _timer);
-
-		if (_game->getEngine()->queryTimer(msg, _timer))
-		{
-			_timer.ticks -= _tickPeriod;
-
-			tick();
-			if (_goalNum >= _goals.size()) {
-				win();
-			}
-
-			return kDone;
-		}
-
-		switch (msg.type) {
-		case BoltMsg::kClick:
-			return handleClick(msg.point);
-		}
-
-		return kDone;
-	});
-
-	_modeCtx.setNextMode(&_playMode);
 }
 
 void ActionPuzzle::launchNewParticle() {

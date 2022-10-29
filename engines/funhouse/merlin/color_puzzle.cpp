@@ -40,7 +40,6 @@ struct BltColorPuzzleInfo { // type 57
 
 void ColorPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_modeCtx.init(_game->getEngine());
 	_morphPaletteMods = nullptr;
 
 	uint16 resId = 0;
@@ -133,7 +132,10 @@ void ColorPuzzle::enter() {
 }
 
 BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
-	_modeCtx.react(msg);
+	if (_currTask) {
+		return CALL_MEMBER_FN(*this, _currTask)(msg);
+	}
+
 	return kDone;
 }
 
@@ -172,32 +174,57 @@ BoltRsp ColorPuzzle::handleButtonClick(int num) {
 	return BoltRsp::kDone;
 }
 
+void ColorPuzzle::enterIdle() {
+	_currTask = &ColorPuzzle::runIdle;
+}
+
+BoltRsp ColorPuzzle::runIdle(const BoltMsg& msg) {
+	BoltRsp cmd = _game->handlePopup(msg);
+	if (cmd != BoltRsp::kPass) {
+		return cmd;
+	}
+
+	switch (msg.type) {
+	case Scene::kClickButton:
+		return handleButtonClick(msg.num);
+	default:
+		return _scene.handleMsg(msg);
+	}
+
+	return kDone;
+}
+
+void ColorPuzzle::enterMorph() {
+	_currTask = &ColorPuzzle::runMorph;
+
+	_game->getEngine()->startTimer(_morphTimer, 0);
+	_game->getEngine()->requestSmoothAnimation();
+}
+
+BoltRsp ColorPuzzle::runMorph(const BoltMsg& msg) {
+	_game->getEngine()->runTimer(msg, _morphTimer);
+
+	switch (msg.type) {
+	case BoltMsg::kSmoothAnimation:
+		if (driveMorph()) {
+			driveMove();
+		}
+		else {
+			_game->getEngine()->requestSmoothAnimation();
+		}
+		break;
+	}
+
+	return kDone;
+}
+
 void ColorPuzzle::evaluate() {
 	if (isSolved()) {
 		_game->branchWin();
 		return;
 	}
 
-	idleMode();
-}
-
-void ColorPuzzle::idleMode() {
-	_idleMode = {};
-	_idleMode.onMsg([this](const BoltMsg &msg) {
-		BoltRsp cmd = _game->handlePopup(msg);
-		if (cmd != BoltRsp::kPass) {
-			return cmd;
-		}
-
-		switch (msg.type) {
-		case Scene::kClickButton:
-			return handleButtonClick(msg.num);
-		default:
-			return _scene.handleMsg(msg);
-		}
-	});
-
-	_modeCtx.setNextMode(&_idleMode);
+	enterIdle();
 }
 
 void ColorPuzzle::startMove(int piece, int currState) {
@@ -219,7 +246,7 @@ void ColorPuzzle::driveMove() {
 
 		if (pieceNum >= 0) {
 			// FIXME: This isn't how it should work...
-			morphPiece(pieceNum, (_state->state[pieceNum] + count) % _pieces[pieceNum].numStates, [this] { driveMove(); });
+			morphPiece(pieceNum, (_state->state[pieceNum] + count) % _pieces[pieceNum].numStates);
 			return;
 		}
 	}
@@ -227,39 +254,20 @@ void ColorPuzzle::driveMove() {
 	evaluate();
 }
 
-void ColorPuzzle::morphPiece(int piece, int state, std::function<void()> then) {
+void ColorPuzzle::morphPiece(int piece, int state) {
 	debug(3, "morphing piece %d to state %d", piece, state);
 	int oldState = _state->state[piece];
 	_state->state[piece] = state;
-	startMorph(&_pieces[piece].palettes, oldState, state, then);
+	startMorph(&_pieces[piece].palettes, oldState, state);
 	_soundLists[piece].play(_game->getEngine()->_mixer);
 }
 
-void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int endState, std::function<void()> then) {
+void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int endState) {
 	_morphPaletteMods = paletteMods;
 	_morphStartState = startState;
 	_morphEndState = endState;
 
-	_morphMode = {};
-	_morphMode.onEnter([this]() {
-		_game->getEngine()->startTimer(_morphTimer, 0);
-		_game->getEngine()->requestSmoothAnimation();
-	});
-	_morphMode.onMsg([=](const BoltMsg &msg) {
-		_game->getEngine()->runTimer(msg, _morphTimer);
-
-		switch (msg.type) {
-		case BoltMsg::kSmoothAnimation:
-			if (driveMorph()) {
-				then();
-			} else {
-				_game->getEngine()->requestSmoothAnimation();
-			}
-			break;
-		}
-	});
-
-	_modeCtx.setNextMode(&_morphMode);
+	enterMorph();
 }
 
 bool ColorPuzzle::driveMorph() {

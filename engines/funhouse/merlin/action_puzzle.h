@@ -52,7 +52,6 @@ protected:
 
 	typedef Common::List<Particle> ParticleList;
 
-	void playMode();
 	const BltImage& getParticleImage(const Particle &particle);
 	Common::Point getParticlePos(const Particle &particle);
 	BoltRsp handleClick(const Common::Point &pt);
@@ -66,8 +65,6 @@ protected:
 	BoltRsp win();
 
 	MerlinGame *_game;
-	ModeContext _modeCtx;
-	DynamicMode _playMode;
 	Timer _timer;
 	BltImage _bgImage;
 	BltPalette _backPalette;

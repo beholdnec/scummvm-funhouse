@@ -59,7 +59,6 @@ private:
 		Common::Array<PieceState> pieces;
 	};
 
-	void idle();
 	int getPieceAtPosition(const Common::Point& pos);
 	bool pieceIsPlaceableAt(int pieceNum, int x, int y);
 	int getCollisionAt(int x, int y);
@@ -68,8 +67,6 @@ private:
 
 	MerlinGame *_game;
 	Common::SharedPtr<State> _state;
-	ModeContext _modeCtx;
-	DynamicMode _idleMode;
 
 	// Main resources
 	BltImage _bgImage;

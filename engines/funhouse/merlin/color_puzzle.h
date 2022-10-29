@@ -78,22 +78,27 @@ private:
 
 	BoltRsp handleButtonClick(int num);
 
+	void enterIdle();
+	BoltRsp runIdle(const BoltMsg &msg);
+	void enterMorph();
+	BoltRsp runMorph(const BoltMsg &msg);
+
 	void evaluate();
 	void idleMode();
 	void startMove(int piece, int currState);
 	void driveMove();
-	void morphPiece(int piece, int state, std::function<void()> then);
-	void startMorph(BltPaletteMods *paletteMods, int startState, int endState, std::function<void()> then);
+	void morphPiece(int piece, int state);
+	void startMorph(BltPaletteMods *paletteMods, int startState, int endState);
 	bool driveMorph(); // Returns true when morph if finished
 	bool isSolved() const;
 	void draw();
 	void reset();
 
-	MerlinGame *_game;
+	typedef BoltRsp(ColorPuzzle::* TaskFunc)(const BoltMsg& msg);
+
+	TaskFunc _currTask = nullptr;
+	MerlinGame* _game;
 	Common::SharedPtr<State> _state;
-	ModeContext _modeCtx;
-	DynamicMode _idleMode;
-	DynamicMode _morphMode;
 	Scene _scene;
 	Common::Array<BltSoundList> _soundLists;
 

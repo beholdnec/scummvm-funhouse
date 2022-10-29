@@ -53,7 +53,6 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 		(name >> 24) & 0xff, (name >> 16) & 0xff, (name >> 8) & 0xff, name & 0xff);
 
 	_engine = engine;
-	_modeCtx.init(_engine);
 
 	stop();
 
@@ -127,63 +126,50 @@ bool Movie::isRunning() const {
 }
 
 BoltRsp Movie::handleMsg(const BoltMsg &msg) {
-	_modeCtx.react(msg);
+	bool handled = false;
+
+	_engine->runTimer(msg, _frameTimer);
+
+	if (_engine->queryTimer(msg, _frameTimer))
+	{
+		_frameTimer.ticks -= _framePeriod;
+
+		driveAudio();
+		driveFade(); // TODO: use accurate time
+		stepTimeline();
+
+		if (_fadeDirection != 0) {
+			// Request smooth animation when fading
+			_engine->requestSmoothAnimation();
+		}
+	}
+
+	switch (msg.type) {
+	case BoltMsg::kSmoothAnimation:
+		// Fades have smooth animation; they have a higher frame rate than movie cels.
+		driveFade();
+		handled = true;
+		break;
+
+	case BoltMsg::kAddTicks:
+		if (_fadeDirection != 0) {
+			_fadeTimer += msg.num;
+		}
+		handled = true;
+		break;
+	}
+
+	if (handled && _fadeDirection != 0) {
+		// Request smooth animation when fading
+		_engine->requestSmoothAnimation();
+	}
+
 	return kDone;
 }
 
 void Movie::setTriggerCallback(TriggerCallback callback, void *param) {
 	_triggerCallback = callback;
 	_triggerCallbackParam = param;
-}
-
-void Movie::playMode() {
-	_playMode = {};
-	_playMode.onEnter([this]() {
-		// Start timer after data has been loaded from disk.
-		_engine->discardTicksUntilNextFrame();
-		_engine->startTimer(_frameTimer, _framePeriod);
-	});
-	_playMode.onMsg([this](const BoltMsg &msg) {
-		bool handled = false;
-
-		_engine->runTimer(msg, _frameTimer);
-
-		if (_engine->queryTimer(msg, _frameTimer))
-		{
-			_frameTimer.ticks -= _framePeriod;
-
-			driveAudio();
-			driveFade(); // TODO: use accurate time
-			stepTimeline();
-
-			if (_fadeDirection != 0) {
-				// Request smooth animation when fading
-				_engine->requestSmoothAnimation();
-			}
-		}
-
-		switch (msg.type) {
-		case BoltMsg::kSmoothAnimation:
-			// Fades have smooth animation; they have a higher frame rate than movie cels.
-			driveFade();
-			handled = true;
-			break;
-
-		case BoltMsg::kAddTicks:
-			if (_fadeDirection != 0) {
-				_fadeTimer += msg.num;
-			}
-			handled = true;
-			break;
-		}
-
-		if (handled && _fadeDirection != 0) {
-			// Request smooth animation when fading
-			_engine->requestSmoothAnimation();
-		}
-	});
-
-	_modeCtx.setNextMode(&_playMode);
 }
 
 void Movie::loadAudio() {
@@ -242,7 +228,9 @@ void Movie::startTimeline(ScopedBuffer buf) {
 	_lastTimelineCmdFrame = _curFrameNum;
 	loadTimelineCommand();
 
-	playMode();
+	// Start timer after data has been loaded from disk.
+	_engine->discardTicksUntilNextFrame();
+	_engine->startTimer(_frameTimer, _framePeriod);
 
 	stepTimeline();
 }
