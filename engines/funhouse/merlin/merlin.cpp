@@ -296,7 +296,7 @@ BoltRsp MerlinGame::handlePopup(const BoltMsg& msg) {
 	return _popup.react(msg);
 }
 
-void MerlinGame::dismissPopup(ModeContext *ctx) {
+void MerlinGame::dismissPopup() {
 	_popup.dismiss();
 }
 
@@ -515,20 +515,16 @@ void MerlinGame::branchDifficultyMenu() {
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
-void MerlinGame::setTimeout(ModeContext *ctx, int32 delay, std::function<void()> then) {
-	_timeoutMode = {};
-	_timeoutMode.onEnter([this, delay]() {
-		_engine->startTimer(_timeoutTimer, delay);
-	});
-	_timeoutMode.onMsg([=](const BoltMsg& msg) {
+void MerlinGame::setTimeout(TaskRunner& task, int32 delay, std::function<void()> then) {
+	_engine->startTimer(_timeoutTimer, delay);
+
+	task.setNext([=](const BoltMsg& msg) {
 		_engine->runTimer(msg, _timeoutTimer);
-		if (_engine->queryTimer(msg, _timeoutTimer))
-		{
+		if (_engine->queryTimer(msg, _timeoutTimer)) {
 			then();
 		}
+		return BoltRsp::kDone;
 	});
-
-	ctx->setNextMode(&_timeoutMode);
 }
 
 class MovieCard : public Card

@@ -74,8 +74,8 @@ private:
 		int bowlSlots[kNumBowlSlots]; // Ingredients in bowl
 	};
 
-	void idle();
-	BoltRsp handleIdle(const BoltMsg &msg);
+	void enterIdle();
+	BoltRsp runIdle(const BoltMsg &msg);
 	void evaluate();
 
 	BoltRsp handleClick(Common::Point point);
@@ -93,8 +93,7 @@ private:
 
 	MerlinGame *_game;
 	Common::SharedPtr<State> _state;
-	ModeContext _modeCtx;
-	DynamicMode _idleMode;
+	TaskRunner _task;
 	BltImage _bgImage;
 	BltPalette _bgPalette;
 	Common::Point _origin;

@@ -54,14 +54,11 @@ public:
 	void enter();
 	BoltRsp handleMsg(const BoltMsg &msg);
 protected:
-	void idle();
 	BoltRsp handleButtonClick(int num);
 
 private:
 	MerlinGame *_game;
 	Scene _scene;
-	ModeContext _modeCtx;
-	DynamicMode _idleMode;
 	Common::Array<BltHubItem> _items;
 	Common::Array<BltImage> _itemImages;
 };

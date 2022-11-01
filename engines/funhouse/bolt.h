@@ -145,41 +145,16 @@ struct Timer {
 	int32 elapse = 0;
 };
 
-class Mode {
-public:
-	virtual ~Mode() { }
-	virtual void enter() = 0;
-	virtual void leave() = 0;
-	virtual void react(const BoltMsg &msg) = 0;
-};
+typedef std::function<BoltRsp(const BoltMsg &msg)> TaskFn;
 
-class ModeContext {
+class TaskRunner {
 public:
-	void init(FunhouseEngine *engine);
-	void react(const BoltMsg &msg);
-	Mode *getMode();
-	void setNextMode(Mode *nextMode);
+	void run(const BoltMsg &msg);
+	void setNext(const TaskFn &nextTask);
 
 private:
-	FunhouseEngine *_engine = nullptr;
-	Mode *_mode = nullptr;
-	Mode *_nextMode = nullptr;
-};
-
-class DynamicMode : public Mode {
-public:
-	void enter() override;
-	void leave() override;
-	void react(const BoltMsg &msg) override;
-
-	void onEnter(std::function<void()> fn);
-	void onMsg(std::function<void(const BoltMsg &msg)> fn);
-
-	bool _entered = false;
-
-private:
-	std::function<void()> _enterFn;
-	std::function<void(const BoltMsg &msg)> _msgFn;
+	TaskFn _task;
+	TaskFn _nextTask;
 };
 
 class FunhouseGame {

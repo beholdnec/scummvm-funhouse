@@ -78,7 +78,8 @@ private:
 
 	BoltRsp handleButtonClick(int num);
 	void redraw();
-	void idle();
+	void enterIdle();
+	BoltRsp runIdle(const BoltMsg &msg);
 	BoltRsp driveTransition();
 	int getItemAtPosition(const Common::Point& pt);
 	bool isSolved() const;
@@ -86,8 +87,7 @@ private:
 	MerlinGame *_game;
 	Common::SharedPtr<State> _state;
 	Scene _scene;
-	ModeContext _modeCtx;
-	DynamicMode _idleMode;
+	TaskRunner _task;
 
 	BltU8Values _initial;
 	ItemArray _items;

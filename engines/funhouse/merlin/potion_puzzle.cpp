@@ -95,7 +95,6 @@ typedef Common::Array<BltPotionPuzzleComboTableListElement> BltPotionPuzzleCombo
 
 void PotionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_modeCtx.init(_game->getEngine());
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -176,7 +175,7 @@ void PotionPuzzle::enter() {
 }
 
 BoltRsp PotionPuzzle::handleMsg(const BoltMsg &msg) {
-	_modeCtx.react(msg);
+	_task.run(msg);
 	return kDone;
 }
 
@@ -185,16 +184,11 @@ void PotionPuzzle::handleReset() {
 	draw();
 }
 
-void PotionPuzzle::idle() {
-	_idleMode = {};
-	_idleMode.onMsg([this](const BoltMsg &msg) {
-		handleIdle(msg);
-	});
-
-	_modeCtx.setNextMode(&_idleMode);
+void PotionPuzzle::enterIdle() {
+	_task.setNext([=](const BoltMsg &msg) { return runIdle(msg); });
 }
 
-BoltRsp PotionPuzzle::handleIdle(const BoltMsg &msg) {
+BoltRsp PotionPuzzle::runIdle(const BoltMsg &msg) {
 	BoltRsp cmd;
 
 	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
@@ -237,7 +231,7 @@ void PotionPuzzle::evaluate() {
 		draw();
 
 		// TODO: Play "plunk" sound
-		_game->setTimeout(&_modeCtx, kPlacing2Time, [this]() { evaluate(); });
+		_game->setTimeout(_task, kPlacing2Time, [this]() { evaluate(); });
 		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return;
 	}
@@ -250,13 +244,13 @@ void PotionPuzzle::evaluate() {
 		reset();
 		draw();
 		// TODO: Play "reset" sound
-		idle();
+		enterIdle();
 		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return;
 	}
 
 	// No action taken
-	idle();
+	enterIdle();
 }
 
 BoltRsp PotionPuzzle::handleClick(Common::Point point) {
@@ -300,7 +294,7 @@ BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
 	_requestedIngredient = ingredient;
 	// TODO: play selection sound
 	debug(3, "requested ingredient %d", ingredient);
-	_game->setTimeout(&_modeCtx, kPlacing1Time, [this]() {
+	_game->setTimeout(_task, kPlacing1Time, [this]() {
 		evaluate();
 	});
 	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
@@ -366,7 +360,7 @@ BoltRsp PotionPuzzle::performReaction() {
 		_state->bowlSlots[1] = kNoIngredient;
 		_state->bowlSlots[2] = kNoIngredient;
 		draw();
-		idle();
+		enterIdle();
 		return BoltRsp::kDone;
 	}
 
@@ -413,7 +407,7 @@ BoltRsp PotionPuzzle::performReaction() {
 		_game->startPotionMovie(reactionInfo->movie);
 	}
 
-	idle();
+	enterIdle();
 	return BoltRsp::kDone;
 }
 

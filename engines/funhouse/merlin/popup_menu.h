@@ -59,7 +59,6 @@ private:
 	MerlinGame *_game;
 
 	bool _active = false;
-	Mode *_oldMode = nullptr;
 	BltImage _bgImage;
 	BltPalette _palette;
 	ButtonList _buttons;

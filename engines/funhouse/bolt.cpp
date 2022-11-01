@@ -197,6 +197,32 @@ void FunhouseEngine::yield() {
 	_smoothAnimationSent = false;
 }
 
+void TaskRunner::run(const BoltMsg& msg) {
+	static const int kMaxRunCount = 1024;
+	int runCount = 0;
+	BoltMsg curMsg = msg;
+
+	do {
+		if (_nextTask) {
+			_task = _nextTask;
+			_nextTask = nullptr;
+		}
+
+		_task(curMsg);
+		curMsg = BoltMsg(BoltMsg::kDrive);
+
+		++runCount;
+		if (runCount >= kMaxRunCount) {
+			warning("Exceeded max task execution count; yielding");
+			break;
+		}
+	} while (_nextTask != nullptr);
+}
+
+void TaskRunner::setNext(const TaskFn& nextTask) {
+	_nextTask = nextTask;
+}
+
 void FunhouseEngine::win() {
 	_game->win();
 }
@@ -228,73 +254,6 @@ void FunhouseEngine::discardTicksUntilNextFrame() {
 
 Graphics* FunhouseEngine::getGraphics() {
 	return &_graphics;
-}
-
-void ModeContext::init(FunhouseEngine* engine) {
-	_engine = engine;
-}
-
-void ModeContext::react(const BoltMsg& msg) {
-	bool done = false;
-	bool msgSent = false;
-
-	while (!done) {
-		done = true;
-
-		if (_nextMode) {
-			done = false;
-
-			if (_mode) {
-				_mode->leave();
-			}
-
-			_mode = _nextMode;
-			_nextMode = nullptr;
-
-			if (_mode) {
-				_mode->enter();
-			}
-		}
-		else if (!msgSent) {
-			done = false;
-			_mode->react(msg);
-			msgSent = true;
-		}
-	}
-
-	// TODO: send timer probe message
-}
-
-Mode* ModeContext::getMode() {
-	return _mode;
-}
-
-void ModeContext::setNextMode(Mode* nextMode) {
-	_nextMode = nextMode;
-}
-
-void DynamicMode::onEnter(std::function<void()> fn) {
-	_enterFn = fn;
-}
-
-void DynamicMode::onMsg(std::function<void(const BoltMsg& msg)> fn) {
-	_msgFn = fn;
-}
-
-void DynamicMode::enter() {
-	if (_enterFn) {
-		_enterFn();
-	}
-}
-
-void DynamicMode::leave() {
-	// Unused
-}
-
-void DynamicMode::react(const BoltMsg& msg) {
-	if (_msgFn) {
-		_msgFn(msg);
-	}
 }
 
 void FunhouseEngine::startTimer(Timer& timer, int32 elapse)

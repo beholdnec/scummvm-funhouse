@@ -67,7 +67,7 @@ private:
 	void drawItemFrame(int itemNum, int frameNum);
 
 	void enterIdle();
-	BoltRsp idle(const BoltMsg &msg);
+	BoltRsp runIdle(const BoltMsg &msg);
 	void playbackNext();
 	void enterAnimPlaying();
 	BoltRsp animPlaying(const BoltMsg &msg);
@@ -86,9 +86,7 @@ private:
 	int _matches;
 	Common::Array<int> _solution;
 
-	typedef BoltRsp (MemoryPuzzle::* TaskFunc)(const BoltMsg &msg);
-
-	TaskFunc _currTask = nullptr;
+	TaskRunner _task;
 	Timer _frameTimer;
 	Timer _animTimer;
 	std::function<void()> _animThen; // Function to call when anim is finished

@@ -39,7 +39,6 @@ struct BltSynchPuzzleInfo { // type 52
 
 void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_modeCtx.init(_game->getEngine());
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -135,11 +134,11 @@ void SynchPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 void SynchPuzzle::enter() {
 	_scene.enter();
 	redraw();
-	idle();
+	enterIdle();
 }
 
 BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
-	_modeCtx.react(msg);
+	_task.run(msg);
 	return kDone;
 }
 
@@ -166,43 +165,40 @@ void SynchPuzzle::redraw() {
 	}
 }
 
-void SynchPuzzle::idle() {
-	_idleMode = {};
-	_idleMode.onEnter([]() {
-	});
-	_idleMode.onMsg([this](const BoltMsg &msg) {
-		BoltRsp cmd = _game->handlePopup(msg);
-		if (cmd != BoltRsp::kPass) {
-			return cmd;
-		}
+void SynchPuzzle::enterIdle() {
+	_task.setNext([=](const BoltMsg &msg) { return runIdle(msg); });
+}
 
-		if (msg.type == Scene::kClickButton) {
-			return handleButtonClick(msg.num);
-		}
+BoltRsp SynchPuzzle::runIdle(const BoltMsg &msg) {
+	BoltRsp cmd = _game->handlePopup(msg);
+	if (cmd != BoltRsp::kPass) {
+		return cmd;
+	}
 
-		if (msg.type == BoltMsg::kClick) {
-			int itemNum = getItemAtPosition(msg.point);
-			if (itemNum != -1) {
-				const Item& item = _items[itemNum];
-				const BltSynchPuzzleTransition& transition = item.moveset[_state->items[itemNum]];
-				for (int i = 0; i < transition.size(); ++i) {
-					_moveAgenda[i].item = transition[i].item;
-					_moveAgenda[i].count = transition[i].count;
-				}
+	if (msg.type == Scene::kClickButton) {
+		return handleButtonClick(msg.num);
+	}
 
-				// TODO: hide cursor during transition
-				driveTransition();
-				_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-				return BoltRsp::kDone;
+	if (msg.type == BoltMsg::kClick) {
+		int itemNum = getItemAtPosition(msg.point);
+		if (itemNum != -1) {
+			const Item& item = _items[itemNum];
+			const BltSynchPuzzleTransition& transition = item.moveset[_state->items[itemNum]];
+			for (int i = 0; i < transition.size(); ++i) {
+				_moveAgenda[i].item = transition[i].item;
+				_moveAgenda[i].count = transition[i].count;
 			}
+
+			// TODO: hide cursor during transition
+			driveTransition();
+			_game->getEngine()->setNextMsg(BoltMsg::kDrive);
+			return BoltRsp::kDone;
 		}
+	}
 
-		// TODO: when clicking outside the pieces, a preview of the solution should be shown.
+	// TODO: when clicking outside the pieces, a preview of the solution should be shown.
 
-		return _scene.handleMsg(msg);
-	});
-
-	_modeCtx.setNextMode(&_idleMode);
+	return _scene.handleMsg(msg);
 }
 
 BoltRsp SynchPuzzle::driveTransition() {
@@ -229,7 +225,7 @@ BoltRsp SynchPuzzle::driveTransition() {
 
 			enter(); // Redraw the scene
 
-			_game->setTimeout(&_modeCtx, kTimeoutDelay, [this]() {
+			_game->setTimeout(_task, kTimeoutDelay, [this]() {
 				driveTransition();
 			});
 			_game->getEngine()->setNextMsg(BoltMsg::kDrive);
@@ -243,7 +239,7 @@ BoltRsp SynchPuzzle::driveTransition() {
 		return BoltRsp::kDone;
 	}
 
-	idle();
+	enterIdle();
 	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 	return BoltRsp::kDone;
 }

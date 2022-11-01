@@ -88,7 +88,7 @@ public:
 	PopupMenu &getPopup();
 	void setUndoAvailable(bool available);
 	BoltRsp handlePopup(const BoltMsg &msg);
-	void dismissPopup(ModeContext *ctx);
+	void dismissPopup();
 	BoltRsp handlePopupButtonClick(int num);
 
 	int getDifficulty(DifficultyCategory category);
@@ -108,7 +108,7 @@ public:
 
 	int getVariationSlot(int slot);
 
-	void setTimeout(ModeContext *ctx, int32 delay, std::function<void()> then);
+	void setTimeout(TaskRunner& task, int32 delay, std::function<void()> then);
 
 	static const int kInitialScriptCursor;
 	static const int kMainMenuScriptCursor;
@@ -181,7 +181,6 @@ private:
 
 	bool _cheatMode = false;
 
-	DynamicMode _timeoutMode;
 	Timer _timeoutTimer;
 
 	static const int kChallengeCount = 30;

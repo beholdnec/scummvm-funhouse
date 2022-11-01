@@ -148,10 +148,7 @@ void MemoryPuzzle::enter() {
 }
 
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-	if (_currTask) {
-		return CALL_MEMBER_FN(*this, _currTask)(msg);
-	}
-
+	_task.run(msg);
 	return kDone;
 }
 
@@ -240,7 +237,7 @@ void MemoryPuzzle::playbackNext() {
 }
 
 void MemoryPuzzle::enterIdle() {
-	_currTask = &MemoryPuzzle::idle;
+	_task.setNext([=](const BoltMsg &msg) { return runIdle(msg); });
 
 	if (_matches >= _solution.size()) {
 		_game->branchWin();
@@ -252,7 +249,7 @@ void MemoryPuzzle::enterIdle() {
 	}
 }
 
-BoltRsp MemoryPuzzle::idle(const BoltMsg &msg) {
+BoltRsp MemoryPuzzle::runIdle(const BoltMsg &msg) {
 	BoltRsp cmd;
 
 	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
@@ -268,7 +265,7 @@ BoltRsp MemoryPuzzle::idle(const BoltMsg &msg) {
 }
 
 void MemoryPuzzle::enterAnimPlaying() {
-	_currTask = &MemoryPuzzle::animPlaying;
+	_task.setNext([=](const BoltMsg &msg) { return animPlaying(msg); });
 
 	_game->getEngine()->startTimer(_frameTimer, kFrameDelayMs);
 	_game->getEngine()->startTimer(_animTimer, _animSoundTime);
@@ -320,7 +317,7 @@ BoltRsp MemoryPuzzle::animPlaying(const BoltMsg &msg) {
 }
 
 void MemoryPuzzle::enterAnimWindingDown() {
-	_currTask = &MemoryPuzzle::animWindingDown;
+	_task.setNext([=](const BoltMsg &msg) { return animWindingDown(msg); });
 }
 
 BoltRsp MemoryPuzzle::animWindingDown(const BoltMsg &msg) {
@@ -359,7 +356,7 @@ BoltRsp MemoryPuzzle::animWindingDown(const BoltMsg &msg) {
 }
 
 void MemoryPuzzle::enterAnimStopping() {
-	_currTask = &MemoryPuzzle::animStopping;
+	_task.setNext([=](const BoltMsg &msg) { return animStopping(msg); });
 }
 
 BoltRsp MemoryPuzzle::animStopping(const BoltMsg &msg) {

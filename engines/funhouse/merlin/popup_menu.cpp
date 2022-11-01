@@ -84,7 +84,6 @@ void PopupMenu::init(MerlinGame *game, Boltlib &boltlib, BltId id) {
 
 void PopupMenu::dismiss() {
 	_active = false;
-	_oldMode = nullptr;
 	_game->redraw();
 }
 
