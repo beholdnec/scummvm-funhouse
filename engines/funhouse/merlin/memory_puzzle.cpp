@@ -139,12 +139,11 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_solution.resize(info.solutionLength);
 	makeShuffledSequence(info.pieceCount, spanOf(_solution));
-
-	startPlayback();
 }
 
 void MemoryPuzzle::enter() {
 	_scene.enter();
+	startPlayback();
 }
 
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {

@@ -208,6 +208,10 @@ void TaskRunner::run(const BoltMsg& msg) {
 			_nextTask = nullptr;
 		}
 
+		if (!_task) {
+			break;
+		}
+
 		_task(curMsg);
 		curMsg = BoltMsg(BoltMsg::kDrive);
 
