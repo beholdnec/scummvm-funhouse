@@ -66,8 +66,6 @@ private:
 
 	struct State : public ChallengeState
 	{
-		virtual ~State() { }
-
 		int difficulty;
 		int variation;
 		Common::Array<bool> shelfSlotOccupied; // False: Empty; True: Filled

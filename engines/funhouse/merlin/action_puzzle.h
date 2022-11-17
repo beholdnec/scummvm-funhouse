@@ -31,7 +31,19 @@
 #include "common/random.h"
 
 namespace Funhouse {
-	
+
+struct BltActionDifficultyInfo { // type 47
+	static const uint32 kType = kBltActionDifficultyInfo;
+	static const uint kSize = 0xe;
+	void load(Common::Span<const byte> src, Boltlib& boltlib) {
+		particlesForGoal = src.getUint8At(0x0);
+		particlesForLoss = src.getUint8At(0x1);
+	}
+
+	byte particlesForGoal;
+	byte particlesForLoss;
+};
+
 class ActionPuzzle : public Card {
 public:
 	ActionPuzzle();
@@ -42,6 +54,17 @@ public:
 	void handleReset() override;
 
 protected:
+	struct State : public ChallengeState
+	{
+		virtual ~State() { }
+
+		int difficulty;
+		int variation;
+		int hitParticles = 0;
+		int lostParticles = 0;
+		int goalsEarned = 0;
+	};
+
 	struct Particle {
 		int imageNum;
 		int pathNum;
@@ -65,6 +88,7 @@ protected:
 	BoltRsp win();
 
 	MerlinGame *_game;
+	Common::SharedPtr<State> _state;
 	Timer _timer;
 	BltImage _bgImage;
 	BltPalette _backPalette;
@@ -82,11 +106,12 @@ protected:
 	ImageArray _deathSequences[kNumDeathSequences];
 	int _tickPeriod;
 
+
+	BltActionDifficultyInfo _difficultyInfo;
 	ParticleList _particles;
 
 	Common::RandomSource _random;
 	uint _tickNum;
-	uint _goalNum;
 	Common::Array<int> _spriteSequence;
 	int _spriteIdx = 0;
 	Common::Array<int> _pathSequence;

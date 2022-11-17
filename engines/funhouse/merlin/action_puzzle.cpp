@@ -105,6 +105,7 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	loadBltResourceArray(difficultiesList, boltlib, difficultiesId);
 	BltResourceList difficulty;
 	loadBltResourceArray(difficulty, boltlib, BltShortId(difficultiesList[difficultyLevel].value));
+	BltId difficultyInfoId = difficulty[0].value; // Ex: 4600
 	BltId forePaletteId = difficulty[1].value;
 	BltId backColorCyclesId = difficulty[2].value;
 	BltId foreColorCyclesId = difficulty[3].value;
@@ -112,6 +113,8 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltId goalsId = difficulty[5].value;
 	BltId goalImagesListId = difficulty[6].value;
 	BltId particleDeathsId = difficulty[8].value;
+
+	loadBltResource(_difficultyInfo, boltlib, difficultyInfoId);
 
 	_forePalette.load(boltlib, forePaletteId);
 	loadBltResource(_backColorCycles, boltlib, backColorCyclesId);
@@ -162,6 +165,15 @@ void ActionPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 			_deathSequences[i][j].load(boltlib, imageList[j].value);
 		}
 	}
+
+	_state = _game->getChallengeState(challengeIdx).cast<State>();
+	if (!_state || _state->difficulty != difficultyLevel) {
+		_state.reset(new State());
+		_game->setChallengeState(challengeIdx, _state);
+
+		_state->difficulty = difficultyLevel;
+		reset();
+	}
 }
 
 void ActionPuzzle::enter() {
@@ -195,7 +207,7 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 		_timer.ticks -= _tickPeriod;
 
 		tick();
-		if (_goalNum >= _goals.size()) {
+		if (_state->goalsEarned >= _goals.size()) {
 			win();
 		}
 
@@ -217,7 +229,6 @@ void ActionPuzzle::handleReset() {
 
 void ActionPuzzle::reset() {
 	_tickNum = 0;
-	_goalNum = 0;
 	Common::fill(_spriteSequence.begin(), _spriteSequence.end(), -1);
 	_spriteIdx = _spriteSequence.size();
 	Common::fill(_pathSequence.begin(), _pathSequence.end(), -1);
@@ -260,6 +271,15 @@ BoltRsp ActionPuzzle::handleClick(const Common::Point &pt) {
 		if (isParticleAtPoint(*it, pt)) {
 			// Kill particle
 			it->deathNum = _random.getRandomNumberRng(1, 3);
+
+			++_state->hitParticles;
+			if (_state->hitParticles >= _difficultyInfo.particlesForGoal) {
+				_state->hitParticles = 0;
+				if (_state->goalsEarned < _goals.size()) {
+					++_state->goalsEarned;
+					drawBack();
+				}
+			}
 		}
 	}
 
@@ -291,7 +311,7 @@ void ActionPuzzle::spawnParticle(int imageNum, int pathNum) {
 void ActionPuzzle::drawBack() {
 	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 	for (uint i = 0; i < _goals.size(); ++i) {
-		if (i < _goalNum) {
+		if (i < _state->goalsEarned) {
 			const Common::Point &pt = _goals[i];
 			// TODO: there may be multiple sets of goals
 			// (player has to complete one set and then the next)
@@ -318,16 +338,30 @@ void ActionPuzzle::tick() {
 
 	for (ParticleList::iterator it = _particles.begin(); it != _particles.end();) {
 		Particle &p = *it;
-		++p.progress;
+		bool despawn = false;
 
 		if (p.deathNum > 0) {
+			// Simulate dying particle
 			++p.deathProgress;
-		}
-
-		bool despawn = (uint)p.progress >= _paths[p.pathNum].size();
-		if (p.deathNum > 0) {
-			const ImageArray &deathSequence = _deathSequences[p.deathNum - 1];
+			const ImageArray& deathSequence = _deathSequences[p.deathNum - 1];
 			despawn |= (uint)p.deathProgress >= deathSequence.size();
+		}
+		else {
+			// Simulate living particle
+			++p.progress;
+			if (p.progress >= _paths[p.pathNum].size()) {
+				// Particle lost
+				despawn = true;
+				++_state->lostParticles;
+				if (_state->lostParticles >= _difficultyInfo.particlesForLoss) {
+					// Lose a goal
+					_state->lostParticles = 0;
+					if (_state->goalsEarned > 0) {
+						--_state->goalsEarned;
+						drawBack();
+					}
+				}
+			}
 		}
 
 		if (despawn) {
@@ -343,17 +377,6 @@ void ActionPuzzle::tick() {
 	static const int kNewParticleTicks = 20;
 	if (_tickNum % kNewParticleTicks == 0) {
 		launchNewParticle();
-	}
-
-	// Award new goal every 100 ticks
-	// FIXME: award new goals when particles are clicked
-	// remove goals when particles escape
-	static const int kGoalTicks = 100;
-	if (_tickNum % kGoalTicks == 0) {
-		if (_goalNum < _goals.size()) {
-			++_goalNum;
-			drawBack();
-		}
 	}
 
 	drawFore();
