@@ -26,23 +26,6 @@
 
 namespace Funhouse {
 
-struct BltMemoryPuzzleInfo {
-	static const uint32 kType = kBltMemoryPuzzleInfos;
-	static const uint kSize = 0x10;
-	void load(Common::Span<const byte> src, Boltlib &boltlib) {
-		pieceCount = src.getUint16BEAt(0x0);
-		solutionLength = src.getUint16BEAt(0x2);
-		// TODO: the rest of the fields appear to be timing parameters
-		foo = src.getUint16BEAt(0x8);
-	}
-
-	uint16 pieceCount;
-	uint16 solutionLength;
-	uint16 foo;
-};
-
-typedef Common::Array<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
-
 struct BltMemoryPuzzleItem {
 	static const uint32 kType = kBltMemoryPuzzleItemList;
 	static const uint kSize = 0x10;
@@ -81,6 +64,8 @@ struct BltMemoryPuzzleItemFrame {
 
 typedef Common::Array<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 
+static const int kMillisPerFrame = 1000 / 60;
+
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
 	_matches = 0;
@@ -104,8 +89,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	BltMemoryPuzzleInfos infos;
 	loadBltResourceArray(infos, boltlib, infosId);
-	const BltMemoryPuzzleInfo& info = infos[_game->getDifficulty(kMemoryDifficulty)];
-	_foo = info.foo;
+	_puzzleInfo = infos[_game->getDifficulty(kMemoryDifficulty)];
 	_goal = 3;
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
@@ -137,8 +121,8 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_failSound.load(boltlib, failSoundId);
 
-	_solution.resize(info.solutionLength);
-	makeShuffledSequence(info.pieceCount, spanOf(_solution));
+	_solution.resize(_puzzleInfo.solutionLength);
+	makeShuffledSequence(_puzzleInfo.pieceCount, spanOf(_solution));
 }
 
 void MemoryPuzzle::enter() {
@@ -165,17 +149,17 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 		if (_solution[_matches] == num) {
 			// Earn a new match
 			++_matches;
-			startAnimation(num, _itemList[num].sound);
-			_animThen = [this]() {
+			startAnimation(num, _itemList[num].sound, [=]() {
 				enterIdle();
-			};
+			});
 		} else {
 			// Mismatch
 			_matches = 0;
-			startAnimation(num, _failSound.pickSound());
-			_animThen = [this]() {
-				startPlayback();
-			};
+			startAnimation(num, _failSound.pickSound(), [=]() {
+				_game->setTimeout(_task, _puzzleInfo.failTimeout, [=]() {
+					startPlayback();
+				});
+			});
 		}
 	}
 
@@ -187,7 +171,7 @@ void MemoryPuzzle::startPlayback() {
 	playbackNext();
 }
 
-void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
+void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound, std::function<void()> then) {
 	debug(3, "Starting animation for item %d", itemNum);
 
 	_animItem = itemNum;
@@ -195,7 +179,8 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
 	_animSubFrame = 0;
 	_animSoundTime = sound.getNumSamples() / 22; // This approximation is used by the original engine.
 	_animPlayTime = _animSoundTime;
-	if (_foo == 0x4d) {
+	_animThen = then;
+	if (_puzzleInfo.foo == 0x4d) {
 		warning("Overriding animation time for foo 0x4d");
 		// Special case for Vials puzzle
 		_animPlayTime = 400;
@@ -224,10 +209,9 @@ void MemoryPuzzle::startAnimation(int itemNum, BltSound& sound) {
 
 void MemoryPuzzle::playbackNext() {
 	if (_playbackStep < _goal) {
-		startAnimation(_solution[_playbackStep], _itemList[_solution[_playbackStep]].sound);
-		_animThen = [this]() {
+		startAnimation(_solution[_playbackStep], _itemList[_solution[_playbackStep]].sound, [=]() {
 			playbackNext();
-		};
+		});
 		++_playbackStep;
 	}
 	else {
@@ -264,10 +248,15 @@ BoltRsp MemoryPuzzle::runIdle(const BoltMsg &msg) {
 }
 
 void MemoryPuzzle::enterAnimPlaying() {
-	_task.setNext([=](const BoltMsg &msg) { return animPlaying(msg); });
+	// On starting an animation, delay for one frame to match the original engine.
+	_game->setTimeout(_task, 1 * kMillisPerFrame, [=]() {
+		_game->getEngine()->startTimer(_frameTimer, kFrameDelayMs);
+		_game->getEngine()->startTimer(_animTimer, _animSoundTime);
 
-	_game->getEngine()->startTimer(_frameTimer, kFrameDelayMs);
-	_game->getEngine()->startTimer(_animTimer, _animSoundTime);
+		_task.setNext([=](const BoltMsg& msg) {
+			return animPlaying(msg);
+		});
+	});
 }
 
 BoltRsp MemoryPuzzle::animPlaying(const BoltMsg &msg) {

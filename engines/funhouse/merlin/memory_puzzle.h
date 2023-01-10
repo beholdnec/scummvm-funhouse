@@ -32,6 +32,26 @@
 #include "common/random.h"
 
 namespace Funhouse {
+	
+struct BltMemoryPuzzleInfo {
+	static const uint32 kType = kBltMemoryPuzzleInfos;
+	static const uint kSize = 0x10;
+	void load(Common::Span<const byte> src, Boltlib &boltlib) {
+		pieceCount = src.getUint16BEAt(0x0);
+		solutionLength = src.getUint16BEAt(0x2);
+		// TODO: the rest of the fields appear to be timing parameters
+		foo = src.getUint16BEAt(0x8);
+		failTimeout = src.getUint16BEAt(0xc);
+		// FIXME: At 0xe there is an alternate fail timeout used in a different situation. Please investigate.
+	}
+
+	uint16 pieceCount;
+	uint16 solutionLength;
+	uint16 foo;
+	uint16 failTimeout;
+};
+
+typedef Common::Array<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
 
 class MemoryPuzzle : public Card {
 public:
@@ -63,7 +83,7 @@ private:
 
 	BoltRsp handleButtonClick(int num);
 	void startPlayback();
-	void startAnimation(int itemNum, BltSound& sound);
+	void startAnimation(int itemNum, BltSound& sound, std::function<void()> then);
 	void drawItemFrame(int itemNum, int frameNum);
 
 	void enterIdle();
@@ -79,7 +99,7 @@ private:
 	MerlinGame *_game;
 	Scene _scene;
 	ItemList _itemList;
-	uint16 _foo; // Parameter used to determine puzzle variant? Also used to override animation timing!
+	BltMemoryPuzzleInfo _puzzleInfo;
 	BltSoundList _failSound;
 
 	int _goal;
