@@ -43,6 +43,7 @@ struct BltColorPuzzleTransition { // type 58
 	uint8 count[4];
 };
 
+class BltSound;
 class BltSoundList;
 
 class ColorPuzzle : public Card {
@@ -57,9 +58,6 @@ private:
 	// All color puzzles in Merlin's Apprentice have 4 pieces.
 	static const int kNumPieces = 4;
 	static const int kNumTransitionSteps = 4;
-	// FIXME: morph duration is probably set in game data
-	// or it may last as long as the sound
-	static const uint kMorphDuration = 500;
 
 	struct Piece {
 		int numStates;
@@ -88,15 +86,12 @@ private:
 	void startMove(int piece, int currState);
 	void driveMove();
 	void morphPiece(int piece, int state);
-	void startMorph(BltPaletteMods *paletteMods, int startState, int endState);
+	void startMorph(BltPaletteMods *paletteMods, int startState, int endState, BltSound &sound);
 	bool driveMorph(); // Returns true when morph if finished
 	bool isSolved() const;
 	void draw();
 	void reset();
 
-	typedef BoltRsp(ColorPuzzle::* TaskFunc)(const BoltMsg& msg);
-
-	TaskFunc _currTask = nullptr;
 	MerlinGame* _game;
 	Common::SharedPtr<State> _state;
 	Scene _scene;
@@ -111,7 +106,9 @@ private:
 	int _selectedPiece;
 	int _transitionStep;
 
+	TaskRunner _task;
 	Timer _morphTimer;
+	int32 _morphDuration;
 	BltPaletteMods *_morphPaletteMods;
 	int _morphStartState;
 	int _morphEndState;

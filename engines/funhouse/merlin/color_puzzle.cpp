@@ -132,10 +132,7 @@ void ColorPuzzle::enter() {
 }
 
 BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
-	if (_currTask) {
-		return CALL_MEMBER_FN(*this, _currTask)(msg);
-	}
-
+	_task.run(msg);
 	return kDone;
 }
 
@@ -175,7 +172,7 @@ BoltRsp ColorPuzzle::handleButtonClick(int num) {
 }
 
 void ColorPuzzle::enterIdle() {
-	_currTask = &ColorPuzzle::runIdle;
+	_task.setNext([=](const BoltMsg& msg) { return runIdle(msg); });
 }
 
 BoltRsp ColorPuzzle::runIdle(const BoltMsg& msg) {
@@ -195,7 +192,7 @@ BoltRsp ColorPuzzle::runIdle(const BoltMsg& msg) {
 }
 
 void ColorPuzzle::enterMorph() {
-	_currTask = &ColorPuzzle::runMorph;
+	_task.setNext([=](const BoltMsg& msg) { return runMorph(msg); });
 
 	_game->getEngine()->startTimer(_morphTimer, 0);
 	_game->getEngine()->requestSmoothAnimation();
@@ -258,23 +255,25 @@ void ColorPuzzle::morphPiece(int piece, int state) {
 	debug(3, "morphing piece %d to state %d", piece, state);
 	int oldState = _state->state[piece];
 	_state->state[piece] = state;
-	startMorph(&_pieces[piece].palettes, oldState, state);
-	_soundLists[piece].play(_game->getEngine()->_mixer);
+	startMorph(&_pieces[piece].palettes, oldState, state, _soundLists[piece].pickSound());
 }
 
-void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int endState) {
+void ColorPuzzle::startMorph(BltPaletteMods *paletteMods, int startState, int endState, BltSound &sound) {
 	_morphPaletteMods = paletteMods;
 	_morphStartState = startState;
 	_morphEndState = endState;
+	_morphDuration = sound.getNumSamples() / 22; // FIXME: duration seems too long...
+
+	sound.play(_game->getEngine()->_mixer);
 
 	enterMorph();
 }
 
 bool ColorPuzzle::driveMorph() {
-	if (_morphTimer.ticks < kMorphDuration) {
+	if (_morphTimer.ticks < _morphDuration) {
 		applyPaletteModBlended(_game->getGraphics(), kFore, *_morphPaletteMods,
 							   _morphStartState, _morphEndState,
-							   Common::Rational(_morphTimer.ticks, kMorphDuration));
+							   Common::Rational(_morphTimer.ticks, _morphDuration));
 
 		_game->getGraphics()->markDirty();
 		return false;
