@@ -51,10 +51,10 @@ struct BltMemoryPuzzleItemFrame {
 	static const uint kSize = 0xA;
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		// FIXME: position at 0?
-		pos.x = src.getInt16BEAt(0);
-		pos.y = src.getInt16BEAt(2);
-		imageId = BltId(src.getUint32BEAt(4)); // 8640
-		delayFrames = src.getInt16BEAt(8);
+		pos.x = src.getInt16BEAt(0x0);
+		pos.y = src.getInt16BEAt(0x2);
+		imageId = BltId(src.getUint32BEAt(0x4)); // 8640
+		delayFrames = src.getInt16BEAt(0x8);
 	}
 
 	Common::Point pos;
@@ -64,11 +64,10 @@ struct BltMemoryPuzzleItemFrame {
 
 typedef Common::Array<BltMemoryPuzzleItemFrame> BltMemoryPuzzleItemFrameList;
 
-static const int kMillisPerFrame = 1000 / 60;
+static const int32 kMillisPerFrame = 1000 / 60;
 
 void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	_game = game;
-	_matches = 0;
 
 	uint16 resId = 0;
 	switch (challengeIdx) {
@@ -90,7 +89,6 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 	BltMemoryPuzzleInfos infos;
 	loadBltResourceArray(infos, boltlib, infosId);
 	_puzzleInfo = infos[_game->getDifficulty(kMemoryDifficulty)];
-	_goal = 3;
 
 	loadScene(_scene, _game->getEngine(), boltlib, sceneId);
 
@@ -123,6 +121,7 @@ void MemoryPuzzle::init(MerlinGame *game, Boltlib &boltlib, int challengeIdx) {
 
 	_solution.resize(_puzzleInfo.solutionLength);
 	makeShuffledSequence(_puzzleInfo.pieceCount, spanOf(_solution));
+	resetGoal();
 }
 
 void MemoryPuzzle::enter() {
@@ -137,8 +136,7 @@ BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
 
 void MemoryPuzzle::handleReset() {
 	// TODO: generate new solution?
-	_matches = 0;
-	_goal = 3;
+	resetGoal();
 	startPlayback();
 }
 
@@ -154,6 +152,7 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 			});
 		} else {
 			// Mismatch
+			// TODO: Implement reset after a certain number of fails (see _puzzleInfo.failsToReset)
 			_matches = 0;
 			startAnimation(num, _failSound.pickSound(), [=]() {
 				_game->setTimeout(_task, _puzzleInfo.failTimeout, [=]() {
@@ -164,6 +163,11 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 	}
 
 	return BoltRsp::kDone;
+}
+
+void MemoryPuzzle::resetGoal() {
+	_matches = 0;
+	_goal = _puzzleInfo.goalStep; // FIXME: should be goalStep - 1?
 }
 
 void MemoryPuzzle::startPlayback() {
@@ -226,9 +230,11 @@ void MemoryPuzzle::enterIdle() {
 		_game->branchWin();
 	}
 	else if (_matches >= _goal) {
+		_goal += _puzzleInfo.goalStep;
 		_matches = 0;
-		_goal += 3;
-		startPlayback();
+		_game->setTimeout(_task, _puzzleInfo.goalAchieveTimeout, [=]() {
+			startPlayback();
+		});
 	}
 }
 

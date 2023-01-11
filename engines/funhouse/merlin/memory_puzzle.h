@@ -39,16 +39,25 @@ struct BltMemoryPuzzleInfo {
 	void load(Common::Span<const byte> src, Boltlib &boltlib) {
 		pieceCount = src.getUint16BEAt(0x0);
 		solutionLength = src.getUint16BEAt(0x2);
-		// TODO: the rest of the fields appear to be timing parameters
+		goalStep = src.getUint8At(0x5);
+		failsToReset = src.getUint16BEAt(0x6);
 		foo = src.getUint16BEAt(0x8);
+		goalAchieveTimeout = src.getUint16BEAt(0xa);
 		failTimeout = src.getUint16BEAt(0xc);
-		// FIXME: At 0xe there is an alternate fail timeout used in a different situation. Please investigate.
+		failResetTimeout = src.getUint16BEAt(0xe);
 	}
 
 	uint16 pieceCount;
 	uint16 solutionLength;
+	uint8 goalStep;
+	// Number of mismatches before the puzzle resets. This mechanic appears to have been
+	// "disabled" in the final game by setting this value to an extremely high number (10,000 in all
+	// puzzles).
+	uint16 failsToReset;
 	uint16 foo;
+	uint16 goalAchieveTimeout;
 	uint16 failTimeout;
+	uint16 failResetTimeout;
 };
 
 typedef Common::Array<BltMemoryPuzzleInfo> BltMemoryPuzzleInfos;
@@ -82,6 +91,7 @@ private:
 	typedef Common::Array<Item> ItemList;
 
 	BoltRsp handleButtonClick(int num);
+	void resetGoal();
 	void startPlayback();
 	void startAnimation(int itemNum, BltSound& sound, std::function<void()> then);
 	void drawItemFrame(int itemNum, int frameNum);
