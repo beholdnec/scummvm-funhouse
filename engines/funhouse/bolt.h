@@ -145,17 +145,7 @@ struct Timer {
 	int32 elapse = 0;
 };
 
-typedef std::function<BoltRsp(const BoltMsg &msg)> TaskFn;
-
-class TaskRunner {
-public:
-	void run(const BoltMsg &msg);
-	void setNext(const TaskFn &nextTask);
-
-private:
-	TaskFn _task;
-	TaskFn _nextTask;
-};
+typedef std::function<BoltRsp(const BoltMsg &msg)> MsgHandler;
 
 class FunhouseGame {
 public:

@@ -116,7 +116,7 @@ private:
 	int _matches;
 	Common::Array<int> _solution;
 
-	TaskRunner _task;
+	MsgHandler _task;
 	Timer _frameTimer;
 	Timer _animTimer;
 	std::function<void()> _animThen; // Function to call when anim is finished

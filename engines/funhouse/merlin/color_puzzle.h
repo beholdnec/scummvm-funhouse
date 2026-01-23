@@ -106,7 +106,7 @@ private:
 	int _selectedPiece;
 	int _transitionStep;
 
-	TaskRunner _task;
+	MsgHandler _task;
 	Timer _morphTimer;
 	int32 _morphDuration;
 	BltPaletteMods *_morphPaletteMods;

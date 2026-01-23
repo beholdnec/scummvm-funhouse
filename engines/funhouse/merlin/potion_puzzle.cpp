@@ -175,8 +175,7 @@ void PotionPuzzle::enter() {
 }
 
 BoltRsp PotionPuzzle::handleMsg(const BoltMsg &msg) {
-	_task.run(msg);
-	return kDone;
+	return _task(msg);
 }
 
 void PotionPuzzle::handleReset() {
@@ -185,7 +184,7 @@ void PotionPuzzle::handleReset() {
 }
 
 void PotionPuzzle::enterIdle() {
-	_task.setNext([=](const BoltMsg &msg) { return runIdle(msg); });
+	_task = [=](const BoltMsg &msg) { return runIdle(msg); };
 }
 
 BoltRsp PotionPuzzle::runIdle(const BoltMsg &msg) {

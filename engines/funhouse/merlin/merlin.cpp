@@ -515,16 +515,16 @@ void MerlinGame::branchDifficultyMenu() {
 	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
-void MerlinGame::setTimeout(TaskRunner& task, int32 delay, std::function<void()> then) {
+void MerlinGame::setTimeout(MsgHandler& task, int32 delay, std::function<void()> then) {
 	_engine->startTimer(_timeoutTimer, delay);
 
-	task.setNext([=](const BoltMsg& msg) {
+	task = [=](const BoltMsg& msg) {
 		_engine->runTimer(msg, _timeoutTimer);
 		if (_engine->queryTimer(msg, _timeoutTimer)) {
 			then();
 		}
 		return BoltRsp::kDone;
-	});
+	};
 }
 
 class MovieCard : public Card

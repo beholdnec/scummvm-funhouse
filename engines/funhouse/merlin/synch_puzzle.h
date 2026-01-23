@@ -87,7 +87,7 @@ private:
 	MerlinGame *_game;
 	Common::SharedPtr<State> _state;
 	Scene _scene;
-	TaskRunner _task;
+	MsgHandler _task;
 
 	BltU8Values _initial;
 	ItemArray _items;

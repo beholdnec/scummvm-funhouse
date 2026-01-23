@@ -197,36 +197,6 @@ void FunhouseEngine::yield() {
 	_smoothAnimationSent = false;
 }
 
-void TaskRunner::run(const BoltMsg& msg) {
-	static const int kMaxRunCount = 1024;
-	int runCount = 0;
-	BoltMsg curMsg = msg;
-
-	do {
-		if (_nextTask) {
-			_task = _nextTask;
-			_nextTask = nullptr;
-		}
-
-		if (!_task) {
-			break;
-		}
-
-		_task(curMsg);
-		curMsg = BoltMsg(BoltMsg::kDrive);
-
-		++runCount;
-		if (runCount >= kMaxRunCount) {
-			warning("Exceeded max task execution count; yielding");
-			break;
-		}
-	} while (_nextTask != nullptr);
-}
-
-void TaskRunner::setNext(const TaskFn& nextTask) {
-	_nextTask = nextTask;
-}
-
 void FunhouseEngine::win() {
 	_game->win();
 }

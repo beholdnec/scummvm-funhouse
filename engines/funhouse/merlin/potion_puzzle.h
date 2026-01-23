@@ -91,7 +91,7 @@ private:
 
 	MerlinGame *_game;
 	Common::SharedPtr<State> _state;
-	TaskRunner _task;
+	MsgHandler _task;
 	BltImage _bgImage;
 	BltPalette _bgPalette;
 	Common::Point _origin;

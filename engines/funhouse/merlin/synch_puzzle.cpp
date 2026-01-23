@@ -138,8 +138,7 @@ void SynchPuzzle::enter() {
 }
 
 BoltRsp SynchPuzzle::handleMsg(const BoltMsg &msg) {
-	_task.run(msg);
-	return kDone;
+	return _task(msg);
 }
 
 void SynchPuzzle::handleReset() {
@@ -166,7 +165,7 @@ void SynchPuzzle::redraw() {
 }
 
 void SynchPuzzle::enterIdle() {
-	_task.setNext([=](const BoltMsg &msg) { return runIdle(msg); });
+	_task = [=](const BoltMsg &msg) { return runIdle(msg); };
 }
 
 BoltRsp SynchPuzzle::runIdle(const BoltMsg &msg) {

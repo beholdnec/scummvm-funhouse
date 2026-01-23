@@ -130,8 +130,7 @@ void MemoryPuzzle::enter() {
 }
 
 BoltRsp MemoryPuzzle::handleMsg(const BoltMsg &msg) {
-	_task.run(msg);
-	return kDone;
+	return _task(msg);
 }
 
 void MemoryPuzzle::handleReset() {
@@ -224,7 +223,7 @@ void MemoryPuzzle::playbackNext() {
 }
 
 void MemoryPuzzle::enterIdle() {
-	_task.setNext([=](const BoltMsg &msg) { return runIdle(msg); });
+	_task = [=](const BoltMsg &msg) { return runIdle(msg); };
 
 	if (_matches >= _solution.size()) {
 		_game->branchWin();
@@ -259,9 +258,9 @@ void MemoryPuzzle::enterAnimPlaying() {
 		_game->getEngine()->startTimer(_frameTimer, kFrameDelayMs);
 		_game->getEngine()->startTimer(_animTimer, _animSoundTime);
 
-		_task.setNext([=](const BoltMsg& msg) {
+		_task = [=](const BoltMsg& msg) {
 			return animPlaying(msg);
-		});
+		};
 	});
 }
 
@@ -311,7 +310,7 @@ BoltRsp MemoryPuzzle::animPlaying(const BoltMsg &msg) {
 }
 
 void MemoryPuzzle::enterAnimWindingDown() {
-	_task.setNext([=](const BoltMsg &msg) { return animWindingDown(msg); });
+	_task = [=](const BoltMsg &msg) { return animWindingDown(msg); };
 }
 
 BoltRsp MemoryPuzzle::animWindingDown(const BoltMsg &msg) {
@@ -350,7 +349,7 @@ BoltRsp MemoryPuzzle::animWindingDown(const BoltMsg &msg) {
 }
 
 void MemoryPuzzle::enterAnimStopping() {
-	_task.setNext([=](const BoltMsg &msg) { return animStopping(msg); });
+	_task = [=](const BoltMsg &msg) { return animStopping(msg); };
 }
 
 BoltRsp MemoryPuzzle::animStopping(const BoltMsg &msg) {

@@ -108,7 +108,7 @@ public:
 
 	int getVariationSlot(int slot);
 
-	void setTimeout(TaskRunner& task, int32 delay, std::function<void()> then);
+	void setTimeout(MsgHandler& task, int32 delay, std::function<void()> then);
 
 	static const int kInitialScriptCursor;
 	static const int kMainMenuScriptCursor;

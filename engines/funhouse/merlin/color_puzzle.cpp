@@ -132,8 +132,7 @@ void ColorPuzzle::enter() {
 }
 
 BoltRsp ColorPuzzle::handleMsg(const BoltMsg &msg) {
-	_task.run(msg);
-	return kDone;
+	return _task(msg);
 }
 
 void ColorPuzzle::handleReset() {
@@ -172,7 +171,7 @@ BoltRsp ColorPuzzle::handleButtonClick(int num) {
 }
 
 void ColorPuzzle::enterIdle() {
-	_task.setNext([=](const BoltMsg& msg) { return runIdle(msg); });
+	_task = [=](const BoltMsg& msg) { return runIdle(msg); };
 }
 
 BoltRsp ColorPuzzle::runIdle(const BoltMsg& msg) {
@@ -192,7 +191,7 @@ BoltRsp ColorPuzzle::runIdle(const BoltMsg& msg) {
 }
 
 void ColorPuzzle::enterMorph() {
-	_task.setNext([=](const BoltMsg& msg) { return runMorph(msg); });
+	_task = [=](const BoltMsg& msg) { return runMorph(msg); };
 
 	_game->getEngine()->startTimer(_morphTimer, 0);
 	_game->getEngine()->requestSmoothAnimation();
