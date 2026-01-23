@@ -196,8 +196,7 @@ void ActionPuzzle::redraw() {
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 	BoltRsp cmd = _game->handlePopup(msg);
-	// FIXME: Try to simplify this and avoid having to call getPopup().isActive
-	if (cmd != BoltRsp::kPass && _game->getPopup().isActive()) {
+	if (cmd != BoltRsp::kReject) {
 		return cmd;
 	}
 

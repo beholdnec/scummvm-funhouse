@@ -174,7 +174,7 @@ void ColorPuzzle::enterIdle() {
 
 BoltRsp ColorPuzzle::runIdle(const BoltMsg& msg) {
 	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
+	if (cmd != BoltRsp::kReject) {
 		return cmd;
 	}
 
@@ -185,7 +185,7 @@ BoltRsp ColorPuzzle::runIdle(const BoltMsg& msg) {
 		return _scene.handleMsg(msg);
 	}
 
-	return kContinue;
+	return kPass;
 }
 
 void ColorPuzzle::enterMorph() {
@@ -209,7 +209,7 @@ BoltRsp ColorPuzzle::runMorph(const BoltMsg& msg) {
 		break;
 	}
 
-	return kContinue;
+	return kPass;
 }
 
 void ColorPuzzle::evaluate() {

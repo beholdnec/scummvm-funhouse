@@ -103,7 +103,7 @@ BoltRsp PopupMenu::react(const BoltMsg &msg) {
 	}
 
 	if (!_active) {
-		return BoltRsp::kPass;
+		return BoltRsp::kReject;
 	}
 
 	if (msg.type == BoltMsg::kClick || msg.type == BoltMsg::kHover) {

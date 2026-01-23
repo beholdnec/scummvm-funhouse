@@ -101,7 +101,7 @@ void HubCard::enter() {
 
 BoltRsp HubCard::handleMsg(const BoltMsg &msg) {
 	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
+	if (cmd != BoltRsp::kReject) {
 		return cmd;
 	}
 

@@ -190,7 +190,7 @@ void PotionPuzzle::enterIdle() {
 BoltRsp PotionPuzzle::runIdle(const BoltMsg &msg) {
 	BoltRsp cmd;
 
-	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
+	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kReject) {
 		return cmd;
 	}
 

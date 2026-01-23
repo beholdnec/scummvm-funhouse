@@ -196,7 +196,7 @@ bool TangramPuzzle::pieceIsPlaceableAt(int pieceNum, int px, int py) {
 BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 	// FIXME: Is popup allowed while a piece is held?
 	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
+	if (cmd != BoltRsp::kReject) {
 		return cmd;
 	}
 
@@ -252,7 +252,7 @@ BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 		}
 	}
 
-	return kContinue;
+	return kPass;
 }
 
 void TangramPuzzle::handleReset() {

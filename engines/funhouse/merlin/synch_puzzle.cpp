@@ -170,7 +170,7 @@ void SynchPuzzle::enterIdle() {
 
 BoltRsp SynchPuzzle::runIdle(const BoltMsg &msg) {
 	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass && _game->getPopup().isActive()) {
+	if (cmd != BoltRsp::kReject) {
 		return cmd;
 	}
 

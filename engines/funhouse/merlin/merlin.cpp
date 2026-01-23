@@ -512,8 +512,10 @@ void MerlinGame::setTimeout(MsgHandler& task, int32 delay, std::function<void()>
 		_engine->runTimer(msg, _timeoutTimer);
 		if (_engine->queryTimer(msg, _timeoutTimer)) {
 			then();
+			return BoltRsp::kContinue;
 		}
-		return BoltRsp::kContinue;
+
+		return BoltRsp::kPass;
 	};
 }
 

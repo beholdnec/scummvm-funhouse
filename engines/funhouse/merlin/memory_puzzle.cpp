@@ -240,7 +240,7 @@ void MemoryPuzzle::enterIdle() {
 BoltRsp MemoryPuzzle::runIdle(const BoltMsg &msg) {
 	BoltRsp cmd;
 
-	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kPass) {
+	if ((cmd = _game->handlePopup(msg)) != BoltRsp::kReject) {
 		return cmd;
 	}
 
@@ -306,7 +306,7 @@ BoltRsp MemoryPuzzle::animPlaying(const BoltMsg &msg) {
 		}
 	}
 
-	return kContinue;
+	return kPass;
 }
 
 void MemoryPuzzle::enterAnimWindingDown() {
@@ -345,7 +345,7 @@ BoltRsp MemoryPuzzle::animWindingDown(const BoltMsg &msg) {
 		}
 	}
 
-	return kContinue;
+	return kPass;
 }
 
 void MemoryPuzzle::enterAnimStopping() {

@@ -67,13 +67,16 @@ Common::Error FunhouseEngine::run() {
 		assert(msg.type != BoltMsg::kInvalid && "getNextMsg must return a valid message");
 		setNextMsg(BoltMsg::kInvalid);
 		debug(4, "handling msg %d", msg.type);
-		_graphics.handleMsg(msg);
-		BoltRsp rsp = _game->handleMsg(msg);
-		if (rsp == kContinue && msg.type == BoltMsg::kInvalid) {
-			// Continue running the main loop; don't present another frame until kPass is returned.
-			setNextMsg(BoltMsg::kNone);
-		} else if (rsp == kPass && msg.type == BoltMsg::kNone) {
+
+		if (msg.type == BoltMsg::kMsgYield) {
 			yield();
+		}
+		else {
+			_graphics.handleMsg(msg);
+			BoltRsp rsp = _game->handleMsg(msg);
+			if (rsp == kContinue && _nextMsg.type == BoltMsg::kInvalid) {
+				setNextMsg(BoltMsg::kNone);
+			}
 		}
 	}
 
@@ -114,8 +117,7 @@ BoltMsg FunhouseEngine::getNextMsg()
 	if (_eventsSinceYield >= kMaxEventsSinceYield) {
 		// Basic sanity measure. This should never happen.
 		warning("Too many events occurred since last yield! Yielding now");
-		yield();
-		return BoltMsg::kNone;
+		return BoltMsg::kMsgYield;
 	}
 
 	++_eventsSinceYield;
@@ -183,7 +185,7 @@ BoltMsg FunhouseEngine::getNextMsg()
 		return msg;
 	}
 
-	return BoltMsg::kNone;
+	return BoltMsg::kMsgYield;
 }
 
 void FunhouseEngine::yield() {

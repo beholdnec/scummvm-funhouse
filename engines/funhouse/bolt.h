@@ -99,6 +99,7 @@ struct BoltMsg {
 		kInvalid = -1,
 		// System messages (>= 0)
 		kNone = 0,
+		kMsgYield,
 		kHover,
 		kClick,
 		kRightClick,
@@ -118,8 +119,9 @@ struct BoltMsg {
 
 // Responses to a message.
 enum BoltRsp {
-	kContinue, // Message was handled. Event processing should continue until the main handler returns kPass.
-	kPass, // Message was not handled and should be passed to the next handler.
+	kContinue, // Message was handled. Event processing should switch to kNone and continue until the main handler returns kPass.
+	kPass, // Message was ignored. Event processing should yield.
+	kReject, // Message was refused; only used by popup menu handler to signal the menu is inactive.
 };
 
 class Card {
