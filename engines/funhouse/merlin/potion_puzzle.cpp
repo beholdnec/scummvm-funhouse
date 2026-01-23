@@ -198,7 +198,7 @@ BoltRsp PotionPuzzle::runIdle(const BoltMsg &msg) {
 		return handleClick(msg.point);
 	}
 
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 void PotionPuzzle::evaluate() {
@@ -231,7 +231,6 @@ void PotionPuzzle::evaluate() {
 
 		// TODO: Play "plunk" sound
 		_game->setTimeout(_task, kPlacing2Time, [this]() { evaluate(); });
-		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return;
 	}
 
@@ -244,7 +243,6 @@ void PotionPuzzle::evaluate() {
 		draw();
 		// TODO: Play "reset" sound
 		enterIdle();
-		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 		return;
 	}
 
@@ -253,9 +251,6 @@ void PotionPuzzle::evaluate() {
 }
 
 BoltRsp PotionPuzzle::handleClick(Common::Point point) {
-	// Eat the click event
-	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-
 	// Check if middle bowl piece was clicked. If it was clicked, undo the last action.
 	if (isValidIngredient(_state->bowlSlots[1])) {
 		const BltImage &image = _ingredientImages[_state->bowlSlots[1]];
@@ -286,7 +281,7 @@ BoltRsp PotionPuzzle::handleClick(Common::Point point) {
 		}
 	}
 
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
@@ -296,8 +291,7 @@ BoltRsp PotionPuzzle::requestIngredient(int ingredient) {
 	_game->setTimeout(_task, kPlacing1Time, [this]() {
 		evaluate();
 	});
-	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 BoltRsp PotionPuzzle::requestUndo() {
@@ -305,7 +299,7 @@ BoltRsp PotionPuzzle::requestUndo() {
 	warning("Undo not implemented");
 	// XXX: win.
 	_game->branchScript(0);
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 BoltRsp PotionPuzzle::performReaction() {
@@ -360,7 +354,7 @@ BoltRsp PotionPuzzle::performReaction() {
 		_state->bowlSlots[2] = kNoIngredient;
 		draw();
 		enterIdle();
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 
 	// Perform reaction
@@ -369,7 +363,7 @@ BoltRsp PotionPuzzle::performReaction() {
 	if (reactionInfo->c == -1) {
 		// FIXME: Does the original program check if all ingredients are used?
 		_game->branchScript(0);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 	else {
 		if (reactionInfo->c != (int8)0xfd) { // I don't think this is ever false...
@@ -407,7 +401,7 @@ BoltRsp PotionPuzzle::performReaction() {
 	}
 
 	enterIdle();
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 void PotionPuzzle::reset() {

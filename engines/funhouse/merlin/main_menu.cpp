@@ -65,29 +65,29 @@ BoltRsp MainMenu::handleMsg(const BoltMsg &msg) {
 BoltRsp MainMenu::handleButtonClick(int num) {
 	switch (num) {
 	case -1: // No button
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case 0: // Play
 		_game->branchScript(0);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case 1: // Credits
 		_game->branchScript(1);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case 2: // Help
 		_game->playHelpMovie();
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case 3: // Exit
 		_game->branchScript(2);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case 4: // Tour
 		_game->branchScript(3);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case 5: // Flower
 		// XXX: go to freeplay mode. TODO: original game shows colorbars when cheat mode is active.
 		_game->branchScript(8, true);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	default:
 		warning("unknown main menu button %d", num);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 }
 

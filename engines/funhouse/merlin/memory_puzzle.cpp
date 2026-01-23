@@ -161,7 +161,7 @@ BoltRsp MemoryPuzzle::handleButtonClick(int num) {
 		}
 	}
 
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 void MemoryPuzzle::resetGoal() {
@@ -306,7 +306,7 @@ BoltRsp MemoryPuzzle::animPlaying(const BoltMsg &msg) {
 		}
 	}
 
-	return kDone;
+	return kContinue;
 }
 
 void MemoryPuzzle::enterAnimWindingDown() {
@@ -325,7 +325,7 @@ BoltRsp MemoryPuzzle::animWindingDown(const BoltMsg &msg) {
 
 		if (_animFrame >= item.frames.size()) {
 			enterAnimStopping();
-			return kDone;
+			return kContinue;
 		}
 
 		const ItemFrame& frame = item.frames[_animFrame];
@@ -345,7 +345,7 @@ BoltRsp MemoryPuzzle::animWindingDown(const BoltMsg &msg) {
 		}
 	}
 
-	return kDone;
+	return kContinue;
 }
 
 void MemoryPuzzle::enterAnimStopping() {
@@ -360,7 +360,7 @@ BoltRsp MemoryPuzzle::animStopping(const BoltMsg &msg) {
 		_animThen();
 	}
 
-	return kDone;
+	return kContinue;
 }
 
 void MemoryPuzzle::drawItemFrame(int itemNum, int frameNum) {

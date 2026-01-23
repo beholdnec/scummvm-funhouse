@@ -99,7 +99,7 @@ BoltRsp PopupMenu::react(const BoltMsg &msg) {
 			dismiss();
 		}
 
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 
 	if (!_active) {
@@ -119,12 +119,12 @@ BoltRsp PopupMenu::react(const BoltMsg &msg) {
 		}
 	}
 
-	return BoltRsp::kDone;
+	return BoltRsp::kPass;
 }
 
 BoltRsp PopupMenu::handleButtonClick(int num) {
 	_game->handlePopupButtonClick(num);
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 bool PopupMenu::isActive() const {

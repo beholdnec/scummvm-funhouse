@@ -69,8 +69,6 @@ void Movie::start(FunhouseEngine *engine, PfFile &pfFile, uint32 name) {
 
 	// Timeline should be the first packet
 	startTimeline(fetchBuffer(_timelineQueue));
-
-	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
 void Movie::stop() {
@@ -162,9 +160,10 @@ BoltRsp Movie::handleMsg(const BoltMsg &msg) {
 	if (handled && _fadeDirection != 0) {
 		// Request smooth animation when fading
 		_engine->requestSmoothAnimation();
+		return kContinue;
 	}
 
-	return kDone;
+	return kPass;
 }
 
 void Movie::setTriggerCallback(TriggerCallback callback, void *param) {

@@ -116,10 +116,10 @@ BoltRsp HubCard::handleButtonClick(int num) {
 	if (num == -1) {
 		// XXX: If no button was clicked, go to potion puzzle
 		_game->branchScript(_itemImages.size());
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	} else {
 		_game->branchScript(num);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 }
 

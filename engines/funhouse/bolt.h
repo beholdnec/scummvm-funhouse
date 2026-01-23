@@ -96,9 +96,9 @@ struct Rect {
 // Messages that the engine sends to the game.
 struct BoltMsg {
 	enum Type {
+		kInvalid = -1,
 		// System messages (>= 0)
-		kYield = 0, // Present a new frame and gather more input
-		kDrive, // Run message handlers with no particular event
+		kNone = 0,
 		kHover,
 		kClick,
 		kRightClick,
@@ -109,7 +109,7 @@ struct BoltMsg {
 		kSceneMsgs = 100,
 	};
 
-	BoltMsg(int type_ = kYield) : type(type_) { }
+	BoltMsg(int type_ = kInvalid) : type(type_) { }
 
 	int type;
 	int num = 0;
@@ -118,7 +118,7 @@ struct BoltMsg {
 
 // Responses to a message.
 enum BoltRsp {
-	kDone, // Message was handled.
+	kContinue, // Message was handled. Event processing should continue until the main handler returns kPass.
 	kPass, // Message was not handled and should be passed to the next handler.
 };
 

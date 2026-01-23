@@ -129,8 +129,6 @@ BoltRsp SlidingPuzzle::handleMsg(const BoltMsg &msg) {
 	default:
 		return _scene.handleMsg(msg);
 	}
-
-	return kDone;
 }
 
 void SlidingPuzzle::handleReset() {
@@ -180,13 +178,13 @@ BoltRsp SlidingPuzzle::handleButtonClick(int num) {
 		bool win = move(num);
 		if (win) {
 			_game->branchWin();
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		}
 	} else if (num != -1) {
 		warning("Unhandled button %d", num);
 	}
 
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 } // End of namespace Bolt

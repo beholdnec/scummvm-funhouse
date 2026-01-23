@@ -216,7 +216,7 @@ BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 
 			if (checkWin()) {
 				_game->branchWin();
-				return BoltRsp::kDone;
+				return BoltRsp::kContinue;
 			}
 		}
 		else {
@@ -236,7 +236,7 @@ BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 			}
 		}
 
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 
 	if (msg.type == BoltMsg::kHover) {
@@ -248,11 +248,11 @@ BoltRsp TangramPuzzle::handleMsg(const BoltMsg &msg) {
 			p.pos.x = snap(p.pos.x, _gridSpacing) + _offset.x;
 			p.pos.y = snap(p.pos.y, _gridSpacing) + _offset.y;
 			drawPieces();
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		}
 	}
 
-	return kDone;
+	return kContinue;
 }
 
 void TangramPuzzle::handleReset() {

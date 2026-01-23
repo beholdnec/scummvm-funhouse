@@ -168,18 +168,18 @@ BoltRsp Scene::handleMsg(const BoltMsg &msg) {
 	switch (msg.type) {
 	case BoltMsg::kHover: {
 		updateButtons(&msg.point);
-		break;
+		return BoltRsp::kContinue;
 	}
 
 	case BoltMsg::kClick: {
 		BoltMsg newMsg(kClickButton);
 		newMsg.num = getButtonAtPoint(msg.point);
 		_engine->setNextMsg(newMsg);
-		break;
+		return BoltRsp::kContinue;
 	}
 	}
 
-	return BoltRsp::kDone;
+	return BoltRsp::kPass;
 }
 
 void Scene::loadForePlane(Boltlib &boltlib, BltId planeId) {

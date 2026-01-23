@@ -150,7 +150,7 @@ void SynchPuzzle::handleReset() {
 
 BoltRsp SynchPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 void SynchPuzzle::redraw() {
@@ -170,7 +170,7 @@ void SynchPuzzle::enterIdle() {
 
 BoltRsp SynchPuzzle::runIdle(const BoltMsg &msg) {
 	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
+	if (cmd != BoltRsp::kPass && _game->getPopup().isActive()) {
 		return cmd;
 	}
 
@@ -190,8 +190,7 @@ BoltRsp SynchPuzzle::runIdle(const BoltMsg &msg) {
 
 			// TODO: hide cursor during transition
 			driveTransition();
-			_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		}
 	}
 
@@ -227,20 +226,18 @@ BoltRsp SynchPuzzle::driveTransition() {
 			_game->setTimeout(_task, kTimeoutDelay, [this]() {
 				driveTransition();
 			});
-			_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		}
 	}
 
 	// Agenda is empty; check win condition and return to idle state
 	if (isSolved()) {
 		_game->branchWin();
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 
 	enterIdle();
-	_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 int SynchPuzzle::getItemAtPosition(const Common::Point &pt) {

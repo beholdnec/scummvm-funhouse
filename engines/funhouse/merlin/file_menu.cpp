@@ -92,11 +92,11 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 	if (num >= kFirstFileButton && num < kFirstFileButton + kProfileCount) {
 		_game->selectProfile(num - kFirstFileButton);
 		setButtons();
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	} else {
 		switch (num) {
 		case -1: // No button
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		case 1: // Play
 			if (_game->getProfile() != -1) {
 				if (_game->doesProfileExist(_game->getProfile())) {
@@ -106,13 +106,13 @@ BoltRsp FileMenu::handleButtonClick(int num) {
 					_game->branchScript(2); // Difficulty menu
 				}
 			}
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		case 3: // Help
 			_game->playHelpMovie();
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		default:
 			warning("unknown main menu button %d", num);
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		}
 	}
 }

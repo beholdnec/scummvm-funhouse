@@ -92,7 +92,7 @@ void MerlinGame::init(OSystem *system, FunhouseEngine *engine, Audio::Mixer *mix
 }
 
 BoltRsp MerlinGame::handleMsg(const BoltMsg &msg) {
-	BoltRsp rsp = kDone;
+	BoltRsp rsp = kContinue;
 
 	if (isInMovie()) {
 		rsp = handleMsgInMovie(msg);
@@ -104,19 +104,17 @@ BoltRsp MerlinGame::handleMsg(const BoltMsg &msg) {
 }
 
 BoltRsp MerlinGame::handleMsgInCard(const BoltMsg &msg) {
-	BoltRsp rsp = kDone;
+	BoltRsp rsp = kContinue;
 
 	if (_activeCard) {
 		rsp = _activeCard->handleMsg(msg);
 	}
 
-	if (rsp == kDone) {
-		// Handle card transitions
-		if (_nextScriptCursor != _scriptCursor) {
-			_prevScriptCursor = _scriptCursor;
-			_scriptCursor = _nextScriptCursor;
-			runScript();
-		}
+	// Handle card transitions
+	if (_nextScriptCursor != _scriptCursor) {
+		_prevScriptCursor = _scriptCursor;
+		_scriptCursor = _nextScriptCursor;
+		runScript();
 	}
 
 	return rsp;
@@ -147,7 +145,7 @@ BoltRsp MerlinGame::handlePopupButtonClick(int num) {
 		return handlePotionPuzzlePopupButtonClick(num);
 	default:
 		assert(false && "Invalid popup type");
-		return kDone;
+		return kContinue;
 	}
 }
 
@@ -155,19 +153,19 @@ BoltRsp MerlinGame::handleHubPopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Exit
 		branchMainMenu();
-		return kDone;
+		return kContinue;
 	case 1: // Game Pieces
 		branchGamePieces();
-		return kDone;
+		return kContinue;
 	case 2: // Difficulty
 		branchDifficultyMenu();
-		return kDone;
+		return kContinue;
 	case 3: // How to Play
 		playHelpMovie();
-		return kDone;
+		return kContinue;
 	default:
 		warning("Hub popup button %d not implemented", num);
-		return kDone;
+		return kContinue;
 	}
 }
 
@@ -175,24 +173,24 @@ BoltRsp MerlinGame::handlePuzzlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Return
 		branchReturn();
-		return BoltRsp::kDone;
+		return kContinue;
 	case 1: // Difficulty
 		branchDifficultyMenu();
-		return kDone;
+		return kContinue;
 	case 2: // How to Play
 		playHelpMovie();
-		return kDone;
+		return kContinue;
 	case 3: // Reset
 		_popup.dismiss();
 		_activeCard->handleReset();
-		return kDone;
+		return kContinue;
 	case 4: // Undo
 		_popup.dismiss();
 		_activeCard->handleUndo();
-		return kDone;
+		return kContinue;
 	default:
 		warning("Puzzle popup button %d not implemented", num);
-		return kDone;
+		return kContinue;
 	}
 }
 
@@ -200,24 +198,24 @@ BoltRsp MerlinGame::handlePotionPuzzlePopupButtonClick(int num) {
 	switch (num) {
 	case 0: // Exit
 		branchMainMenu();
-		return kDone;
+		return kContinue;
 	case 1: // Difficulty
 		branchDifficultyMenu();
-		return kDone;
+		return kContinue;
 	case 2: // How to Play
 		playHelpMovie();
-		return kDone;
+		return kContinue;
 	case 3: // Reset
 		_popup.dismiss();
 		_activeCard->handleReset();
-		return kDone;
+		return kContinue;
 	case 4: // Undo
 		_popup.dismiss();
 		_activeCard->handleUndo();
-		return kDone;
+		return kContinue;
 	default:
 		warning("Potion puzzle popup button %d not implemented", num);
-		return kDone;
+		return kContinue;
 	}
 }
 
@@ -333,9 +331,8 @@ public:
 
 	BoltRsp handleMsg(const BoltMsg &msg) {
 		if (msg.type == Scene::kClickButton) {
-			_game->getEngine()->setNextMsg(BoltMsg::kDrive);
 			_game->branchScript(msg.num);
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		}
 
 		return _scene.handleMsg(msg);
@@ -373,7 +370,7 @@ void MerlinGame::movieTrigger(void *param, uint16 triggerType) {
 }
 
 BoltRsp MerlinGame::handleMsgInMovie(const BoltMsg &msg) {
-	BoltRsp cmd = BoltRsp::kDone;
+	BoltRsp cmd = BoltRsp::kContinue;
 	if (msg.type == BoltMsg::kClick) {
 		_movie.stop();
 	} else {
@@ -478,13 +475,10 @@ void MerlinGame::branchScript(int idx, bool absolute) {
 	if (_nextScriptCursor == -1) {
 		branchLoadProfile();
 	}
-
-	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
 void MerlinGame::branchReturn() {
 	_nextScriptCursor = _scriptReturnCursor;
-	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
 void MerlinGame::branchWin() {
@@ -497,22 +491,18 @@ void MerlinGame::branchLoadProfile() {
 	const ProfileData &profile = _saveMan.getProfile(_profileIdx);
 	_nextScriptCursor = profile.scriptCursor;
 	_scriptReturnCursor = profile.scriptReturnCursor;
-	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
 void MerlinGame::branchMainMenu() {
 	_nextScriptCursor = kMainMenuScriptCursor;
-	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
 void MerlinGame::branchGamePieces() {
 	_nextScriptCursor = kGamePiecesScriptCursor;
-	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
 void MerlinGame::branchDifficultyMenu() {
 	_nextScriptCursor = kDifficultyScriptCursor;
-	_engine->setNextMsg(BoltMsg::kDrive);
 }
 
 void MerlinGame::setTimeout(MsgHandler& task, int32 delay, std::function<void()> then) {
@@ -523,7 +513,7 @@ void MerlinGame::setTimeout(MsgHandler& task, int32 delay, std::function<void()>
 		if (_engine->queryTimer(msg, _timeoutTimer)) {
 			then();
 		}
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	};
 }
 
@@ -538,7 +528,7 @@ public:
 	BoltRsp handleMsg(const BoltMsg &msg) override {
 		// Movie is finished. Go to the next script line.
 		_game->branchScript(0);
-		return kDone;
+		return kContinue;
 	}
 
 private:

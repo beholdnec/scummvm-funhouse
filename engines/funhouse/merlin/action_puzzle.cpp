@@ -196,7 +196,8 @@ void ActionPuzzle::redraw() {
 
 BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 	BoltRsp cmd = _game->handlePopup(msg);
-	if (cmd != BoltRsp::kPass) {
+	// FIXME: Try to simplify this and avoid having to call getPopup().isActive
+	if (cmd != BoltRsp::kPass && _game->getPopup().isActive()) {
 		return cmd;
 	}
 
@@ -211,7 +212,7 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 			win();
 		}
 
-		return kDone;
+		return kContinue;
 	}
 
 	switch (msg.type) {
@@ -219,7 +220,7 @@ BoltRsp ActionPuzzle::handleMsg(const BoltMsg &msg) {
 		return handleClick(msg.point);
 	}
 
-	return kDone;
+	return kPass;
 }
 
 void ActionPuzzle::handleReset() {
@@ -283,7 +284,7 @@ BoltRsp ActionPuzzle::handleClick(const Common::Point &pt) {
 		}
 	}
 
-	return BoltRsp::kDone;
+	return BoltRsp::kPass;
 }
 
 bool ActionPuzzle::isParticleAtPoint(const Particle &particle, const Common::Point &pt) {
@@ -388,7 +389,7 @@ BoltRsp ActionPuzzle::win() {
 	_bgImage.drawAt(_game->getGraphics()->getPlaneSurface(kBack), 0, 0, false);
 	_game->getGraphics()->clearPlane(kFore);
 	_game->branchWin();
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 } // End of namespace Funhouse

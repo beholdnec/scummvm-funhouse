@@ -56,36 +56,36 @@ BoltRsp DifficultyMenu::handleButtonClick(int num) {
 		int level = (num - kFirstDifficultyButton) % 3;
 		_game->setDifficulty(category, level);
 		setupButtons();
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 
 	switch (num) {
 	case -1: // No button
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case 1: // Game Pieces
 		_game->branchScript(1);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case 2: // Help
 		_game->playHelpMovie();
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case kPlayButton: // Play
 		if (isReadyToPlay()) {
 			_game->branchScript(2);
-			return BoltRsp::kDone;
+			return BoltRsp::kContinue;
 		}
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case kAllBeginnerButton: // Beginner
 		setAllDifficulties(0);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case kAllAdvancedButton: // Advanced
 		setAllDifficulties(1);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	case kAllExpertButton: // Expert
 		setAllDifficulties(2);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	default:
 		warning("unknown main menu button %d", num);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 }
 

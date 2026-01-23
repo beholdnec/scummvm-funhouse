@@ -160,14 +160,12 @@ BoltRsp ColorPuzzle::handleButtonClick(int num) {
 
 	if (num >= 0 && num < kNumPieces) {
 		startMove(num, _state->state[num]);
-
-		_game->getEngine()->setNextMsg(BoltMsg::kDrive);
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 
 	// TODO: clicking outside of pieces should show the solution
 	_game->branchWin();
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 void ColorPuzzle::enterIdle() {
@@ -187,7 +185,7 @@ BoltRsp ColorPuzzle::runIdle(const BoltMsg& msg) {
 		return _scene.handleMsg(msg);
 	}
 
-	return kDone;
+	return kContinue;
 }
 
 void ColorPuzzle::enterMorph() {
@@ -211,7 +209,7 @@ BoltRsp ColorPuzzle::runMorph(const BoltMsg& msg) {
 		break;
 	}
 
-	return kDone;
+	return kContinue;
 }
 
 void ColorPuzzle::evaluate() {

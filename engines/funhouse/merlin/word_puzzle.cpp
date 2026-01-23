@@ -178,12 +178,12 @@ BoltRsp WordPuzzle::handleMsg(const BoltMsg &msg) {
 	case BoltMsg::kHover:
 		_scene.handleMsg(msg);
 		draw();
-		return kDone;
+		return kContinue;
 	default:
 		return _scene.handleMsg(msg);
 	}
 
-	return kDone;
+	return kContinue;
 }
 
 void WordPuzzle::handleReset() {
@@ -196,7 +196,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 	debug(3, "Clicked button %d", num);
 
 	if (num == -1) {
-		return BoltRsp::kDone;
+		return BoltRsp::kContinue;
 	}
 
 	clickGlyph(getGlyphFromButton(num));
@@ -207,7 +207,7 @@ BoltRsp WordPuzzle::handleButtonClick(int num) {
 		_game->branchWin();
 	}
 
-	return BoltRsp::kDone;
+	return BoltRsp::kContinue;
 }
 
 void WordPuzzle::reset() {
