@@ -347,6 +347,8 @@ protected:
 	XpLib *_xp = nullptr;
 	bool _extendedViewport = false;
 	bool _isDemo = false;
+	
+	int _displayMode = 0;
 
 	// xpMain
 	virtual void boltMain() = 0;
@@ -386,7 +388,7 @@ protected:
 	bool loadGroupDirectory();
 	bool getBOLTGroup(BOLTLib *lib, int16 groupId, int16 flags);
 	void freeBOLTGroup(BOLTLib *lib, int16 groupId, int16 flags);
-	byte *getBOLTMember(BOLTLib *lib, int16 resId);
+	byte *getBOLTMember(BOLTLib *lib, uint16 resId);
 	bool freeBOLTMember(BOLTLib *lib, int16 resId);
 	Common::Rect memberToRect(byte *data);
 	byte *memberAddr(BOLTLib *lib, int16 resId);
@@ -397,9 +399,6 @@ protected:
 	void freeResourceIndex();
 	void swapAllWords();
 	void swapAllLongs();
-
-	BOLTLib *_boothsBoltLib = nullptr;
-	BOLTCallbacks _boothsBoltCallbacks;
 
 	static BOLTCallback _defaultTypeLoadCallbacks[25];
 	static BOLTCallback _defaultTypeFreeCallbacks[25];

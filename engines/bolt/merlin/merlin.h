@@ -37,6 +37,9 @@ protected:
 	void boltMain() override;
 
 	void initCallbacks() override;
+	
+	BOLTLib *_boltlib = nullptr;
+	BOLTCallbacks _boltCallbacks;
 };
 
 } // End of namespace Merlin

@@ -417,7 +417,7 @@ void BoltEngine::freeBOLTGroup(BOLTLib *lib, int16 groupId, int16 flags) {
 	attemptFreeIndex(lib, resId);
 }
 
-byte *BoltEngine::getBOLTMember(BOLTLib *lib, int16 resId) {
+byte *BoltEngine::getBOLTMember(BOLTLib *lib, uint16 resId) {
 	byte memberIndex = (byte)resId;
 	uint32 compressedSize;
 	byte *tempBuf;

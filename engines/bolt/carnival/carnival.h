@@ -317,10 +317,12 @@ protected:
 	void flushInput();
 	int16 winALetter(int16 prevBooth);
 	int16 endDemo(int16 prevBooth);
+	
+	BOLTLib *_boothsBoltLib = nullptr;
+	BOLTCallbacks _boothsBoltCallbacks;
 
 	int16 _lettersWon = 0;
 	bool _allLettersWonFlag = false;
-	int _displayMode = 0;
 	int32 _displayX = 0;
 	int32 _displayY = 0;
 	int32 _displayWidth = 0;
