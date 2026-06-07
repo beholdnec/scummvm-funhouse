@@ -355,10 +355,10 @@ protected:
 	void setCursorPict(byte *sprite);
 
 	// Utils
-	void displayColors(byte *palette, int16 page, int16 flags);
+	void displayColors(const byte *palette, int16 page, int16 flags);
 	byte getPixel(byte *sprite, int16 localX, int16 localY);
-	void boltPict2Pict(XPPicDesc *dest, byte *boltSprite);
-	void displayPic(byte *boltSprite, int16 xOff, int16 yOff, int16 page);
+	void boltPict2Pict(XPPicDesc *dest, const byte *boltSprite);
+	void displayPic(const byte *boltSprite, int16 xOff, int16 yOff, int16 page);
 	bool pointInRect(Common::Rect *rect, int16 x, int16 y);
 	const char *assetPath(const char *fileName);
 	void boltCycleToXPCycle(byte *srcData, XPCycleState *cycleDesc);
@@ -381,31 +381,32 @@ protected:
 	void resolvePendingFixups();
 	void resolveFunction(uint32 *ref);
 	void resolveAllRefs();
-	byte *getResolvedPtr(byte *data, int offset);
+	byte *getResolvedPtr(const byte *data, int offset);
 	bool openBOLTLib(BOLTLib **outLib, BOLTCallbacks *outIdx, const char *fileName);
 	bool closeBOLTLib(BOLTLib **lib);
-	bool attemptFreeIndex(BOLTLib *lib, int16 groupId);
+	bool attemptFreeIndex(BOLTLib *lib, uint16 groupId);
 	bool loadGroupDirectory();
-	bool getBOLTGroup(BOLTLib *lib, int16 groupId, int16 flags);
-	void freeBOLTGroup(BOLTLib *lib, int16 groupId, int16 flags);
+	bool getBOLTGroup(BOLTLib *lib, uint16 groupId, int16 flags);
+	void freeBOLTGroup(BOLTLib *lib, uint16 groupId, int16 flags);
 	byte *getBOLTMember(BOLTLib *lib, uint16 resId);
-	bool freeBOLTMember(BOLTLib *lib, int16 resId);
+	bool freeBOLTMember(BOLTLib *lib, uint16 resId);
 	Common::Rect memberToRect(byte *data);
-	byte *memberAddr(BOLTLib *lib, int16 resId);
+	byte *memberAddr(BOLTLib *lib, uint16 resId);
 	byte *memberAddrOffset(BOLTLib *lib, uint32 resIdAndOffset);
-	uint32 memberSize(BOLTLib *lib, int16 resId);
-	byte *groupAddr(BOLTLib *lib, int16 groupId);
+	uint32 memberSize(BOLTLib *lib, uint16 resId);
+	byte *groupAddr(BOLTLib *lib, uint16 groupId);
 	bool allocResourceIndex();
 	void freeResourceIndex();
 	void swapAllWords();
 	void swapAllLongs();
-
-	static BOLTCallback _defaultTypeLoadCallbacks[25];
-	static BOLTCallback _defaultTypeFreeCallbacks[25];
-	static BOLTCallback _defaultMemberLoadCallbacks[25];
-	static BOLTCallback _defaultMemberFreeCallbacks[25];
-	static BOLTCallback _defaultGroupLoadCallbacks[25];
-	static BOLTCallback _defaultGroupFreeCallbacks[25];
+	
+	static const size_t kDefaultTypeCount = 64;
+	static BOLTCallback _defaultTypeLoadCallbacks[kDefaultTypeCount];
+	static BOLTCallback _defaultTypeFreeCallbacks[kDefaultTypeCount];
+	static BOLTCallback _defaultMemberLoadCallbacks[kDefaultTypeCount];
+	static BOLTCallback _defaultMemberFreeCallbacks[kDefaultTypeCount];
+	static BOLTCallback _defaultGroupLoadCallbacks[kDefaultTypeCount];
+	static BOLTCallback _defaultGroupFreeCallbacks[kDefaultTypeCount];
 
 	static void noOpCb();
 

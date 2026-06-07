@@ -28,6 +28,8 @@ namespace Bolt {
 
 namespace Merlin {
 
+struct Scene;
+
 class MerlinEngine : public BoltEngine {
 public:
 	MerlinEngine(OSystem *syst, const ADGameDescription *gameDesc);
@@ -40,6 +42,15 @@ protected:
 	
 	BOLTLib *_boltlib = nullptr;
 	BOLTCallbacks _boltCallbacks;
+
+	// Scenes
+	Scene *loadScene(const byte* bltScene);
+	void drawScene(const Scene *scene, byte flags);
+	void swapPlaneDesc();
+	void swapSceneDesc();
+	
+	static void swapPlaneDescCb();
+	static void swapSceneDescCb();
 };
 
 } // End of namespace Merlin

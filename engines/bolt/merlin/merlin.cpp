@@ -42,15 +42,21 @@ void MerlinEngine::boltMain() {
 	if (allocResourceIndex()) {
 		_boltlib = nullptr;
 
+		debug("type load callback for 32 = %p", _boltCallbacks.typeLoadCallbacks[32]);
 		if (openBOLTLib(&_boltlib, &_boltCallbacks, assetPath("boltlib.blt"))) {
 			if (_xp->setDisplaySpec(&_displayMode, &_displaySpecs[1])) {
 				setCursorPict(getBOLTMember(_boltlib, 0x9D00));
 				_xp->setCursorColor(255, 255, 255);
 				_xp->showCursor();
+				
+				if (!getBOLTGroup(_boltlib, 0x9000, 1))
+					return;
+				Scene *scene = loadScene(getBOLTMember(_boltlib, 0x900D));
 
 				while (true) {
-					displayColors(getBOLTMember(_boltlib, 0x0113), stFront, 0);
-					displayPic(getBOLTMember(_boltlib, 0x0112), 0, 0, stFront);
+					//displayColors(getBOLTMember(_boltlib, 0x0113), stFront, 0);
+					//displayPic(getBOLTMember(_boltlib, 0x0112), 0, 0, stFront);
+					drawScene(scene, 0x20);
 
 					// Process events...
 					uint32 eventData = 0;
@@ -61,48 +67,6 @@ void MerlinEngine::boltMain() {
 			}
 		}
 	}
-}
-
-void MerlinEngine::initCallbacks() {
-	for (int i = 0; i < ARRAYSIZE(_defaultTypeLoadCallbacks); i++) {
-		_defaultTypeLoadCallbacks[i] = noOpCb;
-	}
-
-	_defaultTypeLoadCallbacks[2] = swapAllWordsCb;
-	_defaultTypeLoadCallbacks[8] = swapSpriteHeaderCb;
-	_defaultTypeLoadCallbacks[10] = swapPicHeaderCb;
-	_defaultTypeLoadCallbacks[11] = swapAndResolvePicDescCb;
-	_defaultTypeLoadCallbacks[12] = swapFirstTwoWordsCb;
-	_defaultTypeLoadCallbacks[14] = swapFirstFourWordsCb;
-
-	for (int i = 0; i < ARRAYSIZE(_defaultTypeFreeCallbacks); i++) {
-		_defaultTypeFreeCallbacks[i] = noOpCb;
-	}
-
-	_defaultTypeFreeCallbacks[8] = freeSpriteCleanUpCb;
-
-	for (int i = 0; i < ARRAYSIZE(_defaultMemberLoadCallbacks); i++) {
-		_defaultMemberLoadCallbacks[i] = noOpCb;
-	}
-
-	for (int i = 0; i < ARRAYSIZE(_defaultMemberFreeCallbacks); i++) {
-		_defaultMemberFreeCallbacks[i] = noOpCb;
-	}
-
-	for (int i = 0; i < ARRAYSIZE(_defaultGroupLoadCallbacks); i++) {
-		_defaultGroupLoadCallbacks[i] = noOpCb;
-	}
-
-	for (int i = 0; i < ARRAYSIZE(_defaultGroupFreeCallbacks); i++) {
-		_defaultGroupFreeCallbacks[i] = noOpCb;
-	}
-	
-	_boltCallbacks.typeLoadCallbacks = _defaultTypeLoadCallbacks;
-	_boltCallbacks.typeFreeCallbacks = _defaultTypeFreeCallbacks;
-	_boltCallbacks.memberLoadCallbacks = _defaultMemberLoadCallbacks;
-	_boltCallbacks.memberFreeCallbacks = _defaultMemberFreeCallbacks;
-	_boltCallbacks.groupLoadCallbacks = _defaultGroupLoadCallbacks;
-	_boltCallbacks.groupFreeCallbacks = _defaultGroupFreeCallbacks;
 }
 
 } // End of namespace Merlin

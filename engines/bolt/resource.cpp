@@ -163,7 +163,7 @@ void BoltEngine::resolveAllRefs() {
 	}
 }
 
-byte *BoltEngine::getResolvedPtr(byte *data, int offset) {
+byte *BoltEngine::getResolvedPtr(const byte *data, int offset) {
 	uint32 val = READ_UINT32(data + offset);
 
 	if (val == 0)
@@ -286,7 +286,7 @@ bool BoltEngine::closeBOLTLib(BOLTLib **libPtr) {
 	return true;
 }
 
-bool BoltEngine::attemptFreeIndex(BOLTLib *lib, int16 groupId) {
+bool BoltEngine::attemptFreeIndex(BOLTLib *lib, uint16 groupId) {
 	BOLTGroupEntry *groupEntry = &lib->groups[groupId >> 8];
 
 	if (!groupEntry->memberData)
@@ -352,7 +352,7 @@ bool BoltEngine::loadGroupDirectory() {
 	return false;
 }
 
-bool BoltEngine::getBOLTGroup(BOLTLib *lib, int16 groupId, int16 flags) {
+bool BoltEngine::getBOLTGroup(BOLTLib *lib, uint16 groupId, int16 flags) {
 	_boltLoadDepth++;
 	int16 resId = groupId & 0xFF00;
 
@@ -390,7 +390,7 @@ bool BoltEngine::getBOLTGroup(BOLTLib *lib, int16 groupId, int16 flags) {
 	return false;
 }
 
-void BoltEngine::freeBOLTGroup(BOLTLib *lib, int16 groupId, int16 flags) {
+void BoltEngine::freeBOLTGroup(BOLTLib *lib, uint16 groupId, int16 flags) {
 	if (!lib)
 		return;
 
@@ -491,6 +491,8 @@ byte *BoltEngine::getBOLTMember(BOLTLib *lib, uint16 resId) {
 					_xp->freeMem(tempBuf);
 				}
 
+				debug("type load callback for type %d = %p", _boltCurrentMemberEntry->typeCbIndex, lib->callbacks.typeLoadCallbacks[_boltCurrentMemberEntry->typeCbIndex]);
+				debug("noOpCb = %p", BoltEngine::noOpCb);
 				lib->callbacks.typeLoadCallbacks[_boltCurrentMemberEntry->typeCbIndex]();
 
 				if (_boltLoadDepth == 0)
@@ -509,7 +511,7 @@ byte *BoltEngine::getBOLTMember(BOLTLib *lib, uint16 resId) {
 	return nullptr;
 }
 
-bool BoltEngine::freeBOLTMember(BOLTLib *lib, int16 resId) {
+bool BoltEngine::freeBOLTMember(BOLTLib *lib, uint16 resId) {
 	if (!lib)
 		return true;
 
@@ -544,7 +546,7 @@ Common::Rect BoltEngine::memberToRect(byte *data) {
 	return Common::Rect(x, y, x + w, y + h);
 }
 
-byte *BoltEngine::memberAddr(BOLTLib *lib, int16 resId) {
+byte *BoltEngine::memberAddr(BOLTLib *lib, uint16 resId) {
 	if (!lib)
 		return nullptr;
 
@@ -562,8 +564,8 @@ byte *BoltEngine::memberAddrOffset(BOLTLib *lib, uint32 resIdAndOffset) {
 	if (!lib)
 		return nullptr;
 
-	int16 resId = (int16)(resIdAndOffset >> 16);
-	int16 offset = (int16)(resIdAndOffset & 0xFFFF);
+	uint16 resId = (uint16)(resIdAndOffset >> 16);
+	uint16 offset = (uint16)(resIdAndOffset & 0xFFFF);
 
 	BOLTGroupEntry *groupEntry = &lib->groups[resId >> 8];
 
@@ -574,7 +576,7 @@ byte *BoltEngine::memberAddrOffset(BOLTLib *lib, uint32 resIdAndOffset) {
 	return (byte *)&member->dataPtr[offset];
 }
 
-uint32 BoltEngine::memberSize(BOLTLib *lib, int16 resId) {
+uint32 BoltEngine::memberSize(BOLTLib *lib, uint16 resId) {
 	if (!lib)
 		return 0;
 
@@ -587,7 +589,7 @@ uint32 BoltEngine::memberSize(BOLTLib *lib, int16 resId) {
 	return member->decompSize;
 }
 
-byte *BoltEngine::groupAddr(BOLTLib *lib, int16 groupId) {
+byte *BoltEngine::groupAddr(BOLTLib *lib, uint16 groupId) {
 	if (!lib)
 		return nullptr;
 
@@ -633,12 +635,12 @@ void BoltEngine::swapAllLongs() {
 	}
 }
 
-BOLTCallback BoltEngine::_defaultTypeLoadCallbacks[25];
-BOLTCallback BoltEngine::_defaultTypeFreeCallbacks[25];
-BOLTCallback BoltEngine::_defaultMemberLoadCallbacks[25];
-BOLTCallback BoltEngine::_defaultMemberFreeCallbacks[25];
-BOLTCallback BoltEngine::_defaultGroupLoadCallbacks[25];
-BOLTCallback BoltEngine::_defaultGroupFreeCallbacks[25];
+BOLTCallback BoltEngine::_defaultTypeLoadCallbacks[BoltEngine::kDefaultTypeCount];
+BOLTCallback BoltEngine::_defaultTypeFreeCallbacks[BoltEngine::kDefaultTypeCount];
+BOLTCallback BoltEngine::_defaultMemberLoadCallbacks[BoltEngine::kDefaultTypeCount];
+BOLTCallback BoltEngine::_defaultMemberFreeCallbacks[BoltEngine::kDefaultTypeCount];
+BOLTCallback BoltEngine::_defaultGroupLoadCallbacks[BoltEngine::kDefaultTypeCount];
+BOLTCallback BoltEngine::_defaultGroupFreeCallbacks[BoltEngine::kDefaultTypeCount];
 
 void BoltEngine::noOpCb() {}
 void BoltEngine::swapAllWordsCb() { ((BoltEngine *)g_engine)->swapAllWords(); }

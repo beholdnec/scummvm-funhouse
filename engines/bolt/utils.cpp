@@ -25,7 +25,7 @@
 
 namespace Bolt {
 
-void BoltEngine::displayColors(byte *palette, int16 page, int16 flags) {
+void BoltEngine::displayColors(const byte *palette, int16 page, int16 flags) {
 	byte localPalette[384];
 	int16 startIndex = 0, endIndex = 0;
 
@@ -43,7 +43,7 @@ void BoltEngine::displayColors(byte *palette, int16 page, int16 flags) {
 	}
 
 	// Copy RGB triplets from palette resource...
-	byte *src = palette + startIndex * 3 + 6;
+	const byte *src = palette + startIndex * 3 + 6;
 	byte *dst = localPalette;
 
 	for (int16 i = startIndex; i <= endIndex; i++) {
@@ -68,7 +68,7 @@ byte BoltEngine::getPixel(byte *sprite, int16 localX, int16 localY) {
 	return pixels[localX * sprH + localY];
 }
 
-void BoltEngine::boltPict2Pict(XPPicDesc *dest, byte *boltSprite) {
+void BoltEngine::boltPict2Pict(XPPicDesc *dest, const byte *boltSprite) {
 	dest->pixelData = getResolvedPtr(boltSprite, 0x12);
 	dest->width = (int16)READ_UINT16(boltSprite + 0x0A);
 	dest->height = (int16)READ_UINT16(boltSprite + 0x0C);
@@ -85,7 +85,7 @@ void BoltEngine::boltPict2Pict(XPPicDesc *dest, byte *boltSprite) {
 		dest->flags |= 2;
 }
 
-void BoltEngine::displayPic(byte *boltSprite, int16 xOff, int16 yOff, int16 page) {
+void BoltEngine::displayPic(const byte *boltSprite, int16 xOff, int16 yOff, int16 page) {
 	XPPicDesc localDesc;
 
 	if (!boltSprite)

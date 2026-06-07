@@ -16,6 +16,8 @@ MODULE_OBJS = \
 	carnival/resource.o \
 	crete/crete.o \
 	merlin/merlin.o \
+	merlin/resource.o \
+	merlin/scene.o \
 	metaengine.o \
 	resource.o \
 	rtf.o \
