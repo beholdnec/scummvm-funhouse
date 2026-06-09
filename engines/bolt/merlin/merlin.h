@@ -28,6 +28,9 @@ namespace Bolt {
 
 namespace Merlin {
 
+struct BltPaletteMod;
+struct BltButtonGfx;
+struct BltScene;
 struct Scene;
 
 class MerlinEngine : public BoltEngine {
@@ -46,10 +49,10 @@ protected:
 	// Scenes
 	Scene *loadScene(const byte* bltScene);
 	void drawScene(const Scene *scene, byte flags);
-	void drawSceneBackground(const byte *bltScene, byte plane);
+	void drawSceneBackground(const BltScene *bltScene, byte plane);
 	void updateSceneButtons(Scene* scene, int x, int y);
-	void drawSceneButton(const byte *buttonGfx, uint16 plane);
-	void applyPaletteMod(const byte *bltPaletteMod, byte startBase);
+	void drawSceneButton(const BltButtonGfx *buttonGfx, uint16 plane);
+	void applyPaletteMod(const BltPaletteMod *bltPaletteMod, byte startBase);
 	void swapPlaneDesc(); // Type 26
 	void swapPaletteModDesc(); // Type 29
 	void swapButtonGfxDesc(); // Type 30

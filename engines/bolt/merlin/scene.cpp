@@ -25,27 +25,79 @@ namespace Bolt {
 
 namespace Merlin {
 
+	
+#include "common/pack-start.h"	// START STRUCT PACKING
+
+struct BltPlane {
+	// Type 26
+	BltPtr<byte> image;
+	BltPtr<byte> palette;
+} PACKED_STRUCT;
+
+struct BltPaletteMod {
+	// Type 29
+	byte start;
+	byte count;
+	BltPtr<byte> colors;
+} PACKED_STRUCT;
+
+struct BltButtonGfx {
+	// Type 30
+	uint16 type;
+	uint32 unk0x2;
+	BltPtr<byte> hovered;
+	BltPtr<byte> idle;
+} PACKED_STRUCT;
+
+struct BltButton {
+	// Type 31
+	uint16 type;
+	uint16 left;
+	uint16 right;
+	uint16 top;
+	uint16 bottom;
+	uint16 plane;
+	uint16 gfxCount;
+	uint16 unk0xe;
+	BltPtr<BltButtonGfx> gfx;
+} PACKED_STRUCT;
+
+struct BltScene {
+	// Type 32
+	BltPtr<BltPlane> forePlane;
+	BltPtr<BltPlane> backPlane;
+	uint32 unk0x8;
+	uint32 unk0xc;
+	uint32 unk0x10;
+	uint32 unk0x14;
+	uint16 unk0x18;
+	uint16 buttonCount;
+	BltPtr<BltButton> buttons;
+} PACKED_STRUCT;
+
+#include "common/pack-end.h"	// END STRUCT PACKING
+
 struct Scene {
-	const byte *bltScene;
+	const BltScene *bltScene;
 };
 
 Scene* MerlinEngine::loadScene(const byte* bltScene) {
 	Scene *scene = (Scene*)_xp->allocMem(sizeof(Scene));
 
-	scene->bltScene = bltScene;
+	scene->bltScene = (const BltScene*)bltScene;
 
 	return scene;
 }
 
 void MerlinEngine::drawScene(const Scene* scene, byte flags) {
 	if (flags & 0x20) {
-		const byte *backPlane = getResolvedPtr(scene->bltScene, 0x4);
-		const byte *backPalette = getResolvedPtr(backPlane, 0x4);
+		const BltPlane *backPlane = getResolved(scene->bltScene->backPlane);
+		const byte *backPalette = getResolved(backPlane->palette);
 		if (backPalette) {
 			_xp->fillDisplay(0, 0);
 			// FIXME: displayColors appears to behave differently between Carnival and Merlin...
 			displayColors(backPalette, 1, 0);
-			const byte *backImage = getResolvedPtr(backPlane, 0x0);
+			const byte *backImage = getResolved(backPlane->image);
 			// FIXME: should be displayed on back page
 			displayPic(backImage, 0, 0, 1);
 			if (flags & 0x2) {
@@ -58,21 +110,20 @@ void MerlinEngine::drawScene(const Scene* scene, byte flags) {
 	}
 }
 
-void MerlinEngine::drawSceneBackground(const byte* bltScene, byte plane) {
-	uint16 buttonCount = READ_UINT16(bltScene + 0x1a);
-	for (uint16 i = 0; i < buttonCount; i++) {
+void MerlinEngine::drawSceneBackground(const BltScene* bltScene, byte plane) {
+	for (uint16 i = 0; i < bltScene->buttonCount; i++) {
 		// TODO: look for type 2 buttons
 	}
 
-	const byte *bltPlane = (plane == 0) ? getResolvedPtr(bltScene, 0x0) : getResolvedPtr(bltScene, 0x4);
+	const BltPlane *bltPlane = (plane == 0) ? getResolved(bltScene->forePlane) : getResolved(bltScene->backPlane);
 	if (!bltPlane) {
 		_xp->fillDisplay(0, plane);
 	} else {
-		const byte *palette = getResolvedPtr(bltPlane, 0x4);
+		const byte *palette = getResolved(bltPlane->palette);
 		if (palette) {
 			displayColors(palette, plane, 0);
 		}
-		const byte *image = getResolvedPtr(bltPlane, 0x0);
+		const byte *image = getResolved(bltPlane->image);
 		if (image) {
 			displayPic(image, 0, 0, plane);
 		} else {
@@ -82,33 +133,30 @@ void MerlinEngine::drawSceneBackground(const byte* bltScene, byte plane) {
 }
 
 void MerlinEngine::updateSceneButtons(Scene* scene, int x, int y) {
-	uint16 buttonCount = READ_UINT16(scene->bltScene + 0x1a);
-	for (int i = 0; i < buttonCount; i++) {
-		const byte *bltButtons = getResolvedPtr(scene->bltScene, 0x1c);
-		const byte *bltButtonGfx = getResolvedPtr(bltButtons, 0x14 * i + 0x10);
+	for (int i = 0; i < scene->bltScene->buttonCount; i++) {
+		const BltButton *bltButtons = getResolved(scene->bltScene->buttons);
+		const BltButtonGfx *bltButtonGfx = getResolved(bltButtons[i].gfx);
 		if (bltButtonGfx) {
-			uint16 plane = READ_UINT16(bltButtons + 0x14 * i + 0xa);
-			drawSceneButton(bltButtonGfx, plane != 0 ? 1 : 0);
+			drawSceneButton(bltButtonGfx, bltButtons[i].plane != 0 ? 1 : 0);
 		}
 	}
 }
 
-void MerlinEngine::drawSceneButton(const byte* bltButtonGfx, uint16 plane) {
+void MerlinEngine::drawSceneButton(const BltButtonGfx* bltButtonGfx, uint16 plane) {
 	uint16 gfxType = READ_UINT16(bltButtonGfx + 0x0);
 	if (gfxType == 1) {
 		// Modify palette
-		const byte *hovered = getResolvedPtr(bltButtonGfx, 0x6);
+		// TODO: type checking?
+		const BltPaletteMod *hovered = reinterpret_cast<const BltPaletteMod*>(getResolved(bltButtonGfx->hovered));
 		if (hovered) {
 			applyPaletteMod(hovered, plane << 7);
 		}
 	}
 }
 
-void MerlinEngine::applyPaletteMod(const byte* bltPaletteMod, byte dest) {
-	byte start = bltPaletteMod[0x0];
-	byte count = bltPaletteMod[0x1];
-	const byte *rgb = getResolvedPtr(bltPaletteMod, 0x2);
-	_xp->setPalette(count, dest + start, rgb);
+void MerlinEngine::applyPaletteMod(const BltPaletteMod* bltPaletteMod, byte dest) {
+	const byte *rgb = getResolved(bltPaletteMod->colors);
+	_xp->setPalette(bltPaletteMod->count, dest + bltPaletteMod->start, rgb);
 }
 
 void MerlinEngine::swapPlaneDesc() {
@@ -158,15 +206,19 @@ void MerlinEngine::swapButtonDesc() {
 	byte *data = _boltCurrentMemberEntry->dataPtr;
 	uint32 decompSize = _boltCurrentMemberEntry->decompSize;
 	uint32 offset = 0;
-	byte *ptr = data;
+	BltButton *ptr = reinterpret_cast<BltButton*>(data);
 
 	while (offset < decompSize) {
-		WRITE_UINT16(ptr + 0x0, READ_BE_UINT16(ptr + 0x0));
-		WRITE_UINT16(ptr + 0xa, READ_BE_UINT16(ptr + 0xa));
-		WRITE_UINT16(ptr + 0xc, READ_BE_UINT16(ptr + 0xc));
-		resolveIt((uint32 *)(ptr + 0x10));
-		offset += 0x14;
-		ptr += 0x14;
+		WRITE_UINT16(&ptr->type, READ_BE_UINT16(&ptr->type));
+		WRITE_UINT16(&ptr->left, READ_BE_UINT16(&ptr->left));
+		WRITE_UINT16(&ptr->right, READ_BE_UINT16(&ptr->right));
+		WRITE_UINT16(&ptr->top, READ_BE_UINT16(&ptr->top));
+		WRITE_UINT16(&ptr->bottom, READ_BE_UINT16(&ptr->bottom));
+		WRITE_UINT16(&ptr->plane, READ_BE_UINT16(&ptr->plane));
+		WRITE_UINT16(&ptr->gfxCount, READ_BE_UINT16(&ptr->gfxCount));
+		resolveIt(&ptr->gfx.ptr);
+		offset += sizeof(BltButton);
+		ptr++;
 	}
 }
 

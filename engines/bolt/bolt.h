@@ -303,6 +303,17 @@ typedef struct SoundInfo {
 	}
 } SoundInfo;
 
+#include "common/pack-start.h"	// START STRUCT PACKING
+
+template<typename TBltStruct>
+struct BltPtr {
+	// On load, this field contains a 32-bit resource ID,
+	// which is then replaced with a resource reference (see getResolvedPtr)
+	uint32 ptr;
+} PACKED_STRUCT;
+
+#include "common/pack-end.h"	// END STRUCT PACKING
+
 class BoltEngine : public Engine {
 friend class XpLib;
 
@@ -399,6 +410,12 @@ protected:
 	void freeResourceIndex();
 	void swapAllWords();
 	void swapAllLongs();
+
+	template<typename TBltStruct>
+	const TBltStruct *getResolved(BltPtr<TBltStruct> p) {
+		// TODO: type checking
+		return reinterpret_cast<const TBltStruct*>(getResolvedPtr((const byte*)&p.ptr, 0));
+	}
 	
 	static const size_t kDefaultTypeCount = 64;
 	static BOLTCallback _defaultTypeLoadCallbacks[kDefaultTypeCount];
