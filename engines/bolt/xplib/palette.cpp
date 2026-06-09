@@ -30,7 +30,7 @@ void XpLib::getPalette(int16 startIndex, int16 count, byte *destBuf) {
 	memcpy(destBuf, &_paletteBuffer[startIndex * 3], count * 3);
 }
 
-void XpLib::setPalette(int16 count, int16 startIndex, byte *srcBuf) {
+void XpLib::setPalette(int16 count, int16 startIndex, const byte *srcBuf) {
 	if (startIndex == 0 || (startIndex == 128 && count != 1)) {
 		startIndex++;
 		srcBuf += 3;

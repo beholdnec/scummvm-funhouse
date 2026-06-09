@@ -46,11 +46,31 @@ protected:
 	// Scenes
 	Scene *loadScene(const byte* bltScene);
 	void drawScene(const Scene *scene, byte flags);
-	void swapPlaneDesc();
-	void swapSceneDesc();
+	void drawSceneBackground(const byte *bltScene, byte plane);
+	void updateSceneButtons(Scene* scene, int x, int y);
+	void drawSceneButton(const byte *buttonGfx, uint16 plane);
+	void applyPaletteMod(const byte *bltPaletteMod, byte startBase);
+	void swapPlaneDesc(); // Type 26
+	void swapPaletteModDesc(); // Type 29
+	void swapButtonGfxDesc(); // Type 30
+	void swapButtonDesc(); // Type 31
+	void swapSceneDesc(); // Type 32
 	
-	static void swapPlaneDescCb();
-	static void swapSceneDescCb();
+	static void swapPlaneDescCb(); // Type 26
+	static void swapPaletteModDescCb(); // Type 29
+	static void swapButtonGfxDescCb(); // Type 30
+	static void swapButtonDescCb(); // Type 31
+	static void swapSceneDescCb(); // Type 32
+
+	// Main Menu
+	void loadMainMenu();
+	void swapMainMenuDesc();
+	void runMainMenu();
+	
+	static void swapMainMenuDescCb();
+
+	const byte *_mainMenuDesc;
+	Scene *_mainMenuScene;
 };
 
 } // End of namespace Merlin

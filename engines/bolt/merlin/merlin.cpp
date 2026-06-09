@@ -48,24 +48,60 @@ void MerlinEngine::boltMain() {
 				setCursorPict(getBOLTMember(_boltlib, 0x9D00));
 				_xp->setCursorColor(255, 255, 255);
 				_xp->showCursor();
-				
-				if (!getBOLTGroup(_boltlib, 0x9000, 1))
-					return;
-				Scene *scene = loadScene(getBOLTMember(_boltlib, 0x900D));
+				_xp->setTransparency(true);
+
+				loadMainMenu();
 
 				while (true) {
 					//displayColors(getBOLTMember(_boltlib, 0x0113), stFront, 0);
-					//displayPic(getBOLTMember(_boltlib, 0x0112), 0, 0, stFront);
-					drawScene(scene, 0x20);
+					//displayPic(getBOLTMember(_boltlib, 0x0112), 0, 0, stBack);
+					//drawScene(scene, 0x20);
 
-					// Process events...
-					uint32 eventData = 0;
-					int16 eventType = _xp->getEvent(etEmpty, &eventData);
+					runMainMenu();
 
-					_xp->updateDisplay();
+					//_xp->updateDisplay();
 				}
 			}
 		}
+	}
+}
+
+void MerlinEngine::loadMainMenu() {
+	getBOLTGroup(_boltlib, 0x0100, 0);
+	_mainMenuDesc = memberAddr(_boltlib, 0x0118);
+	_mainMenuScene = loadScene(getResolvedPtr(_mainMenuDesc, 0x0));
+	drawScene(_mainMenuScene, 0xff);
+}
+
+void MerlinEngine::swapMainMenuDesc() {
+	byte *data = _boltCurrentMemberEntry->dataPtr;
+	uint32 decompSize = _boltCurrentMemberEntry->decompSize;
+	uint32 offset = 0;
+	byte *ptr = data;
+
+	while (offset < decompSize) {
+		resolveIt((uint32 *)ptr);
+		resolveIt((uint32 *)(ptr + 0x4));
+		resolveIt((uint32 *)(ptr + 0x8));
+		offset += 0xc;
+		ptr += 0xc;
+	}
+}
+
+void MerlinEngine::runMainMenu() {
+	while (!shouldQuit()) {
+		uint32 eventData = 0;
+		int16 eventType = _xp->getEvent(etEmpty, &eventData);
+
+		switch (eventType) {
+		case etMouseMove:
+			int16 x = (int16)(eventData >> 16);
+			int16 y = (int16)(eventData & -1);
+			updateSceneButtons(_mainMenuScene, x, y);
+			break;
+		}
+
+		_xp->updateDisplay();
 	}
 }
 

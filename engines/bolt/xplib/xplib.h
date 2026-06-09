@@ -166,7 +166,7 @@ public:
 
 	// Palette
 	void getPalette(int16 startIndex, int16 count, byte *destBuf);
-	void setPalette(int16 count, int16 startIndex, byte *srcBuf);
+	void setPalette(int16 count, int16 startIndex, const byte *srcBuf);
 	bool startCycle(XPCycleState *specs);
 	void cycleColors();
 	void stopCycle();
