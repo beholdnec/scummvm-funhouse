@@ -26,11 +26,13 @@ namespace Bolt {
 namespace Merlin {
 	
 void MerlinEngine::swapPlaneDescCb() { ((MerlinEngine *)g_engine)->swapPlaneDesc(); }
+void MerlinEngine::swapSpriteDescCb() { ((MerlinEngine *)g_engine)->swapSpriteDesc(); }
 void MerlinEngine::swapPaletteModDescCb() { ((MerlinEngine *)g_engine)->swapPaletteModDesc(); }
 void MerlinEngine::swapButtonGfxDescCb() { ((MerlinEngine *)g_engine)->swapButtonGfxDesc(); }
 void MerlinEngine::swapButtonDescCb() { ((MerlinEngine *)g_engine)->swapButtonDesc(); }
 void MerlinEngine::swapSceneDescCb() { ((MerlinEngine *)g_engine)->swapSceneDesc(); }
 void MerlinEngine::swapMainMenuDescCb() { ((MerlinEngine *)g_engine)->swapMainMenuDesc(); }
+void MerlinEngine::swapDifficultyMenuDescCb() { ((MerlinEngine *)g_engine)->swapDifficultyMenuDesc(); }
 	
 void MerlinEngine::initCallbacks() {
 	for (int i = 0; i < ARRAYSIZE(_defaultTypeLoadCallbacks); i++) {
@@ -45,11 +47,13 @@ void MerlinEngine::initCallbacks() {
 	_defaultTypeLoadCallbacks[14] = swapFirstFourWordsCb;
 
 	_defaultTypeLoadCallbacks[26] = swapPlaneDescCb;
+	_defaultTypeLoadCallbacks[27] = swapSpriteDescCb;
 	_defaultTypeLoadCallbacks[29] = swapPaletteModDescCb;
 	_defaultTypeLoadCallbacks[30] = swapButtonGfxDescCb;
 	_defaultTypeLoadCallbacks[31] = swapButtonDescCb;
 	_defaultTypeLoadCallbacks[32] = swapSceneDescCb;
 	_defaultTypeLoadCallbacks[33] = swapMainMenuDescCb;
+	_defaultTypeLoadCallbacks[35] = swapDifficultyMenuDescCb;
 
 	for (int i = 0; i < ARRAYSIZE(_defaultTypeFreeCallbacks); i++) {
 		_defaultTypeFreeCallbacks[i] = noOpCb;

@@ -34,6 +34,13 @@ struct BltPlane {
 	BltPtr<byte> palette;
 } PACKED_STRUCT;
 
+struct BltSpriteDesc {
+	// Type 27
+	int16 x;
+	int16 y;
+	BltPtr<byte> image;
+} PACKED_STRUCT;
+
 struct BltPaletteMod {
 	// Type 29
 	byte start;
@@ -232,14 +239,22 @@ void MerlinEngine::drawSceneButton(const BltButtonGfx* bltButtonGfx, bool idle, 
 		const byte *idleGfx = getResolved(bltButtonGfx->idle);
 		if (idleGfx) {
 			if (bltButtonGfx->type == 1) {
-				applyPaletteMod(reinterpret_cast<const BltPaletteMod*>(idleGfx), plane << 7);
+				const BltPaletteMod *idlePaletteMod = reinterpret_cast<const BltPaletteMod *>(idleGfx);
+				applyPaletteMod(idlePaletteMod, plane << 7);
+			} else {
+				const BltSpriteDesc *idleSprite = reinterpret_cast<const BltSpriteDesc *>(idleGfx);
+				displayPic(getResolved(idleSprite->image), idleSprite->x - _sceneOriginX, idleSprite->y - _sceneOriginY, plane);
 			}
 		}
 	} else {
 		const byte *hoveredGfx = getResolved(bltButtonGfx->hovered);
 		if (hoveredGfx) {
 			if (bltButtonGfx->type == 1) {
-				applyPaletteMod(reinterpret_cast<const BltPaletteMod *>(hoveredGfx), plane << 7);
+				const BltPaletteMod *hoveredPaletteMod = reinterpret_cast<const BltPaletteMod *>(hoveredGfx);
+				applyPaletteMod(hoveredPaletteMod, plane << 7);
+			} else {
+				const BltSpriteDesc *hoveredSprite = reinterpret_cast<const BltSpriteDesc *>(hoveredGfx);
+				displayPic(getResolved(hoveredSprite->image), hoveredSprite->x - _sceneOriginX, hoveredSprite->y - _sceneOriginY, plane);
 			}
 		}
 	}
@@ -276,6 +291,21 @@ void MerlinEngine::swapPlaneDesc() {
 		resolveIt((uint32 *)(ptr + 0x8));
 		offset += 0x10;
 		ptr += 0x10;
+	}
+}
+
+void MerlinEngine::swapSpriteDesc() {
+	byte *data = _boltCurrentMemberEntry->dataPtr;
+	uint32 decompSize = _boltCurrentMemberEntry->decompSize;
+	uint32 offset = 0;
+	BltSpriteDesc *ptr = reinterpret_cast<BltSpriteDesc*>(data);
+
+	while (offset < decompSize) {
+		WRITE_UINT16(&ptr->x, READ_BE_UINT16(&ptr->x));
+		WRITE_UINT16(&ptr->y, READ_BE_UINT16(&ptr->y));
+		resolveIt(&ptr->image.ptr);
+		offset += sizeof(BltSpriteDesc);
+		ptr++;
 	}
 }
 

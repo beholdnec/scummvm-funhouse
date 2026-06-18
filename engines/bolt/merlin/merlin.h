@@ -82,12 +82,14 @@ protected:
 	void resetButtonPlanes();
 	bool isPointInButton(const BltButton *bltButton, int x, int y);
 	void swapPlaneDesc(); // Type 26
+	void swapSpriteDesc(); // Type 27
 	void swapPaletteModDesc(); // Type 29
 	void swapButtonGfxDesc(); // Type 30
 	void swapButtonDesc(); // Type 31
 	void swapSceneDesc(); // Type 32
 	
 	static void swapPlaneDescCb(); // Type 26
+	static void swapSpriteDescCb(); // Type 27
 	static void swapPaletteModDescCb(); // Type 29
 	static void swapButtonGfxDescCb(); // Type 30
 	static void swapButtonDescCb(); // Type 31
@@ -107,6 +109,15 @@ protected:
 
 	const byte *_mainMenuDesc;
 	Scene *_mainMenuScene;
+
+	// Difficulty Menu
+	void loadDifficultyMenu();
+	void swapDifficultyMenuDesc();
+	void runDifficultyMenu();
+
+	static void swapDifficultyMenuDescCb();
+
+	Scene *_difficultyMenuScene;
 };
 
 } // End of namespace Merlin

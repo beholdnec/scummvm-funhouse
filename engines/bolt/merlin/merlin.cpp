@@ -49,14 +49,17 @@ void MerlinEngine::boltMain() {
 				_xp->showCursor();
 				_xp->setTransparency(true);
 
-				loadMainMenu();
+				//loadMainMenu();
+				loadDifficultyMenu();
 
 				while (true) {
 					//displayColors(getBOLTMember(_boltlib, 0x0113), stFront, 0);
 					//displayPic(getBOLTMember(_boltlib, 0x0112), 0, 0, stBack);
 					//drawScene(scene, 0x20);
 
-					runMainMenu();
+					//runMainMenu();
+
+					runDifficultyMenu();
 
 					//_xp->updateDisplay();
 				}
@@ -101,6 +104,56 @@ void MerlinEngine::runMainMenu() {
 		}
 
 		_xp->updateDisplay();
+	}
+}
+
+#include "common/pack-start.h"	// START STRUCT PACKING
+
+struct BltDifficultyMenuDesc {
+	// Type 35
+	BltPtr<BltScene> scene;
+	BltPtr<byte> unk0x4;
+	BltPtr<byte> unk0x8;
+} PACKED_STRUCT;
+
+#include "common/pack-end.h"	// END STRUCT PACKING
+
+void MerlinEngine::loadDifficultyMenu() {
+	getBOLTGroup(_boltlib, 0x0000, 0);
+	BltDifficultyMenuDesc* desc = reinterpret_cast<BltDifficultyMenuDesc*>(memberAddr(_boltlib, 0x006E));
+	_difficultyMenuScene = loadScene(getResolved(desc->scene));
+	drawScene(_difficultyMenuScene, 0xff);
+}
+
+void MerlinEngine::runDifficultyMenu() {
+	while (!shouldQuit()) {
+		uint32 eventData = 0;
+		int16 eventType = _xp->getEvent(etEmpty, &eventData);
+
+		switch (eventType) {
+		case etMouseMove:
+			int16 x = (int16)(eventData >> 16);
+			int16 y = (int16)(eventData & -1);
+			updateSceneButtons(_difficultyMenuScene, x, y);
+			break;
+		}
+
+		_xp->updateDisplay();
+	}
+}
+
+void MerlinEngine::swapDifficultyMenuDesc() {
+	byte *data = _boltCurrentMemberEntry->dataPtr;
+	uint32 decompSize = _boltCurrentMemberEntry->decompSize;
+	uint32 offset = 0;
+	BltDifficultyMenuDesc *ptr = reinterpret_cast<BltDifficultyMenuDesc*>(data);
+
+	while (offset < decompSize) {
+		resolveIt(&ptr->scene.ptr);
+		resolveIt(&ptr->unk0x4.ptr);
+		resolveIt(&ptr->unk0x8.ptr);
+		offset += sizeof(BltDifficultyMenuDesc);
+		ptr++;
 	}
 }
 
