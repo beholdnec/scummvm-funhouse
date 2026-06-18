@@ -73,7 +73,7 @@ protected:
 	BOLTCallbacks _boltCallbacks;
 
 	// Scenes
-	Scene *loadScene(const byte* bltScene);
+	Scene *loadScene(BltScene* bltScene);
 	void drawScene(const Scene *scene, byte flags);
 	void drawSceneBackground(const BltScene *bltScene, byte plane);
 	void updateSceneButtons(Scene* scene, int x, int y);
@@ -93,6 +93,8 @@ protected:
 	static void swapButtonDescCb(); // Type 31
 	static void swapSceneDescCb(); // Type 32
 
+	int16 _sceneOriginX;
+	int16 _sceneOriginY;
 	uint8 _buttonPlane0;
 	uint8 _buttonPlane1;
 

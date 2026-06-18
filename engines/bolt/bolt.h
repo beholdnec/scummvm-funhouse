@@ -420,9 +420,9 @@ protected:
 	void swapAllLongs();
 
 	template<typename TBltStruct>
-	const TBltStruct *getResolved(BltPtr<TBltStruct> p) {
+	TBltStruct *getResolved(BltPtr<TBltStruct> p) {
 		// TODO: type checking
-		return reinterpret_cast<const TBltStruct*>(getResolvedPtr((const byte*)&p.ptr, 0));
+		return reinterpret_cast<TBltStruct*>(getResolvedPtr((const byte*)&p.ptr, 0));
 	}
 	
 	static const size_t kDefaultTypeCount = 64;

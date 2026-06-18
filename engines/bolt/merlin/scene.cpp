@@ -70,6 +70,8 @@ struct BltScene {
 	uint16 unk0x18;
 	uint16 buttonCount;
 	BltPtr<BltButton> buttons;
+	int16 originX;
+	int16 originY;
 } PACKED_STRUCT;
 
 #include "common/pack-end.h"	// END STRUCT PACKING
@@ -86,10 +88,27 @@ struct Scene {
 	uint32 isIdle[300];
 };
 
-Scene* MerlinEngine::loadScene(const byte* bltScene) {
+Scene* MerlinEngine::loadScene(BltScene* bltScene) {
 	Scene *scene = (Scene*)_xp->allocMem(sizeof(Scene));
 
-	scene->bltScene = (const BltScene*)bltScene;
+	scene->bltScene = bltScene;
+	scene->hoveredX = -1;
+	scene->hoveredY = -1;
+	scene->hoveredButton = -1;
+
+	_sceneOriginX = bltScene->originX;
+	_sceneOriginY = bltScene->originY;
+
+	for (int i = 0; i < bltScene->buttonCount; i++) {
+		BltButton *button = &getResolved(bltScene->buttons)[i];
+		scene->isIdle[i] = 1;
+		if (button->type == 1) {
+			button->rect.left -= _sceneOriginX;
+			button->rect.right -= _sceneOriginX;
+			button->rect.top -= _sceneOriginY;
+			button->rect.bottom -= _sceneOriginY;
+		}
+	}
 
 	return scene;
 }
@@ -320,6 +339,8 @@ void MerlinEngine::swapSceneDesc() {
 		resolveIt((uint32 *)(ptr + 0x16));
 		WRITE_UINT16(ptr + 0x1a, READ_BE_UINT16(ptr + 0x1a));
 		resolveIt((uint32 *)(ptr + 0x1c));
+		WRITE_UINT16(ptr + 0x20, READ_BE_UINT16(ptr + 0x20));
+		WRITE_UINT16(ptr + 0x22, READ_BE_UINT16(ptr + 0x22));
 		offset += 0x24;
 		ptr += 0x24;
 	}

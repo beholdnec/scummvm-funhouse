@@ -491,8 +491,6 @@ byte *BoltEngine::getBOLTMember(BOLTLib *lib, uint16 resId) {
 					_xp->freeMem(tempBuf);
 				}
 
-				debug("type load callback for type %d = %p", _boltCurrentMemberEntry->typeCbIndex, lib->callbacks.typeLoadCallbacks[_boltCurrentMemberEntry->typeCbIndex]);
-				debug("noOpCb = %p", BoltEngine::noOpCb);
 				lib->callbacks.typeLoadCallbacks[_boltCurrentMemberEntry->typeCbIndex]();
 
 				if (_boltLoadDepth == 0)

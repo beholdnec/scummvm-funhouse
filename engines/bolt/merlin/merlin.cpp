@@ -42,7 +42,6 @@ void MerlinEngine::boltMain() {
 	if (allocResourceIndex()) {
 		_boltlib = nullptr;
 
-		debug("type load callback for 32 = %p", _boltCallbacks.typeLoadCallbacks[32]);
 		if (openBOLTLib(&_boltlib, &_boltCallbacks, assetPath("boltlib.blt"))) {
 			if (_xp->setDisplaySpec(&_displayMode, &_displaySpecs[1])) {
 				setCursorPict(getBOLTMember(_boltlib, 0x9D00));
@@ -69,7 +68,7 @@ void MerlinEngine::boltMain() {
 void MerlinEngine::loadMainMenu() {
 	getBOLTGroup(_boltlib, 0x0100, 0);
 	_mainMenuDesc = memberAddr(_boltlib, 0x0118);
-	_mainMenuScene = loadScene(getResolvedPtr(_mainMenuDesc, 0x0));
+	_mainMenuScene = loadScene((BltScene*)getResolvedPtr(_mainMenuDesc, 0x0));
 	drawScene(_mainMenuScene, 0xff);
 }
 
