@@ -310,6 +310,14 @@ struct BltPtr {
 	// On load, this field contains a 32-bit resource ID,
 	// which is then replaced with a resource reference (see getResolvedPtr)
 	uint32 ptr;
+
+	bool operator==(const BltPtr<TBltStruct> &other) const {
+		return ptr == other.ptr;
+	}
+
+	bool operator!=(const BltPtr<TBltStruct> &other) const {
+		return ptr != other.ptr;
+	}
 } PACKED_STRUCT;
 
 #include "common/pack-end.h"	// END STRUCT PACKING

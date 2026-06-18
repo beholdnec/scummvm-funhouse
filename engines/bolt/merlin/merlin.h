@@ -30,8 +30,34 @@ namespace Merlin {
 
 struct BltPaletteMod;
 struct BltButtonGfx;
+struct BltButton;
 struct BltScene;
 struct Scene;
+
+#include "common/pack-start.h"	// START STRUCT PACKING
+
+// A rectangle structure that differs from Common::Rect in the following ways:
+// - Data is stored as L, R, T, B
+// - All edges are inclusive when testing if a point is contained in the rectangle
+struct BltRect {
+	int16 left;
+	int16 right;
+	int16 top;
+	int16 bottom;
+
+	void onLoad() {
+		WRITE_UINT16(&left, READ_BE_UINT16(&left));
+		WRITE_UINT16(&right, READ_BE_UINT16(&right));
+		WRITE_UINT16(&top, READ_BE_UINT16(&top));
+		WRITE_UINT16(&bottom, READ_BE_UINT16(&bottom));
+	}
+
+	bool contains(int x, int y) const {
+		return x >= left && x <= right && y >= top && y <= bottom;
+	}
+} PACKED_STRUCT;
+
+#include "common/pack-end.h"	// END STRUCT PACKING
 
 class MerlinEngine : public BoltEngine {
 public:
@@ -51,8 +77,10 @@ protected:
 	void drawScene(const Scene *scene, byte flags);
 	void drawSceneBackground(const BltScene *bltScene, byte plane);
 	void updateSceneButtons(Scene* scene, int x, int y);
-	void drawSceneButton(const BltButtonGfx *buttonGfx, uint16 plane);
+	void drawSceneButton(const BltButtonGfx *buttonGfx, bool idle, uint16 plane);
 	void applyPaletteMod(const BltPaletteMod *bltPaletteMod, byte startBase);
+	void resetButtonPlanes();
+	bool isPointInButton(const BltButton *bltButton, int x, int y);
 	void swapPlaneDesc(); // Type 26
 	void swapPaletteModDesc(); // Type 29
 	void swapButtonGfxDesc(); // Type 30
@@ -64,6 +92,9 @@ protected:
 	static void swapButtonGfxDescCb(); // Type 30
 	static void swapButtonDescCb(); // Type 31
 	static void swapSceneDescCb(); // Type 32
+
+	uint8 _buttonPlane0;
+	uint8 _buttonPlane1;
 
 	// Main Menu
 	void loadMainMenu();
