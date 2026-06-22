@@ -99,7 +99,7 @@ void MerlinEngine::runMainMenu() {
 		case etMouseMove:
 			int16 x = (int16)(eventData >> 16);
 			int16 y = (int16)(eventData & -1);
-			updateSceneButtons(_mainMenuScene, x, y);
+			updateSceneButtons(_mainMenuScene, x, y, nullptr);
 			break;
 		}
 
@@ -131,15 +131,41 @@ void MerlinEngine::runDifficultyMenu() {
 		int16 eventType = _xp->getEvent(etEmpty, &eventData);
 
 		switch (eventType) {
-		case etMouseMove:
+		case etMouseMove: {
 			int16 x = (int16)(eventData >> 16);
 			int16 y = (int16)(eventData & -1);
-			updateSceneButtons(_difficultyMenuScene, x, y);
+			updateSceneButtons(_difficultyMenuScene, x, y, nullptr);
 			break;
+		}
+		case etMouseDown: {
+			int16 x = 0;
+			int16 y = 0;
+			_xp->readCursor(nullptr, &x, &y);
+			int8 currButton = -1;
+			updateSceneButtons(_difficultyMenuScene, x, y, &currButton);
+			debug("clicked button %d", (int)currButton);
+			if (currButton >= 12) {
+				byte category = (currButton - 12) / 3;
+				byte level = (currButton - 12) - (category * 3);
+				selectDifficulty(category, level);
+			}
+			if (currButton > -1) {
+				drawScene(_difficultyMenuScene, 0x10);
+			}
+			break;
+		}
 		}
 
 		_xp->updateDisplay();
 	}
+}
+
+void MerlinEngine::selectDifficulty(uint8 category, uint8 level) {
+	debug("setting difficulty category %d level %d", (int)category, (int)level);
+	for (int i = 0; i < 3; i++) {
+		setButtonGfx(_difficultyMenuScene, 12 + category * 3 + i, 0);
+	}
+	setButtonGfx(_difficultyMenuScene, 12 + category * 3 + level, 1);
 }
 
 void MerlinEngine::swapDifficultyMenuDesc() {

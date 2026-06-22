@@ -62,7 +62,7 @@ struct BltButton {
 	BltRect rect;
 	uint16 plane;
 	uint16 gfxCount;
-	uint16 unk0xe;
+	uint16 initialGfx;
 	BltPtr<BltButtonGfx> gfx;
 } PACKED_STRUCT;
 
@@ -98,6 +98,8 @@ struct Scene {
 Scene* MerlinEngine::loadScene(BltScene* bltScene) {
 	Scene *scene = (Scene*)_xp->allocMem(sizeof(Scene));
 
+	resetButtonPlanes(); // FIXME: this shouldn't be here?
+
 	scene->bltScene = bltScene;
 	scene->hoveredX = -1;
 	scene->hoveredY = -1;
@@ -109,6 +111,7 @@ Scene* MerlinEngine::loadScene(BltScene* bltScene) {
 	for (int i = 0; i < bltScene->buttonCount; i++) {
 		BltButton *button = &getResolved(bltScene->buttons)[i];
 		scene->isIdle[i] = 1;
+		scene->buttonGfx[i] = button->initialGfx;
 		if (button->type == 1) {
 			button->rect.left -= _sceneOriginX;
 			button->rect.right -= _sceneOriginX;
@@ -139,6 +142,22 @@ void MerlinEngine::drawScene(const Scene* scene, byte flags) {
 			}
 		}
 	}
+
+	if (flags & 0x10) {
+		// Draw buttons
+		for (int i = 0; i < scene->bltScene->buttonCount; i++) {
+			const BltButton *button = &getResolved(scene->bltScene->buttons)[i];
+			if (button->gfxCount != 0) {
+				// TODO: don't draw if button is disabled
+				uint32 isIdle = scene->isIdle[i];
+				if (button->plane == 0) {
+					drawSceneButton(&getResolved(button->gfx)[scene->buttonGfx[i]], isIdle, _buttonPlane0);
+				} else {
+					drawSceneButton(&getResolved(button->gfx)[scene->buttonGfx[i]], isIdle, _buttonPlane1);
+				}
+			}
+		}
+	}
 }
 
 void MerlinEngine::drawSceneBackground(const BltScene* bltScene, byte plane) {
@@ -163,7 +182,7 @@ void MerlinEngine::drawSceneBackground(const BltScene* bltScene, byte plane) {
 	}
 }
 
-void MerlinEngine::updateSceneButtons(Scene* scene, int x, int y) {
+void MerlinEngine::updateSceneButtons(Scene* scene, int x, int y, int8* currButton) {
 	resetButtonPlanes();
 
 	for (int i = 0; i < scene->bltScene->buttonCount; i++) {
@@ -171,7 +190,7 @@ void MerlinEngine::updateSceneButtons(Scene* scene, int x, int y) {
 			scene->currGfx[i] = scene->buttonGfx[i];
 
 			const BltButton *bltButtons = getResolved(scene->bltScene->buttons);
-			const BltButtonGfx *bltButtonGfx = getResolved(bltButtons[i].gfx);
+			const BltButtonGfx *bltButtonGfx = &getResolved(bltButtons[i].gfx)[scene->buttonGfx[i]];
 			if (bltButtonGfx->hovered != bltButtonGfx->idle) {
 				bool isIdle = (byte)scene->isIdle[i] != 0;
 				if (bltButtons[i].plane == 0) {
@@ -183,16 +202,20 @@ void MerlinEngine::updateSceneButtons(Scene* scene, int x, int y) {
 		}
 	}
 
-	scene->hoveredX = x;
-	scene->hoveredY = y;
 	int newHoveredButton = -1;
-	for (int i = 0; i < scene->bltScene->buttonCount; i++) {
-		if (newHoveredButton != -1) {
-			break;
-		}
+	if (scene->hoveredX == x && scene->hoveredY == y) {
+		newHoveredButton = scene->hoveredButton;
+	} else {
+		scene->hoveredX = x;
+		scene->hoveredY = y;
+		for (int i = 0; i < scene->bltScene->buttonCount; i++) {
+			if (newHoveredButton != -1) {
+				break;
+			}
 
-		if (isPointInButton(&getResolved(scene->bltScene->buttons)[i], x, y)) {
-			newHoveredButton = i;
+			if (isPointInButton(&getResolved(scene->bltScene->buttons)[i], x, y)) {
+				newHoveredButton = i;
+			}
 		}
 	}
 
@@ -203,7 +226,7 @@ void MerlinEngine::updateSceneButtons(Scene* scene, int x, int y) {
 			scene->isIdle[oldHoveredButton] = 1;
 		
 			const BltButton *bltButtons = getResolved(scene->bltScene->buttons);
-			const BltButtonGfx *bltButtonGfx = getResolved(bltButtons[oldHoveredButton].gfx);
+			const BltButtonGfx *bltButtonGfx = &getResolved(bltButtons[oldHoveredButton].gfx)[scene->buttonGfx[oldHoveredButton]];
 
 			if (bltButtonGfx->hovered != bltButtonGfx->idle) {
 				if (bltButtons[oldHoveredButton].plane == 0) {
@@ -219,7 +242,7 @@ void MerlinEngine::updateSceneButtons(Scene* scene, int x, int y) {
 			scene->isIdle[newHoveredButton] = 0;
 		
 			const BltButton *bltButtons = getResolved(scene->bltScene->buttons);
-			const BltButtonGfx *bltButtonGfx = getResolved(bltButtons[newHoveredButton].gfx);
+			const BltButtonGfx *bltButtonGfx = &getResolved(bltButtons[newHoveredButton].gfx)[scene->buttonGfx[newHoveredButton]];
 
 			if (bltButtonGfx->hovered != bltButtonGfx->idle) {
 				if (bltButtons[newHoveredButton].plane == 0) {
@@ -231,6 +254,10 @@ void MerlinEngine::updateSceneButtons(Scene* scene, int x, int y) {
 		}
 
 		scene->hoveredButton = newHoveredButton;
+	}
+
+	if (currButton) {
+		*currButton = newHoveredButton;
 	}
 }
 
@@ -277,6 +304,13 @@ bool MerlinEngine::isPointInButton(const BltButton* bltButton, int x, int y) {
 	}
 
 	return false; // TODO: other types
+}
+
+void MerlinEngine::setButtonGfx(Scene* scene, byte button, byte gfx) {
+	debug("setting button %d gfx %d", (int)button, (int)gfx);
+	if (scene->buttonGfx[button] != gfx) {
+		scene->buttonGfx[button] = gfx;
+	}
 }
 
 void MerlinEngine::swapPlaneDesc() {
@@ -348,6 +382,7 @@ void MerlinEngine::swapButtonDesc() {
 		ptr->rect.onLoad();
 		WRITE_UINT16(&ptr->plane, READ_BE_UINT16(&ptr->plane));
 		WRITE_UINT16(&ptr->gfxCount, READ_BE_UINT16(&ptr->gfxCount));
+		WRITE_UINT16(&ptr->initialGfx, READ_BE_UINT16(&ptr->initialGfx));
 		resolveIt(&ptr->gfx.ptr);
 		offset += sizeof(BltButton);
 		ptr++;

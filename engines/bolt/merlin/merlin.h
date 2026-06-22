@@ -76,11 +76,12 @@ protected:
 	Scene *loadScene(BltScene* bltScene);
 	void drawScene(const Scene *scene, byte flags);
 	void drawSceneBackground(const BltScene *bltScene, byte plane);
-	void updateSceneButtons(Scene* scene, int x, int y);
+	void updateSceneButtons(Scene* scene, int x, int y, int8* currButton);
 	void drawSceneButton(const BltButtonGfx *buttonGfx, bool idle, uint16 plane);
 	void applyPaletteMod(const BltPaletteMod *bltPaletteMod, byte startBase);
 	void resetButtonPlanes();
 	bool isPointInButton(const BltButton *bltButton, int x, int y);
+	void setButtonGfx(Scene *scene, byte button, byte gfx);
 	void swapPlaneDesc(); // Type 26
 	void swapSpriteDesc(); // Type 27
 	void swapPaletteModDesc(); // Type 29
@@ -114,6 +115,7 @@ protected:
 	void loadDifficultyMenu();
 	void swapDifficultyMenuDesc();
 	void runDifficultyMenu();
+	void selectDifficulty(uint8 category, uint8 level);
 
 	static void swapDifficultyMenuDescCb();
 
