@@ -16,6 +16,7 @@ MODULE_OBJS = \
 	carnival/resource.o \
 	crete/crete.o \
 	merlin/merlin.o \
+	merlin/puzzles/sliding_puzzle.o \
 	merlin/resource.o \
 	merlin/scene.o \
 	metaengine.o \

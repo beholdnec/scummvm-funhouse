@@ -25,6 +25,7 @@ namespace Bolt {
 
 namespace Merlin {
 	
+void MerlinEngine::swapResourceListCb() { ((MerlinEngine *)g_engine)->swapResourceList(); }
 void MerlinEngine::swapPlaneDescCb() { ((MerlinEngine *)g_engine)->swapPlaneDesc(); }
 void MerlinEngine::swapSpriteDescCb() { ((MerlinEngine *)g_engine)->swapSpriteDesc(); }
 void MerlinEngine::swapPaletteModDescCb() { ((MerlinEngine *)g_engine)->swapPaletteModDesc(); }
@@ -33,6 +34,20 @@ void MerlinEngine::swapButtonDescCb() { ((MerlinEngine *)g_engine)->swapButtonDe
 void MerlinEngine::swapSceneDescCb() { ((MerlinEngine *)g_engine)->swapSceneDesc(); }
 void MerlinEngine::swapMainMenuDescCb() { ((MerlinEngine *)g_engine)->swapMainMenuDesc(); }
 void MerlinEngine::swapDifficultyMenuDescCb() { ((MerlinEngine *)g_engine)->swapDifficultyMenuDesc(); }
+void MerlinEngine::swapSlidingPuzzleDifficultiesDescCb() { ((MerlinEngine *)g_engine)->swapSlidingPuzzleDifficultiesDesc(); }
+
+void MerlinEngine::swapResourceList() {
+	byte *data = _boltCurrentMemberEntry->dataPtr;
+	uint32 decompSize = _boltCurrentMemberEntry->decompSize;
+	uint32 offset = 0;
+	uint32 *ptr = reinterpret_cast<uint32*>(data);
+
+	while (offset < decompSize) {
+		resolveIt(ptr);
+		offset += sizeof(uint32);
+		ptr++;
+	}
+}
 	
 void MerlinEngine::initCallbacks() {
 	for (int i = 0; i < ARRAYSIZE(_defaultTypeLoadCallbacks); i++) {
@@ -40,6 +55,7 @@ void MerlinEngine::initCallbacks() {
 	}
 
 	_defaultTypeLoadCallbacks[2] = swapAllWordsCb;
+	_defaultTypeLoadCallbacks[6] = swapResourceListCb;
 	_defaultTypeLoadCallbacks[8] = swapSpriteHeaderCb;
 	_defaultTypeLoadCallbacks[10] = swapPicHeaderCb;
 	_defaultTypeLoadCallbacks[11] = swapAndResolvePicDescCb;
@@ -54,6 +70,7 @@ void MerlinEngine::initCallbacks() {
 	_defaultTypeLoadCallbacks[32] = swapSceneDescCb;
 	_defaultTypeLoadCallbacks[33] = swapMainMenuDescCb;
 	_defaultTypeLoadCallbacks[35] = swapDifficultyMenuDescCb;
+	_defaultTypeLoadCallbacks[44] = swapSlidingPuzzleDifficultiesDescCb;
 
 	for (int i = 0; i < ARRAYSIZE(_defaultTypeFreeCallbacks); i++) {
 		_defaultTypeFreeCallbacks[i] = noOpCb;

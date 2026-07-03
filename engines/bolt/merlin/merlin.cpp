@@ -50,7 +50,8 @@ void MerlinEngine::boltMain() {
 				_xp->setTransparency(true);
 
 				//loadMainMenu();
-				loadDifficultyMenu();
+				//loadDifficultyMenu();
+				loadSlidingPuzzle();
 
 				while (true) {
 					//displayColors(getBOLTMember(_boltlib, 0x0113), stFront, 0);
@@ -59,7 +60,8 @@ void MerlinEngine::boltMain() {
 
 					//runMainMenu();
 
-					runDifficultyMenu();
+					//runDifficultyMenu();
+					runSlidingPuzzle();
 
 					//_xp->updateDisplay();
 				}

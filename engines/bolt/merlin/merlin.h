@@ -72,6 +72,10 @@ protected:
 	BOLTLib *_boltlib = nullptr;
 	BOLTCallbacks _boltCallbacks;
 
+	void swapResourceList();
+
+	static void swapResourceListCb();
+
 	// Scenes
 	Scene *loadScene(BltScene* bltScene);
 	void drawScene(const Scene *scene, byte flags);
@@ -120,6 +124,15 @@ protected:
 	static void swapDifficultyMenuDescCb();
 
 	Scene *_difficultyMenuScene;
+
+	// Sliding Puzzle
+	void loadSlidingPuzzle();
+	void runSlidingPuzzle();
+	void swapSlidingPuzzleDifficultiesDesc();
+
+	static void swapSlidingPuzzleDifficultiesDescCb();
+
+	Scene *_slidingPuzzleScene;
 };
 
 } // End of namespace Merlin
