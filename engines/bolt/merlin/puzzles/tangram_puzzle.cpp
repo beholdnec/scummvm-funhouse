@@ -25,6 +25,37 @@ namespace Bolt {
 
 namespace Merlin {
 	
+#include "common/pack-start.h"	// START STRUCT PACKING
+
+struct BltTangramPuzzleDesc {
+	// Type 6
+	BltPtr<byte> unk0x0;
+	BltPtr<byte> unk0x4;
+	BltPtr<byte> image;
+	BltPtr<byte> palette;
+} PACKED_STRUCT;
+
+#include "common/pack-end.h"	// END STRUCT PACKING
+
+void MerlinEngine::loadTangramPuzzle() {
+	uint16 mainResId = 0x7115; // TODO: select by challenge index
+
+	getBOLTGroup(_boltlib, mainResId & 0xFF00, 1);
+	const BltTangramPuzzleDesc *mainRes = reinterpret_cast<const BltTangramPuzzleDesc*>(memberAddr(_boltlib, mainResId));
+
+	//int difficulty = 0; // TODO: select difficulty by player setting
+	//uint16 difficultyResId = difficulties[difficulty];
+	//debug("loading word puzzle difficulty res 0x%.04X", (int)difficultyResId);
+
+	//getBOLTGroup(_boltlib, difficultyResId & 0xFF00, 1);
+	//const BltWordPuzzleDifficultyDesc *diffRes = reinterpret_cast<const BltWordPuzzleDifficultyDesc *>(memberAddr(_boltlib, difficultyResId));
+	//_memoryPuzzleScene = loadScene(getResolved(mainRes->scene));
+	//drawScene(_memoryPuzzleScene, 0xff);
+	
+	displayColors(getResolved(mainRes->palette), 0, 0);
+	displayPic(getResolved(mainRes->image), 0, 0, 0);
+}
+
 } // End of namespace Merlin
 
 } // End of namespace Bolt

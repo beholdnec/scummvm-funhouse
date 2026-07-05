@@ -25,6 +25,61 @@ namespace Bolt {
 
 namespace Merlin {
 	
+#include "common/pack-start.h"	// START STRUCT PACKING
+
+struct BltColorPuzzleDesc {
+	// Type 6
+	BltPtr<byte> unk0x0;
+	BltPtr<byte> unk0x4;
+	BltPtr<byte> unk0x8;
+	BltPtr<BltScene> scene;
+} PACKED_STRUCT;
+
+#include "common/pack-end.h"	// END STRUCT PACKING
+
+void MerlinEngine::loadColorPuzzle() {
+	uint16 mainResId = 0x8C13; // TODO: select by challenge index
+
+	getBOLTGroup(_boltlib, mainResId & 0xFF00, 1);
+	const BltColorPuzzleDesc *mainRes = reinterpret_cast<const BltColorPuzzleDesc*>(memberAddr(_boltlib, mainResId));
+
+	//int difficulty = 0; // TODO: select difficulty by player setting
+	//uint16 difficultyResId = difficulties[difficulty];
+	//debug("loading word puzzle difficulty res 0x%.04X", (int)difficultyResId);
+
+	//getBOLTGroup(_boltlib, difficultyResId & 0xFF00, 1);
+	//const BltWordPuzzleDifficultyDesc *diffRes = reinterpret_cast<const BltWordPuzzleDifficultyDesc *>(memberAddr(_boltlib, difficultyResId));
+	_colorPuzzleScene = loadScene(getResolved(mainRes->scene));
+	drawScene(_colorPuzzleScene, 0xff);
+}
+
+void MerlinEngine::runColorPuzzle() {
+	while (!shouldQuit()) {
+		uint32 eventData = 0;
+		int16 eventType = _xp->getEvent(etEmpty, &eventData);
+
+		switch (eventType) {
+		case etMouseMove: {
+			int16 x = (int16)(eventData >> 16);
+			int16 y = (int16)(eventData & -1);
+			updateSceneButtons(_colorPuzzleScene, x, y, nullptr);
+			break;
+		}
+		case etMouseDown: {
+			int16 x = 0;
+			int16 y = 0;
+			_xp->readCursor(nullptr, &x, &y);
+			int8 currButton = -1;
+			updateSceneButtons(_colorPuzzleScene, x, y, &currButton);
+			debug("clicked button %d", (int)currButton);
+			break;
+		}
+		}
+
+		_xp->updateDisplay();
+	}
+}
+
 } // End of namespace Merlin
 
 } // End of namespace Bolt

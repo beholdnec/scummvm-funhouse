@@ -128,6 +128,12 @@ protected:
 	// Action Puzzle
 	void loadActionPuzzle();
 
+	// Color Puzzle
+	void loadColorPuzzle();
+	void runColorPuzzle();
+
+	Scene *_colorPuzzleScene;
+
 	// Memory Puzzle
 	void loadMemoryPuzzle();
 	void runMemoryPuzzle();
@@ -148,6 +154,15 @@ protected:
 	static void swapSlidingPuzzleDifficultiesDescCb();
 
 	Scene *_slidingPuzzleScene;
+
+	// Synch Puzzle
+	void loadSynchPuzzle();
+	void runSynchPuzzle();
+
+	Scene *_synchPuzzleScene;
+
+	// Tangram Puzzle
+	void loadTangramPuzzle();
 
 	// Word Puzzle
 	void loadWordPuzzle();
