@@ -35,6 +35,7 @@ void MerlinEngine::swapSceneDescCb() { ((MerlinEngine *)g_engine)->swapSceneDesc
 void MerlinEngine::swapMainMenuDescCb() { ((MerlinEngine *)g_engine)->swapMainMenuDesc(); }
 void MerlinEngine::swapDifficultyMenuDescCb() { ((MerlinEngine *)g_engine)->swapDifficultyMenuDesc(); }
 void MerlinEngine::swapSlidingPuzzleDifficultiesDescCb() { ((MerlinEngine *)g_engine)->swapSlidingPuzzleDifficultiesDesc(); }
+void MerlinEngine::swapPotionPuzzleDescCb() { ((MerlinEngine *)g_engine)->swapPotionPuzzleDesc(); }
 
 void MerlinEngine::swapResourceList() {
 	byte *data = _boltCurrentMemberEntry->dataPtr;
@@ -55,6 +56,7 @@ void MerlinEngine::initCallbacks() {
 	}
 
 	_defaultTypeLoadCallbacks[2] = swapAllWordsCb;
+	_defaultTypeLoadCallbacks[3] = swapAllWordsCb;
 	_defaultTypeLoadCallbacks[6] = swapResourceListCb;
 	_defaultTypeLoadCallbacks[8] = swapSpriteHeaderCb;
 	_defaultTypeLoadCallbacks[10] = swapPicHeaderCb;
@@ -71,6 +73,7 @@ void MerlinEngine::initCallbacks() {
 	_defaultTypeLoadCallbacks[33] = swapMainMenuDescCb;
 	_defaultTypeLoadCallbacks[35] = swapDifficultyMenuDescCb;
 	_defaultTypeLoadCallbacks[44] = swapSlidingPuzzleDifficultiesDescCb;
+	_defaultTypeLoadCallbacks[59] = swapPotionPuzzleDescCb;
 
 	for (int i = 0; i < ARRAYSIZE(_defaultTypeFreeCallbacks); i++) {
 		_defaultTypeFreeCallbacks[i] = noOpCb;

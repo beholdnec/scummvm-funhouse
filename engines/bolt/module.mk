@@ -16,7 +16,14 @@ MODULE_OBJS = \
 	carnival/resource.o \
 	crete/crete.o \
 	merlin/merlin.o \
+	merlin/puzzles/action_puzzle.o \
+	merlin/puzzles/color_puzzle.o \
+	merlin/puzzles/memory_puzzle.o \
+	merlin/puzzles/potion_puzzle.o \
 	merlin/puzzles/sliding_puzzle.o \
+	merlin/puzzles/synch_puzzle.o \
+	merlin/puzzles/tangram_puzzle.o \
+	merlin/puzzles/word_puzzle.o \
 	merlin/resource.o \
 	merlin/scene.o \
 	metaengine.o \

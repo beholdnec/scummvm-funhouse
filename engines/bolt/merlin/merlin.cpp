@@ -51,7 +51,11 @@ void MerlinEngine::boltMain() {
 
 				//loadMainMenu();
 				//loadDifficultyMenu();
-				loadSlidingPuzzle();
+				//loadSlidingPuzzle();
+				//loadActionPuzzle();
+				//loadWordPuzzle();
+				//loadPotionPuzzle();
+				loadMemoryPuzzle();
 
 				while (true) {
 					//displayColors(getBOLTMember(_boltlib, 0x0113), stFront, 0);
@@ -61,9 +65,11 @@ void MerlinEngine::boltMain() {
 					//runMainMenu();
 
 					//runDifficultyMenu();
-					runSlidingPuzzle();
+					//runSlidingPuzzle();
+					//runWordPuzzle();
+					runMemoryPuzzle();
 
-					//_xp->updateDisplay();
+					_xp->updateDisplay();
 				}
 			}
 		}

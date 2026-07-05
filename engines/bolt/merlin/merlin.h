@@ -125,6 +125,21 @@ protected:
 
 	Scene *_difficultyMenuScene;
 
+	// Action Puzzle
+	void loadActionPuzzle();
+
+	// Memory Puzzle
+	void loadMemoryPuzzle();
+	void runMemoryPuzzle();
+
+	Scene *_memoryPuzzleScene;
+
+	// Potion Puzzle
+	void loadPotionPuzzle();
+	void swapPotionPuzzleDesc();
+
+	static void swapPotionPuzzleDescCb();
+
 	// Sliding Puzzle
 	void loadSlidingPuzzle();
 	void runSlidingPuzzle();
@@ -133,6 +148,12 @@ protected:
 	static void swapSlidingPuzzleDifficultiesDescCb();
 
 	Scene *_slidingPuzzleScene;
+
+	// Word Puzzle
+	void loadWordPuzzle();
+	void runWordPuzzle();
+
+	Scene *_wordPuzzleScene;
 };
 
 } // End of namespace Merlin
