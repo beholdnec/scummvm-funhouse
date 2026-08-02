@@ -28,19 +28,6 @@ namespace Merlin {
 	
 #include "common/pack-start.h"	// START STRUCT PACKING
 
-struct BltPlane {
-	// Type 26
-	BltPtr<byte> image;
-	BltPtr<byte> palette;
-} PACKED_STRUCT;
-
-struct BltSpriteDesc {
-	// Type 27
-	int16 x;
-	int16 y;
-	BltPtr<byte> image;
-} PACKED_STRUCT;
-
 struct BltPaletteMod {
 	// Type 29
 	byte start;
@@ -66,34 +53,7 @@ struct BltButton {
 	BltPtr<BltButtonGfx> gfx;
 } PACKED_STRUCT;
 
-struct BltScene {
-	// Type 32
-	BltPtr<BltPlane> forePlane;
-	BltPtr<BltPlane> backPlane;
-	uint32 unk0x8;
-	uint32 unk0xc;
-	uint32 unk0x10;
-	uint32 unk0x14;
-	uint16 unk0x18;
-	uint16 buttonCount;
-	BltPtr<BltButton> buttons;
-	int16 originX;
-	int16 originY;
-} PACKED_STRUCT;
-
 #include "common/pack-end.h"	// END STRUCT PACKING
-
-struct Scene {
-	const BltScene *bltScene;
-	int hoveredX;
-	int hoveredY;
-	int hoveredButton;
-
-	uint8 currGfx[300];
-	uint8 buttonGfx[300];
-
-	uint32 isIdle[300];
-};
 
 Scene* MerlinEngine::loadScene(BltScene* bltScene) {
 	Scene *scene = (Scene*)_xp->allocMem(sizeof(Scene));
@@ -140,6 +100,14 @@ void MerlinEngine::drawScene(const Scene* scene, byte flags) {
 			if (flags & 0x1) {
 				drawSceneBackground(scene->bltScene, 1);
 			}
+		}
+	}
+
+	if (flags & 0x8) {
+		// Draw plane 0 sprites
+		const BltSprite *sprites = getSceneSprites(scene);
+		for (int i = 0; i < scene->bltScene->spriteCount; i++) {
+			displayPic(getResolved(sprites[i].image), sprites[i].x - _sceneOriginX, sprites[i].y - _sceneOriginY, 0);
 		}
 	}
 
@@ -269,7 +237,7 @@ void MerlinEngine::drawSceneButton(const BltButtonGfx* bltButtonGfx, bool idle, 
 				const BltPaletteMod *idlePaletteMod = reinterpret_cast<const BltPaletteMod *>(idleGfx);
 				applyPaletteMod(idlePaletteMod, plane << 7);
 			} else {
-				const BltSpriteDesc *idleSprite = reinterpret_cast<const BltSpriteDesc *>(idleGfx);
+				const BltSprite *idleSprite = reinterpret_cast<const BltSprite *>(idleGfx);
 				displayPic(getResolved(idleSprite->image), idleSprite->x - _sceneOriginX, idleSprite->y - _sceneOriginY, plane);
 			}
 		}
@@ -280,7 +248,7 @@ void MerlinEngine::drawSceneButton(const BltButtonGfx* bltButtonGfx, bool idle, 
 				const BltPaletteMod *hoveredPaletteMod = reinterpret_cast<const BltPaletteMod *>(hoveredGfx);
 				applyPaletteMod(hoveredPaletteMod, plane << 7);
 			} else {
-				const BltSpriteDesc *hoveredSprite = reinterpret_cast<const BltSpriteDesc *>(hoveredGfx);
+				const BltSprite *hoveredSprite = reinterpret_cast<const BltSprite *>(hoveredGfx);
 				displayPic(getResolved(hoveredSprite->image), hoveredSprite->x - _sceneOriginX, hoveredSprite->y - _sceneOriginY, plane);
 			}
 		}
@@ -313,6 +281,14 @@ void MerlinEngine::setButtonGfx(Scene* scene, byte button, byte gfx) {
 	}
 }
 
+const BltSprite* MerlinEngine::getSceneSprites(const Scene* scene) {
+	if (scene->overrideSprites) {
+		return scene->overrideSprites;
+	} else {
+		return getResolved(scene->bltScene->sprites);
+	}
+}
+
 void MerlinEngine::swapPlaneDesc() {
 	byte *data = _boltCurrentMemberEntry->dataPtr;
 	uint32 decompSize = _boltCurrentMemberEntry->decompSize;
@@ -332,13 +308,13 @@ void MerlinEngine::swapSpriteDesc() {
 	byte *data = _boltCurrentMemberEntry->dataPtr;
 	uint32 decompSize = _boltCurrentMemberEntry->decompSize;
 	uint32 offset = 0;
-	BltSpriteDesc *ptr = reinterpret_cast<BltSpriteDesc*>(data);
+	BltSprite *ptr = reinterpret_cast<BltSprite*>(data);
 
 	while (offset < decompSize) {
 		WRITE_UINT16(&ptr->x, READ_BE_UINT16(&ptr->x));
 		WRITE_UINT16(&ptr->y, READ_BE_UINT16(&ptr->y));
 		resolveIt(&ptr->image.ptr);
-		offset += sizeof(BltSpriteDesc);
+		offset += sizeof(BltSprite);
 		ptr++;
 	}
 }

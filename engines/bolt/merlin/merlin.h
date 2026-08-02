@@ -32,7 +32,10 @@ struct BltPaletteMod;
 struct BltButtonGfx;
 struct BltButton;
 struct BltScene;
+struct BltSprite;
+struct BltPlane;
 struct Scene;
+struct SlidingPuzzle;
 
 #include "common/pack-start.h"	// START STRUCT PACKING
 
@@ -57,7 +60,53 @@ struct BltRect {
 	}
 } PACKED_STRUCT;
 
+struct BltPlane {
+	// Type 26
+	BltPtr<byte> image;
+	BltPtr<byte> palette;
+} PACKED_STRUCT;
+
+struct BltSprite {
+	// Type 27
+	int16 x;
+	int16 y;
+	BltPtr<byte> image;
+} PACKED_STRUCT;
+
+struct BltScene {
+	// Type 32
+	BltPtr<BltPlane> forePlane;
+	BltPtr<BltPlane> backPlane;
+	byte spriteCount;
+	byte unk0x9;
+	BltPtr<BltSprite> sprites;
+	uint32 unk0xe;
+	uint32 unk0x12;
+	uint32 unk0x16;
+	uint16 buttonCount;
+	BltPtr<BltButton> buttons;
+	int16 originX;
+	int16 originY;
+} PACKED_STRUCT;
+
 #include "common/pack-end.h"	// END STRUCT PACKING
+
+struct Scene {
+	const BltScene *bltScene;
+	int hoveredX;
+	int hoveredY;
+	int hoveredButton;
+
+	// In the original game, sprites could be modified by overwriting the `sprites` field in the BLT scene.
+	// We don't have that option due to platform differences. Instead, sprites can be overridden by setting
+	// this field.
+	BltSprite *overrideSprites;
+
+	uint8 currGfx[300];
+	uint8 buttonGfx[300];
+
+	uint32 isIdle[300];
+};
 
 class MerlinEngine : public BoltEngine {
 public:
@@ -86,6 +135,7 @@ protected:
 	void resetButtonPlanes();
 	bool isPointInButton(const BltButton *bltButton, int x, int y);
 	void setButtonGfx(Scene *scene, byte button, byte gfx);
+	const BltSprite *getSceneSprites(const Scene *scene);
 	void swapPlaneDesc(); // Type 26
 	void swapSpriteDesc(); // Type 27
 	void swapPaletteModDesc(); // Type 29
@@ -148,12 +198,17 @@ protected:
 
 	// Sliding Puzzle
 	void loadSlidingPuzzle();
+	void loadSlidingPuzzleSpritePositions();
 	void runSlidingPuzzle();
+	void resetSlidingPuzzle();
+	void drawSlidingPuzzle(bool initial);
+	void drawSlidingPuzzlePiecesAndPlaySound(); // TODO: sound param
+	bool performSlidingPuzzleMove(int8 move);
 	void swapSlidingPuzzleDifficultiesDesc();
 
 	static void swapSlidingPuzzleDifficultiesDescCb();
 
-	Scene *_slidingPuzzleScene;
+	SlidingPuzzle *_slidingPuzzle;
 
 	// Synch Puzzle
 	void loadSynchPuzzle();

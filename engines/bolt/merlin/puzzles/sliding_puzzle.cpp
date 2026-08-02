@@ -37,20 +37,38 @@ struct BltSlidingPuzzleDesc {
 
 struct BltSlidingPuzzleDifficultiesDesc {
 	// Type 44
-	uint16 unk0x0;
+	uint16 pieceCount;
 	uint16 resId;
 } PACKED_STRUCT;
 
 struct BltSlidingPuzzleDifficultyDesc {
 	// Type 6
-	BltPtr<byte> unk0x0;
+	BltPtr<BltSprite> goalSprites;
 	BltPtr<BltScene> scene;
+	BltPtr<byte> initialStates[4];
+	BltPtr<BltPtr<byte>> moveSets[4];
 } PACKED_STRUCT;
 
 #include "common/pack-end.h"	// END STRUCT PACKING
 
+struct SlidingPuzzle {
+	int8 lastMove;
+	Common::Array<BltSprite> currSprites;
+	Common::Array<BltSprite> prevSprites;
+	Scene *scene;
+	uint16 pieceCount;
+	BltScene *bltScene;
+	BltSprite *goalSprites;
+	byte *initialState;
+	BltPtr<byte>* moveSet;
+
+	SlidingPuzzle() : lastMove(-1), scene(nullptr), pieceCount(0), bltScene(nullptr), goalSprites(nullptr), initialState(nullptr), moveSet(nullptr) {}
+};
+
 void MerlinEngine::loadSlidingPuzzle() {
 	uint16 mainResId = 0x353F; // TODO: select by challenge index
+
+	_slidingPuzzle = new SlidingPuzzle;
 
 	getBOLTGroup(_boltlib, mainResId & 0xFF00, 1);
 	const BltSlidingPuzzleDesc *mainRes = reinterpret_cast<const BltSlidingPuzzleDesc*>(memberAddr(_boltlib, mainResId));
@@ -60,10 +78,36 @@ void MerlinEngine::loadSlidingPuzzle() {
 	uint16 difficultyResId = difficulties[difficulty].resId;
 	debug("loading sliding puzzle difficulty res 0x%.04X", (int)difficultyResId);
 
+	_slidingPuzzle->pieceCount = difficulties[difficulty].pieceCount;
+
 	getBOLTGroup(_boltlib, difficultyResId & 0xFF00, 1);
 	const BltSlidingPuzzleDifficultyDesc *diffRes = reinterpret_cast<const BltSlidingPuzzleDifficultyDesc *>(memberAddr(_boltlib, difficultyResId));
-	_slidingPuzzleScene = loadScene(getResolved(diffRes->scene));
-	drawScene(_slidingPuzzleScene, 0xff);
+
+	int variant = 0; // TODO: randomized value in 0..4 dealt out to each profile
+	_slidingPuzzle->bltScene = getResolved(diffRes->scene);
+	_slidingPuzzle->goalSprites = getResolved(diffRes->goalSprites);
+	_slidingPuzzle->initialState = getResolved(diffRes->initialStates[variant]);
+	_slidingPuzzle->moveSet = getResolved(diffRes->moveSets[variant]);
+
+	_slidingPuzzle->currSprites.resize(_slidingPuzzle->pieceCount);
+	_slidingPuzzle->prevSprites.resize(_slidingPuzzle->pieceCount);
+	loadSlidingPuzzleSpritePositions();
+
+	// TODO: load from save file if data is available
+	resetSlidingPuzzle();
+
+	// TODO: move out of this function
+	_slidingPuzzle->scene = loadScene(_slidingPuzzle->bltScene);
+	drawSlidingPuzzle(true);
+}
+
+void MerlinEngine::loadSlidingPuzzleSpritePositions() {
+	for (int i = 0; i < _slidingPuzzle->pieceCount; i++) {
+		_slidingPuzzle->currSprites[i].x = _slidingPuzzle->goalSprites[i].x;
+		_slidingPuzzle->currSprites[i].y = _slidingPuzzle->goalSprites[i].y;
+		_slidingPuzzle->prevSprites[i].x = _slidingPuzzle->goalSprites[i].x;
+		_slidingPuzzle->prevSprites[i].y = _slidingPuzzle->goalSprites[i].y;
+	}
 }
 
 void MerlinEngine::runSlidingPuzzle() {
@@ -75,22 +119,84 @@ void MerlinEngine::runSlidingPuzzle() {
 		case etMouseMove: {
 			int16 x = (int16)(eventData >> 16);
 			int16 y = (int16)(eventData & -1);
-			updateSceneButtons(_slidingPuzzleScene, x, y, nullptr);
+			updateSceneButtons(_slidingPuzzle->scene, x, y, nullptr);
 			break;
 		}
 		case etMouseDown: {
 			int16 x = 0;
 			int16 y = 0;
 			_xp->readCursor(nullptr, &x, &y);
-			int8 currButton = -1;
-			updateSceneButtons(_slidingPuzzleScene, x, y, &currButton);
-			debug("clicked button %d", (int)currButton);
+			int8 button = -1;
+			updateSceneButtons(_slidingPuzzle->scene, x, y, &button);
+			debug("clicked button %d", (int)button);
+			if (button >= 0) {
+				// TODO: play sound
+				if (performSlidingPuzzleMove(button)) {
+					debug("WIN!!!");
+				}
+				drawSlidingPuzzlePiecesAndPlaySound();
+			} else {
+				// TODO: reveal goal
+			}
 			break;
 		}
 		}
 
 		_xp->updateDisplay();
 	}
+}
+
+void MerlinEngine::resetSlidingPuzzle() {
+	for (int i = 0; i < _slidingPuzzle->pieceCount; i++) {
+		byte initial = _slidingPuzzle->initialState[i];
+		_slidingPuzzle->currSprites[i].image = _slidingPuzzle->goalSprites[initial].image;
+		_slidingPuzzle->prevSprites[i].image = _slidingPuzzle->goalSprites[initial].image;
+	}
+}
+
+void MerlinEngine::drawSlidingPuzzle(bool current) {
+	if (!current) {
+		// TODO: draw goal sprites
+	} else {
+		drawScene(_slidingPuzzle->scene, 0x20);
+		_xp->fillDisplay(0, 0);
+		_xp->updateDisplay();
+		drawScene(_slidingPuzzle->scene, 0x11);
+		_xp->updateDisplay();
+		displayColors(getResolved(getResolved(_slidingPuzzle->bltScene->forePlane)->palette), 0, 0);
+
+		const BltSprite *sprite = _slidingPuzzle->currSprites.data();
+		for (int i = 0; i < _slidingPuzzle->bltScene->spriteCount; i++) {
+			displayPic(getResolved(sprite->image), sprite->x - _slidingPuzzle->bltScene->originX, sprite->y - _slidingPuzzle->bltScene->originY, 0);
+			sprite++;
+		}
+	}
+}
+
+void MerlinEngine::drawSlidingPuzzlePiecesAndPlaySound() {
+	_slidingPuzzle->scene->overrideSprites = _slidingPuzzle->currSprites.data();
+	drawScene(_slidingPuzzle->scene, 8);
+	_xp->updateDisplay();
+}
+
+bool MerlinEngine::performSlidingPuzzleMove(int8 move) {
+	bool win = true;
+
+	Common::Array<BltSprite> sprites = Common::move(_slidingPuzzle->prevSprites);
+	byte *moveData = getResolved(_slidingPuzzle->moveSet[move]);
+	for (int i = 0; i < _slidingPuzzle->pieceCount; i++) {
+		byte target = moveData[i];
+		sprites[target].image = _slidingPuzzle->currSprites[i].image;
+		if (sprites[target].image != _slidingPuzzle->goalSprites[target].image) {
+			win = false;
+		}
+	}
+
+	_slidingPuzzle->prevSprites = _slidingPuzzle->currSprites;
+	_slidingPuzzle->currSprites = sprites;
+	_slidingPuzzle->lastMove = move;
+
+	return win;
 }
 
 void MerlinEngine::swapSlidingPuzzleDifficultiesDesc() {
@@ -100,7 +206,7 @@ void MerlinEngine::swapSlidingPuzzleDifficultiesDesc() {
 	BltSlidingPuzzleDifficultiesDesc *ptr = reinterpret_cast<BltSlidingPuzzleDifficultiesDesc*>(data);
 
 	while (offset < decompSize) {
-		WRITE_UINT16(&ptr->unk0x0, READ_BE_UINT16(&ptr->unk0x0));
+		WRITE_UINT16(&ptr->pieceCount, READ_BE_UINT16(&ptr->pieceCount));
 		WRITE_UINT16(&ptr->resId, READ_BE_UINT16(&ptr->resId));
 		offset += sizeof(BltSlidingPuzzleDifficultiesDesc);
 		ptr++;

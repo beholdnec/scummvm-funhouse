@@ -311,6 +311,9 @@ struct BltPtr {
 	// which is then replaced with a resource reference (see getResolvedPtr)
 	uint32 ptr;
 
+	// FIXME: default nil value should be 0xFFFFFFFF (the "nil" value used in blt files)
+	BltPtr() : ptr(0) {}
+
 	bool operator==(const BltPtr<TBltStruct> &other) const {
 		return ptr == other.ptr;
 	}
